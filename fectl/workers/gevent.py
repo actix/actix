@@ -27,6 +27,7 @@ class GeventWorker(Worker):
 
         # patch sockets
         for name, sock in self._sockets.items():
+            sock.orig_socket = sock.socket
             s = sock.socket
             if sys.version_info[0] == 3:
                 sock.socket = g_socket(
