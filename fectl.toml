@@ -1,0 +1,28 @@
+[master]
+pid = "fectl.pid"
+sock = "fectl.sock"
+directory = "./"
+
+[[service]]
+name = "test"
+num = 1
+directory = "./tests/"
+timeout = 10
+startup_timeout = 30
+shutdown_timeout = 30
+command = "python -m fectl.run asyncio"
+environ = ["ENV_KEY1=value1"]
+
+[logging]
+name = "ctl"
+service = "console"
+level = "debug"
+
+[[socket]]
+name = "http"
+port = 9080
+ip = "0.0.0.0"
+service = ["test"]
+
+app = "aiohttp"
+arguments = ["app=asyncio_tests:init"]

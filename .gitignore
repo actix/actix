@@ -1,0 +1,16 @@
+/doc
+/gh-pages
+__pycache__
+
+*.so
+*.out
+*.pyc
+*.pid
+*.sock
+*~
+fectl/fectl
+fectl/fectl.*
+build/
+dist/
+target/
+*.egg-info/

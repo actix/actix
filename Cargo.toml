@@ -1,0 +1,52 @@
+[package]
+name = "fectl"
+version = "0.2.0-dev"
+authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
+description = "Process management utility"
+readme = "README.md"
+keywords = []
+homepage = "https://github.com/fafhrd91/fectl"
+repository = "https://github.com/fafhrd91/fectl.git"
+documentation = "https://fafhrd91.github.io/fafhrd91/fectl/"
+categories = ["development-tools::ffi"]
+license = "Apache-2.0"
+exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
+build = "build.rs"
+
+[lib]
+name = "ctx"
+path = "ctx/lib.rs"
+
+[dependencies]
+libc = "0.2"
+nix = "0.9"
+net2 = "0.2"
+lazy_static = "0.2"
+byteorder = "1.1"
+bitflags = "0.9"
+
+# tokio
+bytes = "0.4"
+mio = "0.6"
+futures = "0.1"
+tokio-core = "0.1"
+tokio-io = "0.1"
+tokio-signal = "0.1"
+tokio-uds = "0.1"
+
+# logging
+log = "0.3"
+syslog = "3.2"
+env_logger = "0.4"
+
+# config
+clap = "2.*"
+toml = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
+
+[profile.release]
+lto = true
+opt-level = 3
+debug = false
