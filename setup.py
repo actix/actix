@@ -84,15 +84,12 @@ setup_args = dict(
     packages=['fectl'],
     rust_extensions=[
         RustExtension('fectl.fectl', 'Cargo.toml',
-                      binding=Binding.Exec, strip=Strip.All)],
+                      binding=Binding.Exec, script=True, strip=Strip.All)],
     install_requires=install_requires,
     tests_require=tests_require,
     include_package_data=True,
     zip_safe=False,
     cmdclass=dict(build_ext=ve_build_ext, test=PyTest),
-    entry_points = {
-        'console_scripts': ['fectl=fectl:cmd'],
-    }
 )
 
 try:

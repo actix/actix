@@ -10,6 +10,7 @@ __pycache__
 *~
 fectl/fectl
 fectl/fectl.*
+fectl/_gen_*
 build/
 dist/
 target/
