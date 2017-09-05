@@ -13,6 +13,14 @@ license = "Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
 build = "build.rs"
 
+[[bin]]
+name = "fectld"
+path = "src/main.rs"
+
+[[bin]]
+name = "fectl"
+path = "client/main.rs"
+
 [lib]
 name = "ctx"
 path = "ctx/lib.rs"

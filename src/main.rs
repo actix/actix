@@ -20,8 +20,8 @@ extern crate tokio_io;
 extern crate ctx;
 
 mod addrinfo;
-mod config;
 mod client;
+mod config;
 mod cmd;
 mod exec;
 mod logging;
@@ -39,13 +39,8 @@ mod version {
 
 fn main() {
     let success = match config::load_config() {
-        config::ConfigInfo::Server(cfg) => master::start(cfg),
-        config::ConfigInfo::Client(cmd, sock) => {
-            std::env::set_var("RUST_LOG", "info");
-            logging::init_logging(&config::LoggingConfig::default());
-            client::run(cmd, sock)
-        }
-        config::ConfigInfo::Error => false
+        Some(cfg) => master::start(cfg),
+        None => false,
     };
     std::process::exit(if success {0} else {1});
 }

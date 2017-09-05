@@ -83,7 +83,8 @@ setup_args = dict(
     license='Apache 2',
     packages=['fectl'],
     rust_extensions=[
-        RustExtension('fectl.fectl', 'Cargo.toml',
+        RustExtension({'fectl': 'fectl.fectl',
+                       'fectld': 'fectl.fectld'}, 'Cargo.toml',
                       binding=Binding.Exec, script=True, strip=Strip.All)],
     install_requires=install_requires,
     tests_require=tests_require,

@@ -9,6 +9,7 @@ __pycache__
 *.sock
 *~
 fectl/fectl
+fectl/fectld
 fectl/fectl.*
 fectl/_gen_*
 build/

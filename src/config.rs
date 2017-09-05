@@ -13,13 +13,6 @@ use serde_json as json;
 
 use socket;
 use version::PKG_INFO;
-use client::ClientCommand;
-
-pub enum ConfigInfo {
-    Server(Config),
-    Client(ClientCommand, String),
-    Error,
-}
 
 pub struct Config {
     pub master: MasterConfig,
@@ -325,74 +318,21 @@ fn deserialize_uid_field<'de, D>(de: D) -> Result<Option<Uid>, D::Error>
 }
 
 
-pub fn load_config() -> ConfigInfo {
+pub fn load_config() -> Option<Config> {
     // cmd arguments
     let mut app = clap_app!(
-        fectl =>
+        fectld =>
             (version: PKG_INFO.version)
             (author: PKG_INFO.authors)
             (about: PKG_INFO.description)
             (@arg config: -c --config + takes_value
-             "Sets a custom config file for master process")
-            (@arg start: -s --start "Start ctl service")
+             "Sets a custom config file for fectld")
             (@arg daemon: -d --daemon "Run in background")
-            (@arg sock: -m --sock + takes_value
-             "Master process unix socket file path")
-            (@arg command: "Run command (Supported commands: status, start, reload, restart, stop)")
-            (@arg name: "Service name")
+            (@arg sock: -m --sock + takes_value "fectld unix socket file path")
     );
     let mut help = Vec::new();
     let _ = app.write_long_help(&mut help);
     let args = app.get_matches();
-
-    let start = args.is_present("start");
-    let command = args.is_present("command");
-
-    if start && command {
-        println!("Can not start service and run client command at the same time");
-        return ConfigInfo::Error
-    }
-
-    if !start && !command {
-        print!("{}", String::from_utf8_lossy(&help));
-        std::process::exit(0);
-    }
-
-    // check client args
-    if command {
-        let cmd = args.value_of("command").unwrap();
-        let sock = args.value_of("sock").unwrap_or("fectl.sock");
-        match cmd.to_lowercase().trim() {
-            "pid" =>
-                return ConfigInfo::Client(ClientCommand::Pid, sock.to_owned()),
-            "quit" =>
-                return ConfigInfo::Client(ClientCommand::Quit, sock.to_owned()),
-            "version" =>
-                return ConfigInfo::Client(ClientCommand::Version, sock.to_owned()),
-            _ => ()
-        }
-
-        if !args.is_present("name") {
-            println!("Service name is required");
-            return ConfigInfo::Error
-        }
-        let name = args.value_of("name").unwrap().to_owned();
-
-        let cmd = match cmd.to_lowercase().trim() {
-            "status" => ClientCommand::Status(name),
-            "start" => ClientCommand::Start(name),
-            "stop" => ClientCommand::Stop(name),
-            "reload" => ClientCommand::Reload(name),
-            "restart" => ClientCommand::Restart(name),
-            "pause" => ClientCommand::Pause(name),
-            "resume" => ClientCommand::Resume(name),
-            _ => {
-                println!("Unknown command: {}", cmd);
-                return ConfigInfo::Error
-            }
-        };
-        return ConfigInfo::Client(cmd, sock.to_owned())
-    }
 
     // load config file
     let cfg_file = args.value_of("config").unwrap_or("fectl.toml");
@@ -403,14 +343,14 @@ pub fn load_config() -> ConfigInfo {
         .and_then(|mut f| f.read_to_string(&mut cfg_str))
     {
         println!("Can not read configuration file due to: {}", err.description());
-        return ConfigInfo::Error
+        return None
     }
 
     let cfg: TomlConfig = match toml::from_str(&cfg_str) {
         Ok(cfg) => cfg,
         Err(err) => {
             println!("Can not parse config file: {}", err);
-            return ConfigInfo::Error
+            return None
         }
     };
 
@@ -431,13 +371,13 @@ pub fn load_config() -> ConfigInfo {
             Ok(path) => path.into_os_string(),
             Err(err) => {
                 println!("Error accessing working directory: {}", err);
-                return ConfigInfo::Error
+                return None
             }
         }
     } else {
         match std::env::current_dir() {
             Ok(d) => d.into_os_string(),
-            Err(_) => return ConfigInfo::Error,
+            Err(_) => return None,
         }
     };
 
@@ -466,11 +406,11 @@ pub fn load_config() -> ConfigInfo {
         Ok(sockets) => sockets,
         Err(err) => {
             println!("{}", err);
-            return ConfigInfo::Error
+            return None
         }
     };
 
-    ConfigInfo::Server(Config {
+    Some(Config {
         master: master,
         sockets: sockets,
         services: cfg.service,
