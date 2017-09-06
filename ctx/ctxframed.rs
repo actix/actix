@@ -22,12 +22,15 @@ bitflags!(
 );
 
 
-pub enum CtxFramedResult<T: FramedContextAware> {
-    Sent,
-    Ok(<<T as FramedContextAware>::Codec as Decoder>::Item),
+/// Possible errors for CtxFramedService
+pub enum CtxFramedError<T: FramedContextAware> {
     Err(<<T as FramedContextAware>::Codec as Decoder>::Error),
     SinkErr(<T::Codec as Encoder>::Error)
 }
+
+/// Alias for sepcific Result type
+pub type CtxFramedResult<T: FramedContextAware> =
+    Result<<T::Message as CtxMessage>::Item, CtxFramedError<T>>;
 
 enum Item<T: FramedContextAware> {
     CtxFuture(Box<CtxServiceCtxFuture<T>>),
@@ -146,11 +149,20 @@ pub trait FramedContextAware: Sized + 'static
                 -> Result<Async<<<Self as FramedContextAware>::Result as CtxMessage>::Item>,
                           <<Self as FramedContextAware>::Result as CtxMessage>::Error>;
 
+    #[inline]
+    fn sink_item_sent(&mut self, &mut Self::Context, &mut CtxFramedService<Self>)
+                      -> Async<<<Self as FramedContextAware>::Result as CtxMessage>::Item>
+    {
+        Async::NotReady
+    }
+
+    /// process stream item
     fn call(&mut self,
             ctx: &mut Self::Context,
-            srv: &mut CtxFramedService<Self>, CtxFramedResult<Self>) ->
-        Result<Async<<<Self as FramedContextAware>::Result as CtxMessage>::Item>,
-               <Self::Result as CtxMessage>::Error>;
+            srv: &mut CtxFramedService<Self>,
+            result: CtxFramedResult<Self>)
+            -> Result<Async<<<Self as FramedContextAware>::Result as CtxMessage>::Item>,
+                      <Self::Result as CtxMessage>::Error>;
 }
 
 pub struct CtxFramedServiceBuilder<T> where T: FramedContextAware {
@@ -285,7 +297,7 @@ impl<T> Future for CtxFramedService<T>
                         Async::Ready(Some(val)) => {
                             not_ready = false;
                             match FramedContextAware::call(
-                                &mut self.exec, ctx, srv, CtxFramedResult::Ok(val))
+                                &mut self.exec, ctx, srv, Ok(val))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -302,7 +314,7 @@ impl<T> Future for CtxFramedService<T>
                 }
                 Err(err) => {
                     match FramedContextAware::call(
-                        &mut self.exec, ctx, srv, CtxFramedResult::Err(err))
+                        &mut self.exec, ctx, srv, Err(CtxFramedError::Err(err)))
                     {
                         Ok(Async::NotReady) => (),
                         val => return val,
@@ -324,13 +336,13 @@ impl<T> Future for CtxFramedService<T>
                             Async::Ready(Some(val)) => {
                                 not_ready = false;
                                 (false, None, Some(FramedContextAware::call(
-                                    &mut self.exec, ctx, srv, CtxFramedResult::Ok(val))))
+                                    &mut self.exec, ctx, srv, Ok(val))))
                             }
                             Async::Ready(None) => (true, None, None),
                             Async::NotReady => (false, None, None),
                         }
                         Err(err) => (true, None, Some(FramedContextAware::call(
-                            &mut self.exec, ctx, srv, CtxFramedResult::Err(err)))),
+                            &mut self.exec, ctx, srv, Err(CtxFramedError::Err(err))))),
                     },
                     Item::FutStream(ref mut fut) => match fut.poll() {
                         Ok(val) => match val {
@@ -338,31 +350,32 @@ impl<T> Future for CtxFramedService<T>
                             Async::NotReady => (false, None, None),
                         }
                         Err(err) => (true, None, Some(FramedContextAware::call(
-                            &mut self.exec, ctx, srv, CtxFramedResult::Err(err)))),
+                            &mut self.exec, ctx, srv, Err(CtxFramedError::Err(err))))),
                     }
                     Item::Future(ref mut fut) => match fut.poll() {
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
                                 (true, None, Some(FramedContextAware::call(
-                                    &mut self.exec, ctx, srv, CtxFramedResult::Ok(val))))
+                                    &mut self.exec, ctx, srv, Ok(val))))
                             }
                             Async::NotReady => (false, None, None),
                         }
                         Err(err) => (true, None, Some(FramedContextAware::call(
-                            &mut self.exec, ctx, srv, CtxFramedResult::Err(err))))
+                            &mut self.exec, ctx, srv, Err(CtxFramedError::Err(err)))))
                     }
                     Item::CtxFuture(ref mut fut) => match fut.poll(ctx, srv) {
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
-                                (true, None, Some(FramedContextAware::call(
-                                    &mut self.exec, ctx, srv, CtxFramedResult::Ok(val))))
+                                (true, None,
+                                 Some(FramedContextAware::call(
+                                     &mut self.exec, ctx, srv, Ok(val))))
                             }
                             Async::NotReady => (false, None, None),
                         }
                         Err(err) => (true, None, Some(FramedContextAware::call(
-                            &mut self.exec, ctx, srv, CtxFramedResult::Err(err)))),
+                            &mut self.exec, ctx, srv, Err(CtxFramedError::Err(err))))),
                     }
                     Item::CtxSpawnFuture(ref mut fut) => match fut.poll(ctx, srv) {
                         Ok(val) => match val {
@@ -430,7 +443,7 @@ impl<T> Future for CtxFramedService<T>
                             }
                             Err(err) => {
                                 match FramedContextAware::call(
-                                    &mut self.exec, ctx, srv, CtxFramedResult::SinkErr(err))
+                                    &mut self.exec, ctx, srv, Err(CtxFramedError::SinkErr(err)))
                                 {
                                     Ok(Async::NotReady) => break,
                                     val => return val,
@@ -446,11 +459,10 @@ impl<T> Future for CtxFramedService<T>
                         Ok(Async::Ready(_)) => {
                             not_ready = false;
                             self.sink_flushed = true;
-                            match FramedContextAware::call(
-                                &mut self.exec, ctx, srv, CtxFramedResult::Sent)
+                            match FramedContextAware::sink_item_sent(&mut self.exec, ctx, srv)
                             {
-                                Ok(Async::NotReady) => (),
-                                val => return val,
+                                Async::NotReady => (),
+                                Async::Ready(val) => return Ok(Async::Ready(val)),
                             }
                         }
                         Ok(Async::NotReady) => {
@@ -458,7 +470,7 @@ impl<T> Future for CtxFramedService<T>
                         }
                         Err(err) => {
                             match FramedContextAware::call(
-                                &mut self.exec, ctx, srv, CtxFramedResult::SinkErr(err))
+                                &mut self.exec, ctx, srv, Err(CtxFramedError::SinkErr(err)))
                             {
                                 Ok(Async::NotReady) => break,
                                 val => return val,

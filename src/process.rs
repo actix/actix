@@ -222,7 +222,7 @@ impl FramedContextAware for ProcessManagement {
             -> Result<Async<()>, ()>
     {
         match msg {
-            CtxFramedResult::Ok(ProcessMessage::Message(msg)) => match msg {
+            Ok(ProcessMessage::Message(msg)) => match msg {
                 WorkerMessage::forked => {
                     debug!("Worker forked (pid:{})", ctx.pid);
                     srv.send_buffered(WorkerCommand::prepare);
@@ -236,8 +236,8 @@ impl FramedContextAware for ProcessManagement {
 
                             if let Err(_) = ctx.cmd.send(ProcessNotification::Loaded(ctx.pid)) {
                                 // parent is dead
-                                return self.call(ctx, srv, CtxFramedResult::Ok(
-                                    ProcessMessage::Command(ProcessCommand::Quit)))
+                                return self.call(
+                                    ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
                             } else {
                                 // start heartbeat timer
                                 ctx.hb = Instant::now();
@@ -263,8 +263,8 @@ impl FramedContextAware for ProcessManagement {
                     if let Err(_) = ctx.cmd.send(
                         ProcessNotification::Message(ctx.pid, WorkerMessage::reload)) {
                         // parent is dead
-                        return self.call(ctx, srv, CtxFramedResult::Ok(
-                            ProcessMessage::Command(ProcessCommand::Quit)))
+                        return self.call(
+                            ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
                     }
                 }
                 WorkerMessage::restart => {
@@ -273,15 +273,15 @@ impl FramedContextAware for ProcessManagement {
                     if let Err(_) = ctx.cmd.send(
                         ProcessNotification::Message(ctx.pid, WorkerMessage::restart)) {
                         // parent is dead
-                        return self.call(ctx, srv, CtxFramedResult::Ok(
-                            ProcessMessage::Command(ProcessCommand::Quit)))
+                        return self.call(
+                            ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
                     }
                 }
                 WorkerMessage::cfgerror(msg) => {
                     error!("Worker config error: {} (pid:{})", msg, ctx.pid);
                 }
             }
-            CtxFramedResult::Ok(ProcessMessage::StartupTimeout) => {
+            Ok(ProcessMessage::StartupTimeout) => {
                 match ctx.state {
                     ProcessState::Starting => {
                         debug!("Worker startup timeout");
@@ -294,7 +294,7 @@ impl FramedContextAware for ProcessManagement {
                     _ => ()
                 }
             }
-            CtxFramedResult::Ok(ProcessMessage::StopTimeout) => {
+            Ok(ProcessMessage::StopTimeout) => {
                 match ctx.state {
                     ProcessState::Stopping => {
                         debug!("Worker shutdown timeout");
@@ -307,7 +307,7 @@ impl FramedContextAware for ProcessManagement {
                     _ => ()
                 }
             }
-            CtxFramedResult::Ok(ProcessMessage::Heartbeat) => {
+            Ok(ProcessMessage::Heartbeat) => {
                 // makes sense only in running state
                 if let ProcessState::Running = ctx.state {
                     if Instant::now().duration_since(ctx.hb) > ctx.timeout {
@@ -326,11 +326,11 @@ impl FramedContextAware for ProcessManagement {
                     }
                 }
             }
-            CtxFramedResult::Ok(ProcessMessage::Kill) => {
+            Ok(ProcessMessage::Kill) => {
                 let _ = kill(ctx.pid, Signal::SIGKILL);
                 return Ok(Async::Ready(()))
             }
-            CtxFramedResult::Ok(ProcessMessage::Command(cmd)) => match cmd {
+            Ok(ProcessMessage::Command(cmd)) => match cmd {
                 ProcessCommand::Message(cmd) =>
                     srv.send_buffered(cmd),
                 ProcessCommand::Start =>
@@ -369,9 +369,7 @@ impl FramedContextAware for ProcessManagement {
                     self.kill(srv)
                 }
             }
-            CtxFramedResult::Err(_) => self.kill(srv),
-            CtxFramedResult::Sent => (),
-            CtxFramedResult::SinkErr(_) => self.kill(srv),
+            Err(_) => self.kill(srv),
         }
         Ok(Async::NotReady)
     }

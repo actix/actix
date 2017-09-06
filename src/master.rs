@@ -282,11 +282,11 @@ impl FramedContextAware for MasterClient {
 
     fn call(&mut self,
             ctx: &mut Master,
-            srv: &mut CtxFramedService<Self>, msg: CtxFramedResult<Self>)
-            -> Result<Async<()>, ()>
+            srv: &mut CtxFramedService<Self>,
+            msg: CtxFramedResult<Self>) -> Result<Async<()>, ()>
     {
         match msg {
-            CtxFramedResult::Ok(MasterClientMessage::Request(req)) => {
+            Ok(MasterClientMessage::Request(req)) => {
                 match req {
                     MasterRequest::Ping =>
                         srv.send_buffered(MasterResponse::Pong),
@@ -339,10 +339,7 @@ impl FramedContextAware for MasterClient {
                 };
                 Ok(Async::NotReady)
             },
-            CtxFramedResult::Sent =>
-                Ok(Async::NotReady),
-            CtxFramedResult::Err(_) | CtxFramedResult::SinkErr(_) =>
-                Err(()),
+            Err(_) => Err(()),
         }
     }
 }

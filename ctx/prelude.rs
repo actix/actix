@@ -14,5 +14,6 @@ pub use ctx::{
     Service, ContextAware, CtxMessage, CtxService, CtxServiceBuilder, CtxServiceStream};
 
 pub use ctxframed::{
-    FramedContextAware, CtxFramedResult, CtxFramedService, CtxFramedServiceBuilder,
-    CtxFramedServiceFuture, CtxFramedServiceStream, CtxFramedServiceFutStream};
+    FramedContextAware, CtxFramedResult, CtxFramedError, CtxFramedService,
+    CtxFramedServiceBuilder, CtxFramedServiceFuture, CtxFramedServiceStream,
+    CtxFramedServiceFutStream};
