@@ -27,23 +27,12 @@ allowable configuration values are as follows.
 ``[master]`` Section Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``file``
-
-  A path to a file where pid of the master process should be
-  stored (e.g. :file:`/var/run/fectl.sock`)
-
-  *Default*:  fectl.pid
-
-  *Required*:  No.
-
-
 ``sock``
 
   A path to a UNIX domain socket (e.g. :file:`/tmp/supervisord.sock`)
   on which fectl will listen for client requests.
   :program:`fectl` uses custom json protocol to communicate with master process
   over this socket.
-
 
   *Default*:  fectl.sock
 
@@ -56,6 +45,17 @@ allowable configuration values are as follows.
   *Default*: do not cd
 
   *Required*:  No.
+
+
+``pid``
+
+   A path to a file where pid of the master process should be
+   stored (e.g. :file:`/var/run/fectl.pid`)
+
+   *Default*:  Do not store pid
+
+   *Required*:  No.
+
 
 ``gid``
 

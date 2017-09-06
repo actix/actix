@@ -35,7 +35,7 @@ pub struct MasterConfig {
     /// Start master process in daemon mode
     pub daemon: bool,
     /// Path to file with process pid
-    pub pid: OsString,
+    pub pid: Option<OsString>,
     /// Path to controller unix domain socket
     pub sock: OsString,
     /// Change to specified directory before apps loading.
@@ -54,14 +54,24 @@ pub struct MasterConfig {
 
 impl MasterConfig
 {
+    /// remove pid and sock files
+    pub fn remove_files(&self) {
+        if let Some(ref pid) = self.pid {
+            let _ = std::fs::remove_file(pid);
+        }
+        let _ = std::fs::remove_file(&self.sock);
+    }
+
     /// load pid of the master process
     pub fn load_pid(&self) -> Option<nix::unistd::Pid> {
-        if let Ok(mut file) = std::fs::File::open(&self.pid) {
-            let mut buf = Vec::new();
-            if let Ok(_) = file.read_to_end(&mut buf) {
-                let spid = String::from_utf8_lossy(buf.as_ref());
-                if let Ok(pid) = spid.parse::<i32>() {
-                    return Some(nix::unistd::Pid::from_raw(pid))
+        if let Some(ref pid) = self.pid {
+            if let Ok(mut file) = std::fs::File::open(pid) {
+                let mut buf = Vec::new();
+                if let Ok(_) = file.read_to_end(&mut buf) {
+                    let spid = String::from_utf8_lossy(buf.as_ref());
+                    if let Ok(pid) = spid.parse::<i32>() {
+                        return Some(nix::unistd::Pid::from_raw(pid))
+                    }
                 }
             }
         }
@@ -70,8 +80,10 @@ impl MasterConfig
 
     /// save pid to filesystem
     pub fn save_pid(&self) -> Result<(), std::io::Error> {
-        let mut file = std::fs::File::create(&self.pid)?;
-        file.write_all(nix::unistd::getpid().to_string().as_ref())?;
+        if let Some(ref pid) = self.pid {
+            let mut file = std::fs::File::create(pid)?;
+            file.write_all(nix::unistd::getpid().to_string().as_ref())?;
+        }
         Ok(())
     }
 }
@@ -88,12 +100,9 @@ struct TomlConfig {
 
 #[derive(Deserialize, Debug)]
 struct TomlMasterConfig {
-    #[serde(default = "default_pid")]
-    pub pid: String,
     #[serde(default = "default_sock")]
     pub sock: String,
-
-    /// Change to specified directory before apps loading.
+    pub pid: Option<String>,
     pub directory: Option<String>,
 
     #[serde(default)]
@@ -227,10 +236,6 @@ fn default_vec<T>() -> Vec<T> {
     Vec::new()
 }
 
-fn default_pid() -> String {
-    "fectl.pid".to_owned()
-}
-
 fn default_sock() -> String {
     "fectl.sock".to_owned()
 }
@@ -356,9 +361,9 @@ pub fn load_config() -> Option<Config> {
 
     // master config
     let toml_master = cfg.master.unwrap_or(TomlMasterConfig {
-        pid: default_pid(),
         sock: default_sock(),
         directory: None,
+        pid: None,
         gid: None,
         uid: None,
         stdout: None,
@@ -381,15 +386,21 @@ pub fn load_config() -> Option<Config> {
         }
     };
 
+    // canonizalize pid path
+    let pid = if let Some(pid) = toml_master.pid {
+        Some(Path::new(&directory).join(&pid).into_os_string())
+    } else {
+        None
+    };
+
     let master = MasterConfig {
         // set default value from command line
         daemon: daemon,
 
-        // canonizalize pid path
-        pid: Path::new(&directory).join(&toml_master.pid).into_os_string(),
         // canonizalize socket path
         sock: Path::new(&directory).join(&toml_master.sock).into_os_string(),
 
+        pid: pid,
         gid: toml_master.gid,
         uid: toml_master.uid,
 

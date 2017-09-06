@@ -153,8 +153,7 @@ impl Master {
 
 impl Drop for Master {
     fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.cfg.master.pid);
-        let _ = std::fs::remove_file(&self.cfg.master.sock);
+        self.cfg.master.remove_files();
     }
 }
 
