@@ -2,17 +2,15 @@ use std;
 use std::path::Path;
 use std::error::Error;
 use std::io::prelude::*;
-use std::ffi::{CString, OsString};
+use std::ffi::OsString;
 
-use libc;
 use nix;
 use nix::unistd::{Gid, Uid};
 use toml;
-use serde;
-use serde_json as json;
 use structopt::StructOpt;
 
 use socket;
+use config_helpers;
 
 pub struct Config {
     pub master: MasterConfig,
@@ -92,25 +90,25 @@ impl MasterConfig
 struct TomlConfig {
     master: Option<TomlMasterConfig>,
     logging: Option<LoggingConfig>,
-    #[serde(default = "default_vec")]
+    #[serde(default = "config_helpers::default_vec")]
     socket: Vec<SocketConfig>,
-    #[serde(default = "default_vec")]
+    #[serde(default = "config_helpers::default_vec")]
     service: Vec<ServiceConfig>,
 }
 
 #[derive(Deserialize, Debug)]
 struct TomlMasterConfig {
-    #[serde(default = "default_sock")]
+    #[serde(default = "config_helpers::default_sock")]
     pub sock: String,
     pub pid: Option<String>,
     pub directory: Option<String>,
 
     #[serde(default)]
-    #[serde(deserialize_with="deserialize_gid_field")]
+    #[serde(deserialize_with="config_helpers::deserialize_gid_field")]
     pub gid: Option<Gid>,
 
     #[serde(default)]
-    #[serde(deserialize_with="deserialize_uid_field")]
+    #[serde(deserialize_with="config_helpers::deserialize_uid_field")]
     pub uid: Option<Uid>,
 
     pub stdout: Option<String>,
@@ -142,14 +140,14 @@ pub struct SocketConfig {
     pub name: String,
     pub port: u32,
     pub host: Option<String>,
-    #[serde(default = "default_backlog")]
+    #[serde(default = "config_helpers::default_backlog")]
     pub backlog: u16,
-    #[serde(default = "default_proto")]
+    #[serde(default = "config_helpers::default_proto")]
     pub proto: Proto,
-    #[serde(default = "default_vec")]
+    #[serde(default = "config_helpers::default_vec")]
     pub service: Vec<String>,
     pub app: Option<String>,
-    #[serde(default = "default_vec")]
+    #[serde(default = "config_helpers::default_vec")]
     pub arguments: Vec<String>,
 }
 
@@ -168,7 +166,7 @@ pub struct ServiceConfig {
     /// retrieved with a call to ``libc::getgrnam(value)`` or ``None`` to not
     /// change the worker processes group.
     #[serde(default)]
-    #[serde(deserialize_with="deserialize_gid_field")]
+    #[serde(deserialize_with="config_helpers::deserialize_gid_field")]
     pub gid: Option<Gid>,
 
     /// Switch worker processes to run as this user.
@@ -177,7 +175,7 @@ pub struct ServiceConfig {
     /// retrieved with a call to ``libc::getpwnam(value)`` or ``None`` to not
     /// change the worker process user.
     #[serde(default)]
-    #[serde(deserialize_with="deserialize_uid_field")]
+    #[serde(deserialize_with="config_helpers::deserialize_uid_field")]
     pub uid: Option<Uid>,
 
     /// Workers silent for more than this many seconds are killed and restarted.
@@ -186,7 +184,7 @@ pub struct ServiceConfig {
     /// you're sure of the repercussions for sync workers. For the non sync
     /// workers it just means that the worker process is still communicating and
     /// is not tied to the length of time required to handle a single request.
-    #[serde(default="default_timeout")]
+    #[serde(default="config_helpers::default_timeout")]
     pub timeout: u32,
 
     /// Timeout for worker startup.
@@ -194,7 +192,7 @@ pub struct ServiceConfig {
     /// After start, workers have this much time to report radyness state.
     /// Workers that do not report `loaded` state to master are force killed and
     /// get restarted.
-    #[serde(default="default_startup_timeout")]
+    #[serde(default="config_helpers::default_startup_timeout")]
     pub startup_timeout: u32,
 
     /// Timeout for graceful workers shutdown.
@@ -202,7 +200,7 @@ pub struct ServiceConfig {
     /// After receiving a restart or stop signal, workers have this much time to finish
     /// serving requests. Workers still alive after the timeout (starting from
     /// the receipt of the restart signal) are force killed.
-    #[serde(default="default_shutdown_timeout")]
+    #[serde(default="config_helpers::default_shutdown_timeout")]
     pub shutdown_timeout: u32,
 }
 
@@ -232,97 +230,8 @@ impl Default for LoggingConfig {
     }
 }
 
-fn default_vec<T>() -> Vec<T> {
-    Vec::new()
-}
 
-fn default_sock() -> String {
-    "fectl.sock".to_owned()
-}
-
-fn default_backlog() -> u16 {
-    256
-}
-
-fn default_proto() -> Proto {
-    Proto::tcp4
-}
-
-fn default_timeout() -> u32 {
-    10
-}
-
-fn default_startup_timeout() -> u32 {
-    30
-}
-
-fn default_shutdown_timeout() -> u32 {
-    30
-}
-
-/// Deserialize `gid` field into `Gid`
-pub(crate) fn deserialize_gid_field<'de, D>(de: D) -> Result<Option<Gid>, D::Error>
-    where D: serde::Deserializer<'de>
-{
-    let deser_result: json::Value = serde::Deserialize::deserialize(de)?;
-    match deser_result {
-        json::Value::String(ref s) =>
-            if let Ok(name) = CString::new(s.as_str()) {
-                unsafe {
-                    let ptr = libc::getgrnam(name.as_ptr());
-                    return if ptr.is_null() {
-                        Err(serde::de::Error::custom("Can not convert group name to group id"))
-                    } else {
-                        Ok(Some(Gid::from_raw((*ptr).gr_gid)))
-                    };
-                }
-            } else {
-                return Err(serde::de::Error::custom("Can not convert to plain string"))
-            }
-        json::Value::Number(num) => {
-            if let Some(num) = num.as_u64() {
-                if num <= u32::max_value() as u64 {
-                    return Ok(Some(Gid::from_raw(num as libc::gid_t)))
-                }
-            }
-        }
-        _ => (),
-    }
-    Err(serde::de::Error::custom("Unexpected value"))
-}
-
-/// Deserialize `uid` field into `Uid`
-fn deserialize_uid_field<'de, D>(de: D) -> Result<Option<Uid>, D::Error>
-    where D: serde::Deserializer<'de>
-{
-    let deser_result: json::Value = serde::Deserialize::deserialize(de)?;
-    match deser_result {
-        json::Value::String(ref s) =>
-            if let Ok(name) = CString::new(s.as_str()) {
-                unsafe {
-                    let ptr = libc::getpwnam(name.as_ptr());
-                    return if ptr.is_null() {
-                        Err(serde::de::Error::custom("Can not convert user name to user id"))
-                    } else {
-                        Ok(Some(Uid::from_raw((*ptr).pw_uid)))
-                    };
-                }
-            } else {
-                return Err(serde::de::Error::custom("Can not convert to plain string"))
-            }
-        json::Value::Number(num) => {
-            if let Some(num) = num.as_u64() {
-                if num <= u32::max_value() as u64 {
-                    return Ok(Some(Uid::from_raw(num as u32)));
-                }
-            }
-        }
-        _ => (),
-    }
-    Err(serde::de::Error::custom("Unexpected value"))
-}
-
-
+/// Command line arguments
 #[derive(StructOpt, Debug)]
 struct Cli {
     /// Sets a custom config file for fectld
@@ -338,7 +247,6 @@ struct Cli {
 pub fn load_config() -> Option<Config> {
     let args = Cli::from_args();
 
-    println!("CFG: {:?}", args.config);
     let mut cfg_str = String::new();
     if let Err(err) = std::fs::File::open(args.config)
         .and_then(|mut f| f.read_to_string(&mut cfg_str))
@@ -357,7 +265,7 @@ pub fn load_config() -> Option<Config> {
 
     // master config
     let toml_master = cfg.master.unwrap_or(TomlMasterConfig {
-        sock: default_sock(),
+        sock: config_helpers::default_sock(),
         directory: None,
         pid: None,
         gid: None,
@@ -382,7 +290,7 @@ pub fn load_config() -> Option<Config> {
         }
     };
 
-    // canonizalize pid path
+    // canonizalize pid file path
     let pid = if let Some(pid) = toml_master.pid {
         Some(Path::new(&directory).join(&pid).into_os_string())
     } else {

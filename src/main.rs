@@ -28,6 +28,7 @@ extern crate ctx;
 mod addrinfo;
 mod client;
 mod config;
+mod config_helpers;
 mod cmd;
 mod exec;
 mod logging;
