@@ -47,8 +47,11 @@ log = "0.3"
 syslog = "3.2"
 env_logger = "0.4"
 
+# cli
+structopt = "0.1"
+structopt-derive = "0.1"
+
 # config
-clap = "2.*"
 toml = "*"
 serde = "*"
 serde_json = "*"

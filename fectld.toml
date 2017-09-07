@@ -1,6 +1,6 @@
 [master]
-pid = "fectl.pid"
-sock = "fectl.sock"
+pid = "fectld.pid"
+sock = "fectld.sock"
 directory = "./"
 
 [[service]]

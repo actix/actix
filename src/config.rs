@@ -10,9 +10,9 @@ use nix::unistd::{Gid, Uid};
 use toml;
 use serde;
 use serde_json as json;
+use structopt::StructOpt;
 
 use socket;
-use version::PKG_INFO;
 
 pub struct Config {
     pub master: MasterConfig,
@@ -323,28 +323,24 @@ fn deserialize_uid_field<'de, D>(de: D) -> Result<Option<Uid>, D::Error>
 }
 
 
+#[derive(StructOpt, Debug)]
+struct Cli {
+    /// Sets a custom config file for fectld
+    #[structopt(long="config", short="c", default_value="fectld.toml")]
+    config: String,
+
+    /// Run in background
+    #[structopt(long="daemon", short="d")]
+    daemon: bool,
+}
+
+
 pub fn load_config() -> Option<Config> {
-    // cmd arguments
-    let mut app = clap_app!(
-        fectld =>
-            (version: PKG_INFO.version)
-            (author: PKG_INFO.authors)
-            (about: PKG_INFO.description)
-            (@arg config: -c --config + takes_value
-             "Sets a custom config file for fectld")
-            (@arg daemon: -d --daemon "Run in background")
-            (@arg sock: -m --sock + takes_value "fectld unix socket file path")
-    );
-    let mut help = Vec::new();
-    let _ = app.write_long_help(&mut help);
-    let args = app.get_matches();
+    let args = Cli::from_args();
 
-    // load config file
-    let cfg_file = args.value_of("config").unwrap_or("fectl.toml");
-    let daemon = args.is_present("daemon");
-
+    println!("CFG: {:?}", args.config);
     let mut cfg_str = String::new();
-    if let Err(err) = std::fs::File::open(cfg_file)
+    if let Err(err) = std::fs::File::open(args.config)
         .and_then(|mut f| f.read_to_string(&mut cfg_str))
     {
         println!("Can not read configuration file due to: {}", err.description());
@@ -395,7 +391,7 @@ pub fn load_config() -> Option<Config> {
 
     let master = MasterConfig {
         // set default value from command line
-        daemon: daemon,
+        daemon: args.daemon,
 
         // canonizalize socket path
         sock: Path::new(&directory).join(&toml_master.sock).into_os_string(),

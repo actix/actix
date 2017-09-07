@@ -1,12 +1,17 @@
-#[macro_use] extern crate log;
-#[macro_use] extern crate clap;
-#[macro_use] extern crate serde_derive;
-extern crate byteorder;
-extern crate serde;
-extern crate serde_json;
-extern crate toml;
+
 extern crate syslog;
 extern crate env_logger;
+#[macro_use] extern crate log;
+
+extern crate structopt;
+#[macro_use] extern crate structopt_derive;
+
+extern crate serde;
+extern crate serde_json;
+#[macro_use] extern crate serde_derive;
+
+extern crate byteorder;
+extern crate toml;
 extern crate mio;
 extern crate nix;
 extern crate net2;
@@ -17,6 +22,7 @@ extern crate tokio_core;
 extern crate tokio_signal;
 extern crate tokio_uds;
 extern crate tokio_io;
+
 extern crate ctx;
 
 mod addrinfo;

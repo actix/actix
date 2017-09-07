@@ -9,6 +9,7 @@ use bytes::{BufMut, BytesMut};
 use tokio_io::codec::{Encoder, Decoder};
 
 use {MasterRequest, MasterResponse};
+use version::PKG_INFO;
 
 /// Console commands
 #[derive(Clone, Debug)]
@@ -23,6 +24,7 @@ pub enum ClientCommand {
     Pid,
     Quit,
     Version,
+    VersionCheck,
 }
 
 /// Send command to master
@@ -145,7 +147,7 @@ pub fn run(cmd: ClientCommand, sock: String) -> bool {
         ClientCommand::Pid => {
             send_command(&mut stream, MasterRequest::Pid)
         }
-        ClientCommand::Version => {
+        ClientCommand::Version | ClientCommand::VersionCheck => {
             send_command(&mut stream, MasterRequest::Version)
         }
         ClientCommand::Quit => {
@@ -176,8 +178,14 @@ pub fn run(cmd: ClientCommand, sock: String) -> bool {
                 return true
             }
             Ok(MasterResponse::Version(ver)) => {
-                println!("{}", ver);
-                return true
+                match cmd {
+                    ClientCommand::VersionCheck =>
+                        return ver.ends_with(PKG_INFO.version),
+                    _ => {
+                        println!("{}", ver);
+                        return true
+                    }
+                }
             }
             Ok(MasterResponse::ServiceStarted) => {
                 println!("done");

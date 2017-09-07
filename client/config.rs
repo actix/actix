@@ -1,51 +1,50 @@
-use std;
-
-use version::PKG_INFO;
+use structopt::StructOpt;
 use client::ClientCommand;
+
+
+#[derive(StructOpt, Debug)]
+struct Cli {
+    /// Master process unix socket file path
+    #[structopt(long="sock", short="m", default_value="fectld.sock")]
+    sock: String,
+
+    /// Run command (Supported commands: status, start, reload, restart, stop)
+    command: String,
+
+    /// Service name
+    name: Option<String>,
+}
 
 
 pub fn load_config() -> Option<(ClientCommand, String)> {
     // cmd arguments
-    let mut app = clap_app!(
-        fectl =>
-            (version: PKG_INFO.version)
-            (author: PKG_INFO.authors)
-            (about: PKG_INFO.description)
-            (@arg sock: -m --sock + takes_value
-             "Master process unix socket file path")
-            (@arg command: "Run command (Supported commands: status, start, reload, restart, stop)")
-            (@arg name: "Service name")
-    );
-    let mut help = Vec::new();
-    let _ = app.write_long_help(&mut help);
-    let args = app.get_matches();
-
-    let command = args.is_present("command");
-    if !command {
-        print!("{}", String::from_utf8_lossy(&help));
-        std::process::exit(0);
-    }
+    let args = Cli::from_args();
+    let cmd = args.command.to_lowercase().trim().to_owned();
+    let sock = args.sock.clone();
 
     // check client args
-    let cmd = args.value_of("command").unwrap();
-    let sock = args.value_of("sock").unwrap_or("fectl.sock");
-    match cmd.to_lowercase().trim() {
+    match cmd.as_str() {
         "pid" =>
-            return Some((ClientCommand::Pid, sock.to_owned())),
+            return Some((ClientCommand::Pid, sock)),
         "quit" =>
-            return Some((ClientCommand::Quit, sock.to_owned())),
+            return Some((ClientCommand::Quit, sock)),
         "version" =>
-            return Some((ClientCommand::Version, sock.to_owned())),
+            return Some((ClientCommand::Version, sock)),
+        "version-check" =>
+            return Some((ClientCommand::VersionCheck, sock)),
         _ => ()
     }
 
-    if !args.is_present("name") {
-        println!("Service name is required");
-        return None
-    }
-    let name = args.value_of("name").unwrap().to_owned();
+    let name = match args.name {
+        None => {
+            println!("Service name is required");
+            return None
+        }
+        Some(ref name) =>
+            name.clone()
+    };
 
-    let cmd = match cmd.to_lowercase().trim() {
+    let cmd = match cmd.as_str() {
         "status" => ClientCommand::Status(name),
         "start" => ClientCommand::Start(name),
         "stop" => ClientCommand::Stop(name),
@@ -58,5 +57,5 @@ pub fn load_config() -> Option<(ClientCommand, String)> {
             return None
         }
     };
-    return Some((cmd, sock.to_owned()))
+    return Some((cmd, sock))
 }
