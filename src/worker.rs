@@ -40,8 +40,6 @@ pub enum WorkerMessage {
     hb,
 }
 
-const NUM_RESTARTS: u8 = 3;
-
 #[derive(Debug)]
 enum WorkerState {
     Initial,
@@ -85,7 +83,7 @@ pub struct Worker {
     state: WorkerState,
     handle: reactor::Handle,
     started: Instant,
-    restarts: u8,
+    restarts: u16,
     cmd: unsync::mpsc::UnboundedSender<ProcessNotification>,
 }
 
@@ -341,7 +339,7 @@ impl Worker {
                         } else {
                             // check for fast restart
                             let now = Instant::now();
-                            if now.duration_since(self.started) > Duration::new(3, 0) {
+                            if now.duration_since(self.started) > Duration::new(10, 0) {
                                 self.started = now;
                                 self.restarts = 0;
                             } else {
@@ -349,7 +347,7 @@ impl Worker {
                             }
                         }
 
-                        if self.restarts < NUM_RESTARTS {
+                        if self.restarts < self.cfg.restarts {
                             // just in case
                             let _ = (&process.tx).send(ProcessCommand::Quit);
 
@@ -385,7 +383,7 @@ impl Worker {
                             }
                         }
 
-                        if self.restarts < NUM_RESTARTS {
+                        if self.restarts < self.cfg.restarts {
                             // start new worker
                             let (pid, tx) = Process::start(
                                 &self.handle, &self.cfg, self.cmd.clone());
@@ -427,7 +425,7 @@ impl Worker {
                             }
                         }
 
-                        if self.restarts < NUM_RESTARTS {
+                        if self.restarts < self.cfg.restarts {
                             // start new worker
                             let (pid, tx) = Process::start(
                                 &self.handle, &self.cfg, self.cmd.clone());

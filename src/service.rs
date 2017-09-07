@@ -104,7 +104,7 @@ pub struct Service {
 
 impl Service {
 
-    pub fn start(handle: &reactor::Handle, num: u32, cfg: ServiceConfig) -> Rc<RefCell<Service>>
+    pub fn start(handle: &reactor::Handle, num: u16, cfg: ServiceConfig) -> Rc<RefCell<Service>>
     {
         let (tx, rx) = unsync::mpsc::unbounded();
 

@@ -24,6 +24,10 @@ pub fn default_proto() -> Proto {
     Proto::tcp4
 }
 
+pub fn default_restarts() -> u16 {
+    3
+}
+
 pub fn default_timeout() -> u32 {
     10
 }

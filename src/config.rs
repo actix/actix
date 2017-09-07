@@ -153,9 +153,18 @@ pub struct SocketConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ServiceConfig {
+    /// Service name
     pub name: String,
-    pub num: u32,
+
+    /// Number of workers to start
+    pub num: u16,
+
+    /// Worker start command
     pub command: String,
+
+    /// Number of restarts before marking worker as failed, default 3
+    #[serde(default="config_helpers::default_restarts")]
+    pub restarts: u16,
 
     /// Change to specified directory before service worker loading.
     pub directory: Option<String>,

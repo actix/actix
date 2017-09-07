@@ -11,14 +11,14 @@ possible to run arbitrary process, each application has to support communication
 Configuration
 -------------
 
-By default `fectl` uses `fectl.toml` file from current directory. It is possible to override
+By default `fectld` uses `fectld.toml` file from current directory. It is possible to override
 this by specifing `-c` option. Configuraiton file uses `toml <https://github.com/toml-lang/toml>`_ format.
 
 
 ``[master]`` Section Settings
 -----------------------------
 
-The :file:`fectl.toml` file contains a section named
+The :file:`fectld.toml` file contains a section named
 ``[master]`` under which configuration parameters for an master process should be inserted.
 If the configuration file has no ``[master]`` section, default values will be used. The
 allowable configuration values are as follows.
@@ -29,18 +29,18 @@ allowable configuration values are as follows.
 
 ``sock``
 
-  A path to a UNIX domain socket (e.g. :file:`/tmp/supervisord.sock`)
+  A path to a UNIX domain socket (e.g. :file:`/tmp/fectld.sock`)
   on which fectl will listen for client requests.
-  :program:`fectl` uses custom json protocol to communicate with master process
+  :program:`fectld` uses custom json protocol to communicate with master process
   over this socket.
 
-  *Default*:  fectl.sock
+  *Default*:  fectld.sock
 
   *Required*:  No.
 
 ``directory``
 
-  When :program:`fectl` daemonizes, switch to this directory.
+  When :program:`fectld` daemonizes, switch to this directory.
 
   *Default*: do not cd
 
@@ -50,7 +50,7 @@ allowable configuration values are as follows.
 ``pid``
 
    A path to a file where pid of the master process should be
-   stored (e.g. :file:`/var/run/fectl.pid`)
+   stored (e.g. :file:`/var/run/fectld.pid`)
 
    *Default*:  Do not store pid
 
@@ -59,7 +59,7 @@ allowable configuration values are as follows.
 
 ``gid``
 
-  Instruct :program:`fectl` to switch groups to this UNIX group
+  Instruct :program:`fectld` to switch groups to this UNIX group
   account before doing any meaningful processing. Value of this
   field could be actual groupd id or group name.
 
@@ -69,7 +69,7 @@ allowable configuration values are as follows.
 
 ``uid``
 
-  Instruct :program:`fectl` to switch users to this UNIX user
+  Instruct :program:`fectld` to switch users to this UNIX user
   account before doing any meaningful processing. Value of this
   field could be actual user id or user name.
 
@@ -79,7 +79,7 @@ allowable configuration values are as follows.
 
 ``stdout``
 
-  A path to a file where `fectl` should redirect stdout.
+  A path to a file where `fectld` should redirect stdout.
 
   *Default*: do not redirect stdout
 
@@ -88,7 +88,7 @@ allowable configuration values are as follows.
 
 ``stderr``
 
-  A path to a file where `fectl` should redirect stderr.
+  A path to a file where `fectld` should redirect stderr.
 
   *Default*: do not redirect stderr
 
@@ -98,7 +98,7 @@ allowable configuration values are as follows.
 ``[[socket]]`` Section Settings
 -------------------------------
 
-:program:`fectl` can manage inet sockets for worker processes. i.e. it can open listening socket
+:program:`fectld` can manage inet sockets for worker processes. i.e. it can open listening socket
 and pass file descriptors into work via environment variable. The
 allowable configuration values are as follows.
 
@@ -201,7 +201,7 @@ allowable configuration values are as follows.
 
 ``command``
 
-  An application start command. ``fectl`` passes configuration (like socket fds, app config, etc)
+  An application start command. ``fectld`` passes configuration (like socket fds, app config, etc)
   in environment variables. Application has to support ``fectl`` communication protocol. ``fectl``
   provides several workers implementation for python, like asyncio and gevent workers.
 
@@ -214,6 +214,14 @@ allowable configuration values are as follows.
   *Default*: do not cd
 
   *Required*: No.
+
+``restarts``
+
+  Number of restarts before marking worker as failed.
+
+  *Default*:  3
+
+  *Required*:  No.
 
 ``gid``
 
@@ -231,7 +239,7 @@ allowable configuration values are as follows.
   Switch worker processes to run as this user.
   A valid user id (as an integer) or the name of a user that can be
   retrieved with a call to ``libc::getpwnam(value)`` or ``None`` to not
-  change the worker process user. If :program:`fectl` can not change group,
+  change the worker process user. If :program:`fectld` can not change group,
   worker failes to start.
 
   *Required*:  No.
