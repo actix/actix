@@ -9,7 +9,7 @@ use bytes::{BufMut, BytesMut};
 use tokio_io::codec::{Encoder, Decoder};
 
 use config::MasterConfig;
-use master::{MasterRequest, MasterResponse};
+use master_types::{MasterRequest, MasterResponse};
 
 /// Master alive status
 pub enum AliveStatus {

@@ -14,6 +14,8 @@ use nix::sys::wait::{waitpid, WaitStatus, WNOHANG};
 use ctx::fut::{self, CtxFuture, WrapFuture};
 use ctx::{Service as _Service, CtxService, CtxServiceStream, ContextAware};
 use config::Config;
+use event::{Reason, ServiceStatus};
+use process::ProcessError;
 use service::{Service, StartStatus, ReloadStatus, ServiceOperationError};
 
 #[derive(Debug)]
@@ -91,12 +93,12 @@ impl CommandCenter {
         rx
     }
 
-    pub fn service_status(&self, name: &str) -> Result<&'static str, CommandError>
+    pub fn service_status(&self, name: &str) -> Result<ServiceStatus, CommandError>
     {
         match self.state {
             State::Running => {
                 match self.services.get(name) {
-                    Some(service) => Ok(service.borrow().state_description()),
+                    Some(service) => Ok(service.borrow().status()),
                     None => Err(CommandError::UnknownService),
                 }
             }
@@ -136,7 +138,9 @@ impl CommandCenter {
             State::Running => {
                 info!("Stopping service {:?}", name);
                 match self.services.get_mut(name) {
-                    Some(service) => match service.borrow_mut().stop(graceful) {
+                    Some(service) => match service.borrow_mut().stop(
+                        graceful, Reason::ConsoleRequest)
+                    {
                         Ok(rx) => Ok(rx),
                         Err(_) => Err(CommandError::ServiceStopped),
                     },
@@ -292,7 +296,7 @@ impl CommandCenterCommands {
             ctx.state = State::Stopping;
             let mut waiting = false;
             for service in ctx.services.values() {
-                match service.borrow_mut().stop(graceful) {
+                match service.borrow_mut().stop(graceful, Reason::Exit) {
                     Ok(rx) => {
                         waiting = true;
                         srv.spawn(
@@ -362,14 +366,16 @@ impl ContextAware for CommandCenterCommands {
                     match waitpid(None, Some(WNOHANG)) {
                         Ok(WaitStatus::Exited(pid, code)) => {
                             info!("Worker {} exit code: {}", pid, code);
+                            let err = ProcessError::from(code);
                             for srv in ctx.services.values_mut() {
-                                srv.borrow_mut().exited(pid, code);
+                                srv.borrow_mut().exited(pid, &err);
                             }
                             continue
                         }
-                        Ok(WaitStatus::Signaled(pid, _, _)) => {
+                        Ok(WaitStatus::Signaled(pid, sig, _)) => {
+                            let err = ProcessError::Signal(sig as usize);
                             for srv in ctx.services.values_mut() {
-                                srv.borrow_mut().exited(pid, 0);
+                                srv.borrow_mut().exited(pid, &err);
                             }
                             continue
                         },

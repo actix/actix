@@ -5,9 +5,10 @@ use nix::unistd::Pid;
 use futures::unsync;
 use tokio_core::reactor;
 
+use utils::str;
+use event::{Events, State, Reason};
 use config::ServiceConfig;
-use process::{WORKER_INIT_FAILED, WORKER_BOOT_FAILED, WORKER_TIMEOUT};
-use process::{Process, ProcessCommand, ProcessNotification};
+use process::{Process, ProcessCommand, ProcessNotification, ProcessError};
 
 #[allow(non_camel_case_types)]
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -78,10 +79,11 @@ impl ProcessInfo {
 }
 
 pub struct Worker {
-    idx: usize,
+    pub idx: usize,
     cfg: ServiceConfig,
     state: WorkerState,
     handle: reactor::Handle,
+    pub events: Events,
     started: Instant,
     restarts: u16,
     cmd: unsync::mpsc::UnboundedSender<ProcessNotification>,
@@ -92,23 +94,26 @@ impl Worker {
     pub fn new(idx: usize, handle: &reactor::Handle, cfg: ServiceConfig,
                cmd: unsync::mpsc::UnboundedSender<ProcessNotification>) -> Worker
     {
+
         Worker {
             idx: idx,
             cfg: cfg,
             state: WorkerState::Initial,
             handle: handle.clone(),
+            events: Events::new(50),
             started: Instant::now(),
             restarts: 0,
             cmd: cmd}
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self, reason: Reason) {
         let id = self.idx;
         match self.state {
             WorkerState::Initial | WorkerState::Stopped | WorkerState::Failed => {
                 debug!("Starting worker process id: {:?}", id);
                 let (pid, tx) = Process::start(&self.handle, &self.cfg, self.cmd.clone());
                 self.state = WorkerState::Starting(ProcessInfo{pid: pid, tx: tx});
+                self.events.add(State::Starting, reason, str(pid));
             }
             _ => (),
         }
@@ -122,8 +127,10 @@ impl Worker {
                 if p.pid == pid {
                     self.restarts = 0;
                     p.start();
+                    self.events.add(State::Running, Reason::None, str(p.pid));
                     self.state = WorkerState::Running(p);
                 } else {
+                    self.events.add(State::Starting, Reason::None, str(p.pid));
                     self.state = WorkerState::Starting(p);
                 }
             }
@@ -132,8 +139,10 @@ impl Worker {
                     self.restarts = 0;
                     old.stop();
                     p.start();
+                    self.events.add(State::StoppingOld, Reason::None, str(old.pid));
                     self.state = WorkerState::StoppingOld(p, old);
                 } else {
+                    self.events.add(State::Reloading, Reason::None, str(old.pid));
                     self.state = WorkerState::Reloading(p, old);
                 }
             },
@@ -142,8 +151,10 @@ impl Worker {
                     self.restarts = 0;
                     old.quit();
                     p.start();
+                    self.events.add(State::StoppingOld, Reason::None, str(old.pid));
                     self.state = WorkerState::StoppingOld(p, old);
                 } else {
+                    self.events.add(State::Restarting, Reason::None, str(old.pid));
                     self.state = WorkerState::Restarting(p, old);
                 }
             },
@@ -172,7 +183,7 @@ impl Worker {
         }
     }
 
-    pub fn reload(&mut self, graceful: bool) {
+    pub fn reload(&mut self, graceful: bool, reason: Reason) {
         let state = std::mem::replace(&mut self.state, WorkerState::Initial);
 
         match state {
@@ -183,84 +194,100 @@ impl Worker {
 
                 if graceful {
                     info!("Reloading worker: (pid:{})", process.pid);
-                    self.state = WorkerState::Reloading(info, process)
+                    self.events.add(State::Reloading, reason, str(process.pid));
+                    self.state = WorkerState::Reloading(info, process);
                 } else {
                     info!("Restarting worker: (pid:{})", process.pid);
-                    self.state = WorkerState::Restarting(info, process)
+                    self.events.add(State::Restarting, reason, str(process.pid));
+                    self.state = WorkerState::Restarting(info, process);
                 }
             },
             WorkerState::Failed | WorkerState::Stopped => {
                 self.restarts = 0;
                 self.state = WorkerState::Initial;
-                self.start();
+                self.start(reason);
             },
             _ => self.state = state,
         }
     }
 
-    pub fn stop(&mut self) {
+    pub fn stop(&mut self, reason: Reason) {
         let state = std::mem::replace(&mut self.state, WorkerState::Initial);
 
         match state {
-            WorkerState::Initial | WorkerState::Stopped | WorkerState::Failed =>
-                self.state = WorkerState::Stopped,
+            WorkerState::Initial | WorkerState::Stopped | WorkerState::Failed => {
+                self.state = WorkerState::Stopped;
+                self.events.add(State::Stopped, reason, None);
+            }
             WorkerState::Starting(process) => {
                 process.quit();
-                self.state = WorkerState::Stopping(process)
+                self.events.add(State::Stopping, reason, str(process.pid));
+                self.state = WorkerState::Stopping(process);
             }
             WorkerState::Stopping(process) =>
                 self.state = WorkerState::Stopping(process),
             WorkerState::StoppingOld(process, old_proc) => {
                 old_proc.quit();
                 process.stop();
-                self.state = WorkerState::Stopping(process)
+                self.events.add(State::Stopping, reason, str(process.pid));
+                self.state = WorkerState::Stopping(process);
             }
             WorkerState::Running(process) => {
                 process.stop();
+                self.events.add(State::Stopping, reason, str(process.pid));
                 self.state = WorkerState::Stopping(process);
             }
             WorkerState::Reloading(process, old_proc) => {
                 process.quit();
                 old_proc.stop();
+                self.events.add(State::Stopping, reason, str(old_proc.pid));
                 self.state = WorkerState::Stopping(old_proc);
             }
             WorkerState::Restarting(process, old_proc) => {
                 process.quit();
                 old_proc.stop();
+                self.events.add(State::Stopping, reason, str(old_proc.pid));
                 self.state = WorkerState::Stopping(old_proc);
             }
         }
     }
 
-    pub fn quit(&mut self) {
+    pub fn quit(&mut self, reason: Reason) {
         let state = std::mem::replace(&mut self.state, WorkerState::Initial);
 
         match state {
-            WorkerState::Initial | WorkerState::Stopped | WorkerState::Failed =>
-                self.state = WorkerState::Stopped,
+            WorkerState::Initial | WorkerState::Stopped | WorkerState::Failed => {
+                self.state = WorkerState::Stopped;
+                self.events.add(State::Stopped, reason, None);
+            }
             WorkerState::Starting(process) => {
                 process.quit();
-                self.state = WorkerState::Stopping(process)
+                self.events.add(State::Stopping, reason, str(process.pid));
+                self.state = WorkerState::Stopping(process);
             }
             WorkerState::Stopping(process) =>
                 self.state = WorkerState::Stopping(process),
             WorkerState::StoppingOld(process, old_proc) => {
                 old_proc.quit();
                 process.quit();
-                self.state = WorkerState::Stopping(process)
+                self.events.add(State::StoppingOld, reason, str(process.pid));
+                self.state = WorkerState::Stopping(process);
             }
             WorkerState::Running(process) => {
                 process.quit();
+                self.events.add(State::Stopping, reason, str(process.pid));
                 self.state = WorkerState::Stopping(process);
             }
             WorkerState::Reloading(process, old_proc) => {
                 process.quit();
                 old_proc.quit();
+                self.events.add(State::Stopping, reason, str(old_proc.pid));
                 self.state = WorkerState::Stopping(old_proc);
             }
             WorkerState::Restarting(process, old_proc) => {
                 process.quit();
                 old_proc.quit();
+                self.events.add(State::Stopping, reason, str(old_proc.pid));
                 self.state = WorkerState::Stopping(old_proc);
             }
         }
@@ -275,35 +302,37 @@ impl Worker {
         if reload {
             match message {
                 &WorkerMessage::reload => {
-                    self.reload(true)
+                    self.reload(true, Reason::WorkerRequest)
                 },
                 &WorkerMessage::restart => {
-                    self.reload(false)
+                    self.reload(false, Reason::WorkerRequest)
                 },
                 _ => (),
             }
         }
     }
 
-    pub fn pause(&mut self) {
+    pub fn pause(&mut self, reason: Reason) {
         match self.state {
             WorkerState::Running(ref process) => {
-                process.pause()
+                process.pause();
+                self.events.add(State::Paused, reason, str(process.pid));
             }
             _ => (),
         }
     }
 
-    pub fn resume(&mut self) {
+    pub fn resume(&mut self, reason: Reason) {
         match self.state {
             WorkerState::Running(ref process) => {
-                process.resume()
+                process.resume();
+                self.events.add(State::Running, reason, str(process.pid));
             }
             _ => (),
         }
     }
 
-    pub fn exited(&mut self, pid: Pid, code: i8) {
+    pub fn exited(&mut self, pid: Pid, err: &ProcessError) {
         let state = std::mem::replace(&mut self.state, WorkerState::Initial);
 
         match state {
@@ -311,17 +340,23 @@ impl Worker {
                 if process.pid != pid {
                     self.state = WorkerState::Running(process);
                 } else {
-                    if code == WORKER_TIMEOUT {
-                        self.state = WorkerState::Running(process);
-                        self.reload(false)
-                    } else {
-                        // kill worker
-                        process.quit();
+                    match err {
+                        &ProcessError::StartupTimeout => {
+                            self.state = WorkerState::Running(process);
+                            self.events.add(State::Running, err.into(), str(pid));
+                            self.reload(false, Reason::ReloadAftreTimeout);
+                            return
+                        }
+                        _ => {
+                            // kill worker
+                            process.quit();
 
-                        // start new worker
-                        self.started = Instant::now();
-                        self.state = WorkerState::Initial;
-                        self.start();
+                            // start new worker
+                            self.started = Instant::now();
+                            self.state = WorkerState::Initial;
+                            self.events.add(State::Stopped, err.into(), str(pid));
+                            self.start(Reason::RestartFailedRunningWorker);
+                        }
                     }
                 }
             }
@@ -330,13 +365,14 @@ impl Worker {
                 if process.pid != pid {
                     self.state = WorkerState::Starting(process);
                 } else {
-                    // can not boot worker, fail immidietly
-                    if code == WORKER_INIT_FAILED || code == WORKER_BOOT_FAILED {
-                        self.state = WorkerState::Failed;
-                    } else {
-                        if code != 0 {
-                            self.restarts += 1;
-                        } else {
+                    match err {
+                        // can not boot worker, fail immidietly
+                        &ProcessError::InitFailed | &ProcessError::BootFailed => {
+                            self.state = WorkerState::Failed;
+                            self.events.add(State::Failed, Reason::from(err), str(pid));
+                            return
+                        }
+                        &ProcessError::ExitCode(0) => {
                             // check for fast restart
                             let now = Instant::now();
                             if now.duration_since(self.started) > Duration::new(10, 0) {
@@ -346,18 +382,22 @@ impl Worker {
                                 self.restarts += 1;
                             }
                         }
+                        _ =>
+                            self.restarts += 1,
+                    }
 
-                        if self.restarts < self.cfg.restarts {
-                            // just in case
-                            let _ = (&process.tx).send(ProcessCommand::Quit);
+                    self.events.add(State::Failed, Reason::from(err), str(pid));
 
-                            // start new worker
-                            self.state = WorkerState::Initial;
-                            self.start();
-                        } else {
-                            error!("Can not start worker (pid:{})", process.pid);
-                            self.state = WorkerState::Failed;
-                        }
+                    if self.restarts < self.cfg.restarts {
+                        // just in case
+                        let _ = (&process.tx).send(ProcessCommand::Quit);
+
+                        // start new worker
+                        self.state = WorkerState::Initial;
+                        self.start(Reason::RestartFailedStartingWorker);
+                    } else {
+                        error!("Can not start worker (pid:{})", process.pid);
+                        self.state = WorkerState::Failed;
                     }
                 }
             }
@@ -365,14 +405,17 @@ impl Worker {
                 // new process died, need to restart
                 if process.pid == pid {
                     // can not boot worker, restore old process
-                    if code == WORKER_INIT_FAILED || code == WORKER_BOOT_FAILED {
-                        error!("Can not start worker (pid:{}), restoring old worker",
-                               process.pid);
-                        self.state = WorkerState::Running(old_proc);
-                    } else {
-                        if code != 0 {
-                            self.restarts += 1;
-                        } else {
+                    match err {
+                        &ProcessError::InitFailed | &ProcessError::BootFailed => {
+                            error!("Can not start worker (pid:{}), restoring old worker",
+                                   process.pid);
+                            self.state = WorkerState::Running(old_proc);
+                            self.events.add(State::ReloadFailed, err.into(), str(pid));
+                            self.events.add(State::Running,
+                                            Reason::RestoreAftreFailed, str(pid));
+                            return
+                        }
+                        &ProcessError::ExitCode(0) => {
                             // check for fast restart
                             let now = Instant::now();
                             if now.duration_since(self.started) > Duration::new(3, 0) {
@@ -382,22 +425,28 @@ impl Worker {
                                 self.restarts += 1;
                             }
                         }
+                        _ =>
+                            self.restarts += 1,
+                    }
 
-                        if self.restarts < self.cfg.restarts {
-                            // start new worker
-                            let (pid, tx) = Process::start(
-                                &self.handle, &self.cfg, self.cmd.clone());
-                            let info = ProcessInfo{pid: pid, tx: tx};
-                            self.state = WorkerState::Reloading(info, old_proc);
-                        } else {
-                            error!("Can not start worker (pid:{}), restoring old worker",
-                                   process.pid);
-                            self.state = WorkerState::Running(old_proc);
-                        }
+                    self.events.add(State::ReloadFailed, err.into(), str(pid));
+
+                    if self.restarts < self.cfg.restarts {
+                        // start new worker
+                        let (pid, tx) = Process::start(
+                            &self.handle, &self.cfg, self.cmd.clone());
+                        let info = ProcessInfo{pid: pid, tx: tx};
+                        self.state = WorkerState::Reloading(info, old_proc);
+                    } else {
+                        error!("Can not start worker (pid:{}), restoring old worker",
+                               process.pid);
+                        self.state = WorkerState::Running(old_proc);
+                        self.events.add(State::Running, Reason::RestoreAftreFailed, str(pid));
                     }
                 }
                 else if old_proc.pid == pid {
                     self.state = WorkerState::Running(process);
+                    self.events.add(State::Running, Reason::None, str(pid));
                 }
                 else {
                     self.state = WorkerState::Reloading(process, old_proc);
@@ -407,14 +456,16 @@ impl Worker {
                 // new process died, need to restart
                 if process.pid == pid {
                     // can not boot worker, restore old process
-                    if code == WORKER_INIT_FAILED || code == WORKER_BOOT_FAILED {
-                        error!("Can not start worker (pid:{}), restoring old worker",
-                               process.pid);
-                        self.state = WorkerState::Running(old_proc);
-                    } else {
-                        if code != 0 {
-                            self.restarts += 1;
-                        } else {
+                    match err {
+                        &ProcessError::InitFailed | &ProcessError::BootFailed => {
+                            error!("Can not start worker (pid:{}), restoring old worker",
+                                   process.pid);
+                            self.state = WorkerState::Running(old_proc);
+                            self.events.add(State::RestartFailed, err.into(), str(pid));
+                            self.events.add(State::Running, Reason::RestoreAftreFailed, str(pid));
+                            return
+                        },
+                        &ProcessError::ExitCode(0) => {
                             // check for fast restart
                             let now = Instant::now();
                             if now.duration_since(self.started) > Duration::new(3, 0) {
@@ -424,22 +475,30 @@ impl Worker {
                                 self.restarts += 1;
                             }
                         }
-
-                        if self.restarts < self.cfg.restarts {
-                            // start new worker
-                            let (pid, tx) = Process::start(
-                                &self.handle, &self.cfg, self.cmd.clone());
-                            let info = ProcessInfo{pid: pid, tx: tx};
-                            self.state = WorkerState::Restarting(info, old_proc);
-                        } else {
-                            error!("Can not start worker (pid:{}), restoring old worker",
-                                   process.pid);
-                            self.state = WorkerState::Running(old_proc);
+                        _ => {
+                            self.restarts += 1;
                         }
+                    }
+
+                    self.events.add(State::RestartFailed, err.into(), str(pid));
+
+                    if self.restarts < self.cfg.restarts {
+                        // start new worker
+                        let (pid, tx) = Process::start(
+                            &self.handle, &self.cfg, self.cmd.clone());
+                        let info = ProcessInfo{pid: pid, tx: tx};
+                        self.state = WorkerState::Restarting(info, old_proc);
+                    } else {
+                        error!("Can not start worker (pid:{}), restoring old worker",
+                               process.pid);
+                        self.state = WorkerState::Running(old_proc);
+                        self.events.add(
+                            State::Running, Reason::RestoreAftreFailed, str(pid));
                     }
                 }
                 else if old_proc.pid == pid {
                     self.state = WorkerState::Running(process);
+                    self.events.add(State::Running, Reason::None, str(pid));
                 } else {
                     self.state = WorkerState::Restarting(process, old_proc);
                 }
@@ -450,10 +509,12 @@ impl Worker {
                     let _ = (&old_proc.tx).send(ProcessCommand::Quit);
                     self.restarts += 1;
                     self.state = WorkerState::Initial;
-                    self.start();
+                    self.events.add(State::Failed, err.into(), str(pid));
+                    self.start(Reason::NewProcessDied);
                 }
                 else if old_proc.pid == pid {
                     self.state = WorkerState::Running(process);
+                    self.events.add(State::Running, Reason::None, str(pid));
                 } else {
                     self.state = WorkerState::StoppingOld(process, old_proc);
                 }
@@ -461,6 +522,7 @@ impl Worker {
             WorkerState::Stopping(process) => {
                 if process.pid == pid {
                     self.state = WorkerState::Stopped;
+                    self.events.add(State::Stopped, err.into(), str(pid));
                 } else {
                     self.state = WorkerState::Stopping(process);
                 }

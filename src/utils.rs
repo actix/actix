@@ -2,6 +2,9 @@ use std::env;
 use std::path::Path;
 use std::ffi::CString;
 
+use nix::unistd::Pid;
+
+
 /// find file in `PATH` environ
 pub(crate) fn find_path(name: &str) -> Option<String>
 {
@@ -33,4 +36,9 @@ pub fn get_env_vars(all: bool) -> Vec<CString> {
         }
     }
     env
+}
+
+
+pub fn str(pid: Pid) -> Option<String> {
+    Some(format!("{}", pid))
 }

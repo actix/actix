@@ -8,20 +8,21 @@ use tokio_core::reactor;
 use nix::unistd::Pid;
 
 use ctx::{self, ContextAware, CtxService};
+use event::{Event, Reason, ServiceStatus};
 use config::ServiceConfig;
 use worker::{Worker, WorkerMessage};
-use process::{WORKER_INIT_FAILED, WORKER_TIMEOUT, ProcessNotification, ProcessError};
+use process::{ProcessNotification, ProcessError};
 
 
 #[derive(PartialEq, Debug)]
 /// Service interface
 pub enum ServiceCommand {
-    /// Gracefully reload workers
-    Reload,
+    // /// Gracefully reload workers
+    // Reload,
     // /// Reconfigure active workers
     // Configure(usize, String),
-    /// Gracefully stopping workers
-    Stop,
+    // /// Gracefully stopping workers
+    // Stop,
     /// Quit all workers
     Quit,
 }
@@ -132,12 +133,19 @@ impl Service {
         srv.clone_and_run()
     }
 
-    pub fn state_description(&self) -> &'static str {
-        match self.state {
+    pub fn status(&self) -> ServiceStatus {
+        let mut events: Vec<(String, Vec<Event>)> = Vec::new();
+        for worker in self.workers.iter() {
+            events.push(
+                (format!("worker({})", worker.idx + 1), Vec::from(&worker.events)));
+        }
+
+        let status = match self.state {
             ServiceState::Running =>
                 if self.paused { "paused" } else { "running" }
             _ => self.state.description()
-        }
+        };
+        (status.to_owned(), events)
     }
 
     pub fn is_stopped(&self) -> bool {
@@ -158,7 +166,7 @@ impl Service {
             else if worker.is_stopped() {
                 if restart_stopped {
                     // strange
-                    worker.reload(true);
+                    worker.reload(true, Reason::None);
                     in_process = true;
                 }
             }
@@ -182,7 +190,7 @@ impl Service {
                     if in_process {
                         for worker in self.workers.iter_mut() {
                             if !(worker.is_stopped() || worker.is_failed()) {
-                                worker.stop()
+                                worker.stop(Reason::SomeWorkersFailed)
                             }
                         }
                         self.state = ServiceState::Starting(task);
@@ -207,7 +215,7 @@ impl Service {
                     if in_process {
                         for worker in self.workers.iter_mut() {
                             if !(worker.is_stopped() || worker.is_failed()) {
-                                worker.stop()
+                                worker.stop(Reason::SomeWorkersFailed)
                             }
                         }
                         self.state = ServiceState::Reloading(task);
@@ -238,9 +246,9 @@ impl Service {
         }
     }
     
-    pub fn exited(&mut self, pid: Pid, code: i8) {
+    pub fn exited(&mut self, pid: Pid, err: &ProcessError) {
         for worker in self.workers.iter_mut() {
-            worker.exited(pid, code);
+            worker.exited(pid, err);
         }
         self.update();
     }
@@ -265,7 +273,7 @@ impl Service {
                 self.paused = false;
                 self.state = ServiceState::Starting(task);
                 for worker in self.workers.iter_mut() {
-                    worker.start();
+                    worker.start(Reason::ConsoleRequest);
                 }
                 Ok(rx)
             }
@@ -279,7 +287,7 @@ impl Service {
             ServiceState::Running => {
                 debug!("Pause service: {:?}", self.name);
                 for worker in self.workers.iter_mut() {
-                    worker.pause();
+                    worker.pause(Reason::ConsoleRequest);
                 }
                 self.paused = true;
                 return Ok(())
@@ -294,7 +302,7 @@ impl Service {
             ServiceState::Running => {
                 debug!("Resume service: {:?}", self.name);
                 for worker in self.workers.iter_mut() {
-                    worker.resume();
+                    worker.resume(Reason::ConsoleRequest);
                 }
                 self.paused = false;
                 return Ok(())
@@ -317,7 +325,7 @@ impl Service {
                 self.paused = false;
                 self.state = ServiceState::Reloading(task);
                 for worker in self.workers.iter_mut() {
-                    worker.reload(graceful);
+                    worker.reload(graceful, Reason::ConsoleRequest);
                 }
                 return Ok(rx)
             }
@@ -325,7 +333,7 @@ impl Service {
         }
     }
 
-    pub fn stop(&mut self, graceful: bool) -> Result<oneshot::Receiver<()>, ()>
+    pub fn stop(&mut self, graceful: bool, reason: Reason) -> Result<oneshot::Receiver<()>, ()>
     {
         let state = std::mem::replace(&mut self.state, ServiceState::Stopped);
 
@@ -355,9 +363,9 @@ impl Service {
         self.state = ServiceState::Stopping(task);
         for worker in self.workers.iter_mut() {
             if graceful {
-                worker.stop();
+                worker.stop(reason.clone());
             } else {
-                worker.quit();
+                worker.quit(reason.clone());
             }
         }
         self.update();
@@ -375,7 +383,7 @@ impl ctx::ContextAware for ServiceCommands {
 
     fn start(&mut self, ctx: &mut Service, _: &mut CtxService<Self>) {
         for worker in ctx.workers.iter_mut() {
-            worker.start();
+            worker.start(Reason::Initial);
         }
     }
 
@@ -390,17 +398,16 @@ impl ctx::ContextAware for ServiceCommands {
             cmd: Result<ServiceMessage, ()>) -> Result<Async<()>, ()>
     {
         match cmd {
-            Ok(ServiceMessage::Command(ServiceCommand::Reload)) => {
-                let _ = ctx.reload(true);
-            }
+            // Ok(ServiceMessage::Command(ServiceCommand::Reload)) => {
+            //    let _ = ctx.reload(true);
+            //}
             // CtxResult::Ok(ServiceCommand::Configure(_num, _exec)) => {
             // }
-            Ok(ServiceMessage::Command(ServiceCommand::Stop)) => {
-                let _ = ctx.stop(true);
-            }
-
+            // Ok(ServiceMessage::Command(ServiceCommand::Stop)) => {
+            //    let _ = ctx.stop(true);
+            // }
             Ok(ServiceMessage::Command(ServiceCommand::Quit)) => {
-                let _ = ctx.stop(false);
+                let _ = ctx.stop(false, Reason::Exit);
             }
 
             Ok(ServiceMessage::Process(id, ProcessNotification::Message(pid, msg))) =>
@@ -410,17 +417,7 @@ impl ctx::ContextAware for ServiceCommands {
             }
             Ok(ServiceMessage::Process(id, ProcessNotification::Failed(pid, err))) =>
             {
-                // TODO: log error
-                match err {
-                    ProcessError::Heartbeat =>
-                        ctx.workers[id].exited(pid, WORKER_TIMEOUT),
-                    ProcessError::FailedToStart(_) =>
-                        ctx.workers[id].exited(pid, WORKER_INIT_FAILED),
-                    ProcessError::StartupTimeout =>
-                        ctx.workers[id].exited(pid, WORKER_TIMEOUT),
-                    ProcessError::StopTimeout =>
-                        ctx.workers[id].exited(pid, 1),
-                }
+                ctx.workers[id].exited(pid, &err);
                 ctx.update();
             },
             Ok(ServiceMessage::Process(id, ProcessNotification::Loaded(pid))) =>

@@ -1,3 +1,4 @@
+use std;
 use std::io;
 use std::error::Error;
 use std::os::unix::io::RawFd;
@@ -19,10 +20,11 @@ use ctx::{Service, FramedContextAware, CtxFramedService, CtxFramedResult};
 use config::ServiceConfig;
 use io::PipeFile;
 use worker::{WorkerMessage, WorkerCommand};
+use event::Reason;
 use exec::exec_worker;
 
 const HEARTBEAT: u64 = 2;
-pub const WORKER_TIMEOUT: i8 = 98;
+const WORKER_TIMEOUT: i8 = 98;
 pub const WORKER_INIT_FAILED: i8 = 99;
 pub const WORKER_BOOT_FAILED: i8 = 100;
 
@@ -86,7 +88,48 @@ pub enum ProcessError {
     StartupTimeout,
     /// Timeout during graceful stop
     StopTimeout,
+    /// Worker configuratin error
+    ConfigError(String),
+    /// Worker init failed
+    InitFailed,
+    /// Worker boot failed
+    BootFailed,
+    /// Worker received signal
+    Signal(usize),
+    /// Worker exited with code
+    ExitCode(i8),
 }
+
+impl ProcessError {
+    pub fn from(code: i8) -> ProcessError {
+        match code {
+            WORKER_TIMEOUT => ProcessError::StartupTimeout,
+            WORKER_INIT_FAILED => ProcessError::InitFailed,
+            WORKER_BOOT_FAILED => ProcessError::BootFailed,
+            code => ProcessError::ExitCode(code),
+        }
+    }
+}
+
+impl<'a> std::convert::From<&'a ProcessError> for Reason
+{
+    fn from(ob: &'a ProcessError) -> Self {
+        match ob {
+            &ProcessError::Heartbeat => Reason::HeartbeatFailed,
+            &ProcessError::FailedToStart(ref err) =>
+                Reason::FailedToStart(
+                    if let &Some(ref e) = err { Some(format!("{}", e))} else {None}),
+            &ProcessError::StartupTimeout => Reason::StartupTimeout,
+            &ProcessError::StopTimeout => Reason::StopTimeout,
+            &ProcessError::ConfigError(ref err) => Reason::WorkerError(err.clone()),
+            &ProcessError::InitFailed => Reason::InitFailed,
+            &ProcessError::BootFailed => Reason::BootFailed,
+            &ProcessError::Signal(sig) => Reason::Signal(sig),
+            &ProcessError::ExitCode(code) => Reason::ExitCode(code),
+        }
+    }
+}
+
 
 impl Process {
 
@@ -279,6 +322,13 @@ impl FramedContextAware for ProcessManagement {
                 }
                 WorkerMessage::cfgerror(msg) => {
                     error!("Worker config error: {} (pid:{})", msg, ctx.pid);
+                    if let Err(_) = ctx.cmd.send(ProcessNotification::Failed(
+                        ctx.pid, ProcessError::ConfigError(msg)))
+                    {
+                        // parent is dead
+                        return self.call(
+                            ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
+                    }
                 }
             }
             Ok(ProcessMessage::StartupTimeout) => {

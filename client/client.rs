@@ -3,13 +3,15 @@ use std::io::{self, Read, Write};
 use std::time::Duration;
 use std::os::unix::net::UnixStream;
 
+use chrono::prelude::*;
 use serde_json as json;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, BytesMut};
 use tokio_io::codec::{Encoder, Decoder};
 
-use {MasterRequest, MasterResponse};
 use version::PKG_INFO;
+use event::Reason;
+use master_types::{MasterRequest, MasterResponse};
 
 /// Console commands
 #[derive(Clone, Debug)]
@@ -195,8 +197,23 @@ pub fn run(cmd: ClientCommand, sock: String) -> bool {
                 println!("done");
                 return true
             }
-            Ok(MasterResponse::ServiceStatus(s)) => {
-                println!("Service status: {}", s);
+            Ok(MasterResponse::ServiceStatus(status)) => {
+                println!("Service status: {}", status.0);
+                for worker in status.1 {
+                    for ev in worker.1 {
+                        let dt = Local.timestamp(ev.timestamp as i64, 0);
+                        print!("{} {}: ", worker.0, dt.format("%Y-%m-%d %H:%M:%S"));
+                        if let Some(ref pid) = ev.pid {
+                            print!("({}) ", pid)
+                        }
+                        print!("{:?}", ev.state);
+                        match ev.reason {
+                            Reason::None | Reason::Initial => (),
+                            _ => print!(", reason: {:?}", ev.reason),
+                        }
+                        println!("");
+                    }
+                }
                 return true
             }
             Ok(MasterResponse::ServiceFailed) => {

@@ -28,74 +28,8 @@ use config::Config;
 use version::PKG_INFO;
 use cmd::{CommandCenter, CommandError};
 use service::{StartStatus, ReloadStatus, ServiceOperationError};
+use master_types::{MasterRequest, MasterResponse};
 
-/// Master command
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag="cmd", content="data")]
-pub enum MasterRequest {
-    /// Ping master process
-    Ping,
-    /// Status
-    Status(String),
-    /// Start service
-    Start(String),
-    /// Pause service
-    Pause(String),
-    /// Resume service
-    Resume(String),
-    /// Gracefully reload service
-    Reload(String),
-    /// Restart service
-    Restart(String),
-    /// Gracefully stop service
-    Stop(String),
-    /// Pid of the master process
-    Pid,
-    /// Quit process
-    Quit,
-    /// Version if the master
-    Version,
-}
-
-/// Master responses
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag="cmd", content="data")]
-pub enum MasterResponse {
-    Pong,
-    Done,
-    /// Pid of the master process
-    Pid(String),
-    /// Version of the master process
-    Version(String),
-
-    /// Service started
-    ServiceStarted,
-    /// Service Stopped
-    ServiceStopped,
-    /// Service failed, service is not available
-    ServiceFailed,
-    /// Service status
-    ServiceStatus(String),
-
-    /// System not ready
-    ErrorNotReady,
-    /// Service is unknown
-    ErrorUnknownService,
-    /// Service is starting
-    ErrorServiceStarting,
-    /// Service is running
-    ErrorServiceRunning,
-    /// Service is reloading
-    ErrorServiceReloading,
-    /// Service is stopping
-    ErrorServiceStopping,
-    /// Service is stopped
-    ErrorServiceStopped,
-    /// Service is failed
-    ErrorServiceFailed,
-}
 
 pub struct Master {
     cfg: Rc<Config>,
@@ -315,8 +249,8 @@ impl FramedContextAware for MasterClient {
                     MasterRequest::Status(name) => {
                         info!("Client command: Service status '{}'", name);
                         match ctx.cmd.borrow().service_status(name.as_str()) {
-                            Ok(s) => srv.send_buffered(
-                                MasterResponse::ServiceStatus(s.to_owned())),
+                            Ok(status) => srv.send_buffered(
+                                MasterResponse::ServiceStatus(status)),
                             Err(err) => self.handle_error(err, srv),
                         }
                     }
