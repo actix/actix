@@ -57,6 +57,7 @@ pub struct Process {
     hb: Instant,
     cmd: unsync::mpsc::UnboundedSender<ProcessNotification>,
     timeout: Duration,
+    startup_timeout: u64,
     shutdown_timeout: u64,
 }
 
@@ -158,6 +159,7 @@ impl Process {
             hb: Instant::now(),
             cmd: cmd,
             timeout: Duration::new(cfg.timeout as u64, 0),
+            startup_timeout: cfg.startup_timeout as u64,
             shutdown_timeout: cfg.shutdown_timeout as u64,
         };
         ProcessManagement.build(process, pipe.framed(TransportCodec), handle)
@@ -334,7 +336,7 @@ impl FramedContextAware for ProcessManagement {
             Ok(ProcessMessage::StartupTimeout) => {
                 match ctx.state {
                     ProcessState::Starting => {
-                        debug!("Worker startup timeout");
+                        error!("Worker startup timeout after {} secs", ctx.startup_timeout);
                         ctx.state = ProcessState::Failed;
                         let _ = ctx.cmd.send(ProcessNotification::Failed(
                             ctx.pid, ProcessError::StartupTimeout));
@@ -347,7 +349,7 @@ impl FramedContextAware for ProcessManagement {
             Ok(ProcessMessage::StopTimeout) => {
                 match ctx.state {
                     ProcessState::Stopping => {
-                        debug!("Worker shutdown timeout");
+                        info!("Worker shutdown timeout aftre {} secs", ctx.shutdown_timeout);
                         ctx.state = ProcessState::Failed;
                         let _ = ctx.cmd.send(ProcessNotification::Failed(
                             ctx.pid, ProcessError::StopTimeout));
@@ -362,7 +364,8 @@ impl FramedContextAware for ProcessManagement {
                 if let ProcessState::Running = ctx.state {
                     if Instant::now().duration_since(ctx.hb) > ctx.timeout {
                         // heartbeat timed out
-                        info!("Worker heartbeat failed (pid:{})", ctx.pid);
+                        error!("Worker heartbeat failed (pid:{}) after {:?} secs",
+                               ctx.pid, ctx.timeout);
                         let _ = (&ctx.cmd).send(
                             ProcessNotification::Failed(ctx.pid, ProcessError::Heartbeat));
                     } else {

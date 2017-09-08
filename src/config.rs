@@ -211,6 +211,17 @@ pub struct ServiceConfig {
     /// the receipt of the restart signal) are force killed.
     #[serde(default="config_helpers::default_shutdown_timeout")]
     pub shutdown_timeout: u32,
+
+    /// A path to a file where `fectld` should redirect `stdout` for this service.
+    ///
+    /// By default redirect for stdout is not enabled
+    pub stdout: Option<String>,
+
+    /// A path to a file where `fectld` should redirect `stderr` for this service.
+    ///
+    /// By default redirect for stderr is not enabled
+    pub stderr: Option<String>,
+
 }
 
 /// Loging configuration

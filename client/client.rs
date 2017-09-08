@@ -204,7 +204,7 @@ pub fn run(cmd: ClientCommand, sock: String) -> bool {
                         let dt = Local.timestamp(ev.timestamp as i64, 0);
                         print!("{} {}: ", worker.0, dt.format("%Y-%m-%d %H:%M:%S"));
                         if let Some(ref pid) = ev.pid {
-                            print!("({}) ", pid)
+                            print!("(pid:{}) ", pid)
                         }
                         print!("{:?}", ev.state);
                         match ev.reason {

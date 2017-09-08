@@ -7,9 +7,9 @@ directory = "./"
 name = "test"
 num = 1
 directory = "./tests/"
-timeout = 10
-startup_timeout = 30
-shutdown_timeout = 30
+timeout = 5
+startup_timeout = 10
+shutdown_timeout = 10
 command = "python -m fectl.run asyncio"
 environ = ["ENV_KEY1=value1"]
 

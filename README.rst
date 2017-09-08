@@ -34,7 +34,7 @@ allowable configuration values are as follows.
   :program:`fectld` uses custom json protocol to communicate with master process
   over this socket.
 
-  *Default*:  fectld.sock
+           *Default*:  fectld.sock
 
   *Required*:  No.
 

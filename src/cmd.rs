@@ -241,8 +241,9 @@ impl CommandCenterCommands {
         srv.add_fut_stream(
             Box::new(
                 Signal::new(libc::SIGHUP, &handle)
-                    .map(|sig| Box::new(
-                        sig.map(|_| Command::Reload).map_err(|_| ()))
+                    .map(|sig| Box::new(sig.map(|_| {
+                        info!("SIGHUP received, reloading");
+                        Command::Reload}).map_err(|_| ()))
                          as Box<CtxServiceStream<CommandCenterCommands>>)
                     .map_err(|_| ()))
         );
@@ -251,8 +252,9 @@ impl CommandCenterCommands {
         srv.add_fut_stream(
             Box::new(
                 Signal::new(libc::SIGTERM, &handle)
-                    .map(|sig| Box::new(
-                        sig.map(|_| Command::Stop).map_err(|_| ()))
+                    .map(|sig| Box::new(sig.map(|_| {
+                        info!("SIGTERM received, stopping");
+                        Command::Stop}).map_err(|_| ()))
                          as Box<CtxServiceStream<CommandCenterCommands>>)
                     .map_err(|_| ()))
         );
@@ -261,8 +263,9 @@ impl CommandCenterCommands {
         srv.add_fut_stream(
             Box::new(
                 tokio_signal::ctrl_c(&handle)
-                    .map(|sig| Box::new(
-                        sig.map(|_| Command::Quit).map_err(|_| ()))
+                    .map(|sig| Box::new(sig.map(|_| {
+                        info!("SIGINT received, exiting");
+                        Command::Quit}).map_err(|_| ()))
                          as Box<CtxServiceStream<CommandCenterCommands>>)
                     .map_err(|_| ()))
         );
@@ -271,8 +274,9 @@ impl CommandCenterCommands {
         srv.add_fut_stream(
             Box::new(
                 Signal::new(libc::SIGQUIT, &handle)
-                    .map(|sig| Box::new(
-                        sig.map(|_| Command::Quit).map_err(|_| ()))
+                    .map(|sig| Box::new(sig.map(|_| {
+                        info!("SIGQUIT received, exiting");
+                        Command::Quit}).map_err(|_| ()))
                          as Box<CtxServiceStream<CommandCenterCommands>>)
                     .map_err(|_| ()))
         );
@@ -281,8 +285,9 @@ impl CommandCenterCommands {
         srv.add_fut_stream(
             Box::new(
                 Signal::new(libc::SIGCHLD, &handle)
-                    .map(|sig| Box::new(
-                        sig.map(|_| Command::ReapWorkers).map_err(|_| ()))
+                    .map(|sig| Box::new(sig.map(|_| {
+                        debug!("SIGCHLD received");
+                        Command::ReapWorkers}).map_err(|_| ()))
                          as Box<CtxServiceStream<CommandCenterCommands>>)
                     .map_err(|_| ()))
         );
@@ -373,6 +378,7 @@ impl ContextAware for CommandCenterCommands {
                             continue
                         }
                         Ok(WaitStatus::Signaled(pid, sig, _)) => {
+                            info!("Worker {} exit by signal {:?}", pid, sig);
                             let err = ProcessError::Signal(sig as usize);
                             for srv in ctx.services.values_mut() {
                                 srv.borrow_mut().exited(pid, &err);

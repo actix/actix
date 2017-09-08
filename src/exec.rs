@@ -2,12 +2,13 @@
 use std;
 use std::ffi::CString;
 use std::io::{Read, Write};
-use std::os::unix::io::{RawFd, FromRawFd};
+use std::os::unix::io::{RawFd, AsRawFd, FromRawFd};
 
+use libc;
 use bytes::{BytesMut, Buf, BufMut, IntoBuf};
 use byteorder::BigEndian;
 use serde_json as json;
-use nix::unistd::{chdir, execve, setuid, setgid};
+use nix::unistd::{chdir, dup2, execve, setuid, setgid};
 
 use utils;
 use worker::{WorkerCommand, WorkerMessage};
@@ -101,6 +102,36 @@ pub fn exec_worker(cfg: &ServiceConfig, read: RawFd, write: RawFd) {
     };
     let mut args: Vec<_> = vec![CString::new(path.as_str()).unwrap()];
     args.extend(iter.map(|s| CString::new(s).unwrap()).collect::<Vec<_>>());
+
+    // redirect stdout and stderr
+    if let Some(ref stdout) = cfg.stdout {
+        match std::fs::OpenOptions::new().append(true).create(true).open(stdout)
+        {
+            Ok(f) => {
+            let _ = dup2(f.as_raw_fd(), libc::STDOUT_FILENO);
+        }
+            Err(err) => {
+                send_msg(&mut file, WorkerMessage::cfgerror(
+                    format!("Can open stdout file {}: {}", stdout, err)));
+                std::process::exit(WORKER_INIT_FAILED as i32);
+            }
+        }
+    }
+
+    if let Some(ref stderr) = cfg.stderr {
+        match std::fs::OpenOptions::new().append(true).create(true).open(stderr)
+        {
+            Ok(f) => {
+                let _ = dup2(f.as_raw_fd(), libc::STDERR_FILENO);
+
+            },
+            Err(err) => {
+                send_msg(&mut file, WorkerMessage::cfgerror(
+                    format!("Can open stderr file {}: {}", stderr, err)));
+                std::process::exit(WORKER_INIT_FAILED as i32);
+            }
+        }
+    }
 
     debug!("Starting worker: {:?}", cfg.command);
 

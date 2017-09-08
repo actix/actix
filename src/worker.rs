@@ -84,6 +84,7 @@ pub struct Worker {
     state: WorkerState,
     handle: reactor::Handle,
     pub events: Events,
+    pub restore_from_fail: bool,
     started: Instant,
     restarts: u16,
     cmd: unsync::mpsc::UnboundedSender<ProcessNotification>,
@@ -102,6 +103,7 @@ impl Worker {
             handle: handle.clone(),
             events: Events::new(50),
             started: Instant::now(),
+            restore_from_fail: false,
             restarts: 0,
             cmd: cmd}
     }
@@ -129,8 +131,8 @@ impl Worker {
                     p.start();
                     self.events.add(State::Running, Reason::None, str(p.pid));
                     self.state = WorkerState::Running(p);
+                    self.restore_from_fail = false;
                 } else {
-                    self.events.add(State::Starting, Reason::None, str(p.pid));
                     self.state = WorkerState::Starting(p);
                 }
             }
@@ -142,7 +144,6 @@ impl Worker {
                     self.events.add(State::StoppingOld, Reason::None, str(old.pid));
                     self.state = WorkerState::StoppingOld(p, old);
                 } else {
-                    self.events.add(State::Reloading, Reason::None, str(old.pid));
                     self.state = WorkerState::Reloading(p, old);
                 }
             },
@@ -154,7 +155,6 @@ impl Worker {
                     self.events.add(State::StoppingOld, Reason::None, str(old.pid));
                     self.state = WorkerState::StoppingOld(p, old);
                 } else {
-                    self.events.add(State::Restarting, Reason::None, str(old.pid));
                     self.state = WorkerState::Restarting(p, old);
                 }
             },
@@ -172,6 +172,7 @@ impl Worker {
     pub fn is_failed(&self) -> bool {
         match self.state {
             WorkerState::Failed => true,
+            WorkerState::Running(_) => self.restore_from_fail,
             _ => false
         }
     }
@@ -344,6 +345,7 @@ impl Worker {
                         &ProcessError::StartupTimeout => {
                             self.state = WorkerState::Running(process);
                             self.events.add(State::Running, err.into(), str(pid));
+                            self.restore_from_fail = true;
                             self.reload(false, Reason::ReloadAftreTimeout);
                             return
                         }
@@ -409,10 +411,11 @@ impl Worker {
                         &ProcessError::InitFailed | &ProcessError::BootFailed => {
                             error!("Can not start worker (pid:{}), restoring old worker",
                                    process.pid);
-                            self.state = WorkerState::Running(old_proc);
+                            self.restore_from_fail = true;
                             self.events.add(State::ReloadFailed, err.into(), str(pid));
                             self.events.add(State::Running,
-                                            Reason::RestoreAftreFailed, str(pid));
+                                            Reason::RestoreAftreFailed, str(old_proc.pid));
+                            self.state = WorkerState::Running(old_proc);
                             return
                         }
                         &ProcessError::ExitCode(0) => {
@@ -440,13 +443,17 @@ impl Worker {
                     } else {
                         error!("Can not start worker (pid:{}), restoring old worker",
                                process.pid);
+                        self.restore_from_fail = true;
+                        self.events.add(State::Running,
+                                        Reason::RestoreAftreFailed, str(old_proc.pid));
                         self.state = WorkerState::Running(old_proc);
-                        self.events.add(State::Running, Reason::RestoreAftreFailed, str(pid));
                     }
                 }
                 else if old_proc.pid == pid {
+                    self.restore_from_fail = false;
+                    self.events.add(State::Stopped, Reason::None, str(pid));
+                    self.events.add(State::Running, Reason::None, str(process.pid));
                     self.state = WorkerState::Running(process);
-                    self.events.add(State::Running, Reason::None, str(pid));
                 }
                 else {
                     self.state = WorkerState::Reloading(process, old_proc);
@@ -460,9 +467,11 @@ impl Worker {
                         &ProcessError::InitFailed | &ProcessError::BootFailed => {
                             error!("Can not start worker (pid:{}), restoring old worker",
                                    process.pid);
-                            self.state = WorkerState::Running(old_proc);
+                            self.restore_from_fail = true;
                             self.events.add(State::RestartFailed, err.into(), str(pid));
-                            self.events.add(State::Running, Reason::RestoreAftreFailed, str(pid));
+                            self.events.add(State::Running,
+                                            Reason::RestoreAftreFailed, str(old_proc.pid));
+                            self.state = WorkerState::Running(old_proc);
                             return
                         },
                         &ProcessError::ExitCode(0) => {
@@ -491,14 +500,17 @@ impl Worker {
                     } else {
                         error!("Can not start worker (pid:{}), restoring old worker",
                                process.pid);
-                        self.state = WorkerState::Running(old_proc);
+                        self.restore_from_fail = true;
                         self.events.add(
-                            State::Running, Reason::RestoreAftreFailed, str(pid));
+                            State::Running, Reason::RestoreAftreFailed, str(old_proc.pid));
+                        self.state = WorkerState::Running(old_proc);
                     }
                 }
                 else if old_proc.pid == pid {
+                    self.restore_from_fail = false;
+                    self.events.add(State::Stopped, Reason::None, str(pid));
+                    self.events.add(State::Running, Reason::None, str(process.pid));
                     self.state = WorkerState::Running(process);
-                    self.events.add(State::Running, Reason::None, str(pid));
                 } else {
                     self.state = WorkerState::Restarting(process, old_proc);
                 }
@@ -513,8 +525,10 @@ impl Worker {
                     self.start(Reason::NewProcessDied);
                 }
                 else if old_proc.pid == pid {
+                    self.restore_from_fail = false;
+                    self.events.add(State::Stopped, Reason::None, str(pid));
+                    self.events.add(State::Running, Reason::None, str(process.pid));
                     self.state = WorkerState::Running(process);
-                    self.events.add(State::Running, Reason::None, str(pid));
                 } else {
                     self.state = WorkerState::StoppingOld(process, old_proc);
                 }

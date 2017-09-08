@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std;
 use std::rc::Rc;
 use std::cell::RefCell;
