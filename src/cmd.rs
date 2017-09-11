@@ -89,7 +89,7 @@ impl CommandCenter {
     pub fn stop(&mut self) -> oneshot::Receiver<bool> {
         let (tx, rx) = oneshot::channel();
         self.stop_waiters.push(tx);
-        let _ = self.tx.send(Command::Stop);
+        let _ = self.tx.unbounded_send(Command::Stop);
         rx
     }
 
@@ -99,6 +99,21 @@ impl CommandCenter {
             State::Running => {
                 match self.services.get(name) {
                     Some(service) => Ok(service.borrow().status()),
+                    None => Err(CommandError::UnknownService),
+                }
+            }
+            _ => {
+                Err(CommandError::NotReady)
+            }
+        }
+    }
+
+    pub fn service_worker_pids(&self, name: &str) -> Result<Vec<String>, CommandError>
+    {
+        match self.state {
+            State::Running => {
+                match self.services.get(name) {
+                    Some(service) => Ok(service.borrow().pids()),
                     None => Err(CommandError::UnknownService),
                 }
             }

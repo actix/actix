@@ -46,6 +46,7 @@ pub fn load_config() -> Option<(ClientCommand, String)> {
 
     let cmd = match cmd.as_str() {
         "status" => ClientCommand::Status(name),
+        "spid" => ClientCommand::SPid(name),
         "start" => ClientCommand::Start(name),
         "stop" => ClientCommand::Stop(name),
         "reload" => ClientCommand::Reload(name),

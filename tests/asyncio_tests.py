@@ -27,7 +27,6 @@ async def simple(request):
 
 
 async def init():
-    await asyncio.sleep(30)
     app = Application()
     app.router.add_get('/', intro)
     app.router.add_get('/simple', simple)

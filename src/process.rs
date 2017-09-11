@@ -145,7 +145,7 @@ impl Process {
             Ok(res) => res,
             Err(err) => {
                 let pid = Pid::from_raw(-1);
-                let _ = cmd.send(
+                let _ = cmd.unbounded_send(
                     ProcessNotification::Failed(pid, ProcessError::FailedToStart(Some(err))));
 
                 return (pid, tx)
@@ -279,7 +279,8 @@ impl FramedContextAware for ProcessManagement {
 
                             ctx.state = ProcessState::Running;
 
-                            if let Err(_) = ctx.cmd.send(ProcessNotification::Loaded(ctx.pid)) {
+                            if let Err(_) = ctx.cmd.unbounded_send(
+                                ProcessNotification::Loaded(ctx.pid)) {
                                 // parent is dead
                                 return self.call(
                                     ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
@@ -305,7 +306,7 @@ impl FramedContextAware for ProcessManagement {
                 WorkerMessage::reload => {
                     // worker requests reload
                     info!("Worker requests reload (pid:{})", ctx.pid);
-                    if let Err(_) = ctx.cmd.send(
+                    if let Err(_) = ctx.cmd.unbounded_send(
                         ProcessNotification::Message(ctx.pid, WorkerMessage::reload)) {
                         // parent is dead
                         return self.call(
@@ -315,7 +316,7 @@ impl FramedContextAware for ProcessManagement {
                 WorkerMessage::restart => {
                     // worker requests reload
                     info!("Worker requests restart (pid:{})", ctx.pid);
-                    if let Err(_) = ctx.cmd.send(
+                    if let Err(_) = ctx.cmd.unbounded_send(
                         ProcessNotification::Message(ctx.pid, WorkerMessage::restart)) {
                         // parent is dead
                         return self.call(
@@ -324,7 +325,7 @@ impl FramedContextAware for ProcessManagement {
                 }
                 WorkerMessage::cfgerror(msg) => {
                     error!("Worker config error: {} (pid:{})", msg, ctx.pid);
-                    if let Err(_) = ctx.cmd.send(ProcessNotification::Failed(
+                    if let Err(_) = ctx.cmd.unbounded_send(ProcessNotification::Failed(
                         ctx.pid, ProcessError::ConfigError(msg)))
                     {
                         // parent is dead
@@ -338,7 +339,7 @@ impl FramedContextAware for ProcessManagement {
                     ProcessState::Starting => {
                         error!("Worker startup timeout after {} secs", ctx.startup_timeout);
                         ctx.state = ProcessState::Failed;
-                        let _ = ctx.cmd.send(ProcessNotification::Failed(
+                        let _ = ctx.cmd.unbounded_send(ProcessNotification::Failed(
                             ctx.pid, ProcessError::StartupTimeout));
                         let _ = kill(ctx.pid, Signal::SIGKILL);
                         return Ok(Async::Ready(()))
@@ -351,7 +352,7 @@ impl FramedContextAware for ProcessManagement {
                     ProcessState::Stopping => {
                         info!("Worker shutdown timeout aftre {} secs", ctx.shutdown_timeout);
                         ctx.state = ProcessState::Failed;
-                        let _ = ctx.cmd.send(ProcessNotification::Failed(
+                        let _ = ctx.cmd.unbounded_send(ProcessNotification::Failed(
                             ctx.pid, ProcessError::StopTimeout));
                         let _ = kill(ctx.pid, Signal::SIGKILL);
                         return Ok(Async::Ready(()))
@@ -366,7 +367,7 @@ impl FramedContextAware for ProcessManagement {
                         // heartbeat timed out
                         error!("Worker heartbeat failed (pid:{}) after {:?} secs",
                                ctx.pid, ctx.timeout);
-                        let _ = (&ctx.cmd).send(
+                        let _ = (&ctx.cmd).unbounded_send(
                             ProcessNotification::Failed(ctx.pid, ProcessError::Heartbeat));
                     } else {
                         // send heartbeat to worker process and reset hearbeat timer

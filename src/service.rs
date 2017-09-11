@@ -150,6 +150,16 @@ impl Service {
         (status.to_owned(), events)
     }
 
+    pub fn pids(&self) -> Vec<String> {
+        let mut pids = Vec::new();
+        for worker in self.workers.iter() {
+            if let Some(pid) = worker.pid() {
+                pids.push(format!("{}", pid));
+            }
+        }
+        pids
+    }
+
     pub fn is_stopped(&self) -> bool {
         match self.state {
             ServiceState::Failed | ServiceState::Stopped => true,

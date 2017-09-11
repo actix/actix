@@ -23,6 +23,7 @@ pub enum ClientCommand {
     Restart(String),
     Stop(String),
     Status(String),
+    SPid(String),
     Pid,
     Quit,
     Version,
@@ -122,6 +123,8 @@ pub fn run(cmd: ClientCommand, sock: String) -> bool {
     let res = match cmd.clone() {
         ClientCommand::Status(name) =>
             send_command(&mut stream, MasterRequest::Status(name)),
+        ClientCommand::SPid(name) =>
+            send_command(&mut stream, MasterRequest::SPid(name)),
         ClientCommand::Pause(name) => {
             println!("Pause `{}` service.", name);
             send_command(&mut stream, MasterRequest::Pause(name))
@@ -213,6 +216,12 @@ pub fn run(cmd: ClientCommand, sock: String) -> bool {
                         }
                         println!("");
                     }
+                }
+                return true
+            }
+            Ok(MasterResponse::ServiceWorkerPids(pids)) => {
+                for pid in pids {
+                    println!("{}", pid);
                 }
                 return true
             }

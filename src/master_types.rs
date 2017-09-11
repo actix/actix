@@ -9,6 +9,8 @@ pub enum MasterRequest {
     Ping,
     /// Status
     Status(String),
+    /// Service pids
+    SPid(String),
     /// Start service
     Start(String),
     /// Pause service
@@ -49,6 +51,8 @@ pub enum MasterResponse {
     ServiceFailed,
     /// Service status
     ServiceStatus(ServiceStatus),
+    /// Service workers pids
+    ServiceWorkerPids(Vec<String>),
 
     /// System not ready
     ErrorNotReady,

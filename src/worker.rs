@@ -62,19 +62,19 @@ struct ProcessInfo {
 
 impl ProcessInfo {
     fn stop(&self) {
-        let _ = self.tx.send(ProcessCommand::Stop);
+        let _ = self.tx.unbounded_send(ProcessCommand::Stop);
     }
     fn quit(&self) {
-        let _ = self.tx.send(ProcessCommand::Quit);
+        let _ = self.tx.unbounded_send(ProcessCommand::Quit);
     }
     fn start(&self) {
-        let _ = self.tx.send(ProcessCommand::Start);
+        let _ = self.tx.unbounded_send(ProcessCommand::Start);
     }
     fn pause(&self) {
-        let _ = self.tx.send(ProcessCommand::Pause);
+        let _ = self.tx.unbounded_send(ProcessCommand::Pause);
     }
     fn resume(&self) {
-        let _ = self.tx.send(ProcessCommand::Resume);
+        let _ = self.tx.unbounded_send(ProcessCommand::Resume);
     }
 }
 
@@ -184,6 +184,18 @@ impl Worker {
         }
     }
 
+    pub fn pid(&self) -> Option<Pid> {
+        match self.state {
+            WorkerState::Running(ref process) => {
+                Some(process.pid)
+            }
+            WorkerState::StoppingOld(ref process, _) => {
+                Some(process.pid)
+            }
+            _ => None
+        }
+    }
+    
     pub fn reload(&mut self, graceful: bool, reason: Reason) {
         let state = std::mem::replace(&mut self.state, WorkerState::Initial);
 
@@ -392,7 +404,7 @@ impl Worker {
 
                     if self.restarts < self.cfg.restarts {
                         // just in case
-                        let _ = (&process.tx).send(ProcessCommand::Quit);
+                        let _ = (&process.tx).unbounded_send(ProcessCommand::Quit);
 
                         // start new worker
                         self.state = WorkerState::Initial;
@@ -518,7 +530,7 @@ impl Worker {
             WorkerState::StoppingOld(process, old_proc) => {
                 // new process died, need to restart
                 if process.pid == pid {
-                    let _ = (&old_proc.tx).send(ProcessCommand::Quit);
+                    let _ = (&old_proc.tx).unbounded_send(ProcessCommand::Quit);
                     self.restarts += 1;
                     self.state = WorkerState::Initial;
                     self.events.add(State::Failed, err.into(), str(pid));

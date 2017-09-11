@@ -210,7 +210,6 @@ impl FramedContextAware for MasterClient {
     fn finished(&mut self, _: &mut Master, _: &mut CtxFramedService<Self>)
                 -> Result<Async<()>, ()>
     {
-        debug!("Client connection finished");
         Ok(Async::Ready(()))
     }
 
@@ -247,10 +246,18 @@ impl FramedContextAware for MasterClient {
                         }
                     }
                     MasterRequest::Status(name) => {
-                        info!("Client command: Service status '{}'", name);
+                        debug!("Client command: Service status '{}'", name);
                         match ctx.cmd.borrow().service_status(name.as_str()) {
                             Ok(status) => srv.send_buffered(
                                 MasterResponse::ServiceStatus(status)),
+                            Err(err) => self.handle_error(err, srv),
+                        }
+                    }
+                    MasterRequest::SPid(name) => {
+                        debug!("Client command: Service status '{}'", name);
+                        match ctx.cmd.borrow().service_worker_pids(name.as_str()) {
+                            Ok(pids) => srv.send_buffered(
+                                MasterResponse::ServiceWorkerPids(pids)),
                             Err(err) => self.handle_error(err, srv),
                         }
                     }
