@@ -61,4 +61,4 @@ serde_derive = "*"
 [profile.release]
 lto = true
 opt-level = 3
-debug = false
+debug = true

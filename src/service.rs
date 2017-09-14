@@ -389,7 +389,7 @@ impl Service {
 pub struct ServiceCommands;
 
 impl ctx::ContextAware for ServiceCommands {
-    type Context = Service;
+    type State = Service;
     type Message = Result<ServiceMessage, ()>;
     type Result = Result<(), ()>;
 

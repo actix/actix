@@ -343,7 +343,7 @@ impl CommandCenterCommands {
 
 impl ContextAware for CommandCenterCommands {
 
-    type Context = CommandCenter;
+    type State = CommandCenter;
     type Message = Result<Command, ()>;
     type Result = Result<(), ()>;
 

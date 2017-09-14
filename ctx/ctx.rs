@@ -41,54 +41,54 @@ impl<T, E> CtxMessage for Result<T, E> {
 
 pub trait ContextAware: Sized + 'static {
 
-    type Context;
+    type State;
     type Message: CtxMessage;
     type Result: CtxMessage;
 
     /// Create new context for `Context` and stream `S` and run
-    fn run<S>(self, ctx: Self::Context, stream: S, handle: &Handle)
+    fn run<S>(self, st: Self::State, stream: S, handle: &Handle)
         where S: Stream<Item=<<Self as ContextAware>::Message as CtxMessage>::Item,
                         Error=<<Self as ContextAware>::Message as CtxMessage>::Error> + 'static,
     {
         CtxService {
-            ctx: Rc::new(RefCell::new(ctx)),
+            st: Rc::new(RefCell::new(st)),
             flags: State::empty(),
             handle: handle.clone(),
-            exec: self,
+            ctx: self,
             stream: Box::new(stream),
             items: Vec::new(),
         }.run()
     }
 
     /// Create new context for `Context` and stream `S`
-    fn clone_and_run<S>(self, ctx: Self::Context, stream: S, handle: &Handle)
-                        -> Rc<RefCell<Self::Context>>
+    fn clone_and_run<S>(self, st: Self::State, stream: S, handle: &Handle)
+                        -> Rc<RefCell<Self::State>>
         where S: Stream<Item=<<Self as ContextAware>::Message as CtxMessage>::Item,
                         Error=<<Self as ContextAware>::Message as CtxMessage>::Error> + 'static
     {
         let srv = CtxService {
-            ctx: Rc::new(RefCell::new(ctx)),
+            st: Rc::new(RefCell::new(st)),
             flags: State::empty(),
             handle: handle.clone(),
-            exec: self,
+            ctx: self,
             stream: Box::new(stream),
             items: Vec::new(),
         };
-        let ctx = srv.clone();
+        let st = srv.clone();
         srv.run();
-        ctx
+        st
     }
 
     /// Spawn shared context for stream `S`
-    fn spawn<S>(self, srv: &Service<Self::Context>, stream: S)
+    fn spawn<S>(self, srv: &Service<Self::State>, stream: S)
         where S: Stream<Item=<Self::Message as CtxMessage>::Item,
                         Error=<Self::Message as CtxMessage>::Error> + 'static,
     {
         CtxService {
-            ctx: srv.clone(),
+            st: srv.clone(),
             flags: State::empty(),
             handle: srv.handle().clone(),
-            exec: self,
+            ctx: self,
             stream: Box::new(stream),
             items: Vec::new(),
         }.run()
@@ -96,15 +96,15 @@ pub trait ContextAware: Sized + 'static {
 
     /// Build service for `T` and stream `S`
     #[must_use = "service do nothing unless polled"]
-    fn build<S>(self, ctx: Self::Context, stream: S, handle: &Handle) -> CtxServiceBuilder<Self>
+    fn build<S>(self, st: Self::State, stream: S, handle: &Handle) -> CtxServiceBuilder<Self>
         where S: Stream<Item=<<Self as ContextAware>::Message as CtxMessage>::Item,
                         Error=<<Self as ContextAware>::Message as CtxMessage>::Error> + 'static
     {
         CtxServiceBuilder {
             srv: CtxService {
-                ctx: Rc::new(RefCell::new(ctx)),
+                st: Rc::new(RefCell::new(st)),
                 flags: State::empty(),
-                exec: self,
+                ctx: self,
                 handle: handle.clone(),
                 stream: Box::new(stream),
                 items: Vec::new(),
@@ -114,15 +114,15 @@ pub trait ContextAware: Sized + 'static {
 
     /// Build service for `T` and stream `S`
     #[must_use = "service do nothing unless polled"]
-    fn build_from<S>(self, srv: &Service<Self::Context>, stream: S) -> CtxServiceBuilder<Self>
+    fn build_from<S>(self, srv: &Service<Self::State>, stream: S) -> CtxServiceBuilder<Self>
         where S: Stream<Item=<<Self as ContextAware>::Message as CtxMessage>::Item,
                         Error=<<Self as ContextAware>::Message as CtxMessage>::Error> + 'static
     {
         CtxServiceBuilder {
             srv: CtxService {
-                ctx: srv.clone(),
+                st: srv.clone(),
                 flags: State::empty(),
-                exec: self,
+                ctx: self,
                 handle: srv.handle().clone(),
                 stream: Box::new(stream),
                 items: Vec::new(),
@@ -131,16 +131,16 @@ pub trait ContextAware: Sized + 'static {
     }
 
     /// Method is called when service get polled first time.
-    fn start(&mut self, _ctx: &mut Self::Context, _srv: &mut CtxService<Self>) {}
+    fn start(&mut self, _ctx: &mut Self::State, _srv: &mut CtxService<Self>) {}
 
     /// Method is called when wrapped stream completes.
-    fn finished(&mut self, ctx: &mut Self::Context, srv: &mut CtxService<Self>)
+    fn finished(&mut self, ctx: &mut Self::State, srv: &mut CtxService<Self>)
                 -> Result<Async<<<Self as ContextAware>::Result as CtxMessage>::Item>,
                           <<Self as ContextAware>::Result as CtxMessage>::Error>;
 
     /// Method is called for every item from stream.
     fn call(&mut self,
-            ctx: &mut Self::Context,
+            st: &mut Self::State,
             srv: &mut CtxService<Self>,
             result: Result<<Self::Message as CtxMessage>::Item,
                            <Self::Message as CtxMessage>::Error>)
@@ -158,11 +158,11 @@ impl<T> CtxServiceBuilder<T> where T: ContextAware,
         self.srv.run()
     }
 
-    pub fn clone_and_run(self) -> Rc<RefCell<T::Context>> where Self: 'static, T: 'static
+    pub fn clone_and_run(self) -> Rc<RefCell<T::State>> where Self: 'static, T: 'static
     {
-        let ctx = self.srv.clone();
+        let st = self.srv.clone();
         self.srv.run();
-        ctx
+        st
     }
 
     /// Add future
@@ -207,11 +207,11 @@ enum Item<T: ContextAware> {
 type CtxServiceCtxFuture<T> =
     CtxFuture<Item=<<T as ContextAware>::Message as CtxMessage>::Item,
               Error=<<T as ContextAware>::Message as CtxMessage>::Error,
-              Context=<T as ContextAware>::Context, Service=CtxService<T>>;
+              Context=<T as ContextAware>::State, Service=CtxService<T>>;
 
 type CtxServiceCtxSpawnFuture<T> =
     CtxFuture<Item=(), Error=(),
-              Context=<T as ContextAware>::Context, Service=CtxService<T>>;
+              Context=<T as ContextAware>::State, Service=CtxService<T>>;
 
 type CtxServiceFuture<T> =
     Future<Item=<<T as ContextAware>::Message as CtxMessage>::Item,
@@ -228,10 +228,10 @@ type CtxServiceFutStream<T> =
 
 pub struct CtxService<T> where T: ContextAware,
 {
-    ctx: Rc<RefCell<T::Context>>,
+    st: Rc<RefCell<T::State>>,
     flags: State,
     handle: Handle,
-    exec: T,
+    ctx: T,
     stream: Box<Stream<Item=<T::Message as CtxMessage>::Item,
                        Error=<T::Message as CtxMessage>::Error>>,
     items: Vec<Item<T>>,
@@ -246,7 +246,7 @@ impl<T> CtxService<T> where T: ContextAware
     }
 
     pub fn spawn<F>(&mut self, fut: F)
-        where F: CtxFuture<Item=(), Error=(), Context=T::Context, Service=Self> + 'static
+        where F: CtxFuture<Item=(), Error=(), Context=T::State, Service=Self> + 'static
     {
         self.items.push(Item::CtxSpawnFuture(Box::new(fut)))
     }
@@ -275,14 +275,14 @@ impl<T> CtxService<T> where T: ContextAware
     }
 }
 
-impl<T> Service<T::Context> for CtxService<T> where T: ContextAware
+impl<T> Service<T::State> for CtxService<T> where T: ContextAware
 {
     fn handle(&self) -> &Handle {
         &self.handle
     }
 
-    fn clone(&self) -> Rc<RefCell<T::Context>> {
-        self.ctx.clone()
+    fn clone(&self) -> Rc<RefCell<T::State>> {
+        self.st.clone()
     }
 }
 
@@ -296,11 +296,11 @@ impl<T> Future for CtxService<T> where T: ContextAware
         let srv: &mut CtxService<T> = unsafe {
             std::mem::transmute(self as &mut CtxService<T>)
         };
-        let ctx = &mut *self.ctx.borrow_mut();
+        let st = &mut *self.st.borrow_mut();
 
         if !self.flags.contains(STARTED) {
             self.flags |= STARTED;
-            ContextAware::start(&mut self.exec, ctx, srv);
+            ContextAware::start(&mut self.ctx, st, srv);
         }
 
         loop {
@@ -311,14 +311,14 @@ impl<T> Future for CtxService<T> where T: ContextAware
                     match val {
                         Async::Ready(Some(val)) => {
                             not_ready = false;
-                            match ContextAware::call(&mut self.exec, ctx, srv, Ok(val))
+                            match ContextAware::call(&mut self.ctx, st, srv, Ok(val))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val
                             }
                         }
                         Async::Ready(None) => {
-                            match ContextAware::finished(&mut self.exec, ctx, srv)
+                            match ContextAware::finished(&mut self.ctx, st, srv)
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val
@@ -329,7 +329,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                     }
                 }
                 Err(err) => {
-                    match ContextAware::call(&mut self.exec, ctx, srv, Err(err))
+                    match ContextAware::call(&mut self.ctx, st, srv, Err(err))
                     {
                         Ok(Async::NotReady) => (),
                         val => return val,
@@ -351,7 +351,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                         Ok(val) => match val {
                             Async::Ready(Some(val)) => {
                                 not_ready = false;
-                                match ContextAware::call(&mut self.exec, ctx, srv, Ok(val))
+                                match ContextAware::call(&mut self.ctx, st, srv, Ok(val))
                                 {
                                     Ok(Async::NotReady) => (),
                                     val => return val,
@@ -362,7 +362,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            match ContextAware::call(&mut self.exec, ctx, srv, Err(err))
+                            match ContextAware::call(&mut self.ctx, st, srv, Err(err))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -376,7 +376,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            match ContextAware::call(&mut self.exec, ctx, srv, Err(err))
+                            match ContextAware::call(&mut self.ctx, st, srv, Err(err))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -388,7 +388,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
-                                match ContextAware::call(&mut self.exec, ctx, srv, Ok(val))
+                                match ContextAware::call(&mut self.ctx, st, srv, Ok(val))
                                 {
                                     Ok(Async::NotReady) => (),
                                     val => return val,
@@ -398,7 +398,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            match ContextAware::call(&mut self.exec, ctx, srv, Err(err))
+                            match ContextAware::call(&mut self.ctx, st, srv, Err(err))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -406,11 +406,11 @@ impl<T> Future for CtxService<T> where T: ContextAware
                             (true, None)
                         }
                     }
-                    Item::CtxFuture(ref mut fut) => match fut.poll(ctx, srv) {
+                    Item::CtxFuture(ref mut fut) => match fut.poll(st, srv) {
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
-                                match ContextAware::call(&mut self.exec, ctx, srv, Ok(val))
+                                match ContextAware::call(&mut self.ctx, st, srv, Ok(val))
                                 {
                                     Ok(Async::NotReady) => (),
                                     val => return val,
@@ -420,7 +420,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            match ContextAware::call(&mut self.exec, ctx, srv, Err(err))
+                            match ContextAware::call(&mut self.ctx, st, srv, Err(err))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -428,7 +428,7 @@ impl<T> Future for CtxService<T> where T: ContextAware
                             (true, None)
                         }
                     }
-                    Item::CtxSpawnFuture(ref mut fut) => match fut.poll(ctx, srv) {
+                    Item::CtxSpawnFuture(ref mut fut) => match fut.poll(st, srv) {
                         Ok(val) => match val {
                             Async::Ready(_) => {
                                 not_ready = false;

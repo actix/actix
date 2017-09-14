@@ -288,7 +288,7 @@ impl FramedContextAware for MasterClient {
 struct MasterListener;
 
 impl ContextAware for MasterListener {
-    type Context = Master;
+    type State = Master;
     type Message = Result<(UnixStream, std::os::unix::net::SocketAddr), io::Error>;
     type Result = Result<(), ()>;
 
