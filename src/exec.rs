@@ -17,9 +17,10 @@ use process::{WORKER_INIT_FAILED, WORKER_BOOT_FAILED};
 
 
 fn send_msg(file: &mut std::fs::File, msg: WorkerMessage) {
-    let mut buf = BytesMut::new();
     let msg = json::to_string(&msg).unwrap();
     let msg_ref: &[u8] = msg.as_ref();
+
+    let mut buf = BytesMut::with_capacity(msg_ref.len() + 2);
     buf.put_u16::<BigEndian>(msg_ref.len() as u16);
     buf.put(msg_ref);
     if let Err(err) = file.write_all(buf.as_ref()) {
