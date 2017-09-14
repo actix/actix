@@ -1,8 +1,9 @@
 use std;
 use std::str::FromStr;
 
-use env_logger;
-use log::LogLevelFilter;
+use time;
+use env_logger::{self, LogBuilder};
+use log::{LogRecord, LogLevelFilter};
 use syslog::{self, Facility};
 
 use version::PKG_INFO;
@@ -40,8 +41,19 @@ pub fn init_logging(cfg: &LoggingConfig) {
 
     match srv {
         Service::Console => {
-            std::env::set_var("RUST_LOG", format!("{}={}", PKG_INFO.name, level));
-            let _ = env_logger::init();
+            let formatter = |record: &LogRecord| {
+                let t = time::now();
+                format!("{},{:03} - {} - {}",
+                        time::strftime("%Y-%m-%d %H:%M:%S", &t).unwrap(),
+                        t.tm_nsec / 1000_000,
+                        record.level(),
+                        record.args()
+                )
+            };
+            let _ = LogBuilder::new()
+                .format(formatter)
+                .filter(Some(PKG_INFO.name), level)
+                .init();
         }
         Service::Syslog => {
             if !syslog::init(facility, level, Some(cfg.name.as_ref())).is_ok() {
