@@ -23,21 +23,21 @@ pub fn new<A, F>(future: A, f: F) -> MapErr<A, F>
 
 impl<U, A, F> CtxFuture for MapErr<A, F>
     where A: CtxFuture,
-          F: FnOnce(A::Error, &mut A::Context, &mut A::Service) -> U,
+          F: FnOnce(A::Error, &mut A::Service, &mut A::Context) -> U,
 {
     type Item = A::Item;
     type Error = U;
-    type Context = A::Context;
     type Service = A::Service;
+    type Context = A::Context;
 
-    fn poll(&mut self, ctx: &mut A::Context, srv: &mut A::Service) -> Poll<A::Item, U> {
-        let e = match self.future.poll(ctx, srv) {
+    fn poll(&mut self, srv: &mut A::Service, ctx: &mut A::Context) -> Poll<A::Item, U> {
+        let e = match self.future.poll(srv, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),
             other => other,
         };
         match e {
             Err(e) =>
-                Err(self.f.take().expect("cannot poll MapErr twice")(e, ctx, srv)),
+                Err(self.f.take().expect("cannot poll MapErr twice")(e, srv, ctx)),
             Ok(err) => Ok(err)
         }
     }

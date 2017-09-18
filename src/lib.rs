@@ -9,7 +9,7 @@ extern crate tokio_io;
 extern crate tokio_core;
 extern crate boxfnonce;
 
-mod ctx;
+mod service;
 mod sink;
 mod framed;
 
@@ -18,5 +18,5 @@ pub mod prelude;
 
 pub use fut::CtxFuture;
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
-pub use ctx::{CtxContext, CtxService, CtxServiceStream, CtxBuilder, Message};
-pub use sink::{SinkContext, CtxSinkService, CtxSink, CtxSinkResult};
+pub use sink::{SinkContext, Sink, SinkService, SinkResult};
+pub use service::{Context, Service, ServiceStream, Builder, Message};

@@ -11,10 +11,10 @@ use fut::CtxFuture;
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 // TODO: rename this to `Result` on the next major version
-pub struct FutureResult<T, E, C, S> {
+pub struct FutureResult<T, E, S, C> {
     inner: Option<Result<T, E>>,
-    ctx: PhantomData<C>,
     srv: PhantomData<S>,
+    ctx: PhantomData<C>,
 }
 
 /// Creates a new "leaf future" which will resolve with the given result.
@@ -31,8 +31,8 @@ pub struct FutureResult<T, E, C, S> {
 /// let future_of_1 = result::<u32, u32>(Ok(1));
 /// let future_of_err_2 = result::<u32, u32>(Err(2));
 /// ```
-pub fn result<T, E, C, S>(r: Result<T, E>) -> FutureResult<T, E, C, S> {
-    FutureResult { inner: Some(r), ctx: PhantomData, srv: PhantomData }
+pub fn result<T, E, S, C>(r: Result<T, E>) -> FutureResult<T, E, S, C> {
+    FutureResult { inner: Some(r), srv: PhantomData, ctx: PhantomData }
 }
 
 /// Creates a "leaf future" from an immediate value of a finished and
@@ -48,7 +48,7 @@ pub fn result<T, E, C, S>(r: Result<T, E>) -> FutureResult<T, E, C, S> {
 ///
 /// let future_of_1 = ok::<u32, u32>(1);
 /// ```
-pub fn ok<T, E, C, S>(t: T) -> FutureResult<T, E, S, C> {
+pub fn ok<T, E, S, C>(t: T) -> FutureResult<T, E, C, S> {
     result(Ok(t))
 }
 
@@ -64,17 +64,17 @@ pub fn ok<T, E, C, S>(t: T) -> FutureResult<T, E, S, C> {
 ///
 /// let future_of_err_1 = err::<u32, u32>(1);
 /// ```
-pub fn err<T, E, C, S>(e: E) -> FutureResult<T, E, C, S> {
+pub fn err<T, E, S, C>(e: E) -> FutureResult<T, E, S, C> {
     result(Err(e))
 }
 
-impl<T, E, C, S> CtxFuture for FutureResult<T, E, C, S> {
+impl<T, E, S, C> CtxFuture for FutureResult<T, E, S, C> {
     type Item = T;
     type Error = E;
-    type Context = C;
     type Service = S;
+    type Context = C;
 
-    fn poll(&mut self, _: &mut Self::Context, _: &mut Self::Service) -> Poll<T, E> {
+    fn poll(&mut self, _: &mut Self::Service, _: &mut Self::Context) -> Poll<T, E> {
         self.inner.take().expect("cannot poll Result twice").map(Async::Ready)
     }
 }
