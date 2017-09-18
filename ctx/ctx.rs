@@ -242,9 +242,9 @@ type CtxServiceFutStream<T> =
 
 pub struct CtxService<T> where T: CtxContext,
 {
-    handle: Handle,
     st: Rc<RefCell<T::State>>,
     ctx: T,
+    handle: Handle,
     started: bool,
     stream: Box<Stream<Item=<T::Message as Message>::Item,
                        Error=<T::Message as Message>::Error>>,
@@ -354,8 +354,7 @@ impl<T> Future for CtxService<T> where T: CtxContext
                     match val {
                         Async::Ready(Some(val)) => {
                             not_ready = false;
-                            match CtxContext::call(&mut self.ctx, st, srv, Ok(val))
-                            {
+                            match CtxContext::call(&mut self.ctx, st, srv, Ok(val)) {
                                 Ok(Async::NotReady) => (),
                                 val => return val
                             }
@@ -368,8 +367,7 @@ impl<T> Future for CtxService<T> where T: CtxContext
                         Async::NotReady => (),
                     }
                 }
-                Err(err) => match CtxContext::call(&mut self.ctx, st, srv, Err(err))
-                {
+                Err(err) => match CtxContext::call(&mut self.ctx, st, srv, Err(err)) {
                     Ok(Async::NotReady) => (),
                     val => return val,
                 }
@@ -481,7 +479,7 @@ impl<T> Future for CtxService<T> where T: CtxContext
                     }
                 };
 
-                // we have pollable item
+                // we have new pollable item
                 if let Some(item) = item {
                     self.items.push(item);
                 }
