@@ -14,7 +14,7 @@ exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
 
 [lib]
 name = "ctx"
-path = "ctx/lib.rs"
+path = "src/lib.rs"
 
 [dependencies]
 boxfnonce = "*"
