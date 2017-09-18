@@ -1,37 +1,22 @@
 [package]
-name = "fectl"
-version = "0.2.2"
+name = "ctx"
+version = "0.1.0"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
-description = "Process management utility"
+description = "CTX Library"
 readme = "README.md"
 keywords = []
-homepage = "https://github.com/fafhrd91/fectl"
-repository = "https://github.com/fafhrd91/fectl.git"
-documentation = "https://fafhrd91.github.io/fafhrd91/fectl/"
-categories = ["development-tools::ffi"]
+homepage = "https://github.com/fafhrd91/ctx"
+repository = "https://github.com/fafhrd91/ctx.git"
+documentation = "https://fafhrd91.github.io/fafhrd91/ctx/"
+categories = ["Asynchronous"]
 license = "Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
-build = "build.rs"
-
-[[bin]]
-name = "fectld"
-path = "src/main.rs"
-
-[[bin]]
-name = "fectl"
-path = "client/main.rs"
 
 [lib]
 name = "ctx"
 path = "ctx/lib.rs"
 
 [dependencies]
-libc = "0.2"
-nix = "0.9"
-net2 = "0.2"
-lazy_static = "0.2"
-byteorder = "1.1"
-chrono = "0.4"
 boxfnonce = "*"
 
 # tokio
@@ -40,24 +25,9 @@ mio = "0.6"
 futures = "0.1"
 tokio-core = "0.1"
 tokio-io = "0.1"
-tokio-signal = "0.1"
-tokio-uds = "0.1"
 
 # logging
-time = "*"
 log = "0.3"
-syslog = "3.2"
-env_logger = "0.4"
-
-# cli
-structopt = "0.1"
-structopt-derive = "0.1"
-
-# config
-toml = "*"
-serde = "*"
-serde_json = "*"
-serde_derive = "*"
 
 [profile.release]
 lto = true
