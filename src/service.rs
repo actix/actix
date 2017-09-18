@@ -9,7 +9,8 @@ use futures::{unsync, Async, Stream};
 use tokio_core::reactor;
 use nix::unistd::Pid;
 
-use ctx::{self, ContextAware, CtxService};
+use ctx::prelude::*;
+
 use event::{Event, Reason, ServiceStatus};
 use config::ServiceConfig;
 use worker::{Worker, WorkerMessage};
@@ -121,8 +122,8 @@ impl Service {
             workers.push(Worker::new(0, handle, cfg.clone(), tx));
         }
 
-        let mut srv = ServiceCommands.build(
-            Service{
+        let mut srv = CtxBuilder::new(
+            ServiceCommands, Service {
                 name: cfg.name.clone(),
                 state: ServiceState::Starting(Task::new()),
                 paused: false,
@@ -388,7 +389,7 @@ impl Service {
 
 pub struct ServiceCommands;
 
-impl ctx::ContextAware for ServiceCommands {
+impl CtxContext for ServiceCommands {
     type State = Service;
     type Message = Result<ServiceMessage, ()>;
     type Result = Result<(), ()>;

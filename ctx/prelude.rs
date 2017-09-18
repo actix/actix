@@ -10,10 +10,6 @@
 
 pub use fut::{self, CtxFuture, WrapFuture, IntoCtxFuture};
 
-pub use ctx::{
-    Service, ContextAware, CtxMessage, CtxService, CtxServiceBuilder, CtxServiceStream};
-
-pub use ctxframed::{
-    FramedContextAware, CtxFramedResult, CtxFramedError, CtxFramedService,
-    CtxFramedServiceBuilder, CtxFramedServiceFuture, CtxFramedServiceStream,
-    CtxFramedServiceFutStream};
+pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
+pub use ctx::{CtxContext, CtxBuilder, CtxService, CtxServiceStream};
+pub use sink::{SinkContext, CtxSinkService, CtxSink, CtxSinkResult};

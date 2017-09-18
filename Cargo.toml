@@ -1,6 +1,6 @@
 [package]
 name = "fectl"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Process management utility"
 readme = "README.md"
@@ -31,8 +31,8 @@ nix = "0.9"
 net2 = "0.2"
 lazy_static = "0.2"
 byteorder = "1.1"
-bitflags = "0.9"
 chrono = "0.4"
+boxfnonce = "*"
 
 # tokio
 bytes = "0.4"

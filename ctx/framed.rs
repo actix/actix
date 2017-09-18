@@ -1,177 +1,169 @@
-#![allow(dead_code)]
+use std::io;
 
-use std;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::collections::VecDeque;
+use bytes::BytesMut;
+use futures::{Async, AsyncSink, Poll, Stream, Sink, StartSend};
+use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::codec::{Encoder, Decoder};
+use tokio_io::io::{ReadHalf, WriteHalf};
 
-use futures::{Async, AsyncSink, Future, Poll, Sink};
-use tokio_core::reactor::Handle;
+const INITIAL_CAPACITY: usize = 8 * 1024;
+const BACKPRESSURE_BOUNDARY: usize = INITIAL_CAPACITY;
 
-use ctx::CtxMessage;
+pub trait CtxFramed {
 
-bitflags!(
-    /// State Bitflags
-    struct State: u16 {
-        /// Service is started
-        const STARTED = 0b00000001;
-    }
-);
-
-pub enum CtxSinkResult<T: SinkContextAware> {
-    Sent,
-    Err(<<T as SinkContextAware>::Message as CtxMessage>::Error),
-    SinkErr(<T::Message as CtxMessage>::Error)
-}
-
-
-pub trait SinkContextAware: Sized + 'static {
-
-    type Context;
-    type Message: CtxMessage;
-    type Result: CtxMessage;
-
-    /// Create new context for `Context` and stream `S` and run
-    fn run<S>(self, ctx: Self::Context, sink: S, handle: &Handle)
-        where S: Sink<SinkItem=<<Self as SinkContextAware>::Message as CtxMessage>::Item,
-                      SinkError=<<Self as SinkContextAware>::Message as CtxMessage>::Error> + 'static,
+    /// Helper method for splitting this read/write object into two
+    /// CtxFramedRead and CtxFramedWrite.
+    fn ctx_framed<D: Decoder, E: Encoder>(self, decoder: D, encoder: E)
+           -> (CtxFramedRead<ReadHalf<Self>, D>, CtxFramedWrite<WriteHalf<Self>, E>)
+        where Self: AsyncRead + AsyncWrite + Sized
     {
-        CtxSinkService {
-            flags: State::empty(),
-            ctx: Rc::new(RefCell::new(ctx)),
-            exec: self,
-            handle: handle.clone(),
-            sink: Box::new(sink),
-            sink_items: VecDeque::new(),
-            sink_flushed: true,
-        }.run()
+        let (r, w) = self.split();
+        (CtxFramedRead::new(r, decoder), CtxFramedWrite::new(w, encoder))
     }
-
-    /// Method is called when service get polled first time.
-    fn start(&mut self, _ctx: &mut Self::Context, _srv: &mut CtxSinkService<Self>) {}
-
-    /// Method is called when wrapped stream completes.
-    fn finished(&mut self, ctx: &mut Self::Context, srv: &mut CtxSinkService<Self>)
-                -> Result<Async<<<Self as SinkContextAware>::Result as CtxMessage>::Item>,
-                          <<Self as SinkContextAware>::Result as CtxMessage>::Error>;
-
-    fn call(&mut self,
-            ctx: &mut Self::Context,
-            srv: &mut CtxSinkService<Self>, CtxSinkResult<Self>) ->
-        Result<Async<<<Self as SinkContextAware>::Result as CtxMessage>::Item>,
-               <Self::Result as CtxMessage>::Error>;
 }
 
-pub struct CtxSinkService<T> where T: SinkContextAware
+impl<T> CtxFramed for T where T: AsyncRead + AsyncWrite + Sized {}
+
+
+pub struct CtxFramedRead<T, D> {
+    inner: T,
+    decoder: D,
+    eof: bool,
+    is_readable: bool,
+    buffer: BytesMut,
+}
+
+impl<T, D> CtxFramedRead<T, D>
+    where T: AsyncRead,
+          D: Decoder,
 {
-    flags: State,
-    ctx: Rc<RefCell<T::Context>>,
-    handle: Handle,
-    exec: T,
-    sink: Box<Sink<SinkItem=<T::Message as CtxMessage>::Item,
-                   SinkError=<T::Message as CtxMessage>::Error>>,
-    sink_items: VecDeque<<T::Message as CtxMessage>::Item>,
-    sink_flushed: bool,
-}
-
-impl<T> CtxSinkService<T> where T: SinkContextAware,
-{
-    pub fn run(self) where Self: 'static, T: 'static
-    {
-        let handle: &Handle = unsafe{std::mem::transmute(&self.handle)};
-        handle.spawn(self.map(|_| ()).map_err(|_| ()))
-    }
-
-    pub fn send(&mut self, item: <T::Message as CtxMessage>::Item)
-                -> Result<(), <T::Message as CtxMessage>::Item>
-    {
-        if self.sink_items.is_empty() {
-            self.sink_items.push_back(item);
-            Ok(())
-        } else {
-            Err(item)
+    /// Creates a new `CtxFramedRead` with the given `decoder`.
+    pub fn new(inner: T, decoder: D) -> CtxFramedRead<T, D> {
+        CtxFramedRead {
+            inner: inner,
+            decoder: decoder,
+            eof: false,
+            is_readable: false,
+            buffer: BytesMut::with_capacity(INITIAL_CAPACITY),
         }
     }
-
-    pub fn send_buffered(&mut self, item: <T::Message as CtxMessage>::Item) {
-        self.sink_items.push_back(item);
-    }
 }
 
-
-impl<T> Future for CtxSinkService<T>
-    where T: SinkContextAware
+impl<T, D> Stream for CtxFramedRead<T, D>
+    where T: AsyncRead,
+          D: Decoder,
 {
-    type Item = <<T as SinkContextAware>::Result as CtxMessage>::Item;
-    type Error = <<T as SinkContextAware>::Result as CtxMessage>::Error;
+    type Item = D::Item;
+    type Error = D::Error;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let srv: &mut CtxSinkService<T> = unsafe {
-            std::mem::transmute(self as &mut CtxSinkService<T>)
-        };
-        let ctx = &mut *self.ctx.borrow_mut();
-
-        if !self.flags.contains(STARTED) {
-            self.flags |= STARTED;
-            SinkContextAware::start(&mut self.exec, ctx, srv);
-        }
-
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         loop {
-            let mut not_ready = true;
-
-            // send sink items
-            loop {
-                if let Some(item) = self.sink_items.pop_front() {
-                    match self.sink.start_send(item) {
-                        Ok(AsyncSink::NotReady(item)) => {
-                            self.sink_items.push_front(item);
-                        }
-                        Ok(AsyncSink::Ready) => {
-                            self.sink_flushed = false;
-                            continue
-                        }
-                        Err(err) => {
-                            match SinkContextAware::call(
-                                &mut self.exec, ctx, srv, CtxSinkResult::SinkErr(err))
-                            {
-                                Ok(Async::NotReady) => (),
-                                val => return val,
-                            }
-                        }
-                    }
+            // Repeatedly call `decode` or `decode_eof` as long as it is
+            // "readable". Readable is defined as not having returned `None`. If
+            // the upstream has returned EOF, and the decoder is no longer
+            // readable, it can be assumed that the decoder will never become
+            // readable again, at which point the stream is terminated.
+            if self.is_readable {
+                if self.eof {
+                    let frame = try!(self.decoder.decode_eof(&mut self.buffer));
+                    return Ok(Async::Ready(frame));
                 }
-                break
+
+                trace!("attempting to decode a frame");
+
+                if let Some(frame) = try!(self.decoder.decode(&mut self.buffer)) {
+                    trace!("frame decoded from buffer");
+                    return Ok(Async::Ready(Some(frame)));
+                }
+
+                self.is_readable = false;
             }
 
-            // flush sink
-            if !self.sink_flushed {
-                match self.sink.poll_complete() {
-                    Ok(Async::Ready(_)) => {
-                        not_ready = false;
-                        self.sink_flushed = true;
-                        match SinkContextAware::call(
-                            &mut self.exec, ctx, srv, CtxSinkResult::Sent)
-                        {
-                            Ok(Async::NotReady) => (),
-                            val => return val,
-                        }
-                    }
-                    Ok(Async::NotReady) => (),
-                    Err(err) => {
-                        match SinkContextAware::call(
-                            &mut self.exec, ctx, srv, CtxSinkResult::SinkErr(err))
-                        {
-                            Ok(Async::NotReady) => (),
-                            val => return val,
-                        }
-                    }
-                };
+            assert!(!self.eof);
+
+            // Otherwise, try to read more data and try again. Make sure we've
+            // got room for at least one byte to read to ensure that we don't
+            // get a spurious 0 that looks like EOF
+            self.buffer.reserve(1);
+            if 0 == try_ready!(self.inner.read_buf(&mut self.buffer)) {
+                self.eof = true;
             }
 
-            // are we done
-            if not_ready {
-                return Ok(Async::NotReady)
+            self.is_readable = true;
+        }
+    }
+}
+
+
+pub struct CtxFramedWrite<T, E> {
+    inner: T,
+    encoder: E,
+    buffer: BytesMut,
+}
+
+impl<T, E> CtxFramedWrite<T, E>
+    where T: AsyncWrite,
+          E: Encoder,
+{
+    /// Creates a new `CtxFramedWrite` with the given `encoder`.
+    pub fn new(inner: T, encoder: E) -> CtxFramedWrite<T, E> {
+        CtxFramedWrite {
+            inner: inner,
+            encoder: encoder,
+            buffer: BytesMut::with_capacity(INITIAL_CAPACITY),
+        }
+    }
+}
+
+impl<T, E> Sink for CtxFramedWrite<T, E>
+    where T: AsyncWrite,
+          E: Encoder,
+{
+    type SinkItem = E::Item;
+    type SinkError = E::Error;
+
+    fn start_send(&mut self, item: E::Item) -> StartSend<E::Item, E::Error> {
+        // If the buffer is already over 8KiB, then attempt to flush it. If after flushing it's
+        // *still* over 8KiB, then apply backpressure (reject the send).
+        if self.buffer.len() >= BACKPRESSURE_BOUNDARY {
+            try!(self.poll_complete());
+
+            if self.buffer.len() >= BACKPRESSURE_BOUNDARY {
+                return Ok(AsyncSink::NotReady(item));
             }
         }
+
+        try!(self.encoder.encode(item, &mut self.buffer));
+
+        Ok(AsyncSink::Ready)
+    }
+
+    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
+        trace!("flushing framed transport");
+
+        while !self.buffer.is_empty() {
+            trace!("writing; remaining={}", self.buffer.len());
+
+            let n = try_nb!(self.inner.write(&self.buffer));
+
+            if n == 0 {
+                return Err(io::Error::new(io::ErrorKind::WriteZero,
+                                          "failed to write frame to transport").into());
+            }
+
+            // TODO: Add a way to `bytes` to do this w/o returning the drained // data.
+            let _ = self.buffer.split_to(n);
+        }
+
+        // Try flushing the underlying IO
+        try_nb!(self.inner.flush());
+
+        trace!("framed transport flushed");
+        return Ok(Async::Ready(()));
+    }
+
+    fn close(&mut self) -> Poll<(), Self::SinkError> {
+        try_ready!(self.poll_complete());
+        Ok(try!(self.inner.shutdown()))
     }
 }

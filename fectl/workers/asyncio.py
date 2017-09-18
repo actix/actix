@@ -333,6 +333,9 @@ class ReadProtocol:
     def connection_lost(self, exc=None):
         self._transport = None
 
+    def eof_received(self):
+        pass
+
     def data_received(self, data):
         self._buf += data
 

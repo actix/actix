@@ -11,8 +11,8 @@ use tokio_signal::unix::Signal;
 use nix::unistd::getpid;
 use nix::sys::wait::{waitpid, WaitStatus, WNOHANG};
 
-use ctx::fut::{self, CtxFuture, WrapFuture};
-use ctx::{Service as _Service, CtxService, CtxServiceStream, ContextAware};
+use ctx::prelude::*;
+
 use config::Config;
 use event::{Reason, ServiceStatus};
 use process::ProcessError;
@@ -320,14 +320,15 @@ impl CommandCenterCommands {
                     Ok(rx) => {
                         waiting = true;
                         srv.spawn(
-                            rx.wrap().then(|_, ctx: &mut CommandCenter, _: &mut CtxService<CommandCenterCommands>| {
+                            rx.wrap().then(|_, _: &mut _, srv: &mut CtxService<CommandCenterCommands>| {
                                 // check if all services are stopped
-                                for srv in ctx.services.values() {
+                                let s = srv.as_mut();
+                                for srv in s.services.values() {
                                     if !srv.borrow().is_stopped() {
                                         return fut::ok(())
                                     }
                                 }
-                                ctx.exit(true);
+                                s.exit(true);
                                 return fut::ok(())
                             }));
                     }
@@ -341,7 +342,7 @@ impl CommandCenterCommands {
     }
 }
 
-impl ContextAware for CommandCenterCommands {
+impl CtxContext for CommandCenterCommands {
 
     type State = CommandCenter;
     type Message = Result<Command, ()>;

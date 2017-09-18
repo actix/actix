@@ -33,7 +33,7 @@ pub enum ClientCommand {
 /// Send command to master
 pub fn send_command(stream: &mut UnixStream, req: MasterRequest) -> Result<(), io::Error> {
     let mut buf = BytesMut::new();
-     ClientTransportCodec.encode(req, &mut buf)?;
+    ClientTransportCodec.encode(req, &mut buf)?;
 
     stream.write_all(buf.as_ref())
 }

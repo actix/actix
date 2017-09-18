@@ -12,12 +12,10 @@ use libc;
 use serde_json as json;
 use byteorder::{BigEndian , ByteOrder};
 use bytes::{BytesMut, BufMut};
-use futures::unsync;
-use futures::Async;
+use futures::{Async, unsync};
 use tokio_core::reactor;
 use tokio_core::reactor::Timeout;
 use tokio_uds::{UnixStream, UnixListener};
-use tokio_io::AsyncRead;
 use tokio_io::codec::{Encoder, Decoder};
 
 use ctx::prelude::*;
@@ -71,18 +69,6 @@ impl Master {
             Err(_) => false,
         }
     }
-
-    fn hb(&self, srv: &mut CtxFramedService<MasterClient>) {
-        let fut = Timeout::new(Duration::new(1, 0), srv.handle())
-            .unwrap()
-            .wrap()
-            .then(|_, ctx: &mut Master, srv: &mut CtxFramedService<MasterClient>| {
-                srv.send_buffered(MasterResponse::Pong);
-                ctx.hb(srv);
-                fut::ok(())
-            });
-        srv.spawn(fut);
-    }
 }
 
 impl Drop for Master {
@@ -91,7 +77,9 @@ impl Drop for Master {
     }
 }
 
-struct MasterClient;
+struct MasterClient {
+    sink: CtxSink<MasterClientSink>,
+}
 
 #[derive(Debug)]
 enum MasterClientMessage {
@@ -99,43 +87,56 @@ enum MasterClientMessage {
 }
 
 impl MasterClient {
-    fn handle_error(&self, err: CommandError, srv: &mut CtxFramedService<Self>) {
+
+    fn hb(&self, srv: &mut CtxService<Self>) {
+        let fut = Timeout::new(Duration::new(1, 0), srv.handle())
+            .unwrap()
+            .wrap()
+            .then(|_, ctx: &mut MasterClient, srv: &mut CtxService<Self>| {
+                ctx.sink.send_buffered(MasterResponse::Pong);
+                ctx.hb(srv);
+                fut::ok(())
+            });
+        srv.spawn(fut);
+    }
+
+    fn handle_error(&mut self, err: CommandError) {
         match err {
             CommandError::NotReady =>
-                srv.send_buffered(MasterResponse::ErrorNotReady),
+                self.sink.send_buffered(MasterResponse::ErrorNotReady),
             CommandError::UnknownService =>
-                srv.send_buffered(MasterResponse::ErrorUnknownService),
+                self.sink.send_buffered(MasterResponse::ErrorUnknownService),
             CommandError::ServiceStopped =>
-                srv.send_buffered(MasterResponse::ErrorServiceStopped),
+                self.sink.send_buffered(MasterResponse::ErrorServiceStopped),
             CommandError::Service(err) => match err {
                 ServiceOperationError::Starting =>
-                    srv.send_buffered(MasterResponse::ErrorServiceStarting),
+                    self.sink.send_buffered(MasterResponse::ErrorServiceStarting),
                 ServiceOperationError::Reloading =>
-                    srv.send_buffered(MasterResponse::ErrorServiceReloading),
+                    self.sink.send_buffered(MasterResponse::ErrorServiceReloading),
                 ServiceOperationError::Stopping =>
-                    srv.send_buffered(MasterResponse::ErrorServiceStopping),
+                    self.sink.send_buffered(MasterResponse::ErrorServiceStopping),
                 ServiceOperationError::Running =>
-                    srv.send_buffered(MasterResponse::ErrorServiceRunning),
+                    self.sink.send_buffered(MasterResponse::ErrorServiceRunning),
                 ServiceOperationError::Stopped =>
-                    srv.send_buffered(MasterResponse::ErrorServiceStopped),
+                    self.sink.send_buffered(MasterResponse::ErrorServiceStopped),
                 ServiceOperationError::Failed =>
-                    srv.send_buffered(MasterResponse::ErrorServiceFailed),
+                    self.sink.send_buffered(MasterResponse::ErrorServiceFailed),
             }
         }
     }
 
-    fn stop(&self, name: String, ctx: &mut Master, srv: &mut CtxFramedService<Self>) {
+    fn stop(&mut self, name: String, ctx: &mut Master, srv: &mut CtxService<Self>) {
         info!("Client command: Stop service '{}'", name);
         match ctx.cmd.borrow_mut().stop_service(name.as_str(), true) {
             Err(err) => match err {
                 CommandError::ServiceStopped =>
-                    srv.send_buffered(MasterResponse::ServiceStarted),
-                _ => self.handle_error(err, srv),
+                    self.sink.send_buffered(MasterResponse::ServiceStarted),
+                _ => self.handle_error(err),
             }
             Ok(rx) => {
                 srv.spawn(
-                    rx.wrap().then(|_, _: &mut Master, srv: &mut CtxFramedService<MasterClient>| {
-                        srv.send_buffered(MasterResponse::ServiceStopped);
+                    rx.wrap().then(|_, ctx: &mut MasterClient, _| {
+                        ctx.sink.send_buffered(MasterResponse::ServiceStopped);
                         fut::ok(())
                     })
                 );
@@ -143,24 +144,24 @@ impl MasterClient {
         }
     }
 
-    fn reload(&self, name: String, ctx: &mut Master,
-              srv: &mut CtxFramedService<Self>, graceful: bool)
+    fn reload(&mut self, name: String,
+              ctx: &mut Master, srv: &mut CtxService<Self>, graceful: bool)
     {
         info!("Client command: Reload service '{}'", name);
         match ctx.cmd.borrow_mut().reload_service(name.as_str(), graceful) {
-            Err(err) => self.handle_error(err, srv),
+            Err(err) => self.handle_error(err),
             Ok(rx) => {
                 srv.spawn(
-                    rx.wrap().then(|res, _: &mut _, srv: &mut CtxFramedService<MasterClient>| {
+                    rx.wrap().then(|res, ctx: &mut MasterClient, _| {
                         match res {
                             Ok(ReloadStatus::Success) =>
-                                srv.send_buffered(MasterResponse::ServiceStarted),
+                                ctx.sink.send_buffered(MasterResponse::ServiceStarted),
                             Ok(ReloadStatus::Failed) =>
-                                srv.send_buffered(MasterResponse::ServiceFailed),
+                                ctx.sink.send_buffered(MasterResponse::ServiceFailed),
                             Ok(ReloadStatus::Stopping) =>
-                                srv.send_buffered(MasterResponse::ErrorServiceStopping),
+                                ctx.sink.send_buffered(MasterResponse::ErrorServiceStopping),
                             Err(_) =>
-                                srv.send_buffered(MasterResponse::ServiceFailed),
+                                ctx.sink.send_buffered(MasterResponse::ServiceFailed),
                         }
                         fut::ok(())
                     })
@@ -169,23 +170,23 @@ impl MasterClient {
         }
     }
 
-    fn start_service(&self, name: String, ctx: &mut Master, srv: &mut CtxFramedService<Self>) {
+    fn start_service(&mut self, name: String, ctx: &mut Master, srv: &mut CtxService<Self>) {
         info!("Client command: Start service '{}'", name);
 
         match ctx.cmd.borrow_mut().start_service(name.as_str()) {
-            Err(err) => self.handle_error(err, srv),
+            Err(err) => self.handle_error(err),
             Ok(rx) => {
                 srv.spawn(
-                    rx.wrap().then(|res, _: &mut _, srv: &mut CtxFramedService<MasterClient>| {
+                    rx.wrap().then(|res, ctx: &mut MasterClient, _| {
                         match res {
                             Ok(StartStatus::Success) =>
-                                srv.send_buffered(MasterResponse::ServiceStarted),
+                                ctx.sink.send_buffered(MasterResponse::ServiceStarted),
                             Ok(StartStatus::Failed) =>
-                                srv.send_buffered(MasterResponse::ServiceFailed),
+                                ctx.sink.send_buffered(MasterResponse::ServiceFailed),
                             Ok(StartStatus::Stopping) =>
-                                srv.send_buffered(MasterResponse::ErrorServiceStopping),
+                                ctx.sink.send_buffered(MasterResponse::ErrorServiceStopping),
                             Err(_) =>
-                                srv.send_buffered(MasterResponse::ServiceFailed),
+                                ctx.sink.send_buffered(MasterResponse::ServiceFailed),
                         }
                         fut::ok(())
                     })
@@ -195,34 +196,39 @@ impl MasterClient {
     }
 }
 
-impl FramedContextAware for MasterClient {
+struct MasterClientSink;
 
-    type Context = Master;
-    type FramedContext = UnixStream;
-    type Codec = MasterTransportCodec;
+impl SinkContext for MasterClientSink {
+
+    type Context = MasterClient;
+    type SinkMessage = Result<MasterResponse, io::Error>;
+}
+
+impl CtxContext for MasterClient {
+
+    type State = Master;
     type Message = Result<MasterClientMessage, io::Error>;
     type Result = Result<(), ()>;
 
-    fn start(&mut self, ctx: &mut Master, srv: &mut CtxFramedService<Self>) {
-        ctx.hb(srv);
+    fn start(&mut self, _: &mut Master, srv: &mut CtxService<Self>) {
+        self.hb(srv);
     }
 
-    fn finished(&mut self, _: &mut Master, _: &mut CtxFramedService<Self>)
-                -> Result<Async<()>, ()>
+    fn finished(&mut self, _: &mut Master, _: &mut CtxService<Self>) -> Result<Async<()>, ()>
     {
         Ok(Async::Ready(()))
     }
 
     fn call(&mut self,
             ctx: &mut Master,
-            srv: &mut CtxFramedService<Self>,
-            msg: CtxFramedResult<Self>) -> Result<Async<()>, ()>
+            srv: &mut CtxService<Self>,
+            msg: Self::Message) -> Result<Async<()>, ()>
     {
         match msg {
             Ok(MasterClientMessage::Request(req)) => {
                 match req {
                     MasterRequest::Ping =>
-                        srv.send_buffered(MasterResponse::Pong),
+                        self.sink.send_buffered(MasterResponse::Pong),
                     MasterRequest::Start(name) =>
                         self.start_service(name, ctx, srv),
                     MasterRequest::Reload(name) =>
@@ -234,46 +240,46 @@ impl FramedContextAware for MasterClient {
                     MasterRequest::Pause(name) => {
                         info!("Client command: Pause service '{}'", name);
                         match ctx.cmd.borrow_mut().pause_service(name.as_str()) {
-                            Err(err) => self.handle_error(err, srv),
-                            Ok(_) => srv.send_buffered(MasterResponse::Done)
+                            Err(err) => self.handle_error(err),
+                            Ok(_) => self.sink.send_buffered(MasterResponse::Done)
                         }
                     }
                     MasterRequest::Resume(name) => {
                         info!("Client command: Resume service '{}'", name);
                         match ctx.cmd.borrow_mut().resume_service(name.as_str()) {
-                            Err(err) => self.handle_error(err, srv),
-                            Ok(_) => srv.send_buffered(MasterResponse::Done)
+                            Err(err) => self.handle_error(err),
+                            Ok(_) => self.sink.send_buffered(MasterResponse::Done)
                         }
                     }
                     MasterRequest::Status(name) => {
                         debug!("Client command: Service status '{}'", name);
                         match ctx.cmd.borrow().service_status(name.as_str()) {
-                            Ok(status) => srv.send_buffered(
+                            Ok(status) => self.sink.send_buffered(
                                 MasterResponse::ServiceStatus(status)),
-                            Err(err) => self.handle_error(err, srv),
+                            Err(err) => self.handle_error(err),
                         }
                     }
                     MasterRequest::SPid(name) => {
                         debug!("Client command: Service status '{}'", name);
                         match ctx.cmd.borrow().service_worker_pids(name.as_str()) {
-                            Ok(pids) => srv.send_buffered(
+                            Ok(pids) => self.sink.send_buffered(
                                 MasterResponse::ServiceWorkerPids(pids)),
-                            Err(err) => self.handle_error(err, srv),
+                            Err(err) => self.handle_error(err),
                         }
                     }
                     MasterRequest::Pid => {
-                        srv.send_buffered(MasterResponse::Pid(
+                        self.sink.send_buffered(MasterResponse::Pid(
                             format!("{}", nix::unistd::getpid())));
                     },
                     MasterRequest::Version => {
-                        srv.send_buffered(MasterResponse::Version(
+                        self.sink.send_buffered(MasterResponse::Version(
                             format!("{} {}", PKG_INFO.name, PKG_INFO.version)));
                     },
                     MasterRequest::Quit => {
                         let rx = ctx.cmd.borrow_mut().stop();
                         srv.spawn(
-                            rx.wrap().then(|_, _: &mut _, srv: &mut CtxFramedService<Self>| {
-                                srv.send_buffered(MasterResponse::Done);
+                            rx.wrap().then(|_, ctx: &mut Self, _| {
+                                ctx.sink.send_buffered(MasterResponse::Done);
                                 fut::ok(())
                             }));
                     }
@@ -287,7 +293,7 @@ impl FramedContextAware for MasterClient {
 
 struct MasterListener;
 
-impl ContextAware for MasterListener {
+impl CtxContext for MasterListener {
     type State = Master;
     type Message = Result<(UnixStream, std::os::unix::net::SocketAddr), io::Error>;
     type Result = Result<(), ()>;
@@ -301,7 +307,10 @@ impl ContextAware for MasterListener {
     {
         match msg {
             Ok((stream, _)) => {
-                MasterClient.spawn(srv, stream.framed(MasterTransportCodec));
+                let (r, w) = stream.ctx_framed(MasterTransportCodec, MasterTransportCodec);
+                CtxBuilder::from_srv(
+                    srv, r, move |srv| MasterClient{sink: srv.add_sink(MasterClientSink, w)}
+                ).run();
             }
             _ => (),
         }
@@ -395,7 +404,7 @@ pub fn start(cfg: Config) -> bool {
                         match StdUnixListener::bind(&cfg.master.sock) {
                             Ok(lst) => lst,
                             Err(err) => {
-                                error!("Can not create listener socket: {:?}", err);
+                                error!("Can not create listener socket: {}", err);
                                 return false
                             }
                         }

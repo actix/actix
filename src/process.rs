@@ -8,14 +8,12 @@ use serde_json as json;
 use futures::{unsync, future, Async, Future, Stream};
 use byteorder::{ByteOrder, BigEndian};
 use bytes::{BytesMut, BufMut};
-use tokio_core::reactor;
-use tokio_core::reactor::Timeout;
-use tokio_io::AsyncRead;
+use tokio_core::reactor::{self, Timeout};
 use tokio_io::codec::{Encoder, Decoder};
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::{close, pipe, fork, ForkResult, Pid};
 
-use ctx::{Service, FramedContextAware, CtxFramedService, CtxFramedResult};
+use ctx::prelude::*;
 
 use config::ServiceConfig;
 use io::PipeFile;
@@ -162,7 +160,11 @@ impl Process {
             startup_timeout: cfg.startup_timeout as u64,
             shutdown_timeout: cfg.shutdown_timeout as u64,
         };
-        ProcessManagement.build(process, pipe.framed(TransportCodec), handle)
+
+        let (r, w) = pipe.ctx_framed(TransportCodec, TransportCodec);
+        CtxBuilder::build(
+            process, r, handle,
+            move |srv| ProcessManagement{sink: srv.add_sink(ProcessManagementSink, w)})
             .add_future(
                 Timeout::new(Duration::new(cfg.startup_timeout as u64, 0), &handle).unwrap()
                     .map(|_| ProcessMessage::StartupTimeout)
@@ -233,11 +235,13 @@ impl Drop for Process {
     }
 }
 
-struct ProcessManagement;
+struct ProcessManagement {
+    sink: CtxSink<ProcessManagementSink>,
+}
 
 impl ProcessManagement {
 
-    fn kill(&self, srv: &mut CtxFramedService<Self>) {
+    fn kill(&self, srv: &mut CtxService<Self>) {
         let fut = Box::new(
             Timeout::new(Duration::new(1, 0), srv.handle())
                 .unwrap()
@@ -246,47 +250,50 @@ impl ProcessManagement {
     }
 }
 
-impl FramedContextAware for ProcessManagement {
+struct ProcessManagementSink;
 
-    type Context = Process;
-    type FramedContext = PipeFile;
-    type Codec = TransportCodec;
+impl SinkContext for ProcessManagementSink {
+
+    type Context = ProcessManagement;
+    type SinkMessage = Result<WorkerCommand, io::Error>;
+}
+
+impl CtxContext for ProcessManagement {
+
+    type State = Process;
     type Message = Result<ProcessMessage, io::Error>;
     type Result = Result<(), ()>;
 
-    fn finished(&mut self, _: &mut Process, srv: &mut CtxFramedService<Self>)
-                -> Result<Async<()>, ()>
+    fn finished(&mut self, _: &mut Process, srv: &mut CtxService<Self>) -> Result<Async<()>, ()>
     {
         self.kill(srv);
         Ok(Async::NotReady)
     }
 
-    fn call(&mut self,
-            ctx: &mut Process,
-            srv: &mut CtxFramedService<Self>, msg: CtxFramedResult<Self>)
+    fn call(&mut self, st: &mut Process, srv: &mut CtxService<Self>, msg: Self::Message)
             -> Result<Async<()>, ()>
     {
         match msg {
             Ok(ProcessMessage::Message(msg)) => match msg {
                 WorkerMessage::forked => {
-                    debug!("Worker forked (pid:{})", ctx.pid);
-                    srv.send_buffered(WorkerCommand::prepare);
+                    debug!("Worker forked (pid:{})", st.pid);
+                    self.sink.send_buffered(WorkerCommand::prepare);
                 }
                 WorkerMessage::loaded => {
-                    match ctx.state {
+                    match st.state {
                         ProcessState::Starting => {
-                            debug!("Worker loaded (pid:{})", ctx.pid);
+                            debug!("Worker loaded (pid:{})", st.pid);
 
-                            ctx.state = ProcessState::Running;
+                            st.state = ProcessState::Running;
 
-                            if let Err(_) = ctx.cmd.unbounded_send(
-                                ProcessNotification::Loaded(ctx.pid)) {
+                            if let Err(_) = st.cmd.unbounded_send(
+                                ProcessNotification::Loaded(st.pid)) {
                                 // parent is dead
                                 return self.call(
-                                    ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
+                                    st, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
                             } else {
                                 // start heartbeat timer
-                                ctx.hb = Instant::now();
+                                st.hb = Instant::now();
                                 let fut = Box::new(
                                     Timeout::new(
                                         Duration::new(HEARTBEAT, 0), srv.handle())
@@ -296,65 +303,65 @@ impl FramedContextAware for ProcessManagement {
                             }
                         },
                         _ => {
-                            warn!("Received `loaded` message from worker (pid:{})", ctx.pid);
+                            warn!("Received `loaded` message from worker (pid:{})", st.pid);
                         }
                     }
                 }
                 WorkerMessage::hb => {
-                    ctx.hb = Instant::now();
+                    st.hb = Instant::now();
                 }
                 WorkerMessage::reload => {
                     // worker requests reload
-                    info!("Worker requests reload (pid:{})", ctx.pid);
-                    if let Err(_) = ctx.cmd.unbounded_send(
-                        ProcessNotification::Message(ctx.pid, WorkerMessage::reload)) {
+                    info!("Worker requests reload (pid:{})", st.pid);
+                    if let Err(_) = st.cmd.unbounded_send(
+                        ProcessNotification::Message(st.pid, WorkerMessage::reload)) {
                         // parent is dead
                         return self.call(
-                            ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
+                            st, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
                     }
                 }
                 WorkerMessage::restart => {
                     // worker requests reload
-                    info!("Worker requests restart (pid:{})", ctx.pid);
-                    if let Err(_) = ctx.cmd.unbounded_send(
-                        ProcessNotification::Message(ctx.pid, WorkerMessage::restart)) {
+                    info!("Worker requests restart (pid:{})", st.pid);
+                    if let Err(_) = st.cmd.unbounded_send(
+                        ProcessNotification::Message(st.pid, WorkerMessage::restart)) {
                         // parent is dead
                         return self.call(
-                            ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
+                            st, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
                     }
                 }
                 WorkerMessage::cfgerror(msg) => {
-                    error!("Worker config error: {} (pid:{})", msg, ctx.pid);
-                    if let Err(_) = ctx.cmd.unbounded_send(ProcessNotification::Failed(
-                        ctx.pid, ProcessError::ConfigError(msg)))
+                    error!("Worker config error: {} (pid:{})", msg, st.pid);
+                    if let Err(_) = st.cmd.unbounded_send(ProcessNotification::Failed(
+                        st.pid, ProcessError::ConfigError(msg)))
                     {
                         // parent is dead
                         return self.call(
-                            ctx, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
+                            st, srv, Ok(ProcessMessage::Command(ProcessCommand::Quit)))
                     }
                 }
             }
             Ok(ProcessMessage::StartupTimeout) => {
-                match ctx.state {
+                match st.state {
                     ProcessState::Starting => {
-                        error!("Worker startup timeout after {} secs", ctx.startup_timeout);
-                        ctx.state = ProcessState::Failed;
-                        let _ = ctx.cmd.unbounded_send(ProcessNotification::Failed(
-                            ctx.pid, ProcessError::StartupTimeout));
-                        let _ = kill(ctx.pid, Signal::SIGKILL);
+                        error!("Worker startup timeout after {} secs", st.startup_timeout);
+                        st.state = ProcessState::Failed;
+                        let _ = st.cmd.unbounded_send(ProcessNotification::Failed(
+                            st.pid, ProcessError::StartupTimeout));
+                        let _ = kill(st.pid, Signal::SIGKILL);
                         return Ok(Async::Ready(()))
                     },
                     _ => ()
                 }
             }
             Ok(ProcessMessage::StopTimeout) => {
-                match ctx.state {
+                match st.state {
                     ProcessState::Stopping => {
-                        info!("Worker shutdown timeout aftre {} secs", ctx.shutdown_timeout);
-                        ctx.state = ProcessState::Failed;
-                        let _ = ctx.cmd.unbounded_send(ProcessNotification::Failed(
-                            ctx.pid, ProcessError::StopTimeout));
-                        let _ = kill(ctx.pid, Signal::SIGKILL);
+                        info!("Worker shutdown timeout aftre {} secs", st.shutdown_timeout);
+                        st.state = ProcessState::Failed;
+                        let _ = st.cmd.unbounded_send(ProcessNotification::Failed(
+                            st.pid, ProcessError::StopTimeout));
+                        let _ = kill(st.pid, Signal::SIGKILL);
                         return Ok(Async::Ready(()))
                     },
                     _ => ()
@@ -362,16 +369,16 @@ impl FramedContextAware for ProcessManagement {
             }
             Ok(ProcessMessage::Heartbeat) => {
                 // makes sense only in running state
-                if let ProcessState::Running = ctx.state {
-                    if Instant::now().duration_since(ctx.hb) > ctx.timeout {
+                if let ProcessState::Running = st.state {
+                    if Instant::now().duration_since(st.hb) > st.timeout {
                         // heartbeat timed out
                         error!("Worker heartbeat failed (pid:{}) after {:?} secs",
-                               ctx.pid, ctx.timeout);
-                        let _ = (&ctx.cmd).unbounded_send(
-                            ProcessNotification::Failed(ctx.pid, ProcessError::Heartbeat));
+                               st.pid, st.timeout);
+                        let _ = (&st.cmd).unbounded_send(
+                            ProcessNotification::Failed(st.pid, ProcessError::Heartbeat));
                     } else {
                         // send heartbeat to worker process and reset hearbeat timer
-                        srv.send_buffered(WorkerCommand::hb);
+                        self.sink.send_buffered(WorkerCommand::hb);
                         let fut = Box::new(
                                 Timeout::new(Duration::new(HEARTBEAT, 0), srv.handle())
                                     .unwrap()
@@ -381,45 +388,44 @@ impl FramedContextAware for ProcessManagement {
                 }
             }
             Ok(ProcessMessage::Kill) => {
-                let _ = kill(ctx.pid, Signal::SIGKILL);
+                let _ = kill(st.pid, Signal::SIGKILL);
                 return Ok(Async::Ready(()))
             }
             Ok(ProcessMessage::Command(cmd)) => match cmd {
                 ProcessCommand::Message(cmd) =>
-                    srv.send_buffered(cmd),
+                    self.sink.send_buffered(cmd),
                 ProcessCommand::Start =>
-                    srv.send_buffered(WorkerCommand::start),
+                    self.sink.send_buffered(WorkerCommand::start),
                 ProcessCommand::Pause =>
-                    srv.send_buffered(WorkerCommand::pause),
+                    self.sink.send_buffered(WorkerCommand::pause),
                 ProcessCommand::Resume =>
-                    srv.send_buffered(WorkerCommand::resume),
+                    self.sink.send_buffered(WorkerCommand::resume),
                 ProcessCommand::Stop => {
-                    info!("Stopping worker: (pid:{})", ctx.pid);
-                    match ctx.state {
+                    info!("Stopping worker: (pid:{})", st.pid);
+                    match st.state {
                         ProcessState::Running => {
-                            srv.send_buffered(WorkerCommand::stop);
+                            self.sink.send_buffered(WorkerCommand::stop);
 
-                            ctx.state = ProcessState::Stopping;
+                            st.state = ProcessState::Stopping;
                             if let Ok(timeout) = Timeout::new(
-                                Duration::new(ctx.shutdown_timeout, 0), srv.handle())
+                                Duration::new(st.shutdown_timeout, 0), srv.handle())
                             {
-                                srv.add_future(
-                                    timeout.map(|_| ProcessMessage::StopTimeout));
-                                let _ = kill(ctx.pid, Signal::SIGTERM);
+                                srv.add_future(timeout.map(|_| ProcessMessage::StopTimeout));
+                                let _ = kill(st.pid, Signal::SIGTERM);
                             } else {
                                 // can not create timeout
-                                let _ = kill(ctx.pid, Signal::SIGQUIT);
+                                let _ = kill(st.pid, Signal::SIGQUIT);
                                 return Ok(Async::Ready(()))
                             }
                         },
                         _ => {
-                            let _ = kill(ctx.pid, Signal::SIGQUIT);
+                            let _ = kill(st.pid, Signal::SIGQUIT);
                             return Ok(Async::Ready(()))
                         }
                     }
                 }
                 ProcessCommand::Quit => {
-                    let _ = kill(ctx.pid, Signal::SIGQUIT);
+                    let _ = kill(st.pid, Signal::SIGQUIT);
                     self.kill(srv)
                 }
             }
