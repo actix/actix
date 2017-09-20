@@ -9,6 +9,8 @@
 //! ```
 
 pub use fut::{self, CtxFuture, WrapFuture, IntoCtxFuture};
+pub use builder::Builder;
+pub use context::{Context, ServiceStream};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
-pub use service::{Context, Builder, Service, ServiceStream};
+pub use service::Service;
 pub use sink::{SinkService, Sink, SinkContext, SinkResult};

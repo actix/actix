@@ -2,21 +2,23 @@
 
 use std;
 use std::collections::VecDeque;
-
 use futures::{self, Async, AsyncSink, Poll};
-use service::{Context, Service, Message};
 
+use service::{Service, Message};
+
+/// Sink operation result
 pub enum SinkResult<T: SinkService> {
     Sent,
     SinkErr(<T::SinkMessage as Message>::Error)
 }
 
+/// Service tied to Sink
 pub trait SinkService: Sized {
 
     type Service: Service;
     type SinkMessage: Message;
 
-    /// process sink response
+    /// process sink result
     fn call(&mut self,
             _st: &mut <Self::Service as Service>::State,
             _srv: &mut Self::Service,
@@ -63,6 +65,7 @@ pub struct SinkContext<T> where T: SinkService
     sink_flushed: bool,
 }
 
+/// SinkService execution context object
 impl<T> SinkContext<T> where T: SinkService
 {
     pub(crate) fn new<S>(srv: T, sink: S) -> SinkContext<T>
@@ -100,7 +103,7 @@ pub(crate) trait SinkContextService {
     fn poll(&mut self,
             st: &mut <Self::Service as Service>::State,
             srv: &mut Self::Service,
-            ctx: &mut Context<Self::Service>)
+            ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
             -> Poll<<<Self::Service as Service>::Result as Message>::Item,
                     <<Self::Service as Service>::Result as Message>::Error>;
 }
@@ -113,7 +116,7 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
     fn poll(&mut self,
             st: &mut <Self::Service as Service>::State,
             srv: &mut Self::Service,
-            _ctx: &mut Context<Self::Service>)
+            _ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
             -> Poll<<<Self::Service as Service>::Result as Message>::Item,
                     <<Self::Service as Service>::Result as Message>::Error>
     {

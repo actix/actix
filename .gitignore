@@ -1,3 +1,4 @@
+Cargo.lock
 /doc
 /gh-pages
 __pycache__
@@ -8,11 +9,5 @@ __pycache__
 *.pid
 *.sock
 *~
-fectl/fectl
-fectl/fectld
-fectl/fectl.*
-fectl/_gen_*
-build/
-dist/
 target/
 *.egg-info/
