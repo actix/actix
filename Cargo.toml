@@ -23,8 +23,8 @@ boxfnonce = "*"
 bytes = "0.4"
 mio = "0.6"
 futures = "0.1"
-tokio-core = "0.1"
 tokio-io = "0.1"
+tokio-core = "0.1"
 
 # logging
 log = "0.3"

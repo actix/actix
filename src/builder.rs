@@ -1,6 +1,4 @@
 use std;
-use std::rc::Rc;
-use std::cell::RefCell;
 
 use boxfnonce::BoxFnOnce;
 use futures::{future, Future, Stream};
@@ -20,27 +18,25 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
 {
     /// Build service for `T` and stream `S`
     // #[must_use = "service do nothing unless polled"]
-    pub fn build<S>(srv: T, st: T::State, stream: S, handle: &Handle) -> Self
+    pub fn build<S>(srv: T, stream: S, handle: &Handle) -> Self
         where S: Stream<Item=<T::Message as Item>::Item,
                         Error=<T::Message as Item>::Error> + 'static,
     {
         Builder {
-            ctx: Context::new(
-                Rc::new(RefCell::new(st)), srv, stream, handle),
+            ctx: Context::new(srv, stream, handle),
             factory: None
         }
     }
 
     /// Build service for `T` and stream `S`
     // #[must_use = "service do nothing unless polled"]
-    pub fn with_service_init<S, F>(st: T::State, stream: S, handle: &Handle, f: F) -> Self
+    pub fn with_service_init<S, F>(stream: S, handle: &Handle, f: F) -> Self
         where F: 'static + FnOnce(&mut Context<T>) -> T,
               S: Stream<Item=<T::Message as Item>::Item,
                         Error=<T::Message as Item>::Error> + 'static,
     {
         Builder {
-            ctx: Context::new(Rc::new(RefCell::new(st)),
-                              unsafe{std::mem::uninitialized()}, stream, handle),
+            ctx: Context::new(unsafe{std::mem::uninitialized()}, stream, handle),
             factory: Some(BoxFnOnce::from(|mut ctx| {
                 let srv = f(&mut ctx);
                 ctx.set_service(srv);
@@ -52,14 +48,13 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
     /// Build service for `T` and stream `S`
     // #[must_use = "service do nothing unless polled"]
     pub fn from_context<C, S, F>(ctx: &Context<C>, stream: S, f: F) -> Self
-        where C: Service<State=T::State, Context=Context<C>>,
+        where C: Service<Context=Context<C>>,
               F: FnOnce(&mut Context<T>) -> T + 'static,
               S: Stream<Item=<<T as Service>::Message as Item>::Item,
                         Error=<<T as Service>::Message as Item>::Error> + 'static
     {
         Builder {
-            ctx: Context::new(ctx.clone(),
-                              unsafe{std::mem::uninitialized()}, stream, ctx.handle()),
+            ctx: Context::new(unsafe{std::mem::uninitialized()}, stream, ctx.handle()),
             factory: Some(BoxFnOnce::from(|mut ctx| {
                 let srv = f(&mut ctx);
                 ctx.set_service(srv);

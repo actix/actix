@@ -32,7 +32,7 @@ pub(crate) trait MessageProxy {
     type Service: Service<Context=Context<Self::Service>>;
 
     /// handle message within new service and context
-    fn handle(&mut self, st: &mut <Self::Service as Service>::State,
+    fn handle(&mut self,
               srv: &mut Self::Service,
               ctx: &mut <Self::Service as Service>::Context);
 }

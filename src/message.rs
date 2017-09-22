@@ -53,12 +53,9 @@ impl<T, S> MessageProxy for Msg<T>
 {
     type Service = T::Service;
 
-    fn handle(&mut self,
-              st: &mut <T::Service as Service>::State,
-              srv: &mut T::Service,
-              ctx: &mut <T::Service as Service>::Context)
+    fn handle(&mut self, srv: &mut T::Service, ctx: &mut <T::Service as Service>::Context)
     {
-        let fut = self.msg.handle(st, srv, ctx);
+        let fut = self.msg.handle(srv, ctx);
         let f: MsgFuture<T> = MsgFuture {msg: PhantomData,
                                          fut: fut,
                                          tx: Some(self.tx.take().unwrap())};

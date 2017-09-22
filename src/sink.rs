@@ -20,7 +20,6 @@ pub trait SinkService: Sized {
 
     /// process sink result
     fn call(&mut self,
-            _st: &mut <Self::Service as Service>::State,
             _srv: &mut Self::Service,
             _ctx: &mut SinkContext<Self>,
             _result: SinkResult<Self>)
@@ -101,7 +100,6 @@ pub(crate) trait SinkContextService {
     type Service: Service;
 
     fn poll(&mut self,
-            st: &mut <Self::Service as Service>::State,
             srv: &mut Self::Service,
             ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
             -> Poll<<<Self::Service as Service>::Result as Item>::Item,
@@ -114,7 +112,6 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
     type Service = T::Service;
 
     fn poll(&mut self,
-            st: &mut <Self::Service as Service>::State,
             srv: &mut Self::Service,
             _ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
             -> Poll<<<Self::Service as Service>::Result as Item>::Item,
@@ -139,7 +136,7 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
                             continue
                         }
                         Err(err) => match SinkService::call(
-                            &mut self.srv, st, srv, ctx, SinkResult::SinkErr(err))
+                            &mut self.srv, srv, ctx, SinkResult::SinkErr(err))
                         {
                             Ok(Async::NotReady) => (),
                             val => return val,
@@ -155,8 +152,7 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
                     Ok(Async::Ready(_)) => {
                         not_ready = false;
                         self.sink_flushed = true;
-                        match SinkService::call(
-                            &mut self.srv, st, srv, ctx, SinkResult::Sent)
+                        match SinkService::call(&mut self.srv, srv, ctx, SinkResult::Sent)
                         {
                             Ok(Async::NotReady) => (),
                             val => return val,
@@ -164,7 +160,7 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
                     }
                     Ok(Async::NotReady) => (),
                     Err(err) => match SinkService::call(
-                            &mut self.srv, st, srv, ctx, SinkResult::SinkErr(err))
+                        &mut self.srv, srv, ctx, SinkResult::SinkErr(err))
                     {
                         Ok(Async::NotReady) => (),
                         val => return val,

@@ -1,8 +1,5 @@
 #![allow(dead_code)]
 use std;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::borrow::Borrow;
 
 use futures::{self, Async, Future, Poll, Stream};
 use futures::unsync::mpsc::{unbounded, UnboundedReceiver};
@@ -16,15 +13,13 @@ use sink::{Sink, SinkService, SinkContext, SinkContextService};
 /// Service execution context object
 pub struct Context<T> where T: Service<Context=Context<T>>,
 {
-    st: Rc<RefCell<T::State>>,
     srv: T,
     addr: Address<T>,
     handle: Handle,
     started: bool,
     msgs: UnboundedReceiver<BoxedMessageProxy<T>>,
-    stream: Box<Stream<Item=<T::Message as Item>::Item,
-                       Error=<T::Message as Item>::Error>>,
     items: Vec<IoItem<T>>,
+    stream: Box<Stream<Item=<T::Message as Item>::Item, Error=<T::Message as Item>::Error>>,
 }
 
 /// io items
@@ -60,15 +55,13 @@ type ServiceFutStream<T> =
 
 impl<T> Context<T> where T: Service<Context=Context<T>>
 {
-    pub(crate) fn new<S>(st: Rc<RefCell<T::State>>, srv: T, stream: S, handle: &Handle)
-                         -> Context<T>
+    pub(crate) fn new<S>(srv: T, stream: S, handle: &Handle) -> Context<T>
         where S: Stream<Item=<T::Message as Item>::Item,
                         Error=<T::Message as Item>::Error> + 'static,
     {
         let (tx, rx) = unbounded();
 
         Context {
-            st: st,
             srv: srv,
             msgs: rx,
             addr: Address::new(tx),
@@ -79,8 +72,14 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
         }
     }
 
+    pub(crate) fn run(self) where T: 'static {
+        let handle: &Handle = unsafe{std::mem::transmute(&self.handle)};
+        handle.spawn(self.map(|_| ()).map_err(|_| ()))
+    }
+
     pub(crate) fn set_service(&mut self, srv: T) {
-        self.srv = srv
+        let old = std::mem::replace(&mut self.srv, srv);
+        std::mem::forget(old);
     }
 
     pub fn address(&self) -> Address<T> {
@@ -89,16 +88,6 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
 
     pub fn handle(&self) -> &Handle {
         &self.handle
-    }
-
-    pub fn clone(&self) -> Rc<RefCell<T::State>> {
-        self.st.clone()
-    }
-
-    pub(crate) fn run(self) where T: 'static
-    {
-        let handle: &Handle = unsafe{std::mem::transmute(&self.handle)};
-        handle.spawn(self.map(|_| ()).map_err(|_| ()))
     }
 
     pub fn spawn<F>(&mut self, fut: F)
@@ -143,43 +132,18 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
     }
 }
 
-impl<T> std::convert::AsRef<T::State> for Context<T>
-    where T: Service<Context=Context<T>>
-{
-    fn as_ref(&self) -> &T::State {
-        let b: &RefCell<T::State> = self.st.borrow();
-        let st = b.borrow();
-        unsafe {
-            std::mem::transmute(&*st)
-        }
-    }
-}
-
-impl<T> std::convert::AsMut<T::State> for Context<T>
-    where T: Service<Context=Context<T>>
-{
-    fn as_mut(&mut self) -> &mut T::State {
-        unsafe {
-            std::mem::transmute(&mut *self.st.borrow_mut())
-        }
-    }
-}
-
 impl<T> Future for Context<T> where T: Service<Context=Context<T>>
 {
     type Item = <<T as Service>::Result as Item>::Item;
     type Error = <<T as Service>::Result as Item>::Error;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let st: &mut T::State = unsafe {
-            std::mem::transmute(&mut *self.st.borrow_mut())
-        };
-        let srv: &mut Context<T> = unsafe {
+        let ctx: &mut Context<T> = unsafe {
             std::mem::transmute(self as &mut Context<T>)
         };
         if !self.started {
             self.started = true;
-            Service::start(&mut self.srv, st, srv);
+            Service::start(&mut self.srv, ctx);
         }
 
         loop {
@@ -190,12 +154,12 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                     match val {
                         Async::Ready(Some(val)) => {
                             not_ready = false;
-                            match Service::call(&mut self.srv, st, srv, Ok(val)) {
+                            match Service::call(&mut self.srv, ctx, Ok(val)) {
                                 Ok(Async::NotReady) => (),
                                 val => return val
                             }
                         }
-                        Async::Ready(None) => match Service::finished(&mut self.srv, st, srv)
+                        Async::Ready(None) => match Service::finished(&mut self.srv, ctx)
                         {
                             Ok(Async::NotReady) => (),
                             val => return val
@@ -203,7 +167,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                         Async::NotReady => (),
                     }
                 }
-                Err(err) => match Service::call(&mut self.srv, st, srv, Err(err)) {
+                Err(err) => match Service::call(&mut self.srv, ctx, Err(err)) {
                     Ok(Async::NotReady) => (),
                     val => return val,
                 }
@@ -215,7 +179,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                     match val {
                         Async::Ready(Some(mut msg)) => {
                             not_ready = false;
-                            msg.handle(st, &mut self.srv, srv);
+                            msg.handle(&mut self.srv, ctx);
                         }
                         Async::Ready(None) => (),
                         Async::NotReady => (),
@@ -233,7 +197,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                 }
 
                 let (drop, item) = match self.items[idx] {
-                    IoItem::Sink(ref mut sink) => match sink.poll(st, &mut self.srv, srv) {
+                    IoItem::Sink(ref mut sink) => match sink.poll(&mut self.srv, ctx) {
                         Ok(val) => match val {
                             Async::Ready(val) => return Ok(Async::Ready(val)),
                             Async::NotReady => (false, None),
@@ -244,7 +208,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                         Ok(val) => match val {
                             Async::Ready(Some(val)) => {
                                 not_ready = false;
-                                match Service::call(&mut self.srv, st, srv, Ok(val))
+                                match Service::call(&mut self.srv, ctx, Ok(val))
                                 {
                                     Ok(Async::NotReady) => (),
                                     val => return val,
@@ -254,7 +218,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             Async::Ready(None) => (true, None),
                             Async::NotReady => (false, None),
                         }
-                        Err(err) => match Service::call(&mut self.srv, st, srv, Err(err))
+                        Err(err) => match Service::call(&mut self.srv, ctx, Err(err))
                         {
                             Ok(Async::NotReady) => (true, None),
                             val => return val,
@@ -266,7 +230,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            match Service::call(&mut self.srv, st, srv, Err(err))
+                            match Service::call(&mut self.srv, ctx, Err(err))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -278,7 +242,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
-                                match Service::call(&mut self.srv, st, srv, Ok(val))
+                                match Service::call(&mut self.srv, ctx, Ok(val))
                                 {
                                     Ok(Async::NotReady) => (),
                                     val => return val,
@@ -288,7 +252,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            match Service::call(&mut self.srv, st, srv, Err(err))
+                            match Service::call(&mut self.srv, ctx, Err(err))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -296,11 +260,11 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             (true, None)
                         }
                     }
-                    IoItem::CtxFuture(ref mut fut) => match fut.poll(&mut self.srv, srv) {
+                    IoItem::CtxFuture(ref mut fut) => match fut.poll(&mut self.srv, ctx) {
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
-                                match Service::call(&mut self.srv, st, srv, Ok(val))
+                                match Service::call(&mut self.srv, ctx, Ok(val))
                                 {
                                     Ok(Async::NotReady) => (),
                                     val => return val,
@@ -310,7 +274,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            match Service::call(&mut self.srv, st, srv, Err(err))
+                            match Service::call(&mut self.srv, ctx, Err(err))
                             {
                                 Ok(Async::NotReady) => (),
                                 val => return val,
@@ -318,7 +282,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             (true, None)
                         }
                     }
-                    IoItem::CtxSpawnFuture(ref mut fut) => match fut.poll(&mut self.srv, srv) {
+                    IoItem::CtxSpawnFuture(ref mut fut) => match fut.poll(&mut self.srv, ctx) {
                         Ok(val) => match val {
                             Async::Ready(_) => {
                                 not_ready = false;
