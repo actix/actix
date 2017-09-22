@@ -13,11 +13,15 @@ pub trait MessageTransport {
 
     type Message: Message;
 
+    /// Send message, do not wait for result
+    fn send(self, dest: &Address<<Self::Message as Message>::Service>);
+
     /// Send message and return the result asynchronously.
     fn send_to(self, dest: &Address<<Self::Message as Message>::Service>)
                -> MessageResult<Self::Message>;
 }
 
+#[must_use = "future do nothing unless polled"]
 pub struct MessageResult<T> where T: Message {
     rx: Receiver<Result<T::Item, T::Error>>,
 }
@@ -58,7 +62,7 @@ impl<T, S> MessageProxy for Msg<T>
         let fut = self.msg.handle(srv, ctx);
         let f: MsgFuture<T> = MsgFuture {msg: PhantomData,
                                          fut: fut,
-                                         tx: Some(self.tx.take().unwrap())};
+                                         tx: self.tx.take()};
         ctx.spawn(f);
     }
 }
@@ -68,6 +72,10 @@ impl<T> MessageTransport for T
           T::Service: Service<Context=Context<<T as Message>::Service>>,
 {
     type Message = T;
+
+    fn send(self, dest: &Address<<Self::Message as Message>::Service>) {
+        dest.send(Msg{msg: self, tx: None});
+    }
 
     fn send_to(self, dest: &Address<<Self::Message as Message>::Service>)
                -> MessageResult<Self::Message>
@@ -103,12 +111,16 @@ impl<T> fut::CtxFuture for MsgFuture<T>
     {
         match self.fut.poll(srv, ctx) {
             Ok(Async::Ready(val)) => {
-                let _ = self.tx.take().expect("Multiple polls?").send(Ok(val));
+                if let Some(tx) = self.tx.take() {
+                    let _ = tx.send(Ok(val));
+                }
                 Ok(Async::Ready(()))
             },
             Ok(Async::NotReady) => Ok(Async::NotReady),
             Err(err) => {
-                let _ = self.tx.take().expect("Multiple polls?").send(Err(err));
+                if let Some(tx) = self.tx.take() {
+                    let _ = tx.send(Err(err));
+                }
                 Err(())
             }
         }
