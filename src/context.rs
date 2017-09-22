@@ -20,6 +20,8 @@ pub struct Context<T> where T: Service<Context=Context<T>>,
     msgs: UnboundedReceiver<BoxedMessageProxy<T>>,
     items: Vec<IoItem<T>>,
     stream: Box<Stream<Item=<T::Message as Item>::Item, Error=<T::Message as Item>::Error>>,
+    result: Option<Result<<<T as Service>::Result as Item>::Item,
+                          <<T as Service>::Result as Item>::Error>>,
 }
 
 /// io items
@@ -69,6 +71,7 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
             handle: handle.clone(),
             stream: Box::new(stream),
             items: Vec::new(),
+            result: None,
         }
     }
 
@@ -88,6 +91,11 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
 
     pub fn handle(&self) -> &Handle {
         &self.handle
+    }
+
+    pub fn set_result(&mut self, result: Result<<<T as Service>::Result as Item>::Item,
+                                                <<T as Service>::Result as Item>::Error>) {
+        self.result = Some(result);
     }
 
     pub fn spawn<F>(&mut self, fut: F)
@@ -314,6 +322,14 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                     }
                 } else {
                     idx += 1;
+                }
+            }
+
+            // check result
+            if let Some(result) = self.result.take() {
+                match result {
+                    Ok(val) => return Ok(Async::Ready(val)),
+                    Err(err) => return Err(err)
                 }
             }
 
