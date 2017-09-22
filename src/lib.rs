@@ -1,3 +1,5 @@
+#![feature(conservative_impl_trait)]
+
 #[macro_use]
 extern crate log;
 
@@ -9,9 +11,11 @@ extern crate tokio_io;
 extern crate tokio_core;
 extern crate boxfnonce;
 
+mod address;
 mod builder;
 mod context;
 mod service;
+mod message;
 mod sink;
 mod framed;
 
@@ -23,4 +27,5 @@ pub use builder::Builder;
 pub use context::{Context, ServiceStream};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
 pub use sink::{SinkContext, Sink, SinkService, SinkResult};
-pub use service::{Service, Message};
+pub use service::{Item, Service};
+pub use message::MessageTransport;

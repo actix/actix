@@ -14,6 +14,8 @@ pub use self::map::Map;
 pub use self::map_err::MapErr;
 pub use self::result::{result, ok, err, FutureResult};
 
+use service::Service;
+
 
 pub trait CtxFuture {
 
@@ -26,23 +28,20 @@ pub trait CtxFuture {
     type Error;
 
     /// The service within which this future runs
-    type Service;
+    type Service: Service;
 
-    /// The context of this future
-    type Context;
-
-    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut Self::Context)
+    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut <Self::Service as Service>::Context)
             -> Poll<Self::Item, Self::Error>;
 
     fn map<F, U>(self, f: F) -> Map<Self, F>
-        where F: FnOnce(Self::Item, &mut Self::Service, &mut Self::Context) -> U,
+        where F: FnOnce(Self::Item, &mut Self::Service, &mut <Self::Service as Service>::Context) -> U,
               Self: Sized,
     {
         map::new(self, f)
     }
 
     fn map_err<F, E>(self, f: F) -> MapErr<Self, F>
-        where F: FnOnce(Self::Error, &mut Self::Service, &mut Self::Context) -> E,
+        where F: FnOnce(Self::Error, &mut Self::Service, &mut <Self::Service as Service>::Context) -> E,
               Self: Sized,
     {
         map_err::new(self, f)
@@ -50,22 +49,22 @@ pub trait CtxFuture {
 
     fn then<F, B>(self, f: F) -> Then<Self, B, F>
         where F: FnOnce(Result<Self::Item, Self::Error>,
-                        &mut Self::Service, &mut Self::Context) -> B,
-              B: IntoCtxFuture<Service=Self::Service, Context=Self::Context>,
+                        &mut Self::Service, &mut <Self::Service as Service>::Context) -> B,
+              B: IntoCtxFuture<Service=Self::Service>,
               Self: Sized,
     {
         then::new(self, f)
     }
 
-
     /// Execute another future after this one has resolved successfully.
     fn and_then<F, B>(self, f: F) -> AndThen<Self, B, F>
-        where F: FnOnce(Self::Item, &mut Self::Service, &mut Self::Context) -> B,
-              B: IntoCtxFuture<Error=Self::Error, Service=Self::Service, Context=Self::Context>,
+        where F: FnOnce(Self::Item, &mut Self::Service, &mut <Self::Service as Service>::Context) -> B,
+              B: IntoCtxFuture<Error=Self::Error, Service=Self::Service>,
               Self: Sized,
     {
         and_then::new(self, f)
     }
+
 }
 
 
@@ -75,17 +74,14 @@ pub trait CtxFuture {
 /// used in a very similar fashion.
 pub trait IntoCtxFuture {
     /// The future that this type can be converted into.
-    type Future: CtxFuture<Item=Self::Item, Error=Self::Error,
-                           Service=Self::Service, Context=Self::Context>;
+    type Future: CtxFuture<Item=Self::Item, Error=Self::Error, Service=Self::Service>;
 
     /// The item that the future may resolve with.
     type Item;
     /// The error that the future may resolve with.
     type Error;
     /// The service within which this future runs
-    type Service;
-    /// The context of this future
-    type Context;
+    type Service: Service;
 
     /// Consumes this object and produces a future.
     fn into_future(self) -> Self::Future;
@@ -96,56 +92,54 @@ impl<F: CtxFuture> IntoCtxFuture for F {
     type Item = F::Item;
     type Error = F::Error;
     type Service = F::Service;
-    type Context = F::Context;
 
     fn into_future(self) -> F {
         self
     }
 }
 
-pub trait WrapFuture<S, C> {
+pub trait WrapFuture<S> where S: Service {
     /// The future that this type can be converted into.
-    type Future: CtxFuture<Item=Self::Item, Error=Self::Error, Service=S, Context=C>;
+    type Future: CtxFuture<Item=Self::Item, Error=Self::Error, Service=S>;
 
     /// The item that the future may resolve with.
     type Item;
     /// The error that the future may resolve with.
     type Error;
 
-    fn wrap(self) -> Self::Future;
+    fn ctxfuture(self) -> Self::Future;
 }
 
-impl<F: future::Future, S, C> WrapFuture<S, C> for F {
-    type Future = FutureWrap<F,S,  C>;
+impl<F: future::Future, S: Service> WrapFuture<S> for F {
+    type Future = FutureWrap<F, S>;
     type Item = F::Item;
     type Error = F::Error;
 
-    fn wrap(self) -> Self::Future {
+    fn ctxfuture(self) -> Self::Future {
         wrap_future(self)
     }
 }
 
-pub struct FutureWrap<F, S, C> where F: future::Future {
+pub struct FutureWrap<F, S> where F: future::Future {
     fut: F,
     srv: PhantomData<S>,
-    ctx: PhantomData<C>,
 }
 
-pub fn wrap_future<F, S, C>(f: F) -> FutureWrap<F, S, C>
+pub fn wrap_future<F, S>(f: F) -> FutureWrap<F, S>
     where F: future::Future
 {
-    FutureWrap{fut: f, srv: PhantomData, ctx: PhantomData}
+    FutureWrap{fut: f, srv: PhantomData}
 }
 
-impl<F, S, C> CtxFuture for FutureWrap<F, S, C>
+impl<F, S> CtxFuture for FutureWrap<F, S>
     where F: future::Future,
+          S: Service,
 {
     type Item = F::Item;
     type Error = F::Error;
     type Service = S;
-    type Context = C;
 
-    fn poll(&mut self, _: &mut Self::Service, _: &mut Self::Context)
+    fn poll(&mut self, _: &mut Self::Service, _: &mut <Self::Service as Service>::Context)
             -> Poll<Self::Item, Self::Error>
     {
         self.fut.poll()

@@ -6,8 +6,9 @@ use boxfnonce::BoxFnOnce;
 use futures::{future, Future, Stream};
 use tokio_core::reactor::Handle;
 
+use address::Address;
 use context::Context;
-use service::{Message, Service};
+use service::{Item, Service};
 
 /// Service builder
 pub struct Builder<T> where T: Service<Context=Context<T>> {
@@ -20,8 +21,8 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
     /// Build service for `T` and stream `S`
     // #[must_use = "service do nothing unless polled"]
     pub fn build<S>(srv: T, st: T::State, stream: S, handle: &Handle) -> Self
-        where S: Stream<Item=<T::Message as Message>::Item,
-                        Error=<T::Message as Message>::Error> + 'static,
+        where S: Stream<Item=<T::Message as Item>::Item,
+                        Error=<T::Message as Item>::Error> + 'static,
     {
         Builder {
             ctx: Context::new(
@@ -34,8 +35,8 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
     // #[must_use = "service do nothing unless polled"]
     pub fn with_service_init<S, F>(st: T::State, stream: S, handle: &Handle, f: F) -> Self
         where F: 'static + FnOnce(&mut Context<T>) -> T,
-              S: Stream<Item=<T::Message as Message>::Item,
-                        Error=<T::Message as Message>::Error> + 'static,
+              S: Stream<Item=<T::Message as Item>::Item,
+                        Error=<T::Message as Item>::Error> + 'static,
     {
         Builder {
             ctx: Context::new(Rc::new(RefCell::new(st)),
@@ -53,8 +54,8 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
     pub fn from_context<C, S, F>(ctx: &Context<C>, stream: S, f: F) -> Self
         where C: Service<State=T::State, Context=Context<C>>,
               F: FnOnce(&mut Context<T>) -> T + 'static,
-              S: Stream<Item=<<T as Service>::Message as Message>::Item,
-                        Error=<<T as Service>::Message as Message>::Error> + 'static
+              S: Stream<Item=<<T as Service>::Message as Item>::Item,
+                        Error=<<T as Service>::Message as Item>::Error> + 'static
     {
         Builder {
             ctx: Context::new(ctx.clone(),
@@ -67,31 +68,29 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
         }
     }
 
-    pub fn run(self) where Self: 'static, T: 'static {
-        let handle: &Handle = unsafe{std::mem::transmute(&self.ctx.handle())};
+    pub fn run(self) -> Address<T> where Self: 'static, T: 'static
+    {
+        let addr = self.ctx.address();
+
         if let None = self.factory {
             self.ctx.run()
         } else {
+            let Builder { ctx, factory } = self;
+            let handle = ctx.handle().clone();
             handle.spawn_fn(move || {
-                let Builder { ctx, factory } = self;
                 factory.unwrap().call(ctx);
                 future::ok(())
             })
         }
-    }
 
-    pub fn clone_and_run(self) -> Rc<RefCell<T::State>> where Self: 'static, T: 'static
-    {
-        let st = self.ctx.clone();
-        self.ctx.run();
-        st
+        addr
     }
 
     /// Add future
     // #[must_use = "service do nothing unless polled"]
     pub fn add_future<F>(mut self, fut: F) -> Self
-        where F: Future<Item=<<T as Service>::Message as Message>::Item,
-                        Error=<<T as Service>::Message as Message>::Error> + 'static
+        where F: Future<Item=<<T as Service>::Message as Item>::Item,
+                        Error=<<T as Service>::Message as Item>::Error> + 'static
     {
         self.ctx.add_future(fut);
         self
@@ -100,8 +99,8 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
     /// Add stream
     // #[must_use = "service do nothing unless polled"]
     pub fn add_stream<S>(mut self, fut: S) -> Self
-        where S: Stream<Item=<<T as Service>::Message as Message>::Item,
-                        Error=<<T as Service>::Message as Message>::Error> + 'static
+        where S: Stream<Item=<<T as Service>::Message as Item>::Item,
+                        Error=<<T as Service>::Message as Item>::Error> + 'static
     {
         self.ctx.add_stream(fut);
         self
@@ -111,9 +110,9 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
     // #[must_use = "service do nothing unless polled"]
     pub fn add_fut_stream<F>(mut self, fut: F) -> Self
         where F: Future<Item=
-                        Box<Stream<Item=<<T as Service>::Message as Message>::Item,
-                                   Error=<<T as Service>::Message as Message>::Error>>,
-                        Error=<<T as Service>::Message as Message>::Error> + 'static
+                        Box<Stream<Item=<<T as Service>::Message as Item>::Item,
+                                   Error=<<T as Service>::Message as Item>::Error>>,
+                        Error=<<T as Service>::Message as Item>::Error> + 'static
     {
         self.ctx.add_fut_stream(fut);
         self

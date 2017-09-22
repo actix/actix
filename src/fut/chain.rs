@@ -2,6 +2,7 @@ use std::mem;
 use futures::{Async, Poll};
 
 use fut::CtxFuture;
+use service::Service;
 
 
 #[derive(Debug)]
@@ -13,15 +14,16 @@ pub enum Chain<A, B, C> where A: CtxFuture {
 
 impl<A, B, C> Chain<A, B, C>
     where A: CtxFuture,
-          B: CtxFuture<Context=A::Context, Service=A::Service>,
+          B: CtxFuture<Service=A::Service>,
 {
     pub fn new(a: A, c: C) -> Chain<A, B, C> {
         Chain::First(a, c)
     }
 
-    pub fn poll<F>(&mut self, srv: &mut A::Service, ctx: &mut A::Context, f: F)
+    pub fn poll<F>(&mut self, srv: &mut A::Service,
+                   ctx: &mut <A::Service as Service>::Context, f: F)
                    -> Poll<B::Item, B::Error>
-        where F: FnOnce(Result<A::Item, A::Error>, C, &mut A::Service, &mut A::Context)
+        where F: FnOnce(Result<A::Item, A::Error>, C, &mut A::Service, &mut <A::Service as Service>::Context)
                         -> Result<Result<B::Item, B>, B::Error>,
     {
         let a_result = match *self {

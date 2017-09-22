@@ -4,19 +4,19 @@ use std;
 use std::collections::VecDeque;
 use futures::{self, Async, AsyncSink, Poll};
 
-use service::{Service, Message};
+use service::{Service, Item};
 
 /// Sink operation result
 pub enum SinkResult<T: SinkService> {
     Sent,
-    SinkErr(<T::SinkMessage as Message>::Error)
+    SinkErr(<T::SinkMessage as Item>::Error)
 }
 
 /// Service tied to Sink
 pub trait SinkService: Sized {
 
     type Service: Service;
-    type SinkMessage: Message;
+    type SinkMessage: Item;
 
     /// process sink result
     fn call(&mut self,
@@ -24,8 +24,8 @@ pub trait SinkService: Sized {
             _srv: &mut Self::Service,
             _ctx: &mut SinkContext<Self>,
             _result: SinkResult<Self>)
-            -> Poll<<<Self::Service as Service>::Result as Message>::Item,
-                    <<Self::Service as Service>::Result as Message>::Error>
+            -> Poll<<<Self::Service as Service>::Result as Item>::Item,
+                    <<Self::Service as Service>::Result as Item>::Error>
     {
         Ok(Async::NotReady)
     }
@@ -40,15 +40,15 @@ impl<T> Sink<T> where T: SinkService {
         Sink{srv: srv as *mut _}
     }
 
-    pub fn send(&mut self, item: <T::SinkMessage as Message>::Item)
-                -> Result<(), <T::SinkMessage as Message>::Item>
+    pub fn send(&mut self, item: <T::SinkMessage as Item>::Item)
+                -> Result<(), <T::SinkMessage as Item>::Item>
     {
         unsafe {
             (&mut *self.srv).send(item)
         }
     }
 
-    pub fn send_buffered(&mut self, item: <T::SinkMessage as Message>::Item)
+    pub fn send_buffered(&mut self, item: <T::SinkMessage as Item>::Item)
     {
         unsafe {
             (&mut *self.srv).send_buffered(item)
@@ -59,9 +59,9 @@ impl<T> Sink<T> where T: SinkService {
 pub struct SinkContext<T> where T: SinkService
 {
     srv: T,
-    sink: Box<futures::Sink<SinkItem=<T::SinkMessage as Message>::Item,
-                            SinkError=<T::SinkMessage as Message>::Error>>,
-    sink_items: VecDeque<<T::SinkMessage as Message>::Item>,
+    sink: Box<futures::Sink<SinkItem=<T::SinkMessage as Item>::Item,
+                            SinkError=<T::SinkMessage as Item>::Error>>,
+    sink_items: VecDeque<<T::SinkMessage as Item>::Item>,
     sink_flushed: bool,
 }
 
@@ -69,8 +69,8 @@ pub struct SinkContext<T> where T: SinkService
 impl<T> SinkContext<T> where T: SinkService
 {
     pub(crate) fn new<S>(srv: T, sink: S) -> SinkContext<T>
-        where S: futures::Sink<SinkItem=<T::SinkMessage as Message>::Item,
-                               SinkError=<T::SinkMessage as Message>::Error> + 'static
+        where S: futures::Sink<SinkItem=<T::SinkMessage as Item>::Item,
+                               SinkError=<T::SinkMessage as Item>::Error> + 'static
     {
         SinkContext {
             srv: srv,
@@ -80,8 +80,8 @@ impl<T> SinkContext<T> where T: SinkService
         }
     }
 
-    pub fn send(&mut self, item: <T::SinkMessage as Message>::Item)
-                -> Result<(), <T::SinkMessage as Message>::Item>
+    pub fn send(&mut self, item: <T::SinkMessage as Item>::Item)
+                -> Result<(), <T::SinkMessage as Item>::Item>
     {
         if self.sink_items.is_empty() {
             self.sink_items.push_back(item);
@@ -91,7 +91,7 @@ impl<T> SinkContext<T> where T: SinkService
         }
     }
 
-    pub fn send_buffered(&mut self, item: <T::SinkMessage as Message>::Item) {
+    pub fn send_buffered(&mut self, item: <T::SinkMessage as Item>::Item) {
         self.sink_items.push_back(item);
     }
 }
@@ -104,8 +104,8 @@ pub(crate) trait SinkContextService {
             st: &mut <Self::Service as Service>::State,
             srv: &mut Self::Service,
             ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
-            -> Poll<<<Self::Service as Service>::Result as Message>::Item,
-                    <<Self::Service as Service>::Result as Message>::Error>;
+            -> Poll<<<Self::Service as Service>::Result as Item>::Item,
+                    <<Self::Service as Service>::Result as Item>::Error>;
 }
 
 
@@ -117,8 +117,8 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
             st: &mut <Self::Service as Service>::State,
             srv: &mut Self::Service,
             _ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
-            -> Poll<<<Self::Service as Service>::Result as Message>::Item,
-                    <<Self::Service as Service>::Result as Message>::Error>
+            -> Poll<<<Self::Service as Service>::Result as Item>::Item,
+                    <<Self::Service as Service>::Result as Item>::Error>
     {
         let ctx: &mut SinkContext<T> = unsafe {
             std::mem::transmute(self as &mut SinkContext<T>)

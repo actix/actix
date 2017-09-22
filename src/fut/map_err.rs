@@ -1,6 +1,7 @@
 use futures::{Async, Poll};
 
 use fut::CtxFuture;
+use service::Service;
 
 /// Future for the `map_err` combinator, changing the error type of a future.
 ///
@@ -23,14 +24,13 @@ pub fn new<A, F>(future: A, f: F) -> MapErr<A, F>
 
 impl<U, A, F> CtxFuture for MapErr<A, F>
     where A: CtxFuture,
-          F: FnOnce(A::Error, &mut A::Service, &mut A::Context) -> U,
+          F: FnOnce(A::Error, &mut A::Service, &mut <A::Service as Service>::Context) -> U,
 {
     type Item = A::Item;
     type Error = U;
     type Service = A::Service;
-    type Context = A::Context;
 
-    fn poll(&mut self, srv: &mut A::Service, ctx: &mut A::Context) -> Poll<A::Item, U> {
+    fn poll(&mut self, srv: &mut A::Service, ctx: &mut <A::Service as Service>::Context) -> Poll<A::Item, U> {
         let e = match self.future.poll(srv, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),
             other => other,
