@@ -18,6 +18,7 @@ path = "src/lib.rs"
 
 [dependencies]
 boxfnonce = "*"
+bitflags = "1.*"
 
 # tokio
 bytes = "0.4"

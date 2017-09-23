@@ -2,6 +2,8 @@
 
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate bitflags;
 
 extern crate bytes;
 #[macro_use]
@@ -18,6 +20,7 @@ mod service;
 mod message;
 mod sink;
 mod framed;
+mod task;
 
 pub mod fut;
 pub mod prelude;
@@ -27,5 +30,7 @@ pub use builder::Builder;
 pub use context::{Context, ServiceStream};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
 pub use sink::{SinkContext, Sink, SinkService, SinkResult};
-pub use service::{Item, Service};
 pub use message::MessageTransport;
+pub use task::Task;
+
+pub use service::{Item, Service, ServiceResult, Message, MessageFuture};

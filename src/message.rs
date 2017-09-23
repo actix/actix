@@ -14,11 +14,11 @@ pub trait MessageTransport {
     type Message: Message;
 
     /// Send message, do not wait for result
-    fn send(self, dest: &Address<<Self::Message as Message>::Service>);
+    fn tell(self, dest: &Address<<Self::Message as Message>::Service>);
 
     /// Send message and return the result asynchronously.
-    fn send_to(self, dest: &Address<<Self::Message as Message>::Service>)
-               -> MessageResult<Self::Message>;
+    fn send(self, dest: &Address<<Self::Message as Message>::Service>)
+            -> MessageResult<Self::Message>;
 }
 
 #[must_use = "future do nothing unless polled"]
@@ -33,15 +33,7 @@ impl<T> Future for MessageResult<T> where T: Message
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error>
     {
-        match self.rx.poll() {
-            Ok(Async::Ready(val)) =>
-                Ok(Async::Ready(val)),
-            Ok(Async::NotReady) =>
-                Ok(Async::NotReady),
-            Err(err) => {
-                Err(err)
-            }
-        }
+        self.rx.poll()
     }
 }
 
@@ -73,12 +65,12 @@ impl<T> MessageTransport for T
 {
     type Message = T;
 
-    fn send(self, dest: &Address<<Self::Message as Message>::Service>) {
+    fn tell(self, dest: &Address<<Self::Message as Message>::Service>) {
         dest.send(Msg{msg: self, tx: None});
     }
 
-    fn send_to(self, dest: &Address<<Self::Message as Message>::Service>)
-               -> MessageResult<Self::Message>
+    fn send(self, dest: &Address<<Self::Message as Message>::Service>)
+            -> MessageResult<Self::Message>
     {
         let (tx, rx) = channel();
         let msg = Msg{msg: self, tx: Some(tx)};

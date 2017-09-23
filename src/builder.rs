@@ -28,8 +28,32 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
         }
     }
 
+    /// Build service for `T`
+    pub fn build_default(srv: T, handle: &Handle) -> Self
+    {
+        Builder {
+            ctx: Context::new_empty(srv, handle),
+            factory: None
+        }
+    }
+
+    /// Build service for `T`
+    pub fn with_default<F>(handle: &Handle, f: F) -> Self
+        where F: 'static + FnOnce(&mut Context<T>) -> T
+    {
+        Builder {
+            ctx: Context::new_empty(unsafe{std::mem::uninitialized()}, handle),
+            factory: Some(BoxFnOnce::from(|mut ctx| {
+                let srv = f(&mut ctx);
+                let old = ctx.replace_service(srv);
+                std::mem::forget(old);
+                ctx.run();
+            }))
+        }
+    }
+
     /// Build service for `T` and stream `S`
-    pub fn with_service_init<S, F>(stream: S, handle: &Handle, f: F) -> Self
+    pub fn with_init<S, F>(stream: S, handle: &Handle, f: F) -> Self
         where F: 'static + FnOnce(&mut Context<T>) -> T,
               S: Stream<Item=<T::Message as Item>::Item,
                         Error=<T::Message as Item>::Error> + 'static,
@@ -38,7 +62,8 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
             ctx: Context::new(unsafe{std::mem::uninitialized()}, stream, handle),
             factory: Some(BoxFnOnce::from(|mut ctx| {
                 let srv = f(&mut ctx);
-                ctx.set_service(srv);
+                let old = ctx.replace_service(srv);
+                std::mem::forget(old);
                 ctx.run();
             }))
         }
@@ -55,7 +80,8 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
             ctx: Context::new(unsafe{std::mem::uninitialized()}, stream, ctx.handle()),
             factory: Some(BoxFnOnce::from(|mut ctx| {
                 let srv = f(&mut ctx);
-                ctx.set_service(srv);
+                let old = ctx.replace_service(srv);
+                std::mem::forget(old);
                 ctx.run();
             }))
         }

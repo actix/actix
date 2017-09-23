@@ -13,6 +13,11 @@ pub use address::Address;
 pub use builder::Builder;
 pub use context::{Context, CtxFutureSpawner, ServiceStream};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
-pub use service::{Service, Message, MessageFuture};
 pub use message::{MessageResult, MessageTransport};
 pub use sink::{SinkService, Sink, SinkContext, SinkResult};
+
+pub use service::{DefaultMessage, Message, MessageFuture, Service, ServiceResult};
+
+pub mod ctx {
+    pub use task::Task;
+}
