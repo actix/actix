@@ -17,8 +17,8 @@ name = "ctx"
 path = "src/lib.rs"
 
 [dependencies]
-boxfnonce = "*"
 bitflags = "1.*"
+lazy_static = "0.2"
 
 # tokio
 bytes = "0.4"

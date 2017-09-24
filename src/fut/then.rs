@@ -2,7 +2,7 @@ use futures::Poll;
 
 use fut::{CtxFuture, IntoCtxFuture};
 use fut::chain::Chain;
-use service::Service;
+use context::Context;
 
 
 /// Future for the `then` combinator, chaining computations on the end of
@@ -30,13 +30,13 @@ pub fn new<A, B, F>(future: A, f: F) -> Then<A, B, F>
 impl<A, B, F> CtxFuture for Then<A, B, F>
     where A: CtxFuture,
           B: IntoCtxFuture<Service=A::Service>,
-          F: FnOnce(Result<A::Item, A::Error>, &mut A::Service, &mut <A::Service as Service>::Context) -> B,
+          F: FnOnce(Result<A::Item, A::Error>, &mut A::Service, &mut Context<A::Service>) -> B,
 {
     type Item = B::Item;
     type Error = B::Error;
     type Service = A::Service;
 
-    fn poll(&mut self, srv: &mut A::Service, ctx: &mut <A::Service as Service>::Context) -> Poll<B::Item, B::Error> {
+    fn poll(&mut self, srv: &mut A::Service, ctx: &mut Context<A::Service>) -> Poll<B::Item, B::Error> {
         self.state.poll(srv, ctx, |a, f, srv, ctx| {
             Ok(Err(f(a, srv, ctx).into_future()))
         })

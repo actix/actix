@@ -1,4 +1,6 @@
 use fut::CtxFuture;
+use actor::Actor;
+use context::Context;
 
 pub trait Item {
     type Item;
@@ -19,20 +21,19 @@ pub type DefaultMessage = Result<(), ()>;
 
 pub trait Service: Sized + 'static {
 
-    type Context;
     type Message: Item;
 
     /// Method is called when service get polled first time.
-    fn start(&mut self, &mut Self::Context) {}
+    fn start(&mut self, &mut Context<Self>) {}
 
     /// Method is called when context stream finishes.
-    fn finished(&mut self, _ctx: &mut Self::Context) -> ServiceResult {
+    fn finished(&mut self, _ctx: &mut Context<Self>) -> ServiceResult {
         ServiceResult::Done
     }
 
     /// Method is called for every item from the stream.
     fn call(&mut self,
-            _ctx: &mut Self::Context,
+            _ctx: &mut Context<Self>,
             result: Result<<Self::Message as Item>::Item,
                            <Self::Message as Item>::Error>) -> ServiceResult {
         match result {
@@ -41,6 +42,9 @@ pub trait Service: Sized + 'static {
         }
     }
 }
+
+/// Service is Actor
+impl<T> Actor for T where T: Service {}
 
 
 pub trait Message: Sized + 'static {
@@ -60,5 +64,5 @@ pub trait MessageHandler<M>
     where M: Message,
           Self: Service,
 {
-    fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> MessageFuture<M, Self>;
+    fn handle(&mut self, msg: M, ctx: &mut Context<Self>) -> MessageFuture<M, Self>;
 }

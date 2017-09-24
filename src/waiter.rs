@@ -1,14 +1,14 @@
 use futures::unsync::oneshot;
 
 
-pub struct Task<T> where T: Clone {
+pub struct Waiter<T> where T: Clone {
     waiters: Vec<oneshot::Sender<T>>,
 }
 
-impl<T> Task<T> where T: Clone {
+impl<T> Waiter<T> where T: Clone {
 
-    pub fn new() -> Task<T> {
-        Task { waiters: Vec::new() }
+    pub fn new() -> Waiter<T> {
+        Waiter { waiters: Vec::new() }
     }
 
     pub fn wait(&mut self) -> oneshot::Receiver<T> {
@@ -17,7 +17,7 @@ impl<T> Task<T> where T: Clone {
         rx
     }
 
-    pub fn set_result(self, result: T) {
+    pub fn set(self, result: T) {
         for waiter in self.waiters {
             let _ = waiter.send(result.clone());
         }

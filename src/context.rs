@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std;
 
 use futures::{self, Async, Future, Poll, Stream};
@@ -30,7 +29,7 @@ bitflags! {
 }
 
 /// Service execution context object
-pub struct Context<T> where T: Service<Context=Context<T>>,
+pub struct Context<T> where T: Service,
 {
     srv: T,
     addr: Address<T>,
@@ -44,19 +43,13 @@ pub struct Context<T> where T: Service<Context=Context<T>>,
 
 /// io items
 enum IoItem<T: Service> {
-    CtxFuture(Box<ServiceCtxFuture<T>>),
-    CtxSpawnFuture(Box<ServiceCtxSpawnFuture<T>>),
     Future(Box<ServiceFuture<T>>),
     Stream(Box<ServiceStream<T>>),
+    SpawnFuture(Box<ServiceSpawnFuture<T>>),
     Sink(Box<SinkContextService<Service=T>>),
 }
 
-type ServiceCtxFuture<T> =
-    CtxFuture<Item=<<T as Service>::Message as Item>::Item,
-              Error=<<T as Service>::Message as Item>::Error,
-              Service=T>;
-
-type ServiceCtxSpawnFuture<T> =
+type ServiceSpawnFuture<T> =
     CtxFuture<Item=(), Error=(), Service=T>;
 
 type ServiceFuture<T> =
@@ -68,7 +61,7 @@ pub type ServiceStream<T> =
            Error=<<T as Service>::Message as Item>::Error>;
 
 
-impl<T> Context<T> where T: Service<Context=Context<T>>
+impl<T> Context<T> where T: Service
 {
     pub(crate) fn new<S>(srv: T, stream: S, handle: &Handle) -> Context<T>
         where S: Stream<Item=<T::Message as Item>::Item,
@@ -101,9 +94,11 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
         }
     }
 
-    pub(crate) fn run(self) where T: 'static {
+    pub(crate) fn run(self) -> Address<T> where T: 'static {
+        let addr = self.address();
         let handle: &Handle = unsafe{std::mem::transmute(&self.handle)};
-        handle.spawn(self.map(|_| ()).map_err(|_| ()))
+        handle.spawn(self.map(|_| ()).map_err(|_| ()));
+        addr
     }
 
     pub(crate) fn replace_service(&mut self, srv: T) -> T {
@@ -125,7 +120,7 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
     pub fn spawn<F>(&mut self, fut: F)
         where F: CtxFuture<Item=(), Error=(), Service=T> + 'static
     {
-        self.items.push(IoItem::CtxSpawnFuture(Box::new(fut)))
+        self.items.push(IoItem::SpawnFuture(Box::new(fut)))
     }
 
     pub fn add_future<F>(&mut self, fut: F)
@@ -156,7 +151,7 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
     }
 }
 
-impl<T> Future for Context<T> where T: Service<Context=Context<T>>
+impl<T> Future for Context<T> where T: Service
 {
     type Item = ();
     type Error = ();
@@ -247,21 +242,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             (true, None)
                         }
                     }
-                    IoItem::CtxFuture(ref mut fut) => match fut.poll(&mut self.srv, ctx) {
-                        Ok(val) => match val {
-                            Async::Ready(val) => {
-                                not_ready = false;
-                                try_service!(Service::call(&mut self.srv, ctx, Ok(val)));
-                                (true, None)
-                            }
-                            Async::NotReady => (false, None),
-                        }
-                        Err(err) => {
-                            try_service!(Service::call(&mut self.srv, ctx, Err(err)));
-                            (true, None)
-                        }
-                    }
-                    IoItem::CtxSpawnFuture(ref mut fut) => match fut.poll(&mut self.srv, ctx) {
+                    IoItem::SpawnFuture(ref mut fut) => match fut.poll(&mut self.srv, ctx) {
                         Ok(val) => match val {
                             Async::Ready(_) => {
                                 not_ready = false;
@@ -309,7 +290,7 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
 }
 
 
-pub trait CtxFutureSpawner<S> where S: Service<Context=Context<S>> {
+pub trait CtxFutureSpawner<S> where S: Service {
 
     /// spawn future into Context
     fn spawn(self, fut: &mut Context<S>);
@@ -318,11 +299,10 @@ pub trait CtxFutureSpawner<S> where S: Service<Context=Context<S>> {
 
 
 impl<T, S> CtxFutureSpawner<S> for T
-    where S: Service<Context=Context<S>>,
+    where S: Service,
           T: CtxFuture<Item=(), Error=(), Service=S> + 'static
 {
     fn spawn(self, ctx: &mut Context<S>) {
         ctx.spawn(self)
     }
-
 }

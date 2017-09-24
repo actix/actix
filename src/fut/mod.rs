@@ -15,6 +15,7 @@ pub use self::map_err::MapErr;
 pub use self::result::{result, ok, err, FutureResult};
 
 use service::Service;
+use context::Context;
 
 
 pub trait CtxFuture {
@@ -30,18 +31,18 @@ pub trait CtxFuture {
     /// The service within which this future runs
     type Service: Service;
 
-    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut <Self::Service as Service>::Context)
+    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut Context<Self::Service>)
             -> Poll<Self::Item, Self::Error>;
 
     fn map<F, U>(self, f: F) -> Map<Self, F>
-        where F: FnOnce(Self::Item, &mut Self::Service, &mut <Self::Service as Service>::Context) -> U,
+        where F: FnOnce(Self::Item, &mut Self::Service, &mut Context<Self::Service>) -> U,
               Self: Sized,
     {
         map::new(self, f)
     }
 
     fn map_err<F, E>(self, f: F) -> MapErr<Self, F>
-        where F: FnOnce(Self::Error, &mut Self::Service, &mut <Self::Service as Service>::Context) -> E,
+        where F: FnOnce(Self::Error, &mut Self::Service, &mut Context<Self::Service>) -> E,
               Self: Sized,
     {
         map_err::new(self, f)
@@ -49,7 +50,7 @@ pub trait CtxFuture {
 
     fn then<F, B>(self, f: F) -> Then<Self, B, F>
         where F: FnOnce(Result<Self::Item, Self::Error>,
-                        &mut Self::Service, &mut <Self::Service as Service>::Context) -> B,
+                        &mut Self::Service, &mut Context<Self::Service>) -> B,
               B: IntoCtxFuture<Service=Self::Service>,
               Self: Sized,
     {
@@ -58,7 +59,7 @@ pub trait CtxFuture {
 
     /// Execute another future after this one has resolved successfully.
     fn and_then<F, B>(self, f: F) -> AndThen<Self, B, F>
-        where F: FnOnce(Self::Item, &mut Self::Service, &mut <Self::Service as Service>::Context) -> B,
+        where F: FnOnce(Self::Item, &mut Self::Service, &mut Context<Self::Service>) -> B,
               B: IntoCtxFuture<Error=Self::Error, Service=Self::Service>,
               Self: Sized,
     {
@@ -139,7 +140,7 @@ impl<F, S> CtxFuture for FutureWrap<F, S>
     type Error = F::Error;
     type Service = S;
 
-    fn poll(&mut self, _: &mut Self::Service, _: &mut <Self::Service as Service>::Context)
+    fn poll(&mut self, _: &mut Self::Service, _: &mut Context<Self::Service>)
             -> Poll<Self::Item, Self::Error>
     {
         self.fut.poll()

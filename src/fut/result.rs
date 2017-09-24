@@ -3,6 +3,7 @@
 use std::marker::PhantomData;
 use futures::{Poll, Async};
 use fut::CtxFuture;
+use context::Context;
 use service::Service;
 
 
@@ -73,8 +74,7 @@ impl<T, E, S> CtxFuture for FutureResult<T, E, S> where S: Service {
     type Error = E;
     type Service = S;
 
-    fn poll(&mut self, _: &mut Self::Service,
-            _: &mut <Self::Service as Service>::Context) -> Poll<T, E>
+    fn poll(&mut self, _: &mut Self::Service, _: &mut Context<Self::Service>) -> Poll<T, E>
     {
         self.inner.take().expect("cannot poll Result twice").map(Async::Ready)
     }

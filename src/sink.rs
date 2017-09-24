@@ -4,6 +4,7 @@ use std;
 use std::collections::VecDeque;
 use futures::{self, Async, AsyncSink};
 
+use context::Context;
 use service::{Item, Service, ServiceResult};
 
 /// Sink operation result
@@ -99,7 +100,7 @@ pub(crate) trait SinkContextService {
 
     fn poll(&mut self,
             srv: &mut Self::Service,
-            ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
+            ctx: &mut Context<Self::Service>)
             -> ServiceResult;
 
 }
@@ -109,10 +110,7 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
 
     type Service = T::Service;
 
-    fn poll(&mut self,
-            srv: &mut Self::Service,
-            _ctx: &mut <<Self as SinkContextService>::Service as Service>::Context)
-            -> ServiceResult
+    fn poll(&mut self, srv: &mut Self::Service, _: &mut Context<Self::Service>) -> ServiceResult
     {
         let ctx: &mut SinkContext<T> = unsafe {
             std::mem::transmute(self as &mut SinkContext<T>)

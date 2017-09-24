@@ -1,38 +1,39 @@
 use std::marker::PhantomData;
 
 use futures::{Async, Future, Poll};
-use futures::unsync::oneshot::{channel, Canceled, Receiver, Sender};
+use futures::unsync::oneshot::{Canceled, Receiver, Sender};
 
 use fut;
 use context::Context;
-use address::{Address, MessageProxy};
+use address::MessageProxy;
 use service::{Message, MessageFuture, MessageHandler, Service};
 
 
-pub trait MessageTransport {
-
-    type Message: Message;
-
-    /// Send message, do not wait for result
-    fn tell<S>(self, dest: &Address<S>)
-        where S: Service<Context=Context<S>> + MessageHandler<Self::Message>;
-
-    /// Send message and return the result asynchronously.
-    fn send<S>(self, dest: &Address<S>) -> MessageResult<Self::Message>
-        where S: Service<Context=Context<S>> + MessageHandler<Self::Message>;
-}
-
 #[must_use = "future do nothing unless polled"]
-pub struct MessageResult<T> where T: Message {
+pub struct MessageResult<T, S>
+    where T: Message,
+          S: Service
+{
     rx: Receiver<Result<T::Item, T::Error>>,
+    srv: PhantomData<S>,
 }
 
-impl<T> Future for MessageResult<T> where T: Message
+impl<T, S> MessageResult<T, S> where T: Message, S: Service
+{
+    pub(crate) fn new(rx: Receiver<Result<T::Item, T::Error>>) -> MessageResult<T, S> {
+        MessageResult{rx: rx, srv: PhantomData}
+    }
+}
+
+impl<T, S> fut::CtxFuture for MessageResult<T, S>
+    where T: Message,
+          S: Service
 {
     type Item = Result<T::Item, T::Error>;
     type Error = Canceled;
+    type Service = S;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, _: &mut S, _: &mut Context<S>) -> Poll<Self::Item, Self::Error>
     {
         self.rx.poll()
     }
@@ -45,17 +46,26 @@ struct Msg<T, S> where T: Message, S: Service + MessageHandler<T>, {
     tx: Option<Sender<Result<T::Item, T::Error>>>,
 }
 
+impl<T, S> Msg<T, S>
+    where T: Message,
+          S: Service + MessageHandler<T>,
+{
+    pub(crate) fn new(msg: Option<T>,
+                      tx: Option<Sender<Result<T::Item, T::Error>>>) -> Msg<T, S>
+    {
+        Msg{msg: msg, tx: tx, srv: PhantomData}
+    }
+}
+
+
 impl<T, S> MessageProxy for Msg<T, S>
     where T: Message,
-          S: Service<Context=Context<S>> + MessageHandler<T>,
+          S: Service + MessageHandler<T>,
 {
     type Service = S;
 
-    fn handle(&mut self,
-              srv: &mut Self::Service,
-              ctx: &mut <Self::Service as Service>::Context)
+    fn handle(&mut self, srv: &mut Self::Service, ctx: &mut Context<S>)
     {
-        //let fut = self.msg.handle(srv, ctx);
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Service as MessageHandler<T>>::handle(srv, msg, ctx);
             let f: MsgFuture<T, Self::Service> = MsgFuture {msg: PhantomData,
@@ -63,26 +73,6 @@ impl<T, S> MessageProxy for Msg<T, S>
                                                             tx: self.tx.take()};
             ctx.spawn(f);
         }
-    }
-}
-
-impl<T> MessageTransport for T
-    where T: Message
-{
-    type Message = T;
-
-    fn tell<S: Service<Context=Context<S>> + MessageHandler<T>>(self, dest: &Address<S>) {
-        dest.send(Box::new(Msg{msg: Some(self), tx: None, srv: PhantomData}));
-    }
-
-    fn send<S: Service<Context=Context<S>> + MessageHandler<T>>(self, dest: &Address<S>)
-                                            -> MessageResult<Self::Message>
-    {
-        let (tx, rx) = channel();
-        let msg = Msg{msg: Some(self), tx: Some(tx), srv: PhantomData};
-        dest.send(Box::new(msg));
-
-        MessageResult{rx: rx}
     }
 }
 
@@ -102,7 +92,7 @@ impl<T, S> fut::CtxFuture for MsgFuture<T, S>
     type Error = ();
     type Service = S;
 
-    fn poll(&mut self, srv: &mut S, ctx: &mut S::Context) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, srv: &mut S, ctx: &mut Context<S>) -> Poll<Self::Item, Self::Error>
     {
         match self.fut.poll(srv, ctx) {
             Ok(Async::Ready(val)) => {

@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 
 use fut::CtxFuture;
-use service::Service;
+use context::Context;
 
 
 /// Future for the `map` combinator, changing the type of a future.
@@ -25,13 +25,13 @@ pub fn new<A, F>(future: A, f: F) -> Map<A, F>
 
 impl<U, A, F> CtxFuture for Map<A, F>
     where A: CtxFuture,
-          F: FnOnce(A::Item, &mut A::Service, &mut <A::Service as Service>::Context) -> U,
+          F: FnOnce(A::Item, &mut A::Service, &mut Context<A::Service>) -> U,
 {
     type Item = U;
     type Error = A::Error;
     type Service = A::Service;
 
-    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut <Self::Service as Service>::Context) -> Poll<U, A::Error> {
+    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut Context<Self::Service>) -> Poll<U, A::Error> {
         let e = match self.future.poll(srv, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),
             Ok(Async::Ready(e)) => Ok(e),
