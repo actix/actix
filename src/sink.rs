@@ -1,140 +1,142 @@
-#![allow(dead_code)]
-
-use std;
 use std::collections::VecDeque;
 use futures::{self, Async, AsyncSink};
+use futures::unsync::oneshot::{channel, Sender};
 
 use context::Context;
-use service::{Item, Service, ServiceResult};
+use address::Subscriber;
+use message::CallResult;
+use service::{Message, Service, ServiceResult};
 
-/// Sink operation result
-pub enum SinkResult<T: SinkService> {
-    Sent,
-    SinkErr(<T::SinkMessage as Item>::Error)
+
+pub struct Sink<M> where M: Message {
+    srv: *mut SinkContext<M>
 }
 
-/// Service tied to Sink
-pub trait SinkService: Sized {
-
-    type Service: Service;
-    type SinkMessage: Item;
-
-    /// process sink result
-    fn call(&mut self,
-            _srv: &mut Self::Service,
-            _ctx: &mut SinkContext<Self>,
-            _result: SinkResult<Self>) -> ServiceResult
-    {
-        ServiceResult::NotReady
-    }
-}
-
-pub struct Sink<T> where T: SinkService {
-    srv: *mut SinkContext<T>
-}
-
-impl<T> Sink<T> where T: SinkService {
-    pub(crate) fn new(srv: *mut SinkContext<T>) -> Sink<T> {
+impl<M> Sink<M> where M: Message {
+    pub(crate) fn new(srv: *mut SinkContext<M>) -> Sink<M> {
         Sink{srv: srv as *mut _}
     }
+}
 
-    pub fn send(&mut self, item: <T::SinkMessage as Item>::Item)
-                -> Result<(), <T::SinkMessage as Item>::Item>
-    {
-        unsafe {
-            (&mut *self.srv).send(item)
-        }
+impl<M> Subscriber<M> for Sink<M> where M: Message {
+
+    fn send(&self, msg: M) {
+        unsafe {(&mut *self.srv).send(msg)}
     }
 
-    pub fn send_buffered(&mut self, item: <T::SinkMessage as Item>::Item)
-    {
-        unsafe {
-            (&mut *self.srv).send_buffered(item)
-        }
+    fn unbuffered_send(&self, msg: M) -> Result<(), M> {
+        unsafe {(&mut *self.srv).unbuffered_send(msg)}
+    }
+
+    fn call(&self, msg: M) -> CallResult<M> {
+        unsafe {(&mut *self.srv).call(msg)}
+    }
+
+    fn unbuffered_call(&self, msg: M) -> Result<CallResult<M>, M> {
+        unsafe {(&mut *self.srv).unbuffered_call(msg)}
     }
 }
 
-pub struct SinkContext<T> where T: SinkService
+enum IoItem<M> where M: Message {
+    Message(M),
+    Call((M, Sender<Result<M::Item, M::Error>>)),
+}
+
+pub(crate) struct SinkContext<M> where M: Message,
 {
-    srv: T,
-    sink: Box<futures::Sink<SinkItem=<T::SinkMessage as Item>::Item,
-                            SinkError=<T::SinkMessage as Item>::Error>>,
-    sink_items: VecDeque<<T::SinkMessage as Item>::Item>,
+    sink: Box<futures::Sink<SinkItem=M, SinkError=M::Error>>,
+    sink_items: VecDeque<IoItem<M>>,
     sink_flushed: bool,
 }
 
 /// SinkService execution context object
-impl<T> SinkContext<T> where T: SinkService
+impl<M> SinkContext<M> where M: Message
 {
-    pub(crate) fn new<S>(srv: T, sink: S) -> SinkContext<T>
-        where S: futures::Sink<SinkItem=<T::SinkMessage as Item>::Item,
-                               SinkError=<T::SinkMessage as Item>::Error> + 'static
+    pub(crate) fn new<S>(sink: S) -> SinkContext<M>
+        where S: futures::Sink<SinkItem=M, SinkError=M::Error> + 'static
     {
         SinkContext {
-            srv: srv,
             sink: Box::new(sink),
             sink_items: VecDeque::new(),
             sink_flushed: true,
         }
     }
 
-    pub fn send(&mut self, item: <T::SinkMessage as Item>::Item)
-                -> Result<(), <T::SinkMessage as Item>::Item>
-    {
+    pub fn call(&mut self, msg: M) -> CallResult<M> {
+        let (tx, rx) = channel();
+        self.sink_items.push_back(IoItem::Call((msg, tx)));
+
+        CallResult::new(rx)
+    }
+
+    pub fn unbuffered_call(&mut self, msg: M) -> Result<CallResult<M>, M> {
         if self.sink_items.is_empty() {
-            self.sink_items.push_back(item);
-            Ok(())
+            let (tx, rx) = channel();
+            self.sink_items.push_back(IoItem::Call((msg, tx)));
+
+            Ok(CallResult::new(rx))
         } else {
-            Err(item)
+            Err(msg)
         }
     }
 
-    pub fn send_buffered(&mut self, item: <T::SinkMessage as Item>::Item) {
-        self.sink_items.push_back(item);
+    pub fn send(&mut self, msg: M) {
+        self.sink_items.push_back(IoItem::Message(msg));
+    }
+
+    pub fn unbuffered_send(&mut self, msg: M) -> Result<(), M> {
+        if self.sink_items.is_empty() {
+            self.sink_items.push_back(IoItem::Message(msg));
+            Ok(())
+        } else {
+            Err(msg)
+        }
     }
 }
 
-pub(crate) trait SinkContextService {
+pub(crate) trait SinkContextService<S: Service> {
 
-    type Service: Service;
-
-    fn poll(&mut self,
-            srv: &mut Self::Service,
-            ctx: &mut Context<Self::Service>)
-            -> ServiceResult;
+    fn poll(&mut self, srv: &mut S, ctx: &mut Context<S>) -> ServiceResult;
 
 }
 
+impl<M, S> SinkContextService<S> for SinkContext<M>
+    where M: Message<Item=()>,
+          S: Service
+{
 
-impl<T> SinkContextService for SinkContext<T> where T: SinkService {
-
-    type Service = T::Service;
-
-    fn poll(&mut self, srv: &mut Self::Service, _: &mut Context<Self::Service>) -> ServiceResult
+    fn poll(&mut self, _srv: &mut S, _: &mut Context<S>) -> ServiceResult
     {
-        let ctx: &mut SinkContext<T> = unsafe {
-            std::mem::transmute(self as &mut SinkContext<T>)
-        };
-
         loop {
             let mut not_ready = true;
 
             // send sink items
             loop {
                 if let Some(item) = self.sink_items.pop_front() {
-                    match self.sink.start_send(item) {
-                        Ok(AsyncSink::NotReady(item)) => {
-                            self.sink_items.push_front(item);
+                    match item {
+                        IoItem::Message(msg) => match self.sink.start_send(msg) {
+                            Ok(AsyncSink::NotReady(msg)) => {
+                                self.sink_items.push_front(IoItem::Message(msg));
+                            }
+                            Ok(AsyncSink::Ready) => {
+                                self.sink_flushed = false;
+                                continue
+                            }
+                            Err(_) => return ServiceResult::Done,
                         }
-                        Ok(AsyncSink::Ready) => {
-                            self.sink_flushed = false;
-                            continue
-                        }
-                        Err(err) => match SinkService::call(
-                            &mut self.srv, srv, ctx, SinkResult::SinkErr(err))
-                        {
-                            ServiceResult::NotReady => (),
-                            ServiceResult::Done => return ServiceResult::Done,
+                        IoItem::Call((msg, tx)) => match self.sink.start_send(msg) {
+                            Ok(AsyncSink::NotReady(msg)) => {
+                                self.sink_items.push_front(IoItem::Call((msg, tx)));
+                            }
+                            Ok(AsyncSink::Ready) => {
+                                let _ = tx.send(Ok(()));
+                                self.sink_flushed = false;
+                                continue
+                            }
+                            Err(err) => {
+                                let _ = tx.send(Err(err));
+                                return ServiceResult::Done
+                            }
                         }
                     }
                 }
@@ -147,19 +149,15 @@ impl<T> SinkContextService for SinkContext<T> where T: SinkService {
                     Ok(Async::Ready(_)) => {
                         not_ready = false;
                         self.sink_flushed = true;
-                        match SinkService::call(&mut self.srv, srv, ctx, SinkResult::Sent)
-                        {
-                            ServiceResult::NotReady => (),
-                            ServiceResult::Done => return ServiceResult::Done,
-                        }
                     }
                     Ok(Async::NotReady) => (),
-                    Err(err) => match SinkService::call(
-                        &mut self.srv, srv, ctx, SinkResult::SinkErr(err))
-                    {
-                        ServiceResult::NotReady => (),
-                        ServiceResult::Done => return ServiceResult::Done,
-                    }
+                    Err(_) => (),
+                    //match SinkService::call(
+                    //    &mut self.srv, srv, ctx, SinkResult::SinkErr(err))
+                    //{
+                    //    ServiceResult::NotReady => (),
+                    //    ServiceResult::Done => return ServiceResult::Done,
+                    //}
                 };
             }
 

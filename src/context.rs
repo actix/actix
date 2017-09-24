@@ -4,11 +4,11 @@ use futures::{self, Async, Future, Poll, Stream};
 use futures::unsync::mpsc::{unbounded, UnboundedReceiver};
 use tokio_core::reactor::Handle;
 
-use service::{Item, Service};
+use service::{Item, Message, Service};
 
 use fut::CtxFuture;
 use address::{Address, BoxedMessageProxy};
-use sink::{Sink, SinkService, SinkContext, SinkContextService};
+use sink::{Sink, SinkContext, SinkContextService};
 
 #[macro_export]
 macro_rules! try_service {
@@ -46,7 +46,7 @@ enum IoItem<T: Service> {
     Future(Box<ServiceFuture<T>>),
     Stream(Box<ServiceStream<T>>),
     SpawnFuture(Box<ServiceSpawnFuture<T>>),
-    Sink(Box<SinkContextService<Service=T>>),
+    Sink(Box<SinkContextService<T>>),
 }
 
 type ServiceSpawnFuture<T> =
@@ -137,12 +137,11 @@ impl<T> Context<T> where T: Service
         self.items.push(IoItem::Stream(Box::new(fut)))
     }
 
-    pub fn add_sink<C, S>(&mut self, ctx: C, sink: S) -> Sink<C>
-        where C: SinkService<Service=T> + 'static,
-              S: futures::Sink<SinkItem=<C::SinkMessage as Item>::Item,
-                               SinkError=<C::SinkMessage as Item>::Error> + 'static
+    pub fn add_sink<M, S>(&mut self, sink: S) -> Sink<M>
+        where S: futures::Sink<SinkItem=M> + 'static,
+              M: Message<Item=(), Error=S::SinkError>,
     {
-        let mut srv = Box::new(SinkContext::new(ctx, sink));
+        let mut srv = Box::new(SinkContext::new(sink));
         let psrv = srv.as_mut() as *mut _;
         self.items.push(IoItem::Sink(srv));
 

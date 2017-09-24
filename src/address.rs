@@ -2,13 +2,23 @@ use futures::unsync::mpsc::UnboundedSender;
 use futures::unsync::oneshot::channel;
 
 use context::Context;
-use message::{Envelope, MessageResult};
+use message::{Envelope, CallResult, MessageResult};
 use service::{Message, MessageHandler, Service};
 
 
-pub trait Subscriber<M> where M: Message {
+pub trait Subscriber<M> {
+    /// Buffered send
     fn send(&self, msg: M);
-    // fn send(&self, msg: M) -> MessageResult<M>;
+
+    /// Send message, wait response asynchronously
+    fn call(&self, msg: M) -> CallResult<M> where M: Message;
+
+    /// Unbuffered send
+    fn unbuffered_send(&self, msg: M) -> Result<(), M>;
+
+    /// Send message, wait response asynchronously
+    fn unbuffered_call(&self, msg: M) -> Result<CallResult<M>, M> where M: Message;
+
 }
 
 pub(crate) type BoxedMessageProxy<T> = Box<MessageProxy<Service=T>>;
@@ -60,11 +70,29 @@ impl<T, M> Subscriber<M> for Address<T>
         self.send(msg)
     }
 
-    //fn send(&self, msg: M) -> MessageResult<M> {
-    //    msg.send(&self)
-    //}
-}
+    fn unbuffered_send(&self, msg: M) -> Result<(), M> {
+        self.send(msg);
+        Ok(())
+    }
 
+    fn call(&self, msg: M) -> CallResult<M>
+    {
+        let (tx, rx) = channel();
+        let env = Envelope::new(Some(msg), Some(tx));
+        let _ = self.tx.unbounded_send(Box::new(env));
+
+        CallResult::new(rx)
+    }
+
+    fn unbuffered_call(&self, msg: M) -> Result<CallResult<M>, M>
+    {
+        let (tx, rx) = channel();
+        let env = Envelope::new(Some(msg), Some(tx));
+        let _ = self.tx.unbounded_send(Box::new(env));
+
+        Ok(CallResult::new(rx))
+    }
+}
 
 pub(crate) trait MessageProxy {
 

@@ -32,10 +32,10 @@ pub use actor::Actor;
 pub use fut::CtxFuture;
 pub use builder::ServiceBuilder;
 pub use context::{Context, ServiceStream};
-pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
+pub use message::{CallResult, MessageResult,
+                  MessageFuture, MessageFutureResult, MessageFutureError};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
-pub use sink::{SinkContext, Sink, SinkService, SinkResult};
-
+pub use sink::Sink;
 pub use service::{Item, Service, ServiceResult, Message};
 
 pub use waiter::Waiter;

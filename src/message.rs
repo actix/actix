@@ -40,6 +40,31 @@ impl<T, S> fut::CtxFuture for MessageResult<T, S>
     }
 }
 
+#[must_use = "future do nothing unless polled"]
+pub struct CallResult<M> where M: Message
+{
+    rx: Receiver<Result<M::Item, M::Error>>,
+}
+
+impl<M> CallResult<M> where M: Message
+{
+    pub(crate) fn new(rx: Receiver<Result<M::Item, M::Error>>) -> CallResult<M> {
+        CallResult{rx: rx}
+    }
+}
+
+impl<M> Future for CallResult<M> where M: Message
+{
+    type Item = Result<M::Item, M::Error>;
+    type Error = Canceled;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error>
+    {
+        self.rx.poll()
+    }
+}
+
+
 enum MessageFutureItem<M, S>
     where M: Message,
           S: Service,

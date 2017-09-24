@@ -17,12 +17,12 @@ pub use builder::ServiceBuilder;
 pub use context::{Context, CtxFutureSpawner, ServiceStream};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
 pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
-pub use sink::{SinkService, Sink, SinkContext, SinkResult};
 
 pub use service::{DefaultMessage, Service, ServiceResult};
 pub use service::{Message, MessageHandler};
 
 pub mod ctx {
+    pub use sink::Sink;
     pub use waiter::Waiter;
     pub use system::{get_system, get_handle, init_system, System, SystemExit};
 }
