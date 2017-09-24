@@ -43,10 +43,6 @@ pub trait Service: Sized + 'static {
 }
 
 
-pub type MessageFuture<T: Message> =
-    Box<CtxFuture<Item=T::Item, Error=T::Error, Service=T::Service>>;
-
-
 pub trait Message: Sized + 'static {
 
     /// The type of value that this message will resolved with if it is successful.
@@ -55,9 +51,14 @@ pub trait Message: Sized + 'static {
     /// The type of error that this message will resolve with if it fails in a normal fashion.
     type Error;
 
-    type Service: Service;
+}
 
-    fn handle(&self,
-              srv: &mut <Self as Message>::Service,
-              ctx: &mut <<Self as Message>::Service as Service>::Context) -> MessageFuture<Self>;
+pub type MessageFuture<T: Message, S> =
+    Box<CtxFuture<Item=T::Item, Error=T::Error, Service=S>>;
+
+pub trait MessageHandler<M>
+    where M: Message,
+          Self: Service,
+{
+    fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> MessageFuture<M, Self>;
 }

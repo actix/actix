@@ -6,7 +6,7 @@ use futures::unsync::oneshot::{channel, Canceled, Receiver, Sender};
 use fut;
 use context::Context;
 use address::{Address, MessageProxy};
-use service::{Message, MessageFuture, Service};
+use service::{Message, MessageFuture, MessageHandler, Service};
 
 
 pub trait MessageTransport {
@@ -14,11 +14,12 @@ pub trait MessageTransport {
     type Message: Message;
 
     /// Send message, do not wait for result
-    fn tell(self, dest: &Address<<Self::Message as Message>::Service>);
+    fn tell<S>(self, dest: &Address<S>)
+        where S: Service<Context=Context<S>> + MessageHandler<Self::Message>;
 
     /// Send message and return the result asynchronously.
-    fn send(self, dest: &Address<<Self::Message as Message>::Service>)
-            -> MessageResult<Self::Message>;
+    fn send<S>(self, dest: &Address<S>) -> MessageResult<Self::Message>
+        where S: Service<Context=Context<S>> + MessageHandler<Self::Message>;
 }
 
 #[must_use = "future do nothing unless polled"]
@@ -38,68 +39,70 @@ impl<T> Future for MessageResult<T> where T: Message
 }
 
 pub(crate)
-struct Msg<T> where T: Message {
-    msg: T,
+struct Msg<T, S> where T: Message, S: Service + MessageHandler<T>, {
+    msg: Option<T>,
+    srv: PhantomData<S>,
     tx: Option<Sender<Result<T::Item, T::Error>>>,
 }
 
-impl<T, S> MessageProxy for Msg<T>
-    where T: Message<Service=S>,
-          S: Service<Context=Context<<T as Message>::Service>>,
+impl<T, S> MessageProxy for Msg<T, S>
+    where T: Message,
+          S: Service<Context=Context<S>> + MessageHandler<T>,
 {
-    type Service = T::Service;
+    type Service = S;
 
-    fn handle(&mut self, srv: &mut T::Service, ctx: &mut <T::Service as Service>::Context)
+    fn handle(&mut self,
+              srv: &mut Self::Service,
+              ctx: &mut <Self::Service as Service>::Context)
     {
-        let fut = self.msg.handle(srv, ctx);
-        let f: MsgFuture<T> = MsgFuture {msg: PhantomData,
-                                         fut: fut,
-                                         tx: self.tx.take()};
-        ctx.spawn(f);
+        //let fut = self.msg.handle(srv, ctx);
+        if let Some(msg) = self.msg.take() {
+            let fut = <Self::Service as MessageHandler<T>>::handle(srv, msg, ctx);
+            let f: MsgFuture<T, Self::Service> = MsgFuture {msg: PhantomData,
+                                                            fut: fut,
+                                                            tx: self.tx.take()};
+            ctx.spawn(f);
+        }
     }
 }
 
 impl<T> MessageTransport for T
-    where T: Message,
-          T::Service: Service<Context=Context<<T as Message>::Service>>,
+    where T: Message
 {
     type Message = T;
 
-    fn tell(self, dest: &Address<<Self::Message as Message>::Service>) {
-        dest.send(Msg{msg: self, tx: None});
+    fn tell<S: Service<Context=Context<S>> + MessageHandler<T>>(self, dest: &Address<S>) {
+        dest.send(Box::new(Msg{msg: Some(self), tx: None, srv: PhantomData}));
     }
 
-    fn send(self, dest: &Address<<Self::Message as Message>::Service>)
-            -> MessageResult<Self::Message>
+    fn send<S: Service<Context=Context<S>> + MessageHandler<T>>(self, dest: &Address<S>)
+                                            -> MessageResult<Self::Message>
     {
         let (tx, rx) = channel();
-        let msg = Msg{msg: self, tx: Some(tx)};
-        dest.send(msg);
+        let msg = Msg{msg: Some(self), tx: Some(tx), srv: PhantomData};
+        dest.send(Box::new(msg));
 
         MessageResult{rx: rx}
     }
 }
 
 pub(crate)
-struct MsgFuture<T>
-    where T: Message,
-          T::Service: Service<Context=Context<<T as Message>::Service>>,
+struct MsgFuture<T, S>
+    where T: Message, S: Service
 {
     msg: PhantomData<T>,
-    fut: MessageFuture<T>,
+    fut: MessageFuture<T, S>,
     tx: Option<Sender<Result<T::Item, T::Error>>>,
 }
 
-impl<T> fut::CtxFuture for MsgFuture<T>
-    where T: Message,
-          T::Service: Service<Context=Context<<T as Message>::Service>>
+impl<T, S> fut::CtxFuture for MsgFuture<T, S>
+    where T: Message, S: Service
 {
     type Item = ();
     type Error = ();
-    type Service = T::Service;
+    type Service = S;
 
-    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut <Self::Service as Service>::Context)
-            -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, srv: &mut S, ctx: &mut S::Context) -> Poll<Self::Item, Self::Error>
     {
         match self.fut.poll(srv, ctx) {
             Ok(Async::Ready(val)) => {

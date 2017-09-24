@@ -122,15 +122,4 @@ impl<T> Builder<T> where T: Service<Context=Context<T>>
         self.ctx.add_stream(fut);
         self
     }
-
-    /// Add stream
-    pub fn add_fut_stream<F>(mut self, fut: F) -> Self
-        where F: Future<Item=
-                        Box<Stream<Item=<<T as Service>::Message as Item>::Item,
-                                   Error=<<T as Service>::Message as Item>::Error>>,
-                        Error=<<T as Service>::Message as Item>::Error> + 'static
-    {
-        self.ctx.add_fut_stream(fut);
-        self
-    }
 }

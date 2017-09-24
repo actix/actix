@@ -1,29 +1,32 @@
 use futures::unsync::mpsc::UnboundedSender;
 
-use service::Service;
 use context::Context;
+use service::Service;
 
 
 pub(crate) type BoxedMessageProxy<T> = Box<MessageProxy<Service=T>>;
 
-pub struct Address<T>(UnboundedSender<BoxedMessageProxy<T>>);
+pub struct Address<T> where T: Service<Context=Context<T>> {
+    tx: UnboundedSender<BoxedMessageProxy<T>>
+}
 
-impl<T> Clone for Address<T> {
+impl<T> Clone for Address<T> where T: Service<Context=Context<T>> {
     fn clone(&self) -> Self {
-        Address(self.0.clone())
+        Address{tx: self.tx.clone() }
     }
 }
 
-impl<T> Address<T> where T: Service {
+impl<T> Address<T> where T: Service<Context=Context<T>> {
 
     pub(crate) fn new(sender: UnboundedSender<BoxedMessageProxy<T>>) -> Address<T> {
-        Address(sender)
+        Address{tx: sender}
     }
 
-    pub(crate) fn send<M>(&self, msg: M)
-        where T: Service<Context=Context<T>>, M: MessageProxy<Service=T> + 'static
+    pub(crate) fn send(&self, msg: Box<MessageProxy<Service=T>>)
+        where T: Service<Context=Context<T>>,
+              //M: MessageProxy<Service=T> + 'static
     {
-        let _ = self.0.unbounded_send(Box::new(msg));
+        let _ = self.tx.unbounded_send(msg);
     }
 }
 

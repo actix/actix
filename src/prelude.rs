@@ -16,7 +16,8 @@ pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
 pub use message::{MessageResult, MessageTransport};
 pub use sink::{SinkService, Sink, SinkContext, SinkResult};
 
-pub use service::{DefaultMessage, Message, MessageFuture, Service, ServiceResult};
+pub use service::{DefaultMessage, Service, ServiceResult};
+pub use service::{Message, MessageFuture, MessageHandler};
 
 pub mod ctx {
     pub use task::Task;

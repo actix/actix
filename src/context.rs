@@ -48,7 +48,6 @@ enum IoItem<T: Service> {
     CtxSpawnFuture(Box<ServiceCtxSpawnFuture<T>>),
     Future(Box<ServiceFuture<T>>),
     Stream(Box<ServiceStream<T>>),
-    FutStream(Box<ServiceFutStream<T>>),
     Sink(Box<SinkContextService<Service=T>>),
 }
 
@@ -66,10 +65,6 @@ type ServiceFuture<T> =
 
 pub type ServiceStream<T> =
     Stream<Item=<<T as Service>::Message as Item>::Item,
-           Error=<<T as Service>::Message as Item>::Error>;
-
-type ServiceFutStream<T> =
-    Future<Item=Box<ServiceStream<T>>,
            Error=<<T as Service>::Message as Item>::Error>;
 
 
@@ -145,14 +140,6 @@ impl<T> Context<T> where T: Service<Context=Context<T>>
                         Error=<<T as Service>::Message as Item>::Error> + 'static
     {
         self.items.push(IoItem::Stream(Box::new(fut)))
-    }
-
-    pub fn add_fut_stream<F>(&mut self, fut: F)
-        where F: Future<Item=Box<Stream<Item=<<T as Service>::Message as Item>::Item,
-                                        Error=<<T as Service>::Message as Item>::Error>>,
-                        Error=<<T as Service>::Message as Item>::Error> + 'static
-    {
-        self.items.push(IoItem::FutStream(Box::new(fut)))
     }
 
     pub fn add_sink<C, S>(&mut self, ctx: C, sink: S) -> Sink<C>
@@ -246,16 +233,6 @@ impl<T> Future for Context<T> where T: Service<Context=Context<T>>
                             (true, None)
                         }
                     },
-                    IoItem::FutStream(ref mut fut) => match fut.poll() {
-                        Ok(val) => match val {
-                            Async::Ready(val) => (true, Some(IoItem::Stream(val))),
-                            Async::NotReady => (false, None),
-                        }
-                        Err(err) => {
-                            try_service!(Service::call(&mut self.srv, ctx, Err(err)));
-                            (true, None)
-                        }
-                    }
                     IoItem::Future(ref mut fut) => match fut.poll() {
                         Ok(val) => match val {
                             Async::Ready(val) => {
