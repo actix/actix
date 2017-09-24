@@ -4,11 +4,11 @@ use std::sync::Mutex;
 use tokio_core::reactor::{Core, Remote, Handle};
 use futures::unsync::oneshot::{channel, Sender, Receiver};
 
-use fut;
 use address::Address;
 use builder::ServiceBuilder;
 use context::Context;
-use service::{Message, MessageFuture, MessageHandler, DefaultMessage, Service};
+use message::{MessageFuture, MessageFutureResult};
+use service::{Message, MessageHandler, DefaultMessage, Service};
 
 thread_local!(
     static H: RefCell<Option<Handle>> = RefCell::new(None);
@@ -109,12 +109,12 @@ impl Message for SystemExit {
 
 impl MessageHandler<SystemExit> for System {
 
-    fn handle(&mut self, msg: SystemExit,
-              _: &mut Context<Self>) -> MessageFuture<SystemExit, Self>
+    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
+              -> MessageFuture<SystemExit, Self>
     {
         if let Some(stop) = self.stop.take() {
             let _ = stop.send(msg.0);
         }
-        Box::new(fut::ok(()))
+        ().to_result()
     }
 }

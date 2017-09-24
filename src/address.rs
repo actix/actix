@@ -2,7 +2,7 @@ use futures::unsync::mpsc::UnboundedSender;
 use futures::unsync::oneshot::channel;
 
 use context::Context;
-use message::{Msg, MessageResult};
+use message::{Envelope, MessageResult};
 use service::{Message, MessageHandler, Service};
 
 
@@ -32,15 +32,15 @@ impl<T> Address<T> where T: Service {
     pub fn tell<M: Message>(&self, msg: M) where T: MessageHandler<M>
     {
         let _ = self.tx.unbounded_send(
-            Box::new(Msg::new(Some(msg), None)));
+            Box::new(Envelope::new(Some(msg), None)));
     }
 
     pub fn send<M: Message, S: Service>(&self, msg: M) -> MessageResult<M, S>
         where T: MessageHandler<M>
     {
         let (tx, rx) = channel();
-        let msg = Msg::new(Some(msg), Some(tx));
-        let _ = self.tx.unbounded_send(Box::new(msg));
+        let env = Envelope::new(Some(msg), Some(tx));
+        let _ = self.tx.unbounded_send(Box::new(env));
 
         MessageResult::new(rx)
     }

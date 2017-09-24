@@ -16,11 +16,11 @@ pub use fut::{self, CtxFuture, WrapFuture, IntoCtxFuture};
 pub use builder::ServiceBuilder;
 pub use context::{Context, CtxFutureSpawner, ServiceStream};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
-pub use message::MessageResult;
+pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
 pub use sink::{SinkService, Sink, SinkContext, SinkResult};
 
 pub use service::{DefaultMessage, Service, ServiceResult};
-pub use service::{Message, MessageFuture, MessageHandler};
+pub use service::{Message, MessageHandler};
 
 pub mod ctx {
     pub use waiter::Waiter;

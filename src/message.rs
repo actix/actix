@@ -1,12 +1,13 @@
+use std;
 use std::marker::PhantomData;
 
 use futures::{Async, Future, Poll};
 use futures::unsync::oneshot::{Canceled, Receiver, Sender};
 
-use fut;
+use fut::{self, CtxFuture};
 use context::Context;
 use address::MessageProxy;
-use service::{Message, MessageFuture, MessageHandler, Service};
+use service::{Message, MessageHandler, Service};
 
 
 #[must_use = "future do nothing unless polled"]
@@ -39,26 +40,117 @@ impl<T, S> fut::CtxFuture for MessageResult<T, S>
     }
 }
 
+enum MessageFutureItem<M, S>
+    where M: Message,
+          S: Service,
+{
+    Item(M::Item),
+    Error(M::Error),
+    Fut(Box<CtxFuture<Item=M::Item, Error=M::Error, Service=S>>)
+}
+
+pub struct MessageFuture<M, S>
+    where M: Message,
+          S: Service,
+{
+    inner: Option<MessageFutureItem<M, S>>,
+}
+
+impl<T, M, S> std::convert::From<T> for MessageFuture<M, S>
+    where M: Message,
+          S: Service,
+          T: CtxFuture<Item=M::Item, Error=M::Error, Service=S> + Sized + 'static,
+{
+    fn from(fut: T) -> MessageFuture<M, S> {
+        MessageFuture {inner: Some(MessageFutureItem::Fut(Box::new(fut)))}
+    }
+}
+
+pub trait MessageFutureResult<M, S>
+    where M: Message<Item=Self>,
+          S: Service,
+          Self: Sized + 'static
+{
+    fn to_result(self) -> MessageFuture<M, S>;
+}
+
+impl<T, M, S> MessageFutureResult<M, S> for T
+    where M: Message<Item=Self>,
+          S: Service,
+          Self: Sized + 'static
+{
+    fn to_result(self) -> MessageFuture<M, S> {
+        MessageFuture {inner: Some(MessageFutureItem::Item(self))}
+    }
+}
+
+pub trait MessageFutureError<M, S>
+    where M: Message<Error=Self>,
+          S: Service,
+          Self: Sized + 'static
+{
+    fn to_error(self) -> MessageFuture<M, S>;
+}
+
+impl<T, M, S> MessageFutureError<M, S> for T
+    where M: Message<Error=Self>,
+          S: Service,
+          Self: Sized + 'static
+{
+    fn to_error(self) -> MessageFuture<M, S> {
+        MessageFuture {inner: Some(MessageFutureItem::Error(self))}
+    }
+}
+
+impl<M, S> MessageFuture<M, S> where M: Message, S: Service
+{
+    pub fn new<T>(fut: T) -> Self
+        where T: CtxFuture<Item=M::Item, Error=M::Error, Service=S> + Sized + 'static
+    {
+        MessageFuture {inner: Some(MessageFutureItem::Fut(Box::new(fut)))}
+    }
+
+    pub(crate) fn poll(&mut self, srv: &mut S, ctx: &mut Context<S>) -> Poll<M::Item, M::Error>
+    {
+        if let Some(item) = self.inner.take() {
+            match item {
+                MessageFutureItem::Fut(mut fut) => {
+                    match fut.poll(srv, ctx) {
+                        Ok(Async::NotReady) => {
+                            self.inner = Some(MessageFutureItem::Fut(fut));
+                            return Ok(Async::NotReady)
+                        }
+                        result => return result
+                    }
+                }
+                MessageFutureItem::Item(item) => return Ok(Async::Ready(item)),
+                MessageFutureItem::Error(err) => return Err(err)
+            }
+        }
+        Ok(Async::NotReady)
+    }
+}
+
 pub(crate)
-struct Msg<T, S> where T: Message, S: Service + MessageHandler<T>, {
+struct Envelope<T, S> where T: Message, S: Service + MessageHandler<T> {
     msg: Option<T>,
     srv: PhantomData<S>,
     tx: Option<Sender<Result<T::Item, T::Error>>>,
 }
 
-impl<T, S> Msg<T, S>
+impl<T, S> Envelope<T, S>
     where T: Message,
           S: Service + MessageHandler<T>,
 {
     pub(crate) fn new(msg: Option<T>,
-                      tx: Option<Sender<Result<T::Item, T::Error>>>) -> Msg<T, S>
+                      tx: Option<Sender<Result<T::Item, T::Error>>>) -> Envelope<T, S>
     {
-        Msg{msg: msg, tx: tx, srv: PhantomData}
+        Envelope{msg: msg, tx: tx, srv: PhantomData}
     }
 }
 
 
-impl<T, S> MessageProxy for Msg<T, S>
+impl<T, S> MessageProxy for Envelope<T, S>
     where T: Message,
           S: Service + MessageHandler<T>,
 {
@@ -68,24 +160,22 @@ impl<T, S> MessageProxy for Msg<T, S>
     {
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Service as MessageHandler<T>>::handle(srv, msg, ctx);
-            let f: MsgFuture<T, Self::Service> = MsgFuture {msg: PhantomData,
-                                                            fut: fut,
-                                                            tx: self.tx.take()};
+            let f: EnvelopFuture<_, Self::Service> = EnvelopFuture {msg: PhantomData,
+                                                                    fut: fut,
+                                                                    tx: self.tx.take()};
             ctx.spawn(f);
         }
     }
 }
 
-pub(crate)
-struct MsgFuture<T, S>
-    where T: Message, S: Service
+pub(crate) struct EnvelopFuture<T, S> where T: Message, S: Service
 {
     msg: PhantomData<T>,
     fut: MessageFuture<T, S>,
     tx: Option<Sender<Result<T::Item, T::Error>>>,
 }
 
-impl<T, S> fut::CtxFuture for MsgFuture<T, S>
+impl<T, S> fut::CtxFuture for EnvelopFuture<T, S>
     where T: Message, S: Service
 {
     type Item = ();

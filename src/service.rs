@@ -1,6 +1,6 @@
-use fut::CtxFuture;
 use actor::Actor;
 use context::Context;
+use message::MessageFuture;
 
 pub trait Item {
     type Item;
@@ -56,9 +56,6 @@ pub trait Message: Sized + 'static {
     type Error;
 
 }
-
-pub type MessageFuture<T: Message, S> =
-    Box<CtxFuture<Item=T::Item, Error=T::Error, Service=S>>;
 
 pub trait MessageHandler<M>
     where M: Message,
