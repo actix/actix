@@ -7,7 +7,7 @@ use service::{Message, MessageHandler, Service};
 
 
 pub trait Subscriber<M> where M: Message {
-    fn tell(&self, msg: M);
+    fn send(&self, msg: M);
     // fn send(&self, msg: M) -> MessageResult<M>;
 }
 
@@ -29,13 +29,13 @@ impl<T> Address<T> where T: Service {
         Address{tx: sender}
     }
 
-    pub fn tell<M: Message>(&self, msg: M) where T: MessageHandler<M>
+    pub fn send<M: Message>(&self, msg: M) where T: MessageHandler<M>
     {
         let _ = self.tx.unbounded_send(
             Box::new(Envelope::new(Some(msg), None)));
     }
 
-    pub fn send<M: Message, S: Service>(&self, msg: M) -> MessageResult<M, S>
+    pub fn call<M: Message, S: Service>(&self, msg: M) -> MessageResult<M, S>
         where T: MessageHandler<M>
     {
         let (tx, rx) = channel();
@@ -56,8 +56,8 @@ impl<T, M> Subscriber<M> for Address<T>
     where M: Message,
           T: Service + MessageHandler<M>
 {
-    fn tell(&self, msg: M) {
-        self.tell(msg)
+    fn send(&self, msg: M) {
+        self.send(msg)
     }
 
     //fn send(&self, msg: M) -> MessageResult<M> {
