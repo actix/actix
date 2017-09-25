@@ -4,37 +4,37 @@ use std::marker::PhantomData;
 use futures::{Async, Future, Poll};
 use futures::unsync::oneshot::{Canceled, Receiver, Sender};
 
-use fut::{self, CtxFuture};
+use fut::ActorFuture;
 use context::Context;
 use address::MessageProxy;
-use service::{Message, MessageHandler, Service};
+use actor::{Actor, Message, MessageHandler};
 
 
 #[must_use = "future do nothing unless polled"]
-pub struct MessageResult<T, S>
-    where T: Message,
-          S: Service
+pub struct MessageResult<A, M>
+    where A: Actor,
+          M: Message,
 {
-    rx: Receiver<Result<T::Item, T::Error>>,
-    srv: PhantomData<S>,
+    rx: Receiver<Result<M::Item, M::Error>>,
+    act: PhantomData<A>,
 }
 
-impl<T, S> MessageResult<T, S> where T: Message, S: Service
+impl<A, M> MessageResult<A, M> where A: Actor, M: Message
 {
-    pub(crate) fn new(rx: Receiver<Result<T::Item, T::Error>>) -> MessageResult<T, S> {
-        MessageResult{rx: rx, srv: PhantomData}
+    pub(crate) fn new(rx: Receiver<Result<M::Item, M::Error>>) -> MessageResult<A, M> {
+        MessageResult{rx: rx, act: PhantomData}
     }
 }
 
-impl<T, S> fut::CtxFuture for MessageResult<T, S>
-    where T: Message,
-          S: Service
+impl<A, M> ActorFuture for MessageResult<A, M>
+    where A: Actor,
+          M: Message,
 {
-    type Item = Result<T::Item, T::Error>;
+    type Item = Result<M::Item, M::Error>;
     type Error = Canceled;
-    type Service = S;
+    type Actor = A;
 
-    fn poll(&mut self, _: &mut S, _: &mut Context<S>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, _: &mut A, _: &mut Context<A>) -> Poll<Self::Item, Self::Error>
     {
         self.rx.poll()
     }
@@ -65,77 +65,76 @@ impl<M> Future for CallResult<M> where M: Message
 }
 
 
-enum MessageFutureItem<M, S>
-    where M: Message,
-          S: Service,
+enum MessageFutureItem<A, M>
+    where A: Actor,
+          M: Message,
+
 {
     Item(M::Item),
     Error(M::Error),
-    Fut(Box<CtxFuture<Item=M::Item, Error=M::Error, Service=S>>)
+    Fut(Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>)
 }
 
-pub struct MessageFuture<M, S>
-    where M: Message,
-          S: Service,
+pub struct MessageFuture<A, M> where A: Actor, M: Message,
 {
-    inner: Option<MessageFutureItem<M, S>>,
+    inner: Option<MessageFutureItem<A, M>>,
 }
 
-impl<T, M, S> std::convert::From<T> for MessageFuture<M, S>
-    where M: Message,
-          S: Service,
-          T: CtxFuture<Item=M::Item, Error=M::Error, Service=S> + Sized + 'static,
+impl<A, M, T> std::convert::From<T> for MessageFuture<A, M>
+    where A: Actor,
+          M: Message,
+          T: ActorFuture<Item=M::Item, Error=M::Error, Actor=A> + Sized + 'static,
 {
-    fn from(fut: T) -> MessageFuture<M, S> {
+    fn from(fut: T) -> MessageFuture<A, M> {
         MessageFuture {inner: Some(MessageFutureItem::Fut(Box::new(fut)))}
     }
 }
 
-pub trait MessageFutureResult<M, S>
-    where M: Message<Item=Self>,
-          S: Service,
+pub trait MessageFutureResult<A, M>
+    where A: Actor,
+          M: Message<Item=Self>,
           Self: Sized + 'static
 {
-    fn to_result(self) -> MessageFuture<M, S>;
+    fn to_result(self) -> MessageFuture<A, M>;
 }
 
-impl<T, M, S> MessageFutureResult<M, S> for T
-    where M: Message<Item=Self>,
-          S: Service,
+impl<A, M, T> MessageFutureResult<A, M> for T
+    where A: Actor,
+          M: Message<Item=Self>,
           Self: Sized + 'static
 {
-    fn to_result(self) -> MessageFuture<M, S> {
+    fn to_result(self) -> MessageFuture<A, M> {
         MessageFuture {inner: Some(MessageFutureItem::Item(self))}
     }
 }
 
-pub trait MessageFutureError<M, S>
-    where M: Message<Error=Self>,
-          S: Service,
+pub trait MessageFutureError<A, M>
+    where A: Actor,
+          M: Message<Error=Self>,
           Self: Sized + 'static
 {
-    fn to_error(self) -> MessageFuture<M, S>;
+    fn to_error(self) -> MessageFuture<A, M>;
 }
 
-impl<T, M, S> MessageFutureError<M, S> for T
-    where M: Message<Error=Self>,
-          S: Service,
+impl<A, M, T> MessageFutureError<A, M> for T
+    where A: Actor,
+          M: Message<Error=Self>,
           Self: Sized + 'static
 {
-    fn to_error(self) -> MessageFuture<M, S> {
+    fn to_error(self) -> MessageFuture<A, M> {
         MessageFuture {inner: Some(MessageFutureItem::Error(self))}
     }
 }
 
-impl<M, S> MessageFuture<M, S> where M: Message, S: Service
+impl<A, M> MessageFuture<A, M> where A: Actor, M: Message
 {
     pub fn new<T>(fut: T) -> Self
-        where T: CtxFuture<Item=M::Item, Error=M::Error, Service=S> + Sized + 'static
+        where T: ActorFuture<Item=M::Item, Error=M::Error, Actor=A> + Sized + 'static
     {
         MessageFuture {inner: Some(MessageFutureItem::Fut(Box::new(fut)))}
     }
 
-    pub(crate) fn poll(&mut self, srv: &mut S, ctx: &mut Context<S>) -> Poll<M::Item, M::Error>
+    pub(crate) fn poll(&mut self, srv: &mut A, ctx: &mut Context<A>) -> Poll<M::Item, M::Error>
     {
         if let Some(item) = self.inner.take() {
             match item {
@@ -157,59 +156,59 @@ impl<M, S> MessageFuture<M, S> where M: Message, S: Service
 }
 
 pub(crate)
-struct Envelope<T, S> where T: Message, S: Service + MessageHandler<T> {
-    msg: Option<T>,
-    srv: PhantomData<S>,
-    tx: Option<Sender<Result<T::Item, T::Error>>>,
+struct Envelope<A, M> where M: Message, A: Actor + MessageHandler<M> {
+    msg: Option<M>,
+    act: PhantomData<A>,
+    tx: Option<Sender<Result<M::Item, M::Error>>>,
 }
 
-impl<T, S> Envelope<T, S>
-    where T: Message,
-          S: Service + MessageHandler<T>,
+impl<A, M> Envelope<A, M>
+    where A: Actor + MessageHandler<M>,
+          M: Message,
 {
-    pub(crate) fn new(msg: Option<T>,
-                      tx: Option<Sender<Result<T::Item, T::Error>>>) -> Envelope<T, S>
+    pub(crate) fn new(msg: Option<M>,
+                      tx: Option<Sender<Result<M::Item, M::Error>>>) -> Envelope<A, M>
     {
-        Envelope{msg: msg, tx: tx, srv: PhantomData}
+        Envelope{msg: msg, tx: tx, act: PhantomData}
     }
 }
 
 
-impl<T, S> MessageProxy for Envelope<T, S>
-    where T: Message,
-          S: Service + MessageHandler<T>,
+impl<A, M> MessageProxy for Envelope<A, M>
+    where M: Message,
+          A: Actor + MessageHandler<M>,
 {
-    type Service = S;
+    type Actor = A;
 
-    fn handle(&mut self, srv: &mut Self::Service, ctx: &mut Context<S>)
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<A>)
     {
         if let Some(msg) = self.msg.take() {
-            let fut = <Self::Service as MessageHandler<T>>::handle(srv, msg, ctx);
-            let f: EnvelopFuture<_, Self::Service> = EnvelopFuture {msg: PhantomData,
-                                                                    fut: fut,
-                                                                    tx: self.tx.take()};
+            let fut = <Self::Actor as MessageHandler<M>>::handle(act, msg, ctx);
+            let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {msg: PhantomData,
+                                                                  fut: fut,
+                                                                  tx: self.tx.take()};
             ctx.spawn(f);
         }
     }
 }
 
-pub(crate) struct EnvelopFuture<T, S> where T: Message, S: Service
+pub(crate) struct EnvelopFuture<A, M> where M: Message, A: Actor
 {
-    msg: PhantomData<T>,
-    fut: MessageFuture<T, S>,
-    tx: Option<Sender<Result<T::Item, T::Error>>>,
+    msg: PhantomData<M>,
+    fut: MessageFuture<A, M>,
+    tx: Option<Sender<Result<M::Item, M::Error>>>,
 }
 
-impl<T, S> fut::CtxFuture for EnvelopFuture<T, S>
-    where T: Message, S: Service
+impl<A, M> ActorFuture for EnvelopFuture<A, M>
+    where M: Message, A: Actor
 {
     type Item = ();
     type Error = ();
-    type Service = S;
+    type Actor = A;
 
-    fn poll(&mut self, srv: &mut S, ctx: &mut Context<S>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
     {
-        match self.fut.poll(srv, ctx) {
+        match self.fut.poll(act, ctx) {
             Ok(Async::Ready(val)) => {
                 if let Some(tx) = self.tx.take() {
                     let _ = tx.send(Ok(val));

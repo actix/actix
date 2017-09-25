@@ -8,7 +8,7 @@ use arbiter::Arbiter;
 use builder::ServiceBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
-use service::{Message, MessageHandler, DefaultMessage, Service};
+use actor::{Actor, Message, MessageHandler, DefaultMessage};
 
 thread_local!(
     static ADDR: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
@@ -70,7 +70,7 @@ impl System {
     }
 }
 
-impl Service for System {
+impl Actor for System {
     type Message = DefaultMessage;
 }
 
@@ -85,7 +85,7 @@ impl Message for SystemExit {
 impl MessageHandler<SystemExit> for System {
 
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
-              -> MessageFuture<SystemExit, Self>
+              -> MessageFuture<Self, SystemExit>
     {
         if let Some(stop) = self.tx.take() {
             let _ = stop.send(msg.0);

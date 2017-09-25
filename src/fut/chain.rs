@@ -1,29 +1,29 @@
 use std::mem;
 use futures::{Async, Poll};
 
-use fut::CtxFuture;
+use fut::ActorFuture;
 use context::Context;
 
 
 #[derive(Debug)]
-pub enum Chain<A, B, C> where A: CtxFuture {
+pub enum Chain<A, B, C> where A: ActorFuture {
     First(A, C),
     Second(B),
     Done,
 }
 
 impl<A, B, C> Chain<A, B, C>
-    where A: CtxFuture,
-          B: CtxFuture<Service=A::Service>,
+    where A: ActorFuture,
+          B: ActorFuture<Actor=A::Actor>,
 {
     pub fn new(a: A, c: C) -> Chain<A, B, C> {
         Chain::First(a, c)
     }
 
-    pub fn poll<F>(&mut self, srv: &mut A::Service,
-                   ctx: &mut Context<A::Service>, f: F)
+    pub fn poll<F>(&mut self, srv: &mut A::Actor,
+                   ctx: &mut Context<A::Actor>, f: F)
                    -> Poll<B::Item, B::Error>
-        where F: FnOnce(Result<A::Item, A::Error>, C, &mut A::Service, &mut Context<A::Service>)
+        where F: FnOnce(Result<A::Item, A::Error>, C, &mut A::Actor, &mut Context<A::Actor>)
                         -> Result<Result<B::Item, B>, B::Error>,
     {
         let a_result = match *self {

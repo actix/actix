@@ -1,6 +1,6 @@
 use futures::{Async, Poll};
 
-use fut::CtxFuture;
+use fut::ActorFuture;
 use context::Context;
 
 
@@ -9,13 +9,13 @@ use context::Context;
 /// This is created by the `Future::map` method.
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
-pub struct Map<A, F> where A: CtxFuture {
+pub struct Map<A, F> where A: ActorFuture {
     future: A,
     f: Option<F>,
 }
 
 pub fn new<A, F>(future: A, f: F) -> Map<A, F>
-    where A: CtxFuture,
+    where A: ActorFuture,
 {
     Map {
         future: future,
@@ -23,16 +23,16 @@ pub fn new<A, F>(future: A, f: F) -> Map<A, F>
     }
 }
 
-impl<U, A, F> CtxFuture for Map<A, F>
-    where A: CtxFuture,
-          F: FnOnce(A::Item, &mut A::Service, &mut Context<A::Service>) -> U,
+impl<U, A, F> ActorFuture for Map<A, F>
+    where A: ActorFuture,
+          F: FnOnce(A::Item, &mut A::Actor, &mut Context<A::Actor>) -> U,
 {
     type Item = U;
     type Error = A::Error;
-    type Service = A::Service;
+    type Actor = A::Actor;
 
-    fn poll(&mut self, srv: &mut Self::Service, ctx: &mut Context<Self::Service>) -> Poll<U, A::Error> {
-        let e = match self.future.poll(srv, ctx) {
+    fn poll(&mut self, act: &mut Self::Actor, ctx: &mut Context<Self::Actor>) -> Poll<U, A::Error> {
+        let e = match self.future.poll(act, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),
             Ok(Async::Ready(e)) => Ok(e),
             Err(e) => Err(e),
@@ -40,7 +40,7 @@ impl<U, A, F> CtxFuture for Map<A, F>
         match e {
             Ok(item) =>
                 Ok(Async::Ready(
-                    self.f.take().expect("cannot poll Map twice")(item, srv, ctx))),
+                    self.f.take().expect("cannot poll Map twice")(item, act, ctx))),
             Err(err) => Err(err)
         }
     }

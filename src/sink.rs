@@ -3,9 +3,9 @@ use futures::{self, Async, AsyncSink};
 use futures::unsync::oneshot::{channel, Sender};
 
 use context::Context;
+use actor::{Actor, ActorStatus, Message};
 use address::{Subscriber, AsyncSubscriber};
 use message::CallResult;
-use service::{Message, Service, ServiceResult};
 
 
 pub struct Sink<M> where M: Message {
@@ -54,7 +54,7 @@ pub(crate) struct SinkContext<M> where M: Message,
     sink_flushed: bool,
 }
 
-/// SinkService execution context object
+/// Sink execution context
 impl<M> SinkContext<M> where M: Message
 {
     pub(crate) fn new<S>(sink: S) -> SinkContext<M>
@@ -99,18 +99,18 @@ impl<M> SinkContext<M> where M: Message
     }
 }
 
-pub(crate) trait SinkContextService<S: Service> {
+pub(crate) trait SinkContextService<A: Actor> {
 
-    fn poll(&mut self, srv: &mut S, ctx: &mut Context<S>) -> ServiceResult;
+    fn poll(&mut self, srv: &mut A, ctx: &mut Context<A>) -> ActorStatus;
 
 }
 
-impl<M, S> SinkContextService<S> for SinkContext<M>
+impl<M, A> SinkContextService<A> for SinkContext<M>
     where M: Message<Item=()>,
-          S: Service
+          A: Actor
 {
 
-    fn poll(&mut self, _srv: &mut S, _: &mut Context<S>) -> ServiceResult
+    fn poll(&mut self, _act: &mut A, _: &mut Context<A>) -> ActorStatus
     {
         loop {
             let mut not_ready = true;
@@ -127,7 +127,7 @@ impl<M, S> SinkContextService<S> for SinkContext<M>
                                 self.sink_flushed = false;
                                 continue
                             }
-                            Err(_) => return ServiceResult::Done,
+                            Err(_) => return ActorStatus::Done,
                         }
                         IoItem::Call((msg, tx)) => match self.sink.start_send(msg) {
                             Ok(AsyncSink::NotReady(msg)) => {
@@ -140,7 +140,7 @@ impl<M, S> SinkContextService<S> for SinkContext<M>
                             }
                             Err(err) => {
                                 let _ = tx.send(Err(err));
-                                return ServiceResult::Done
+                                return ActorStatus::Done
                             }
                         }
                     }
@@ -156,19 +156,13 @@ impl<M, S> SinkContextService<S> for SinkContext<M>
                         self.sink_flushed = true;
                     }
                     Ok(Async::NotReady) => (),
-                    Err(_) => (),
-                    //match SinkService::call(
-                    //    &mut self.srv, srv, ctx, SinkResult::SinkErr(err))
-                    //{
-                    //    ServiceResult::NotReady => (),
-                    //    ServiceResult::Done => return ServiceResult::Done,
-                    //}
+                    Err(_) => return ActorStatus::Done
                 };
             }
 
             // are we done
             if not_ready {
-                return ServiceResult::NotReady
+                return ActorStatus::NotReady
             }
         }
     }

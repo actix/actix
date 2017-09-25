@@ -8,17 +8,16 @@
 //! use ctx::prelude::*;
 //! ```
 
-pub use fut::{self, CtxFuture, WrapFuture, IntoCtxFuture};
+pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
-pub use actor::Actor;
+pub use actor::{Actor, ActorStatus, Message, MessageHandler, DefaultMessage};
 pub use arbiter::{Arbiter, StopArbiter, ArbiterAddress};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use builder::ServiceBuilder;
 
-pub use context::{Context, CtxFutureSpawner};
+pub use context::{Context, FutureSpawner};
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
 pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
-pub use service::{Message, MessageHandler, DefaultMessage, Service, ServiceResult};
 pub use system::{System, SystemExit};
 
 pub mod ctx {

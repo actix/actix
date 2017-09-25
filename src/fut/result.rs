@@ -2,9 +2,10 @@
 
 use std::marker::PhantomData;
 use futures::{Poll, Async};
-use fut::CtxFuture;
+
+use fut::ActorFuture;
+use actor::Actor;
 use context::Context;
-use service::Service;
 
 
 /// A future representing a value that is immediately ready.
@@ -13,9 +14,9 @@ use service::Service;
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 // TODO: rename this to `Result` on the next major version
-pub struct FutureResult<T, E, S> {
+pub struct FutureResult<T, E, A> {
     inner: Option<Result<T, E>>,
-    srv: PhantomData<S>,
+    act: PhantomData<A>,
 }
 
 /// Creates a new "leaf future" which will resolve with the given result.
@@ -32,8 +33,8 @@ pub struct FutureResult<T, E, S> {
 /// let future_of_1 = result::<u32, u32>(Ok(1));
 /// let future_of_err_2 = result::<u32, u32>(Err(2));
 /// ```
-pub fn result<T, E, S>(r: Result<T, E>) -> FutureResult<T, E, S> {
-    FutureResult { inner: Some(r), srv: PhantomData }
+pub fn result<T, E, A>(r: Result<T, E>) -> FutureResult<T, E, A> {
+    FutureResult { inner: Some(r), act: PhantomData }
 }
 
 /// Creates a "leaf future" from an immediate value of a finished and
@@ -61,20 +62,20 @@ pub fn ok<T, E, S>(t: T) -> FutureResult<T, E, S> {
 /// # Examples
 ///
 /// ```
-/// use futures::future::*;
+/// use ctx::future::*;
 ///
 /// let future_of_err_1 = err::<u32, u32>(1);
 /// ```
-pub fn err<T, E, S>(e: E) -> FutureResult<T, E, S> {
+pub fn err<T, E, A>(e: E) -> FutureResult<T, E, A> {
     result(Err(e))
 }
 
-impl<T, E, S> CtxFuture for FutureResult<T, E, S> where S: Service {
+impl<T, E, A> ActorFuture for FutureResult<T, E, A> where A:Actor {
     type Item = T;
     type Error = E;
-    type Service = S;
+    type Actor = A;
 
-    fn poll(&mut self, _: &mut Self::Service, _: &mut Context<Self::Service>) -> Poll<T, E>
+    fn poll(&mut self, _: &mut Self::Actor, _: &mut Context<Self::Actor>) -> Poll<T, E>
     {
         self.inner.take().expect("cannot poll Result twice").map(Async::Ready)
     }

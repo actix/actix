@@ -4,31 +4,31 @@ use futures::{Async, Future, Poll};
 use futures::sync::mpsc::UnboundedSender;
 use futures::sync::oneshot::{channel, Canceled, Receiver, Sender};
 
-use fut;
+use fut::ActorFuture;
+use actor::{Actor, Message, MessageHandler};
 use address::{Subscriber, AsyncSubscriber, MessageProxy, BoxedMessageProxy};
 use context::Context;
 use message::MessageFuture;
-use service::{Message, MessageHandler, Service};
 
 
-pub struct SyncAddress<T> where T: Service {
-    tx: UnboundedSender<BoxedMessageProxy<T>>
+pub struct SyncAddress<A> where A: Actor {
+    tx: UnboundedSender<BoxedMessageProxy<A>>
 }
 
-impl<T> Clone for SyncAddress<T> where T: Service {
+impl<A> Clone for SyncAddress<A> where A: Actor {
     fn clone(&self) -> Self {
         SyncAddress{tx: self.tx.clone()}
     }
 }
 
-impl<T> SyncAddress<T> where T: Service {
+impl<A> SyncAddress<A> where A: Actor {
 
-    pub(crate) fn new(sender: UnboundedSender<BoxedMessageProxy<T>>) -> SyncAddress<T> {
+    pub(crate) fn new(sender: UnboundedSender<BoxedMessageProxy<A>>) -> SyncAddress<A> {
         SyncAddress{tx: sender}
     }
 
     pub fn send<M: Message + Send>(&self, msg: M)
-        where T: MessageHandler<M>,
+        where A: MessageHandler<M>,
               M::Item: Send,
               M::Error: Send,
     {
@@ -36,8 +36,8 @@ impl<T> SyncAddress<T> where T: Service {
             BoxedMessageProxy(Box::new(SyncEnvelope::new(Some(msg), None))));
     }
 
-    pub fn call<M: Message + Send, S: Service>(&self, msg: M) -> MessageResult<M, S>
-        where T: MessageHandler<M>,
+    pub fn call<B: Actor, M: Message + Send>(&self, msg: M) -> MessageResult<B, M>
+        where A: MessageHandler<M>,
               M::Item: Send,
               M::Error: Send,
     {
@@ -49,7 +49,7 @@ impl<T> SyncAddress<T> where T: Service {
     }
 
     pub fn subscriber<M: Message + Send>(&self) -> Box<Subscriber<M>>
-        where T: MessageHandler<M>,
+        where A: MessageHandler<M>,
               M::Item: Send,
               M::Error: Send,
     {
@@ -57,7 +57,7 @@ impl<T> SyncAddress<T> where T: Service {
     }
 
     pub fn async_subscriber<M>(&self) -> Box<AsyncSubscriber<M, Future=CallResult<M>>>
-        where T: MessageHandler<M>,
+        where A: MessageHandler<M>,
               M::Item: Send,
               M::Error: Send,
               M: Message + Send,
@@ -66,11 +66,11 @@ impl<T> SyncAddress<T> where T: Service {
     }
 }
 
-impl<T, M> Subscriber<M> for SyncAddress<T>
+impl<A, M> Subscriber<M> for SyncAddress<A>
     where M: Message + Send,
           M::Item: Send,
           M::Error: Send,
-          T: Service + MessageHandler<M>
+          A: Actor + MessageHandler<M>
 {
     fn send(&self, msg: M) {
         self.send(msg)
@@ -82,11 +82,11 @@ impl<T, M> Subscriber<M> for SyncAddress<T>
     }
 }
 
-impl<T, M> AsyncSubscriber<M> for SyncAddress<T>
+impl<A, M> AsyncSubscriber<M> for SyncAddress<A>
     where M: Message + Send,
           M::Item: Send,
           M::Error: Send,
-          T: Service + MessageHandler<M>
+          A: Actor + MessageHandler<M>
 {
     type Future = CallResult<M>;
 
@@ -105,55 +105,55 @@ impl<T, M> AsyncSubscriber<M> for SyncAddress<T>
     }
 }
 
-struct SyncEnvelope<M, S> where M: Message, S: Service + MessageHandler<M>
+struct SyncEnvelope<A, M> where M: Message, A: Actor + MessageHandler<M>
 {
     msg: Option<M>,
-    srv: PhantomData<S>,
+    act: PhantomData<A>,
     tx: Option<Sender<Result<M::Item, M::Error>>>,
 }
 
-impl<M, S> SyncEnvelope<M, S> where M: Message, S: Service + MessageHandler<M>
+impl<A, M> SyncEnvelope<A, M> where M: Message, A: Actor + MessageHandler<M>
 {
     fn new(msg: Option<M>,
-           tx: Option<Sender<Result<M::Item, M::Error>>>) -> SyncEnvelope<M, S>
+           tx: Option<Sender<Result<M::Item, M::Error>>>) -> SyncEnvelope<A, M>
     {
-        SyncEnvelope{msg: msg, tx: tx, srv: PhantomData}
+        SyncEnvelope{msg: msg, tx: tx, act: PhantomData}
     }
 }
 
-impl<M, S> MessageProxy for SyncEnvelope<M, S>
-    where M: Message, S: Service + MessageHandler<M>,
+impl<A, M> MessageProxy for SyncEnvelope<A, M>
+    where M: Message, A: Actor + MessageHandler<M>,
 {
-    type Service = S;
+    type Actor = A;
 
-    fn handle(&mut self, srv: &mut Self::Service, ctx: &mut Context<S>)
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<A>)
     {
         if let Some(msg) = self.msg.take() {
-            let fut = <Self::Service as MessageHandler<M>>::handle(srv, msg, ctx);
-            let f: EnvelopFuture<_, Self::Service> = EnvelopFuture {msg: PhantomData,
-                                                                    fut: fut,
-                                                                    tx: self.tx.take()};
+            let fut = <Self::Actor as MessageHandler<M>>::handle(act, msg, ctx);
+            let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {msg: PhantomData,
+                                                                  fut: fut,
+                                                                  tx: self.tx.take()};
             ctx.spawn(f);
         }
     }
 }
 
-struct EnvelopFuture<M, S> where M: Message, S: Service
+struct EnvelopFuture<A, M> where M: Message, A: Actor
 {
     msg: PhantomData<M>,
-    fut: MessageFuture<M, S>,
+    fut: MessageFuture<A, M>,
     tx: Option<Sender<Result<M::Item, M::Error>>>,
 }
 
-impl<M, S> fut::CtxFuture for EnvelopFuture<M, S> where M: Message, S: Service
+impl<A, M> ActorFuture for EnvelopFuture<A, M> where M: Message, A: Actor
 {
     type Item = ();
     type Error = ();
-    type Service = S;
+    type Actor = A;
 
-    fn poll(&mut self, srv: &mut S, ctx: &mut Context<S>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
     {
-        match self.fut.poll(srv, ctx) {
+        match self.fut.poll(act, ctx) {
             Ok(Async::Ready(val)) => {
                 if let Some(tx) = self.tx.take() {
                     let _ = tx.send(Ok(val));
@@ -172,30 +172,30 @@ impl<M, S> fut::CtxFuture for EnvelopFuture<M, S> where M: Message, S: Service
 }
 
 #[must_use = "future do nothing unless polled"]
-pub struct MessageResult<M, S>
+pub struct MessageResult<A, M>
     where M: Message,
-          S: Service
+          A: Actor
 {
     rx: Receiver<Result<M::Item, M::Error>>,
-    srv: PhantomData<S>,
+    act: PhantomData<A>,
 }
 
-impl<M, S> MessageResult<M, S> where M: Message, S: Service
+impl<A, M> MessageResult<A, M> where M: Message, A: Actor
 {
-    pub(crate) fn new(rx: Receiver<Result<M::Item, M::Error>>) -> MessageResult<M, S> {
-        MessageResult{rx: rx, srv: PhantomData}
+    pub(crate) fn new(rx: Receiver<Result<M::Item, M::Error>>) -> MessageResult<A, M> {
+        MessageResult{rx: rx, act: PhantomData}
     }
 }
 
-impl<M, S> fut::CtxFuture for MessageResult<M, S>
+impl<A, M> ActorFuture for MessageResult<A, M>
     where M: Message,
-          S: Service
+          A: Actor
 {
     type Item = Result<M::Item, M::Error>;
     type Error = Canceled;
-    type Service = S;
+    type Actor = A;
 
-    fn poll(&mut self, _: &mut S, _: &mut Context<S>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, _: &mut A, _: &mut Context<A>) -> Poll<Self::Item, Self::Error>
     {
         self.rx.poll()
     }

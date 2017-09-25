@@ -5,11 +5,11 @@ use tokio_core::reactor::{Core, Remote, Handle};
 use futures::future;
 use futures::sync::oneshot::{channel, Sender, Receiver};
 
+use actor::{Actor, DefaultMessage, Message, MessageHandler};
 use address::{Address, SyncAddress};
 use builder::ServiceBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
-use service::{Service, DefaultMessage, Message, MessageHandler};
 
 thread_local!(
     static HND: RefCell<Option<Handle>> = RefCell::new(None);
@@ -22,7 +22,7 @@ pub struct Arbiter {
     sys: bool,
 }
 
-impl Service for Arbiter {
+impl Actor for Arbiter {
     type Message = DefaultMessage;
 }
 
@@ -84,7 +84,7 @@ impl Arbiter {
     }
 
     pub fn start<F, T>(&self, f: F) -> Receiver<SyncAddress<T>>
-        where T: Service,
+        where T: Actor,
               F: 'static + Send + FnOnce(&mut Context<T>) -> T
     {
         let (tx, rx) = channel();
@@ -115,7 +115,7 @@ impl Message for StopArbiter {
 impl MessageHandler<StopArbiter> for Arbiter {
 
     fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>)
-              -> MessageFuture<StopArbiter, Self>
+              -> MessageFuture<Self, StopArbiter>
     {
         if self.sys {
             warn!("System arbiter received `StopArbiter` message.
@@ -142,7 +142,7 @@ impl Message for ArbiterAddress {
 impl MessageHandler<ArbiterAddress> for Arbiter {
 
     fn handle(&mut self, _: ArbiterAddress, ctx: &mut Context<Self>)
-              -> MessageFuture<ArbiterAddress, Self>
+              -> MessageFuture<Self, ArbiterAddress>
     {
         ctx.sync_address().to_result()
     }

@@ -6,16 +6,15 @@ use futures::sync::mpsc::{unbounded as sync_unbounded,
                           UnboundedReceiver as SyncUnboundedReceiver};
 use tokio_core::reactor::Handle;
 
-use service::{Message, Service};
-
-use fut::CtxFuture;
+use fut::ActorFuture;
+use actor::{Actor, Message};
 use address::{Address, SyncAddress, BoxedMessageProxy};
 use sink::{Sink, SinkContext, SinkContextService};
 
 macro_rules! try_service {
     ($e:expr) => (match $e {
-        $crate::ServiceResult::Done => return Ok($crate::context::Async::Ready(())),
-        $crate::ServiceResult::NotReady => (),
+        $crate::ActorStatus::Done => return Ok($crate::context::Async::Ready(())),
+        $crate::ActorStatus::NotReady => (),
     })
 }
 
@@ -30,49 +29,49 @@ bitflags! {
 }
 
 /// Service execution context
-pub struct Context<T> where T: Service,
+pub struct Context<A> where A: Actor,
 {
-    srv: T,
-    addr: Address<T>,
-    sync_addr: Option<SyncAddress<T>>,
+    act: A,
+    addr: Address<A>,
+    sync_addr: Option<SyncAddress<A>>,
     flags: State,
-    msgs: UnboundedReceiver<BoxedMessageProxy<T>>,
-    sync_msgs: Option<SyncUnboundedReceiver<BoxedMessageProxy<T>>>,
-    items: Vec<IoItem<T>>,
-    stream: Option<Box<Stream<Item=<T::Message as Message>::Item,
-                              Error=<T::Message as Message>::Error>>>,
+    msgs: UnboundedReceiver<BoxedMessageProxy<A>>,
+    sync_msgs: Option<SyncUnboundedReceiver<BoxedMessageProxy<A>>>,
+    items: Vec<IoItem<A>>,
+    stream: Option<Box<Stream<Item=<A::Message as Message>::Item,
+                              Error=<A::Message as Message>::Error>>>,
 }
 
 /// io items
-enum IoItem<T: Service> {
-    Future(Box<ServiceFuture<T>>),
-    Stream(Box<ServiceStream<T>>),
-    SpawnFuture(Box<ServiceSpawnFuture<T>>),
-    Sink(Box<SinkContextService<T>>),
+enum IoItem<A: Actor> {
+    Future(Box<ActFuture<A>>),
+    Stream(Box<ActStream<A>>),
+    SpawnFuture(Box<ActSpawnFuture<A>>),
+    Sink(Box<SinkContextService<A>>),
 }
 
-type ServiceSpawnFuture<T> =
-    CtxFuture<Item=(), Error=(), Service=T>;
+type ActSpawnFuture<A> =
+    ActorFuture<Item=(), Error=(), Actor=A>;
 
-type ServiceFuture<T> =
-    Future<Item=<<T as Service>::Message as Message>::Item,
-           Error=<<T as Service>::Message as Message>::Error>;
+type ActFuture<A> =
+    Future<Item=<<A as Actor>::Message as Message>::Item,
+           Error=<<A as Actor>::Message as Message>::Error>;
 
-pub type ServiceStream<T> =
-    Stream<Item=<<T as Service>::Message as Message>::Item,
-           Error=<<T as Service>::Message as Message>::Error>;
+type ActStream<A> =
+    Stream<Item=<<A as Actor>::Message as Message>::Item,
+           Error=<<A as Actor>::Message as Message>::Error>;
 
 
-impl<T> Context<T> where T: Service
+impl<A> Context<A> where A: Actor
 {
-    pub(crate) fn new<S>(srv: T, stream: S) -> Context<T>
-        where S: Stream<Item=<T::Message as Message>::Item,
-                        Error=<T::Message as Message>::Error> + 'static,
+    pub(crate) fn new<S>(act: A, stream: S) -> Context<A>
+        where S: Stream<Item=<A::Message as Message>::Item,
+                        Error=<A::Message as Message>::Error> + 'static,
     {
         let (tx, rx) = unbounded();
 
         Context {
-            srv: srv,
+            act: act,
             msgs: rx,
             addr: Address::new(tx),
             sync_addr: None,
@@ -83,11 +82,11 @@ impl<T> Context<T> where T: Service
         }
     }
 
-    pub(crate) fn new_empty(srv: T) -> Context<T>
+    pub(crate) fn new_empty(act: A) -> Context<A>
     {
         let (tx, rx) = unbounded();
         Context {
-            srv: srv,
+            act: act,
             msgs: rx,
             sync_addr: None,
             sync_msgs: None,
@@ -98,23 +97,23 @@ impl<T> Context<T> where T: Service
         }
     }
 
-    pub(crate) fn run(self, handle: &Handle) -> Address<T> where T: 'static {
+    pub(crate) fn run(self, handle: &Handle) -> Address<A> where A: 'static {
         let addr = self.address();
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
         addr
     }
 
-    pub(crate) fn replace_service(&mut self, srv: T) -> T {
-        std::mem::replace(&mut self.srv, srv)
+    pub(crate) fn replace_actor(&mut self, srv: A) -> A {
+        std::mem::replace(&mut self.act, srv)
     }
 
     /// Get service address
-    pub fn address(&self) -> Address<T> {
+    pub fn address(&self) -> Address<A> {
         self.addr.clone()
     }
 
     /// Get service address with `Send` baundary
-    pub fn sync_address(&mut self) -> SyncAddress<T> {
+    pub fn sync_address(&mut self) -> SyncAddress<A> {
         if self.sync_addr.is_none() {
             let (tx, rx) = sync_unbounded();
             self.sync_addr = Some(SyncAddress::new(tx));
@@ -132,21 +131,21 @@ impl<T> Context<T> where T: Service
     }
 
     pub fn spawn<F>(&mut self, fut: F)
-        where F: CtxFuture<Item=(), Error=(), Service=T> + 'static
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.items.push(IoItem::SpawnFuture(Box::new(fut)))
     }
 
     pub fn add_future<F>(&mut self, fut: F)
-        where F: Future<Item=<<T as Service>::Message as Message>::Item,
-                        Error=<<T as Service>::Message as Message>::Error> + 'static
+        where F: Future<Item=<<A as Actor>::Message as Message>::Item,
+                        Error=<<A as Actor>::Message as Message>::Error> + 'static
     {
         self.items.push(IoItem::Future(Box::new(fut)))
     }
 
     pub fn add_stream<S>(&mut self, fut: S)
-        where S: Stream<Item=<<T as Service>::Message as Message>::Item,
-                        Error=<<T as Service>::Message as Message>::Error> + 'static
+        where S: Stream<Item=<<A as Actor>::Message as Message>::Item,
+                        Error=<<A as Actor>::Message as Message>::Error> + 'static
     {
         self.items.push(IoItem::Stream(Box::new(fut)))
     }
@@ -164,18 +163,18 @@ impl<T> Context<T> where T: Service
     }
 }
 
-impl<T> Future for Context<T> where T: Service
+impl<A> Future for Context<A> where A: Actor
 {
     type Item = ();
     type Error = ();
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let ctx: &mut Context<T> = unsafe {
-            std::mem::transmute(self as &mut Context<T>)
+        let ctx: &mut Context<A> = unsafe {
+            std::mem::transmute(self as &mut Context<A>)
         };
         if !self.flags.contains(State::STARTED) {
             self.flags |= State::STARTED;
-            Service::start(&mut self.srv, ctx);
+            Actor::start(&mut self.act, ctx);
         }
 
         loop {
@@ -187,14 +186,14 @@ impl<T> Future for Context<T> where T: Service
                         match val {
                             Async::Ready(Some(val)) => {
                                 not_ready = false;
-                                try_service!(Service::call(&mut self.srv, Ok(val), ctx));
+                                try_service!(Actor::call(&mut self.act, Ok(val), ctx));
                             }
                             Async::Ready(None) =>
-                                try_service!(Service::finished(&mut self.srv, ctx)),
+                                try_service!(Actor::finished(&mut self.act, ctx)),
                             Async::NotReady => (),
                         }
                     }
-                    Err(err) => try_service!(Service::call(&mut self.srv, Err(err), ctx))
+                    Err(err) => try_service!(Actor::call(&mut self.act, Err(err), ctx))
                 }
             }
 
@@ -204,7 +203,7 @@ impl<T> Future for Context<T> where T: Service
                     match val {
                         Async::Ready(Some(mut msg)) => {
                             not_ready = false;
-                            msg.0.handle(&mut self.srv, ctx);
+                            msg.0.handle(&mut self.act, ctx);
                         }
                         Async::Ready(None) => (),
                         Async::NotReady => (),
@@ -220,7 +219,7 @@ impl<T> Future for Context<T> where T: Service
                         match val {
                             Async::Ready(Some(mut msg)) => {
                                 not_ready = false;
-                                msg.0.handle(&mut self.srv, ctx);
+                                msg.0.handle(&mut self.act, ctx);
                             }
                             Async::Ready(None) => (),
                             Async::NotReady => (),
@@ -240,21 +239,21 @@ impl<T> Future for Context<T> where T: Service
 
                 let (drop, item) = match self.items[idx] {
                     IoItem::Sink(ref mut sink) => {
-                        try_service!(sink.poll(&mut self.srv, ctx));
+                        try_service!(sink.poll(&mut self.act, ctx));
                         (false, None)
                     }
                     IoItem::Stream(ref mut stream) => match stream.poll() {
                         Ok(val) => match val {
                             Async::Ready(Some(val)) => {
                                 not_ready = false;
-                                try_service!(Service::call(&mut self.srv, Ok(val), ctx));
+                                try_service!(Actor::call(&mut self.act, Ok(val), ctx));
                                 (false, None)
                             }
                             Async::Ready(None) => (true, None),
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            try_service!(Service::call(&mut self.srv, Err(err), ctx));
+                            try_service!(Actor::call(&mut self.act, Err(err), ctx));
                             (true, None)
                         }
                     },
@@ -262,17 +261,17 @@ impl<T> Future for Context<T> where T: Service
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
-                                try_service!(Service::call(&mut self.srv, Ok(val), ctx));
+                                try_service!(Actor::call(&mut self.act, Ok(val), ctx));
                                 (true, None)
                             }
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            try_service!(Service::call(&mut self.srv, Err(err), ctx));
+                            try_service!(Actor::call(&mut self.act, Err(err), ctx));
                             (true, None)
                         }
                     }
-                    IoItem::SpawnFuture(ref mut fut) => match fut.poll(&mut self.srv, ctx) {
+                    IoItem::SpawnFuture(ref mut fut) => match fut.poll(&mut self.act, ctx) {
                         Ok(val) => match val {
                             Async::Ready(_) => {
                                 not_ready = false;
@@ -320,19 +319,17 @@ impl<T> Future for Context<T> where T: Service
 }
 
 
-pub trait CtxFutureSpawner<S> where S: Service {
-
+pub trait FutureSpawner<A> where A: Actor {
     /// spawn future into Context
-    fn spawn(self, fut: &mut Context<S>);
-
+    fn spawn(self, fut: &mut Context<A>);
 }
 
 
-impl<T, S> CtxFutureSpawner<S> for T
-    where S: Service,
-          T: CtxFuture<Item=(), Error=(), Service=S> + 'static
+impl<A, T> FutureSpawner<A> for T
+    where A: Actor,
+          T: ActorFuture<Item=(), Error=(), Actor=A> + 'static
 {
-    fn spawn(self, ctx: &mut Context<S>) {
+    fn spawn(self, ctx: &mut Context<A>) {
         ctx.spawn(self)
     }
 }

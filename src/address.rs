@@ -4,7 +4,7 @@ use futures::unsync::oneshot::channel;
 
 use context::Context;
 use message::{Envelope, CallResult, MessageResult};
-use service::{Message, MessageHandler, Service};
+use actor::{Actor, Message, MessageHandler};
 pub use sync_address::SyncAddress;
 
 pub trait Subscriber<M> {
@@ -30,41 +30,41 @@ pub trait AsyncSubscriber<M> {
 
 pub(crate) trait MessageProxy {
 
-    type Service: Service;
+    type Actor: Actor;
 
     /// handle message within new service and context
-    fn handle(&mut self, srv: &mut Self::Service, ctx: &mut Context<Self::Service>);
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<Self::Actor>);
 }
 
-pub(crate) struct BoxedMessageProxy<T>(pub(crate) Box<MessageProxy<Service=T>>);
+pub(crate) struct BoxedMessageProxy<A>(pub(crate) Box<MessageProxy<Actor=A>>);
 
 unsafe impl<T> Send for BoxedMessageProxy<T> {}
 
-/// Address of the service `T`
-pub struct Address<T> where T: Service {
-    tx: UnboundedSender<BoxedMessageProxy<T>>
+/// Address of the actor `A`
+pub struct Address<A> where A: Actor {
+    tx: UnboundedSender<BoxedMessageProxy<A>>
 }
 
-impl<T> Clone for Address<T> where T: Service {
+impl<A> Clone for Address<A> where A: Actor {
     fn clone(&self) -> Self {
         Address{tx: self.tx.clone() }
     }
 }
 
-impl<T> Address<T> where T: Service {
+impl<A> Address<A> where A: Actor {
 
-    pub(crate) fn new(sender: UnboundedSender<BoxedMessageProxy<T>>) -> Address<T> {
+    pub(crate) fn new(sender: UnboundedSender<BoxedMessageProxy<A>>) -> Address<A> {
         Address{tx: sender}
     }
 
-    pub fn send<M: Message>(&self, msg: M) where T: MessageHandler<M>
+    pub fn send<M: Message>(&self, msg: M) where A: MessageHandler<M>
     {
         let _ = self.tx.unbounded_send(
             BoxedMessageProxy(Box::new(Envelope::new(Some(msg), None))));
     }
 
-    pub fn call<M: Message, S: Service>(&self, msg: M) -> MessageResult<M, S>
-        where T: MessageHandler<M>
+    pub fn call<B: Actor, M: Message>(&self, msg: M) -> MessageResult<B, M>
+        where A: MessageHandler<M>
     {
         let (tx, rx) = channel();
         let env = Envelope::new(Some(msg), Some(tx));
@@ -74,7 +74,7 @@ impl<T> Address<T> where T: Service {
     }
 
     pub fn subscriber<M: Message>(&self) -> Box<Subscriber<M>>
-        where T: MessageHandler<M>
+        where A: MessageHandler<M>
     {
         Box::new(self.clone())
     }
@@ -82,7 +82,7 @@ impl<T> Address<T> where T: Service {
 
 impl<T, M> Subscriber<M> for Address<T>
     where M: Message,
-          T: Service + MessageHandler<M>
+          T: Actor + MessageHandler<M>
 {
 
     fn send(&self, msg: M) {
@@ -97,7 +97,7 @@ impl<T, M> Subscriber<M> for Address<T>
 
 impl<T, M> AsyncSubscriber<M> for Address<T>
     where M: Message,
-          T: Service + MessageHandler<M>
+          T: Actor + MessageHandler<M>
 {
     type Future = CallResult<M>;
 

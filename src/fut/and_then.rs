@@ -1,7 +1,7 @@
 use futures::Poll;
 
 use super::chain::Chain;
-use super::{CtxFuture, IntoCtxFuture};
+use super::{ActorFuture, IntoActorFuture};
 use context::Context;
 
 
@@ -12,36 +12,35 @@ use context::Context;
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 pub struct AndThen<A, B, F>
-    where A: CtxFuture,
-          B: IntoCtxFuture<Service=A::Service>
+    where A: ActorFuture,
+          B: IntoActorFuture<Actor=A::Actor>
 {
     state: Chain<A, B::Future, F>,
 }
 
 pub fn new<A, B, F>(future: A, f: F) -> AndThen<A, B, F>
-    where A: CtxFuture,
-          B: IntoCtxFuture<Service=A::Service>
+    where A: ActorFuture,
+          B: IntoActorFuture<Actor=A::Actor>
 {
     AndThen {
         state: Chain::new(future, f),
     }
 }
 
-impl<A, B, F> CtxFuture for AndThen<A, B, F>
-    where A: CtxFuture,
-          B: IntoCtxFuture<Service=A::Service, Error=A::Error>,
-          F: FnOnce(A::Item, &mut A::Service, &mut Context<A::Service>) -> B,
+impl<A, B, F> ActorFuture for AndThen<A, B, F>
+    where A: ActorFuture,
+          B: IntoActorFuture<Actor=A::Actor, Error=A::Error>,
+          F: FnOnce(A::Item, &mut A::Actor, &mut Context<A::Actor>) -> B,
 {
     type Item = B::Item;
     type Error = B::Error;
-    type Service = A::Service;
+    type Actor = A::Actor;
 
-    fn poll(&mut self, srv: &mut A::Service,
-            ctx: &mut Context<A::Service>) -> Poll<B::Item, B::Error>
+    fn poll(&mut self, act: &mut A::Actor, ctx: &mut Context<A::Actor>) -> Poll<B::Item, B::Error>
     {
-        self.state.poll(srv, ctx, |result, f, srv, ctx| {
+        self.state.poll(act, ctx, |result, f, act, ctx| {
             result.map(|e| {
-                Err(f(e, srv, ctx).into_future())
+                Err(f(e, act, ctx).into_future())
             })
         })
     }
