@@ -12,7 +12,6 @@ use address::{Address, SyncAddress, BoxedMessageProxy};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
 
-
 bitflags! {
     /// State Bitflags
     struct State: u16 {
