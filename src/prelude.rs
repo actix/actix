@@ -11,12 +11,12 @@
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
 pub use actor::{Actor, MessageHandler, StreamHandler};
-pub use arbiter::{Arbiter, StopArbiter, ArbiterAddress};
+pub use arbiter::{Arbiter, ArbiterAddress, StopArbiter};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use builder::ServiceBuilder;
 
-pub use context::{Context, FutureSpawner};
-pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
+pub use context::{Context, ActixFutureSpawner};
+pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
 pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
 pub use system::{System, SystemExit};
 

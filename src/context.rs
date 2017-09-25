@@ -371,13 +371,13 @@ impl<A, M, E> ActorFuture for ActorStreamCell<A, M, E>
     }
 }
 
-pub trait FutureSpawner<A> where A: Actor {
+pub trait ActixFutureSpawner<A> where A: Actor {
     /// spawn future into Context
     fn spawn(self, fut: &mut Context<A>);
 }
 
 
-impl<A, T> FutureSpawner<A> for T
+impl<A, T> ActixFutureSpawner<A> for T
     where A: Actor,
           T: ActorFuture<Item=(), Error=(), Actor=A> + 'static
 {

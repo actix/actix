@@ -9,23 +9,26 @@ use tokio_io::io::{ReadHalf, WriteHalf};
 const INITIAL_CAPACITY: usize = 8 * 1024;
 const BACKPRESSURE_BOUNDARY: usize = INITIAL_CAPACITY;
 
-pub trait CtxFramed {
+pub trait ActixFramed {
 
     /// Helper method for splitting this read/write object into two
-    /// CtxFramedRead and CtxFramedWrite.
-    fn ctx_framed<D: Decoder, E: Encoder>(self, decoder: D, encoder: E)
-           -> (CtxFramedRead<ReadHalf<Self>, D>, CtxFramedWrite<WriteHalf<Self>, E>)
-        where Self: AsyncRead + AsyncWrite + Sized
+    /// ActixFramedRead and ActixFramedWrite.
+    fn actix_framed<D, E>(self, decoder: D, encoder: E)
+                          -> (ActixFramedRead<ReadHalf<Self>, D>,
+                              ActixFramedWrite<WriteHalf<Self>, E>)
+        where D: Decoder,
+              E: Encoder,
+              Self: AsyncRead + AsyncWrite + Sized
     {
         let (r, w) = self.split();
-        (CtxFramedRead::new(r, decoder), CtxFramedWrite::new(w, encoder))
+        (ActixFramedRead::new(r, decoder), ActixFramedWrite::new(w, encoder))
     }
 }
 
-impl<T> CtxFramed for T where T: AsyncRead + AsyncWrite + Sized {}
+impl<T> ActixFramed for T where T: AsyncRead + AsyncWrite + Sized {}
 
 
-pub struct CtxFramedRead<T, D> {
+pub struct ActixFramedRead<T, D> {
     inner: T,
     decoder: D,
     eof: bool,
@@ -33,13 +36,13 @@ pub struct CtxFramedRead<T, D> {
     buffer: BytesMut,
 }
 
-impl<T, D> CtxFramedRead<T, D>
+impl<T, D> ActixFramedRead<T, D>
     where T: AsyncRead,
           D: Decoder,
 {
     /// Creates a new `CtxFramedRead` with the given `decoder`.
-    pub fn new(inner: T, decoder: D) -> CtxFramedRead<T, D> {
-        CtxFramedRead {
+    pub fn new(inner: T, decoder: D) -> ActixFramedRead<T, D> {
+        ActixFramedRead {
             inner: inner,
             decoder: decoder,
             eof: false,
@@ -49,7 +52,7 @@ impl<T, D> CtxFramedRead<T, D>
     }
 }
 
-impl<T, D> Stream for CtxFramedRead<T, D>
+impl<T, D> Stream for ActixFramedRead<T, D>
     where T: AsyncRead,
           D: Decoder,
 {
@@ -95,19 +98,19 @@ impl<T, D> Stream for CtxFramedRead<T, D>
 }
 
 
-pub struct CtxFramedWrite<T, E> {
+pub struct ActixFramedWrite<T, E> {
     inner: T,
     encoder: E,
     buffer: BytesMut,
 }
 
-impl<T, E> CtxFramedWrite<T, E>
+impl<T, E> ActixFramedWrite<T, E>
     where T: AsyncWrite,
           E: Encoder,
 {
     /// Creates a new `CtxFramedWrite` with the given `encoder`.
-    pub fn new(inner: T, encoder: E) -> CtxFramedWrite<T, E> {
-        CtxFramedWrite {
+    pub fn new(inner: T, encoder: E) -> ActixFramedWrite<T, E> {
+        ActixFramedWrite {
             inner: inner,
             encoder: encoder,
             buffer: BytesMut::with_capacity(INITIAL_CAPACITY),
@@ -115,7 +118,7 @@ impl<T, E> CtxFramedWrite<T, E>
     }
 }
 
-impl<T, E> Sink for CtxFramedWrite<T, E>
+impl<T, E> Sink for ActixFramedWrite<T, E>
     where T: AsyncWrite,
           E: Encoder,
 {

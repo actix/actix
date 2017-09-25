@@ -3,7 +3,7 @@ use message::MessageFuture;
 
 
 #[doc(hidden)]
-pub trait CtxActor {}
+pub trait ActixActor {}
 
 #[allow(unused_variables)]
 pub trait Actor: Sized + 'static {
@@ -17,7 +17,7 @@ pub trait Actor: Sized + 'static {
 }
 
 /// Service is Actor
-impl<T> CtxActor for T where T: Actor {}
+impl<T> ActixActor for T where T: Actor {}
 
 
 pub trait Message: Sized + 'static {

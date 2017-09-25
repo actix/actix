@@ -1,19 +1,19 @@
 [package]
-name = "ctx"
-version = "0.1.0"
+name = "actix"
+version = "0.0.1"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
-description = "CTX Library"
+description = "Actor Library"
 readme = "README.md"
 keywords = []
-homepage = "https://github.com/fafhrd91/ctx"
-repository = "https://github.com/fafhrd91/ctx.git"
-documentation = "https://fafhrd91.github.io/fafhrd91/ctx/"
-categories = ["Asynchronous"]
+homepage = "https://github.com/fafhrd91/actix/"
+repository = "https://github.com/fafhrd91/actix.git"
+documentation = "https://fafhrd91.github.io/fafhrd91/actix/"
+categories = ["Actor", "Asynchronous"]
 license = "Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
 
 [lib]
-name = "ctx"
+name = "actix"
 path = "src/lib.rs"
 
 [dependencies]
