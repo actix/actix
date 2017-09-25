@@ -5,7 +5,7 @@
 //!
 //! ```
 //! # #![allow(unused_imports)]
-//! use ctx::prelude::*;
+//! use actix::prelude::*;
 //! ```
 
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
