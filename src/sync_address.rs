@@ -5,7 +5,7 @@ use futures::sync::mpsc::UnboundedSender;
 use futures::sync::oneshot::{channel, Canceled, Receiver, Sender};
 
 use fut::ActorFuture;
-use actor::{Actor, Message, MessageHandler};
+use actor::{Actor, MessageHandler};
 use address::{Subscriber, AsyncSubscriber, MessageProxy, BoxedMessageProxy};
 use context::Context;
 use message::MessageFuture;
@@ -27,19 +27,19 @@ impl<A> SyncAddress<A> where A: Actor {
         SyncAddress{tx: sender}
     }
 
-    pub fn send<M: Message + Send>(&self, msg: M)
+    pub fn send<M: 'static + Send>(&self, msg: M)
         where A: MessageHandler<M>,
-              M::Item: Send,
-              M::Error: Send,
+              A::Item: Send,
+              A::Error: Send,
     {
         let _ = self.tx.unbounded_send(
             BoxedMessageProxy(Box::new(SyncEnvelope::new(Some(msg), None))));
     }
 
-    pub fn call<B: Actor, M: Message + Send>(&self, msg: M) -> MessageResult<B, M>
+    pub fn call<B: Actor, M: 'static + Send>(&self, msg: M) -> MessageResult<A, B, M>
         where A: MessageHandler<M>,
-              M::Item: Send,
-              M::Error: Send,
+              A::Item: Send,
+              A::Error: Send,
     {
         let (tx, rx) = channel();
         let env = SyncEnvelope::new(Some(msg), Some(tx));
@@ -48,28 +48,29 @@ impl<A> SyncAddress<A> where A: Actor {
         MessageResult::new(rx)
     }
 
-    pub fn subscriber<M: Message + Send>(&self) -> Box<Subscriber<M>>
+    pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M>>
         where A: MessageHandler<M>,
-              M::Item: Send,
-              M::Error: Send,
+              A::Item: Send,
+              A::Error: Send,
     {
         Box::new(self.clone())
     }
 
-    pub fn async_subscriber<M>(&self) -> Box<AsyncSubscriber<M, Future=CallResult<M>>>
+    pub fn async_subscriber<M>(&self)
+                               -> Box<AsyncSubscriber<M, Future=CallResult<A::Item, A::Error>>>
         where A: MessageHandler<M>,
-              M::Item: Send,
-              M::Error: Send,
-              M: Message + Send,
+              A::Item: Send,
+              A::Error: Send,
+              M: 'static + Send,
     {
         Box::new(self.clone())
     }
 }
 
 impl<A, M> Subscriber<M> for SyncAddress<A>
-    where M: Message + Send,
-          M::Item: Send,
-          M::Error: Send,
+    where M: 'static + Send,
+          A::Item: Send,
+          A::Error: Send,
           A: Actor + MessageHandler<M>
 {
     fn send(&self, msg: M) {
@@ -83,14 +84,14 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
 }
 
 impl<A, M> AsyncSubscriber<M> for SyncAddress<A>
-    where M: Message + Send,
-          M::Item: Send,
-          M::Error: Send,
-          A: Actor + MessageHandler<M>
+    where M: 'static + Send,
+          A: Actor + MessageHandler<M>,
+          A::Item: Send,
+          A::Error: Send,
 {
-    type Future = CallResult<M>;
+    type Future = CallResult<A::Item, A::Error>;
 
-    fn call(&self, msg: M) -> CallResult<M>
+    fn call(&self, msg: M) -> Self::Future
     {
         let (tx, rx) = channel();
         let env = SyncEnvelope::new(Some(msg), Some(tx));
@@ -99,30 +100,30 @@ impl<A, M> AsyncSubscriber<M> for SyncAddress<A>
         CallResult::new(rx)
     }
 
-    fn unbuffered_call(&self, msg: M) -> Result<CallResult<M>, M>
+    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M>
     {
         Ok(AsyncSubscriber::call(self, msg))
     }
 }
 
-struct SyncEnvelope<A, M> where M: Message, A: Actor + MessageHandler<M>
+struct SyncEnvelope<A, M> where A: Actor + MessageHandler<M>
 {
     msg: Option<M>,
     act: PhantomData<A>,
-    tx: Option<Sender<Result<M::Item, M::Error>>>,
+    tx: Option<Sender<Result<A::Item, A::Error>>>,
 }
 
-impl<A, M> SyncEnvelope<A, M> where M: Message, A: Actor + MessageHandler<M>
+impl<A, M> SyncEnvelope<A, M> where A: Actor + MessageHandler<M>
 {
     fn new(msg: Option<M>,
-           tx: Option<Sender<Result<M::Item, M::Error>>>) -> SyncEnvelope<A, M>
+           tx: Option<Sender<Result<A::Item, A::Error>>>) -> SyncEnvelope<A, M>
     {
         SyncEnvelope{msg: msg, tx: tx, act: PhantomData}
     }
 }
 
 impl<A, M> MessageProxy for SyncEnvelope<A, M>
-    where M: Message, A: Actor + MessageHandler<M>,
+    where M: 'static, A: Actor + MessageHandler<M>,
 {
     type Actor = A;
 
@@ -138,14 +139,14 @@ impl<A, M> MessageProxy for SyncEnvelope<A, M>
     }
 }
 
-struct EnvelopFuture<A, M> where M: Message, A: Actor
+struct EnvelopFuture<A, M> where A: Actor + MessageHandler<M>
 {
     msg: PhantomData<M>,
     fut: MessageFuture<A, M>,
-    tx: Option<Sender<Result<M::Item, M::Error>>>,
+    tx: Option<Sender<Result<A::Item, A::Error>>>,
 }
 
-impl<A, M> ActorFuture for EnvelopFuture<A, M> where M: Message, A: Actor
+impl<A, M> ActorFuture for EnvelopFuture<A, M> where A: Actor + MessageHandler<M>
 {
     type Item = ();
     type Error = ();
@@ -172,26 +173,28 @@ impl<A, M> ActorFuture for EnvelopFuture<A, M> where M: Message, A: Actor
 }
 
 #[must_use = "future do nothing unless polled"]
-pub struct MessageResult<A, M>
-    where M: Message,
-          A: Actor
+pub struct MessageResult<A, B, M>
+    where A: MessageHandler<M>,
+          B: Actor,
 {
-    rx: Receiver<Result<M::Item, M::Error>>,
-    act: PhantomData<A>,
+    rx: Receiver<Result<A::Item, A::Error>>,
+    act: PhantomData<B>,
 }
 
-impl<A, M> MessageResult<A, M> where M: Message, A: Actor
+impl<A, B, M> MessageResult<A, B, M>
+    where B: Actor,
+          A: MessageHandler<M>
 {
-    pub(crate) fn new(rx: Receiver<Result<M::Item, M::Error>>) -> MessageResult<A, M> {
+    pub(crate) fn new(rx: Receiver<Result<A::Item, A::Error>>) -> MessageResult<A, B, M> {
         MessageResult{rx: rx, act: PhantomData}
     }
 }
 
-impl<A, M> ActorFuture for MessageResult<A, M>
-    where M: Message,
-          A: Actor
+impl<A, B, M> ActorFuture for MessageResult<A, B, M>
+    where B: Actor,
+          A: MessageHandler<M>
 {
-    type Item = Result<M::Item, M::Error>;
+    type Item = Result<A::Item, A::Error>;
     type Error = Canceled;
     type Actor = A;
 
@@ -202,21 +205,21 @@ impl<A, M> ActorFuture for MessageResult<A, M>
 }
 
 #[must_use = "future do nothing unless polled"]
-pub struct CallResult<M> where M: Message
+pub struct CallResult<I, E>
 {
-    rx: Receiver<Result<M::Item, M::Error>>,
+    rx: Receiver<Result<I, E>>,
 }
 
-impl<M> CallResult<M> where M: Message
+impl<I, E> CallResult<I, E>
 {
-    fn new(rx: Receiver<Result<M::Item, M::Error>>) -> CallResult<M> {
+    fn new(rx: Receiver<Result<I, E>>) -> CallResult<I, E> {
         CallResult{rx: rx}
     }
 }
 
-impl<M> Future for CallResult<M> where M: Message
+impl<I, E> Future for CallResult<I, E>
 {
-    type Item = Result<M::Item, M::Error>;
+    type Item = Result<I, E>;
     type Error = Canceled;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {

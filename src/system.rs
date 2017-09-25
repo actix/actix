@@ -8,7 +8,7 @@ use arbiter::Arbiter;
 use builder::ServiceBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
-use actor::{Actor, Message, MessageHandler, DefaultMessage};
+use actor::{Actor, MessageHandler};
 
 thread_local!(
     static ADDR: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
@@ -20,6 +20,8 @@ pub struct System {
     stop: Option<Receiver<i32>>,
     tx: Option<Sender<i32>>,
 }
+
+impl Actor for System {}
 
 impl System {
 
@@ -70,19 +72,13 @@ impl System {
     }
 }
 
-impl Actor for System {
-    type Message = DefaultMessage;
-}
-
 /// Stop system execution and exit process with encoded code.
 pub struct SystemExit(pub i32);
 
-impl Message for SystemExit {
+impl MessageHandler<SystemExit> for System {
     type Item = ();
     type Error = ();
-}
-
-impl MessageHandler<SystemExit> for System {
+    type InputError = ();
 
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
               -> MessageFuture<Self, SystemExit>

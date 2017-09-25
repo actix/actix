@@ -3,7 +3,7 @@ use futures::{self, Async, AsyncSink};
 use futures::unsync::oneshot::{channel, Sender};
 
 use context::Context;
-use actor::{Actor, ActorStatus, Message};
+use actor::{Actor, Message};
 use address::{Subscriber, AsyncSubscriber};
 use message::CallResult;
 
@@ -31,13 +31,13 @@ impl<M> Subscriber<M> for Sink<M> where M: Message {
 
 impl<M> AsyncSubscriber<M> for Sink<M> where M: Message {
 
-    type Future = CallResult<M>;
+    type Future = CallResult<M::Item, M::Error>;
 
-    fn call(&self, msg: M) -> CallResult<M> {
+    fn call(&self, msg: M) -> Self::Future {
         unsafe {(&mut *self.srv).call(msg)}
     }
 
-    fn unbuffered_call(&self, msg: M) -> Result<CallResult<M>, M> {
+    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M> {
         unsafe {(&mut *self.srv).unbuffered_call(msg)}
     }
 }
@@ -67,14 +67,14 @@ impl<M> SinkContext<M> where M: Message
         }
     }
 
-    pub fn call(&mut self, msg: M) -> CallResult<M> {
+    pub fn call(&mut self, msg: M) -> CallResult<M::Item, M::Error> {
         let (tx, rx) = channel();
         self.sink_items.push_back(IoItem::Call((msg, tx)));
 
         CallResult::new(rx)
     }
 
-    pub fn unbuffered_call(&mut self, msg: M) -> Result<CallResult<M>, M> {
+    pub fn unbuffered_call(&mut self, msg: M) -> Result<CallResult<M::Item, M::Error>, M> {
         if self.sink_items.is_empty() {
             let (tx, rx) = channel();
             self.sink_items.push_back(IoItem::Call((msg, tx)));
@@ -101,7 +101,7 @@ impl<M> SinkContext<M> where M: Message
 
 pub(crate) trait SinkContextService<A: Actor> {
 
-    fn poll(&mut self, srv: &mut A, ctx: &mut Context<A>) -> ActorStatus;
+    fn poll(&mut self, srv: &mut A, ctx: &mut Context<A>) -> Async<()>;
 
 }
 
@@ -110,7 +110,7 @@ impl<M, A> SinkContextService<A> for SinkContext<M>
           A: Actor
 {
 
-    fn poll(&mut self, _act: &mut A, _: &mut Context<A>) -> ActorStatus
+    fn poll(&mut self, _act: &mut A, _: &mut Context<A>) -> Async<()>
     {
         loop {
             let mut not_ready = true;
@@ -127,7 +127,7 @@ impl<M, A> SinkContextService<A> for SinkContext<M>
                                 self.sink_flushed = false;
                                 continue
                             }
-                            Err(_) => return ActorStatus::Done,
+                            Err(_) => return Async::Ready(()),
                         }
                         IoItem::Call((msg, tx)) => match self.sink.start_send(msg) {
                             Ok(AsyncSink::NotReady(msg)) => {
@@ -140,7 +140,7 @@ impl<M, A> SinkContextService<A> for SinkContext<M>
                             }
                             Err(err) => {
                                 let _ = tx.send(Err(err));
-                                return ActorStatus::Done
+                                return Async::Ready(())
                             }
                         }
                     }
@@ -156,13 +156,13 @@ impl<M, A> SinkContextService<A> for SinkContext<M>
                         self.sink_flushed = true;
                     }
                     Ok(Async::NotReady) => (),
-                    Err(_) => return ActorStatus::Done
+                    Err(_) => return Async::Ready(())
                 };
             }
 
             // are we done
             if not_ready {
-                return ActorStatus::NotReady
+                return Async::NotReady
             }
         }
     }

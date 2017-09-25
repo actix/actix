@@ -21,10 +21,10 @@ pub trait AsyncSubscriber<M> {
     type Future: Future;
 
     /// Send message, wait response asynchronously
-    fn call(&self, msg: M) -> Self::Future where M: Message;
+    fn call(&self, msg: M) -> Self::Future;
 
     /// Send message, wait response asynchronously
-    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M> where M: Message;
+    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M>;
 
 }
 
@@ -57,14 +57,15 @@ impl<A> Address<A> where A: Actor {
         Address{tx: sender}
     }
 
-    pub fn send<M: Message>(&self, msg: M) where A: MessageHandler<M>
+    pub fn send<M: 'static>(&self, msg: M) where A: MessageHandler<M>
     {
         let _ = self.tx.unbounded_send(
             BoxedMessageProxy(Box::new(Envelope::new(Some(msg), None))));
     }
 
-    pub fn call<B: Actor, M: Message>(&self, msg: M) -> MessageResult<B, M>
-        where A: MessageHandler<M>
+    pub fn call<B: Actor, M>(&self, msg: M) -> MessageResult<A, B, M>
+        where A: MessageHandler<M>,
+              M: 'static
     {
         let (tx, rx) = channel();
         let env = Envelope::new(Some(msg), Some(tx));
@@ -95,13 +96,12 @@ impl<T, M> Subscriber<M> for Address<T>
     }
 }
 
-impl<T, M> AsyncSubscriber<M> for Address<T>
-    where M: Message,
-          T: Actor + MessageHandler<M>
+impl<A, M: 'static> AsyncSubscriber<M> for Address<A>
+    where A: Actor + MessageHandler<M>
 {
-    type Future = CallResult<M>;
+    type Future = CallResult<A::Item, A::Error>;
 
-    fn call(&self, msg: M) -> CallResult<M>
+    fn call(&self, msg: M) -> Self::Future
     {
         let (tx, rx) = channel();
         let env = Envelope::new(Some(msg), Some(tx));
@@ -110,7 +110,7 @@ impl<T, M> AsyncSubscriber<M> for Address<T>
         CallResult::new(rx)
     }
 
-    fn unbuffered_call(&self, msg: M) -> Result<CallResult<M>, M>
+    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M>
     {
         let (tx, rx) = channel();
         let env = Envelope::new(Some(msg), Some(tx));

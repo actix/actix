@@ -5,7 +5,7 @@ use tokio_core::reactor::{Core, Remote, Handle};
 use futures::future;
 use futures::sync::oneshot::{channel, Sender, Receiver};
 
-use actor::{Actor, DefaultMessage, Message, MessageHandler};
+use actor::{Actor, MessageHandler};
 use address::{Address, SyncAddress};
 use builder::ServiceBuilder;
 use context::Context;
@@ -22,9 +22,7 @@ pub struct Arbiter {
     sys: bool,
 }
 
-impl Actor for Arbiter {
-    type Message = DefaultMessage;
-}
+impl Actor for Arbiter {}
 
 impl Arbiter {
 
@@ -107,12 +105,11 @@ impl Clone for Arbiter {
 /// Stop arbiter execution
 pub struct StopArbiter(pub i32);
 
-impl Message for StopArbiter {
+impl MessageHandler<StopArbiter> for Arbiter {
+
     type Item = ();
     type Error = ();
-}
-
-impl MessageHandler<StopArbiter> for Arbiter {
+    type InputError = ();
 
     fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>)
               -> MessageFuture<Self, StopArbiter>
@@ -134,12 +131,10 @@ impl MessageHandler<StopArbiter> for Arbiter {
 /// Request `SyncAddress<Arbiter>` of the arbiter
 pub struct ArbiterAddress;
 
-impl Message for ArbiterAddress {
+impl MessageHandler<ArbiterAddress> for Arbiter {
     type Item = SyncAddress<Arbiter>;
     type Error = ();
-}
-
-impl MessageHandler<ArbiterAddress> for Arbiter {
+    type InputError = ();
 
     fn handle(&mut self, _: ArbiterAddress, ctx: &mut Context<Self>)
               -> MessageFuture<Self, ArbiterAddress>

@@ -7,16 +7,11 @@ use futures::sync::mpsc::{unbounded as sync_unbounded,
 use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
-use actor::{Actor, Message};
+use actor::{Actor, Message, MessageHandler, StreamHandler};
 use address::{Address, SyncAddress, BoxedMessageProxy};
+use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
 
-macro_rules! try_service {
-    ($e:expr) => (match $e {
-        $crate::ActorStatus::Done => return Ok($crate::context::Async::Ready(())),
-        $crate::ActorStatus::NotReady => (),
-    })
-}
 
 bitflags! {
     /// State Bitflags
@@ -38,14 +33,10 @@ pub struct Context<A> where A: Actor,
     msgs: UnboundedReceiver<BoxedMessageProxy<A>>,
     sync_msgs: Option<SyncUnboundedReceiver<BoxedMessageProxy<A>>>,
     items: Vec<IoItem<A>>,
-    stream: Option<Box<Stream<Item=<A::Message as Message>::Item,
-                              Error=<A::Message as Message>::Error>>>,
 }
 
 /// io items
 enum IoItem<A: Actor> {
-    Future(Box<ActFuture<A>>),
-    Stream(Box<ActStream<A>>),
     SpawnFuture(Box<ActSpawnFuture<A>>),
     Sink(Box<SinkContextService<A>>),
 }
@@ -53,36 +44,10 @@ enum IoItem<A: Actor> {
 type ActSpawnFuture<A> =
     ActorFuture<Item=(), Error=(), Actor=A>;
 
-type ActFuture<A> =
-    Future<Item=<<A as Actor>::Message as Message>::Item,
-           Error=<<A as Actor>::Message as Message>::Error>;
-
-type ActStream<A> =
-    Stream<Item=<<A as Actor>::Message as Message>::Item,
-           Error=<<A as Actor>::Message as Message>::Error>;
-
 
 impl<A> Context<A> where A: Actor
 {
-    pub(crate) fn new<S>(act: A, stream: S) -> Context<A>
-        where S: Stream<Item=<A::Message as Message>::Item,
-                        Error=<A::Message as Message>::Error> + 'static,
-    {
-        let (tx, rx) = unbounded();
-
-        Context {
-            act: act,
-            msgs: rx,
-            addr: Address::new(tx),
-            sync_addr: None,
-            sync_msgs: None,
-            flags: State::empty(),
-            stream: Some(Box::new(stream)),
-            items: Vec::new(),
-        }
-    }
-
-    pub(crate) fn new_empty(act: A) -> Context<A>
+    pub(crate) fn new(act: A) -> Context<A>
     {
         let (tx, rx) = unbounded();
         Context {
@@ -92,7 +57,6 @@ impl<A> Context<A> where A: Actor
             sync_msgs: None,
             addr: Address::new(tx),
             flags: State::empty(),
-            stream: None,
             items: Vec::new(),
         }
     }
@@ -136,18 +100,18 @@ impl<A> Context<A> where A: Actor
         self.items.push(IoItem::SpawnFuture(Box::new(fut)))
     }
 
-    pub fn add_future<F>(&mut self, fut: F)
-        where F: Future<Item=<<A as Actor>::Message as Message>::Item,
-                        Error=<<A as Actor>::Message as Message>::Error> + 'static
+    pub fn add_future<F, E: 'static>(&mut self, fut: F)
+        where F: Future<Error=E> + 'static,
+              A: MessageHandler<F::Item, InputError=E>,
     {
-        self.items.push(IoItem::Future(Box::new(fut)))
+        self.spawn(ActorFutureCell::new(fut))
     }
 
-    pub fn add_stream<S>(&mut self, fut: S)
-        where S: Stream<Item=<<A as Actor>::Message as Message>::Item,
-                        Error=<<A as Actor>::Message as Message>::Error> + 'static
+    pub fn add_stream<S, E: 'static>(&mut self, fut: S)
+        where S: Stream<Error=E> + 'static,
+              A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>,
     {
-        self.items.push(IoItem::Stream(Box::new(fut)))
+        self.spawn(ActorStreamCell::new(fut))
     }
 
     pub fn add_sink<M, S>(&mut self, sink: S) -> Sink<M>
@@ -179,23 +143,6 @@ impl<A> Future for Context<A> where A: Actor
 
         loop {
             let mut not_ready = true;
-
-            if let Some(ref mut stream) = self.stream {
-                match stream.poll() {
-                    Ok(val) => {
-                        match val {
-                            Async::Ready(Some(val)) => {
-                                not_ready = false;
-                                try_service!(Actor::call(&mut self.act, Ok(val), ctx));
-                            }
-                            Async::Ready(None) =>
-                                try_service!(Actor::finished(&mut self.act, ctx)),
-                            Async::NotReady => (),
-                        }
-                    }
-                    Err(err) => try_service!(Actor::call(&mut self.act, Err(err), ctx))
-                }
-            }
 
             // check messages
             match self.msgs.poll() {
@@ -238,38 +185,9 @@ impl<A> Future for Context<A> where A: Actor
                 }
 
                 let (drop, item) = match self.items[idx] {
-                    IoItem::Sink(ref mut sink) => {
-                        try_service!(sink.poll(&mut self.act, ctx));
-                        (false, None)
-                    }
-                    IoItem::Stream(ref mut stream) => match stream.poll() {
-                        Ok(val) => match val {
-                            Async::Ready(Some(val)) => {
-                                not_ready = false;
-                                try_service!(Actor::call(&mut self.act, Ok(val), ctx));
-                                (false, None)
-                            }
-                            Async::Ready(None) => (true, None),
-                            Async::NotReady => (false, None),
-                        }
-                        Err(err) => {
-                            try_service!(Actor::call(&mut self.act, Err(err), ctx));
-                            (true, None)
-                        }
-                    },
-                    IoItem::Future(ref mut fut) => match fut.poll() {
-                        Ok(val) => match val {
-                            Async::Ready(val) => {
-                                not_ready = false;
-                                try_service!(Actor::call(&mut self.act, Ok(val), ctx));
-                                (true, None)
-                            }
-                            Async::NotReady => (false, None),
-                        }
-                        Err(err) => {
-                            try_service!(Actor::call(&mut self.act, Err(err), ctx));
-                            (true, None)
-                        }
+                    IoItem::Sink(ref mut sink) => match sink.poll(&mut self.act, ctx) {
+                        Async::Ready(_) => (true, None),
+                        Async::NotReady => (false, None)
                     }
                     IoItem::SpawnFuture(ref mut fut) => match fut.poll(&mut self.act, ctx) {
                         Ok(val) => match val {
@@ -307,6 +225,7 @@ impl<A> Future for Context<A> where A: Actor
             }
 
             if self.flags.contains(State::DONE) {
+                Actor::finished(&mut self.act, ctx);
                 return Ok(Async::Ready(()))
             }
 
@@ -318,6 +237,140 @@ impl<A> Future for Context<A> where A: Actor
     }
 }
 
+
+struct ActorFutureCell<A, M, F, E>
+    where A: Actor + MessageHandler<M, InputError=E>,
+          F: Future<Item=M, Error=E>,
+{
+    act: std::marker::PhantomData<A>,
+    fut: F,
+    result: Option<MessageFuture<A, M>>,
+}
+
+impl<A, M, F, E> ActorFutureCell<A, M, F, E>
+    where A: Actor + MessageHandler<M, InputError=E>,
+          F: Future<Item=M, Error=E>,
+{
+    pub fn new(fut: F) -> ActorFutureCell<A, M, F, E>
+    {
+        ActorFutureCell {
+            act: std::marker::PhantomData,
+            fut: fut,
+            result: None }
+    }
+}
+
+impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
+    where A: Actor + MessageHandler<M, InputError=E>,
+          F: Future<Item=M, Error=E>,
+{
+    type Item = ();
+    type Error = ();
+    type Actor = A;
+
+    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
+    {
+        loop {
+            if let Some(mut fut) = self.result.take() {
+                match fut.poll(act, ctx) {
+                    Ok(Async::NotReady) => {
+                        self.result = Some(fut);
+                        return Ok(Async::NotReady)
+                    }
+                    Ok(Async::Ready(_)) =>
+                        return Ok(Async::Ready(())),
+                    Err(_) =>
+                        return Err(())
+                }
+            }
+
+            match self.fut.poll() {
+                Ok(Async::Ready(msg)) => {
+                    let fut = <Self::Actor as MessageHandler<M>>::handle(act, msg, ctx);
+                    self.result = Some(fut);
+                    continue
+                }
+                Ok(Async::NotReady) =>
+                    return Ok(Async::NotReady),
+                Err(err) => {
+                    <Self::Actor as MessageHandler<M>>::error(act, err, ctx);
+                    return Err(())
+                }
+            }
+        }
+    }
+}
+
+
+struct ActorStreamCell<A, M, E>
+    where A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+{
+    act: std::marker::PhantomData<A>,
+    started: bool,
+    fut: Option<MessageFuture<A, M>>,
+    stream: Box<Stream<Item=M, Error=E>>,
+}
+
+impl<A, M, E> ActorStreamCell<A, M, E>
+    where A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+{
+    pub fn new<S>(fut: S) -> ActorStreamCell<A, M, E>
+        where S: Stream<Item=M, Error=E> + 'static
+    {
+        ActorStreamCell {
+            act: std::marker::PhantomData,
+            started: false,
+            fut: None,
+            stream: Box::new(fut) }
+    }
+}
+
+impl<A, M, E> ActorFuture for ActorStreamCell<A, M, E>
+    where A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+{
+    type Item = ();
+    type Error = ();
+    type Actor = A;
+
+    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
+    {
+        if !self.started {
+            self.started = true;
+            <A as StreamHandler<M>>::start(act, ctx);
+        }
+
+        loop {
+            if let Some(mut fut) = self.fut.take() {
+                match fut.poll(act, ctx) {
+                    Ok(Async::NotReady) => {
+                        self.fut = Some(fut);
+                        return Ok(Async::NotReady)
+                    }
+                    Ok(Async::Ready(_)) => (),
+                    Err(_) => return Err(())
+                }
+            }
+
+            match self.stream.poll() {
+                Ok(Async::Ready(Some(msg))) => {
+                    let fut = <Self::Actor as MessageHandler<M>>::handle(act, msg, ctx);
+                    self.fut = Some(fut);
+                    continue
+                }
+                Ok(Async::Ready(None)) => {
+                    <A as StreamHandler<M>>::finished(act, ctx);
+                    return Ok(Async::Ready(()))
+                }
+                Ok(Async::NotReady) =>
+                    return Ok(Async::NotReady),
+                Err(err) => {
+                    <Self::Actor as MessageHandler<M>>::error(act, err, ctx);
+                    return Err(())
+                }
+            }
+        }
+    }
+}
 
 pub trait FutureSpawner<A> where A: Actor {
     /// spawn future into Context
