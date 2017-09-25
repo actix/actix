@@ -4,10 +4,10 @@ use futures::unsync::oneshot::channel;
 
 use context::Context;
 use message::{Envelope, CallResult, MessageResult};
-use actor::{Actor, Message, MessageHandler};
+use actor::{Actor, MessageHandler};
 pub use sync_address::SyncAddress;
 
-pub trait Subscriber<M> {
+pub trait Subscriber<M: 'static> {
 
     /// Buffered send
     fn send(&self, msg: M);
@@ -74,16 +74,15 @@ impl<A> Address<A> where A: Actor {
         MessageResult::new(rx)
     }
 
-    pub fn subscriber<M: Message>(&self) -> Box<Subscriber<M>>
+    pub fn subscriber<M: 'static>(&self) -> Box<Subscriber<M>>
         where A: MessageHandler<M>
     {
         Box::new(self.clone())
     }
 }
 
-impl<T, M> Subscriber<M> for Address<T>
-    where M: Message,
-          T: Actor + MessageHandler<M>
+impl<A, M: 'static> Subscriber<M> for Address<A>
+    where A: Actor + MessageHandler<M>
 {
 
     fn send(&self, msg: M) {

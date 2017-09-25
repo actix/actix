@@ -29,7 +29,7 @@ mod utils;
 pub mod fut;
 pub mod prelude;
 
-pub use actor::{Actor, Message, MessageHandler};
+pub use actor::{Actor, MessageHandler, StreamHandler};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use arbiter::{Arbiter, StopArbiter, ArbiterAddress};
 pub use builder::ServiceBuilder;

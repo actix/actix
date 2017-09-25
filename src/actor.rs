@@ -5,11 +5,6 @@ use message::MessageFuture;
 #[doc(hidden)]
 pub trait CtxActor {}
 
-impl<T, E> Message for Result<T, E> where Self: Sized + 'static{
-    type Item=T;
-    type Error=E;
-}
-
 #[allow(unused_variables)]
 pub trait Actor: Sized + 'static {
 

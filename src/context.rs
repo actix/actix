@@ -7,7 +7,7 @@ use futures::sync::mpsc::{unbounded as sync_unbounded,
 use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
-use actor::{Actor, Message, MessageHandler, StreamHandler};
+use actor::{Actor, MessageHandler, StreamHandler};
 use address::{Address, SyncAddress, BoxedMessageProxy};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
@@ -114,9 +114,8 @@ impl<A> Context<A> where A: Actor
         self.spawn(ActorStreamCell::new(fut))
     }
 
-    pub fn add_sink<M, S>(&mut self, sink: S) -> Sink<M>
-        where S: futures::Sink<SinkItem=M> + 'static,
-              M: Message<Item=(), Error=S::SinkError>,
+    pub fn add_sink<S>(&mut self, sink: S) -> Sink<S::SinkItem, S::SinkError>
+        where S: futures::Sink + 'static,
     {
         let mut srv = Box::new(SinkContext::new(sink));
         let psrv = srv.as_mut() as *mut _;

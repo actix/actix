@@ -2,63 +2,63 @@ use std::collections::VecDeque;
 use futures::{self, Async, AsyncSink};
 use futures::unsync::oneshot::{channel, Sender};
 
-use context::Context;
-use actor::{Actor, Message};
+use actor::Actor;
 use address::{Subscriber, AsyncSubscriber};
+use context::Context;
 use message::CallResult;
 
 
-pub struct Sink<M> where M: Message {
-    srv: *mut SinkContext<M>
+pub struct Sink<I, E> {
+    srv: *mut SinkContext<I, E>
 }
 
-impl<M> Sink<M> where M: Message {
-    pub(crate) fn new(srv: *mut SinkContext<M>) -> Sink<M> {
+impl<I, E> Sink<I, E> {
+    pub(crate) fn new(srv: *mut SinkContext<I, E>) -> Sink<I, E> {
         Sink{srv: srv as *mut _}
     }
 }
 
-impl<M> Subscriber<M> for Sink<M> where M: Message {
+impl<I: 'static, E> Subscriber<I> for Sink<I, E> {
 
-    fn send(&self, msg: M) {
+    fn send(&self, msg: I) {
         unsafe {(&mut *self.srv).send(msg)}
     }
 
-    fn unbuffered_send(&self, msg: M) -> Result<(), M> {
+    fn unbuffered_send(&self, msg: I) -> Result<(), I> {
         unsafe {(&mut *self.srv).unbuffered_send(msg)}
     }
 }
 
-impl<M> AsyncSubscriber<M> for Sink<M> where M: Message {
+impl<I, E> AsyncSubscriber<I> for Sink<I, E> {
 
-    type Future = CallResult<M::Item, M::Error>;
+    type Future = CallResult<(), E>;
 
-    fn call(&self, msg: M) -> Self::Future {
+    fn call(&self, msg: I) -> Self::Future {
         unsafe {(&mut *self.srv).call(msg)}
     }
 
-    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M> {
+    fn unbuffered_call(&self, msg: I) -> Result<Self::Future, I> {
         unsafe {(&mut *self.srv).unbuffered_call(msg)}
     }
 }
 
-enum IoItem<M> where M: Message {
-    Message(M),
-    Call((M, Sender<Result<M::Item, M::Error>>)),
+enum IoItem<I, E> {
+    Message(I),
+    Call((I, Sender<Result<(), E>>)),
 }
 
-pub(crate) struct SinkContext<M> where M: Message,
+pub(crate) struct SinkContext<I, E>
 {
-    sink: Box<futures::Sink<SinkItem=M, SinkError=M::Error>>,
-    sink_items: VecDeque<IoItem<M>>,
+    sink: Box<futures::Sink<SinkItem=I, SinkError=E>>,
+    sink_items: VecDeque<IoItem<I, E>>,
     sink_flushed: bool,
 }
 
 /// Sink execution context
-impl<M> SinkContext<M> where M: Message
+impl<I, E> SinkContext<I, E>
 {
-    pub(crate) fn new<S>(sink: S) -> SinkContext<M>
-        where S: futures::Sink<SinkItem=M, SinkError=M::Error> + 'static
+    pub(crate) fn new<S>(sink: S) -> SinkContext<I, E>
+        where S: futures::Sink<SinkItem=I, SinkError=E> + 'static
     {
         SinkContext {
             sink: Box::new(sink),
@@ -67,14 +67,14 @@ impl<M> SinkContext<M> where M: Message
         }
     }
 
-    pub fn call(&mut self, msg: M) -> CallResult<M::Item, M::Error> {
+    pub fn call(&mut self, msg: I) -> CallResult<(), E> {
         let (tx, rx) = channel();
         self.sink_items.push_back(IoItem::Call((msg, tx)));
 
         CallResult::new(rx)
     }
 
-    pub fn unbuffered_call(&mut self, msg: M) -> Result<CallResult<M::Item, M::Error>, M> {
+    pub fn unbuffered_call(&mut self, msg: I) -> Result<CallResult<(), E>, I> {
         if self.sink_items.is_empty() {
             let (tx, rx) = channel();
             self.sink_items.push_back(IoItem::Call((msg, tx)));
@@ -85,11 +85,11 @@ impl<M> SinkContext<M> where M: Message
         }
     }
 
-    pub fn send(&mut self, msg: M) {
+    pub fn send(&mut self, msg: I) {
         self.sink_items.push_back(IoItem::Message(msg));
     }
 
-    pub fn unbuffered_send(&mut self, msg: M) -> Result<(), M> {
+    pub fn unbuffered_send(&mut self, msg: I) -> Result<(), I> {
         if self.sink_items.is_empty() {
             self.sink_items.push_back(IoItem::Message(msg));
             Ok(())
@@ -105,9 +105,8 @@ pub(crate) trait SinkContextService<A: Actor> {
 
 }
 
-impl<M, A> SinkContextService<A> for SinkContext<M>
-    where M: Message<Item=()>,
-          A: Actor
+impl<A, I, E> SinkContextService<A> for SinkContext<I, E>
+    where A: Actor
 {
 
     fn poll(&mut self, _act: &mut A, _: &mut Context<A>) -> Async<()>
