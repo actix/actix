@@ -17,7 +17,7 @@ name = "actix"
 path = "src/lib.rs"
 
 [dependencies]
-bitflags = "1.*"
+bitflags = "0.9"
 lazy_static = "0.2"
 
 # tokio

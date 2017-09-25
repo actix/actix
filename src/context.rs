@@ -90,7 +90,7 @@ impl<A> Context<A> where A: Actor
     }
 
     pub fn set_done(&mut self) {
-        self.flags |= State::DONE;
+        self.flags |= DONE;
     }
 
     pub fn spawn<F>(&mut self, fut: F)
@@ -134,8 +134,8 @@ impl<A> Future for Context<A> where A: Actor
         let ctx: &mut Context<A> = unsafe {
             std::mem::transmute(self as &mut Context<A>)
         };
-        if !self.flags.contains(State::STARTED) {
-            self.flags |= State::STARTED;
+        if !self.flags.contains(STARTED) {
+            self.flags |= STARTED;
             Actor::start(&mut self.act, ctx);
         }
 
@@ -222,7 +222,7 @@ impl<A> Future for Context<A> where A: Actor
                 }
             }
 
-            if self.flags.contains(State::DONE) {
+            if self.flags.contains(DONE) {
                 Actor::finished(&mut self.act, ctx);
                 return Ok(Async::Ready(()))
             }
