@@ -301,31 +301,33 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
 }
 
 
-struct ActorStreamCell<A, M, E>
-    where A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+struct ActorStreamCell<A, M, E, S>
+    where S: Stream<Item=M, Error=E>,
+          A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
 {
     act: std::marker::PhantomData<A>,
     started: bool,
     fut: Option<MessageFuture<A, M>>,
-    stream: Box<Stream<Item=M, Error=E>>,
+    stream: S,
 }
 
-impl<A, M, E> ActorStreamCell<A, M, E>
-    where A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+impl<A, M, E, S> ActorStreamCell<A, M, E, S>
+    where S: Stream<Item=M, Error=E> + 'static,
+          A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
 {
-    pub fn new<S>(fut: S) -> ActorStreamCell<A, M, E>
-        where S: Stream<Item=M, Error=E> + 'static
+    pub fn new(fut: S) -> ActorStreamCell<A, M, E, S>
     {
         ActorStreamCell {
             act: std::marker::PhantomData,
             started: false,
             fut: None,
-            stream: Box::new(fut) }
+            stream: fut }
     }
 }
 
-impl<A, M, E> ActorFuture for ActorStreamCell<A, M, E>
-    where A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
+    where S: Stream<Item=M, Error=E>,
+          A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
 {
     type Item = ();
     type Error = ();
