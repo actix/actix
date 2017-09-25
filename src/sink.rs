@@ -127,7 +127,7 @@ impl<A, I, E> SinkContextService<A> for SinkContext<I, E>
                                 continue
                             }
                             Err(_) => return Async::Ready(()),
-                        }
+                        },
                         IoItem::Call((msg, tx)) => match self.sink.start_send(msg) {
                             Ok(AsyncSink::NotReady(msg)) => {
                                 self.sink_items.push_front(IoItem::Call((msg, tx)));

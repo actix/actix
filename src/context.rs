@@ -187,7 +187,7 @@ impl<A> Future for Context<A> where A: Actor
                     IoItem::Sink(ref mut sink) => match sink.poll(&mut self.act, ctx) {
                         Async::Ready(_) => (true, None),
                         Async::NotReady => (false, None)
-                    }
+                    },
                     IoItem::SpawnFuture(ref mut fut) => match fut.poll(&mut self.act, ctx) {
                         Ok(val) => match val {
                             Async::Ready(_) => {
@@ -195,7 +195,7 @@ impl<A> Future for Context<A> where A: Actor
                                 (true, None)
                             }
                             Async::NotReady => (false, None),
-                        }
+                        },
                         Err(_) => (true, None)
                     }
                 };
