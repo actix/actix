@@ -1,94 +1,68 @@
 use std;
 use std::cell::RefCell;
-use std::sync::Mutex;
-use tokio_core::reactor::{Core, Remote, Handle};
-use futures::unsync::oneshot::{channel, Sender, Receiver};
+use tokio_core::reactor::{Core, Handle};
+use futures::sync::oneshot::{channel, Receiver, Sender};
 
-use address::Address;
+use address::SyncAddress;
+use arbiter::Arbiter;
 use builder::ServiceBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
 use service::{Message, MessageHandler, DefaultMessage, Service};
 
 thread_local!(
-    static H: RefCell<Option<Handle>> = RefCell::new(None);
-    static ADDR: RefCell<Option<Address<System>>> = RefCell::new(None);
+    static ADDR: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
 );
-lazy_static! {
-    static ref REMOTE: Mutex<RefCell<Option<Remote>>> = {
-        Mutex::new(RefCell::new(None))
-    };
-}
 
-pub fn get_system() -> Address<System> {
-    ADDR.with(|cell| match *cell.borrow() {
-        Some(ref addr) => addr.clone(),
-        None => panic!("System is not running"),
-    })
-}
-
-pub fn get_handle() -> &'static Handle {
-    H.with(|cell| match *cell.borrow() {
-        Some(ref h) => unsafe{std::mem::transmute(h)},
-        None => panic!("System is not running"),
-    })
-}
-
-pub fn init_system() -> SystemConfigurator {
-    let core = Core::new().unwrap();
-    let (stop_tx, stop_rx) = channel();
-
-    H.with(|cell| {
-        *cell.borrow_mut() = Some(core.handle());
-    });
-
-    // start system
-    let sys = System {stop: Some(stop_tx)}.start();
-    ADDR.with(|cell| {
-        *cell.borrow_mut() = Some(sys.clone());
-    });
-
-    // set remote
-    {
-        let r = core.remote();
-        let remote = REMOTE.lock().unwrap();
-        *remote.borrow_mut() = Some(r);
-    }
-
-    SystemConfigurator {
-        h: core.handle(),
-        addr: sys,
-        core: core,
-        stop: stop_rx
-    }
-}
-
+#[must_use="System must be run"]
 pub struct System {
-    stop: Option<Sender<i32>>,
+    core: Option<Core>,
+    stop: Option<Receiver<i32>>,
+    tx: Option<Sender<i32>>,
 }
 
-pub struct SystemConfigurator {
-    h: Handle,
-    addr: Address<System>,
-    core: Core,
-    stop: Receiver<i32>,
-}
+impl System {
 
-impl SystemConfigurator {
+    /// This function returns system address.
+    /// `System::init` has to be called before, otherwise `get` function panics.
+    pub fn get() -> SyncAddress<System> {
+        ADDR.with(|cell| match *cell.borrow() {
+            Some(ref addr) => addr.clone(),
+            None => panic!("System is not running"),
+        })
+    }
 
+    /// Initialize system
+    pub fn init() -> System {
+        let (stop_tx, stop_rx) = channel();
+        let core = Arbiter::new_system();
+
+        // start system
+        let sys = System {core: None, tx: Some(stop_tx), stop: None}.sync_start();
+        ADDR.with(|cell| {
+            *cell.borrow_mut() = Some(sys);
+        });
+
+        System {
+            core: Some(core),
+            stop: Some(stop_rx),
+            tx: None,
+        }
+    }
+
+    /// Returns handle to current event loop. Same as `Arbiter::handle()`
     pub fn handle(&self) -> &Handle {
-        &self.h
+        Arbiter::handle()
     }
 
-    pub fn get_address(&self) -> Address<System> {
-        self.addr.clone()
-    }
-
+    /// This function will start tokio event loop and will finish once the `SystemExit`
+    /// get received. Once `SystemExit` message get received, process exits with code
+    /// encoded in message.
     pub fn run(self) {
-        let SystemConfigurator { mut core, stop, ..} = self;
+        let System { core, stop, ..} = self;
 
         // run loop
-        let code = match core.run(stop) {
+        let code = match core.unwrap().run(stop.unwrap()) {
             Ok(code) => code,
             Err(_) => 1,
         };
@@ -100,6 +74,7 @@ impl Service for System {
     type Message = DefaultMessage;
 }
 
+/// Stop system execution and exit process with encoded code.
 pub struct SystemExit(pub i32);
 
 impl Message for SystemExit {
@@ -112,7 +87,7 @@ impl MessageHandler<SystemExit> for System {
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
               -> MessageFuture<SystemExit, Self>
     {
-        if let Some(stop) = self.stop.take() {
+        if let Some(stop) = self.tx.take() {
             let _ = stop.send(msg.0);
         }
         ().to_result()

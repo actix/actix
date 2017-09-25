@@ -4,8 +4,8 @@
 extern crate log;
 #[macro_use]
 extern crate bitflags;
-#[macro_use]
-extern crate lazy_static;
+//#[macro_use]
+//extern crate lazy_static;
 
 extern crate bytes;
 #[macro_use]
@@ -15,7 +15,9 @@ extern crate tokio_io;
 extern crate tokio_core;
 
 mod actor;
+mod arbiter;
 mod address;
+mod sync_address;
 mod builder;
 mod context;
 mod service;
@@ -23,20 +25,19 @@ mod message;
 mod sink;
 mod framed;
 mod system;
-mod waiter;
+mod utils;
 
 pub mod fut;
 pub mod prelude;
 
 pub use actor::Actor;
-pub use fut::CtxFuture;
+pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
+pub use arbiter::{Arbiter, StopArbiter, ArbiterAddress};
 pub use builder::ServiceBuilder;
-pub use context::{Context, ServiceStream};
-pub use message::{CallResult, MessageResult,
-                  MessageFuture, MessageFutureResult, MessageFutureError};
+pub use context::Context;
 pub use framed::{CtxFramed, CtxFramedRead, CtxFramedWrite};
+pub use message::{MessageResult, MessageFuture, MessageFutureResult, MessageFutureError};
 pub use sink::Sink;
-pub use service::{Item, Service, ServiceResult, Message};
-
-pub use waiter::Waiter;
-pub use system::{get_system, get_handle, init_system, System, SystemExit};
+pub use service::{Message, Service, ServiceResult};
+pub use system::{System, SystemExit};
+pub use utils::Condition;

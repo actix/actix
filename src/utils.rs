@@ -1,14 +1,14 @@
 use futures::unsync::oneshot;
 
 
-pub struct Waiter<T> where T: Clone {
+pub struct Condition<T> where T: Clone {
     waiters: Vec<oneshot::Sender<T>>,
 }
 
-impl<T> Waiter<T> where T: Clone {
+impl<T> Condition<T> where T: Clone {
 
-    pub fn new() -> Waiter<T> {
-        Waiter { waiters: Vec::new() }
+    pub fn new() -> Condition<T> {
+        Condition { waiters: Vec::new() }
     }
 
     pub fn wait(&mut self) -> oneshot::Receiver<T> {

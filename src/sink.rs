@@ -3,7 +3,7 @@ use futures::{self, Async, AsyncSink};
 use futures::unsync::oneshot::{channel, Sender};
 
 use context::Context;
-use address::Subscriber;
+use address::{Subscriber, AsyncSubscriber};
 use message::CallResult;
 use service::{Message, Service, ServiceResult};
 
@@ -27,6 +27,11 @@ impl<M> Subscriber<M> for Sink<M> where M: Message {
     fn unbuffered_send(&self, msg: M) -> Result<(), M> {
         unsafe {(&mut *self.srv).unbuffered_send(msg)}
     }
+}
+
+impl<M> AsyncSubscriber<M> for Sink<M> where M: Message {
+
+    type Future = CallResult<M>;
 
     fn call(&self, msg: M) -> CallResult<M> {
         unsafe {(&mut *self.srv).call(msg)}

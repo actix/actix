@@ -2,41 +2,40 @@ use actor::Actor;
 use context::Context;
 use message::MessageFuture;
 
-pub trait Item {
-    type Item;
-    type Error;
-}
 
 pub enum ServiceResult {
     NotReady,
     Done,
 }
 
-impl<T, E> Item for Result<T, E> {
+impl<T, E> Message for Result<T, E> where Self: Sized + 'static{
     type Item=T;
     type Error=E;
 }
 
 pub type DefaultMessage = Result<(), ()>;
 
+#[allow(unused_variables)]
 pub trait Service: Sized + 'static {
 
-    type Message: Item;
+    type Message: Message;
 
     /// Method is called when service get polled first time.
-    fn start(&mut self, &mut Context<Self>) {}
+    fn start(&mut self, ctx: &mut Context<Self>) {}
 
-    /// Method is called when context stream finishes.
-    fn finished(&mut self, _ctx: &mut Context<Self>) -> ServiceResult {
+    /// Method is called when context's stream finishes.
+    /// By default returns `ServiceResult::Done`.
+    fn finished(&mut self, ctx: &mut Context<Self>) -> ServiceResult {
         ServiceResult::Done
     }
 
     /// Method is called for every item from the stream.
+    /// By default returns `ServiceResult::Done` for any error,
+    /// and `ServiceResult::NotReady` for any other message
     fn call(&mut self,
-            _ctx: &mut Context<Self>,
-            result: Result<<Self::Message as Item>::Item,
-                           <Self::Message as Item>::Error>) -> ServiceResult {
-        match result {
+            msg: Result<<Self::Message as Message>::Item, <Self::Message as Message>::Error>,
+            ctx: &mut Context<Self>) -> ServiceResult {
+        match msg {
             Ok(_) => ServiceResult::NotReady,
             Err(_) => ServiceResult::Done
         }

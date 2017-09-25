@@ -2,15 +2,16 @@ use std;
 
 use futures::{self, Async, Future, Poll, Stream};
 use futures::unsync::mpsc::{unbounded, UnboundedReceiver};
+use futures::sync::mpsc::{unbounded as sync_unbounded,
+                          UnboundedReceiver as SyncUnboundedReceiver};
 use tokio_core::reactor::Handle;
 
-use service::{Item, Message, Service};
+use service::{Message, Service};
 
 use fut::CtxFuture;
-use address::{Address, BoxedMessageProxy};
+use address::{Address, SyncAddress, BoxedMessageProxy};
 use sink::{Sink, SinkContext, SinkContextService};
 
-#[macro_export]
 macro_rules! try_service {
     ($e:expr) => (match $e {
         $crate::ServiceResult::Done => return Ok($crate::context::Async::Ready(())),
@@ -28,17 +29,18 @@ bitflags! {
     }
 }
 
-/// Service execution context object
+/// Service execution context
 pub struct Context<T> where T: Service,
 {
     srv: T,
     addr: Address<T>,
-    handle: Handle,
+    sync_addr: Option<SyncAddress<T>>,
     flags: State,
     msgs: UnboundedReceiver<BoxedMessageProxy<T>>,
+    sync_msgs: Option<SyncUnboundedReceiver<BoxedMessageProxy<T>>>,
     items: Vec<IoItem<T>>,
-    stream: Option<Box<Stream<Item=<T::Message as Item>::Item,
-                              Error=<T::Message as Item>::Error>>>,
+    stream: Option<Box<Stream<Item=<T::Message as Message>::Item,
+                              Error=<T::Message as Message>::Error>>>,
 }
 
 /// io items
@@ -53,19 +55,19 @@ type ServiceSpawnFuture<T> =
     CtxFuture<Item=(), Error=(), Service=T>;
 
 type ServiceFuture<T> =
-    Future<Item=<<T as Service>::Message as Item>::Item,
-           Error=<<T as Service>::Message as Item>::Error>;
+    Future<Item=<<T as Service>::Message as Message>::Item,
+           Error=<<T as Service>::Message as Message>::Error>;
 
 pub type ServiceStream<T> =
-    Stream<Item=<<T as Service>::Message as Item>::Item,
-           Error=<<T as Service>::Message as Item>::Error>;
+    Stream<Item=<<T as Service>::Message as Message>::Item,
+           Error=<<T as Service>::Message as Message>::Error>;
 
 
 impl<T> Context<T> where T: Service
 {
-    pub(crate) fn new<S>(srv: T, stream: S, handle: &Handle) -> Context<T>
-        where S: Stream<Item=<T::Message as Item>::Item,
-                        Error=<T::Message as Item>::Error> + 'static,
+    pub(crate) fn new<S>(srv: T, stream: S) -> Context<T>
+        where S: Stream<Item=<T::Message as Message>::Item,
+                        Error=<T::Message as Message>::Error> + 'static,
     {
         let (tx, rx) = unbounded();
 
@@ -73,30 +75,31 @@ impl<T> Context<T> where T: Service
             srv: srv,
             msgs: rx,
             addr: Address::new(tx),
+            sync_addr: None,
+            sync_msgs: None,
             flags: State::empty(),
-            handle: handle.clone(),
             stream: Some(Box::new(stream)),
             items: Vec::new(),
         }
     }
 
-    pub(crate) fn new_empty(srv: T, handle: &Handle) -> Context<T>
+    pub(crate) fn new_empty(srv: T) -> Context<T>
     {
         let (tx, rx) = unbounded();
         Context {
             srv: srv,
             msgs: rx,
+            sync_addr: None,
+            sync_msgs: None,
             addr: Address::new(tx),
             flags: State::empty(),
-            handle: handle.clone(),
             stream: None,
             items: Vec::new(),
         }
     }
 
-    pub(crate) fn run(self) -> Address<T> where T: 'static {
+    pub(crate) fn run(self, handle: &Handle) -> Address<T> where T: 'static {
         let addr = self.address();
-        let handle: &Handle = unsafe{std::mem::transmute(&self.handle)};
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
         addr
     }
@@ -105,12 +108,23 @@ impl<T> Context<T> where T: Service
         std::mem::replace(&mut self.srv, srv)
     }
 
+    /// Get service address
     pub fn address(&self) -> Address<T> {
         self.addr.clone()
     }
 
-    pub fn handle(&self) -> &Handle {
-        &self.handle
+    /// Get service address with `Send` baundary
+    pub fn sync_address(&mut self) -> SyncAddress<T> {
+        if self.sync_addr.is_none() {
+            let (tx, rx) = sync_unbounded();
+            self.sync_addr = Some(SyncAddress::new(tx));
+            self.sync_msgs = Some(rx);
+        }
+
+        if let Some(ref addr) = self.sync_addr {
+            return addr.clone()
+        }
+        unreachable!();
     }
 
     pub fn set_done(&mut self) {
@@ -124,15 +138,15 @@ impl<T> Context<T> where T: Service
     }
 
     pub fn add_future<F>(&mut self, fut: F)
-        where F: Future<Item=<<T as Service>::Message as Item>::Item,
-                        Error=<<T as Service>::Message as Item>::Error> + 'static
+        where F: Future<Item=<<T as Service>::Message as Message>::Item,
+                        Error=<<T as Service>::Message as Message>::Error> + 'static
     {
         self.items.push(IoItem::Future(Box::new(fut)))
     }
 
     pub fn add_stream<S>(&mut self, fut: S)
-        where S: Stream<Item=<<T as Service>::Message as Item>::Item,
-                        Error=<<T as Service>::Message as Item>::Error> + 'static
+        where S: Stream<Item=<<T as Service>::Message as Message>::Item,
+                        Error=<<T as Service>::Message as Message>::Error> + 'static
     {
         self.items.push(IoItem::Stream(Box::new(fut)))
     }
@@ -173,14 +187,14 @@ impl<T> Future for Context<T> where T: Service
                         match val {
                             Async::Ready(Some(val)) => {
                                 not_ready = false;
-                                try_service!(Service::call(&mut self.srv, ctx, Ok(val)));
+                                try_service!(Service::call(&mut self.srv, Ok(val), ctx));
                             }
                             Async::Ready(None) =>
                                 try_service!(Service::finished(&mut self.srv, ctx)),
                             Async::NotReady => (),
                         }
                     }
-                    Err(err) => try_service!(Service::call(&mut self.srv, ctx, Err(err)))
+                    Err(err) => try_service!(Service::call(&mut self.srv, Err(err), ctx))
                 }
             }
 
@@ -190,13 +204,30 @@ impl<T> Future for Context<T> where T: Service
                     match val {
                         Async::Ready(Some(mut msg)) => {
                             not_ready = false;
-                            msg.handle(&mut self.srv, ctx);
+                            msg.0.handle(&mut self.srv, ctx);
                         }
                         Async::Ready(None) => (),
                         Async::NotReady => (),
                     }
                 }
                 Err(_) => (),
+            }
+
+            // check remote messages
+            if let Some(ref mut msgs) = self.sync_msgs {
+                match msgs.poll() {
+                    Ok(val) => {
+                        match val {
+                            Async::Ready(Some(mut msg)) => {
+                                not_ready = false;
+                                msg.0.handle(&mut self.srv, ctx);
+                            }
+                            Async::Ready(None) => (),
+                            Async::NotReady => (),
+                        }
+                    }
+                    Err(_) => (),
+                }
             }
 
             // check secondary streams
@@ -216,14 +247,14 @@ impl<T> Future for Context<T> where T: Service
                         Ok(val) => match val {
                             Async::Ready(Some(val)) => {
                                 not_ready = false;
-                                try_service!(Service::call(&mut self.srv, ctx, Ok(val)));
+                                try_service!(Service::call(&mut self.srv, Ok(val), ctx));
                                 (false, None)
                             }
                             Async::Ready(None) => (true, None),
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            try_service!(Service::call(&mut self.srv, ctx, Err(err)));
+                            try_service!(Service::call(&mut self.srv, Err(err), ctx));
                             (true, None)
                         }
                     },
@@ -231,13 +262,13 @@ impl<T> Future for Context<T> where T: Service
                         Ok(val) => match val {
                             Async::Ready(val) => {
                                 not_ready = false;
-                                try_service!(Service::call(&mut self.srv, ctx, Ok(val)));
+                                try_service!(Service::call(&mut self.srv, Ok(val), ctx));
                                 (true, None)
                             }
                             Async::NotReady => (false, None),
                         }
                         Err(err) => {
-                            try_service!(Service::call(&mut self.srv, ctx, Err(err)));
+                            try_service!(Service::call(&mut self.srv, Err(err), ctx));
                             (true, None)
                         }
                     }
