@@ -7,7 +7,7 @@ use futures::sync::oneshot::{channel, Sender, Receiver};
 
 use actor::{Actor, MessageHandler};
 use address::{Address, SyncAddress};
-use builder::ServiceBuilder;
+use builder::ActorBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
 
@@ -37,7 +37,7 @@ impl Arbiter {
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
 
             // start arbiter
-            let addr = ServiceBuilder::start(Arbiter {h: core.remote(), sys: true});
+            let addr = ActorBuilder::start(Arbiter {h: core.remote(), sys: true});
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
             if let Err(_) = tx.send(core.remote()) {
@@ -60,7 +60,7 @@ impl Arbiter {
         HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
 
         // start arbiter
-        let addr = ServiceBuilder::start(Arbiter {h: core.remote(), sys: true});
+        let addr = ActorBuilder::start(Arbiter {h: core.remote(), sys: true});
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
         core
@@ -87,7 +87,7 @@ impl Arbiter {
     {
         let (tx, rx) = channel();
         self.h.spawn(move |_| {
-            let addr = T::sync_init(f);
+            let addr = T::create_sync(f);
             let _ = tx.send(addr);
             future::result(Ok(()))
         });

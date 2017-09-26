@@ -7,37 +7,37 @@ use arbiter::Arbiter;
 use context::Context;
 
 
-pub trait ServiceBuilder<A> where A: Actor + Sized + 'static {
+pub trait ActorBuilder<A> where A: Actor + Sized + 'static {
 
     fn start(self) -> Address<A>;
 
-    fn sync_start(self) -> SyncAddress<A>;
+    fn start_sync(self) -> SyncAddress<A>;
 
     fn start_with<S, E: 'static>(self, stream: S) -> Address<A>
         where S: Stream<Error=E> + 'static,
               S::Item: 'static,
               A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>;
 
-    fn init<F>(f: F) -> Address<A>
+    fn create<F>(f: F) -> Address<A>
         where F: 'static + FnOnce(&mut Context<A>) -> A;
 
-    fn sync_init<F>(f: F) -> SyncAddress<A>
+    fn create_sync<F>(f: F) -> SyncAddress<A>
         where F: 'static + FnOnce(&mut Context<A>) -> A;
 
-    fn init_with<S, F, E: 'static>(stream: S, f: F) -> Address<A>
+    fn create_with<S, F, E: 'static>(stream: S, f: F) -> Address<A>
         where F: 'static + FnOnce(&mut Context<A>) -> A,
               S: Stream<Error=E> + 'static,
               S::Item: 'static,
               A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>;
 }
 
-impl<A> ServiceBuilder<A> for A where A: Actor
+impl<A> ActorBuilder<A> for A where A: Actor
 {
     fn start(self) -> Address<A> {
         Context::new(self).run(Arbiter::handle())
     }
 
-    fn sync_start(self) -> SyncAddress<A> {
+    fn start_sync(self) -> SyncAddress<A> {
         let mut ctx = Context::new(self);
         let addr = ctx.sync_address();
         ctx.run(Arbiter::handle());
@@ -54,7 +54,7 @@ impl<A> ServiceBuilder<A> for A where A: Actor
         ctx.run(Arbiter::handle())
     }
 
-    fn init<F>(f: F) -> Address<A>
+    fn create<F>(f: F) -> Address<A>
         where F: 'static + FnOnce(&mut Context<A>) -> A
     {
         let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
@@ -70,7 +70,7 @@ impl<A> ServiceBuilder<A> for A where A: Actor
         addr
     }
 
-    fn sync_init<F>(f: F) -> SyncAddress<A>
+    fn create_sync<F>(f: F) -> SyncAddress<A>
         where F: 'static + FnOnce(&mut Context<A>) -> A
     {
         let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
@@ -86,7 +86,7 @@ impl<A> ServiceBuilder<A> for A where A: Actor
         addr
     }
 
-    fn init_with<S, F, E: 'static>(stream: S, f: F) -> Address<A>
+    fn create_with<S, F, E: 'static>(stream: S, f: F) -> Address<A>
         where F: 'static + FnOnce(&mut Context<A>) -> A,
               S: Stream<Error=E> + 'static,
               S::Item: 'static,

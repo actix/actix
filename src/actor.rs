@@ -9,7 +9,7 @@ pub trait ActixActor {}
 pub trait Actor: Sized + 'static {
 
     /// Method is called when actor get polled first time.
-    fn start(&mut self, ctx: &mut Context<Self>) {}
+    fn started(&mut self, ctx: &mut Context<Self>) {}
 
     /// Method is called when context's stream finishes.
     /// By default returns `ActorStatus::Done`.
@@ -55,7 +55,7 @@ pub trait StreamHandler<M>: MessageHandler<M>
     where Self: Actor
 {
     /// Method is called when service get polled first time.
-    fn start(&mut self, ctx: &mut Context<Self>) {}
+    fn started(&mut self, ctx: &mut Context<Self>) {}
 
     /// Method is called when stream finishes.
     fn finished(&mut self, ctx: &mut Context<Self>) {}

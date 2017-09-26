@@ -5,7 +5,7 @@ use futures::sync::oneshot::{channel, Receiver, Sender};
 
 use address::SyncAddress;
 use arbiter::Arbiter;
-use builder::ServiceBuilder;
+use builder::ActorBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
 use actor::{Actor, MessageHandler};
@@ -40,7 +40,7 @@ impl System {
         let core = Arbiter::new_system();
 
         // start system
-        let sys = System {core: None, tx: Some(stop_tx), stop: None}.sync_start();
+        let sys = System {core: None, tx: Some(stop_tx), stop: None}.start_sync();
         ADDR.with(|cell| {
             *cell.borrow_mut() = Some(sys);
         });

@@ -30,7 +30,7 @@ pub mod prelude;
 pub use actor::{Actor, MessageHandler, StreamHandler};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use arbiter::{Arbiter, StopArbiter, ArbiterAddress};
-pub use builder::ServiceBuilder;
+pub use builder::ActorBuilder;
 pub use context::{Context, ActixFutureSpawner};
 pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
 pub use message::{MessageResult, MessageFuture, MessageFutureResult, MessageFutureError};

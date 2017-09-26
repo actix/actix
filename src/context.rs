@@ -136,7 +136,7 @@ impl<A> Future for Context<A> where A: Actor
         };
         if !self.flags.contains(STARTED) {
             self.flags |= STARTED;
-            Actor::start(&mut self.act, ctx);
+            Actor::started(&mut self.act, ctx);
         }
 
         loop {
@@ -336,7 +336,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     {
         if !self.started {
             self.started = true;
-            <A as StreamHandler<M>>::start(act, ctx);
+            <A as StreamHandler<M>>::started(act, ctx);
         }
 
         loop {
