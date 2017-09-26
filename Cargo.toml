@@ -23,9 +23,9 @@ default = ["signal"]
 signal = ["tokio-signal", "libc"]
 
 [dependencies]
-rand = "0.3"
 bitflags = "0.9"
 lazy_static = "0.2"
+uuid = { version = "0.5", features = ["v4"] }
 
 # tokio
 bytes = "0.4"

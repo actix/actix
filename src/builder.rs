@@ -21,7 +21,7 @@ use context::Context;
 /// use actix::*;
 ///
 /// // initialize system
-/// System::init();
+/// System::new("test".to_owned());
 ///
 /// struct MyActor;
 /// impl Actor for MyActor {}
@@ -42,7 +42,7 @@ use context::Context;
 ///
 /// fn main() {
 ///    // initialize system
-///    System::init();
+///    let sys = System::new("test".to_owned());
 ///
 ///    let _: () = MyActor.start();
 /// }

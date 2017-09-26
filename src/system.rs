@@ -1,23 +1,19 @@
 use std;
-use std::cell::RefCell;
+use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
 use address::SyncAddress;
-use arbiter::Arbiter;
+use arbiter::{Arbiter, StopArbiter};
 use builder::ActorBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
 use actor::{Actor, MessageHandler};
 
-thread_local!(
-    static ADDR: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
-);
-
 /// System is an actor which manages process.
 ///
-/// Before starting any actix's actors, `System` actor has to be initialized
-/// with `System::init()` call. This method creates new `Arbiter` in current thread
+/// Before starting any actix's actors, `System` actor has to be create
+/// with `System::new()` call. This method creates new `Arbiter` in current thread
 /// and starts `System` actor.
 ///
 /// # Examples
@@ -42,7 +38,7 @@ thread_local!(
 ///           .actfuture()
 ///           .then(|_, srv: &mut Timer, ctx: &mut Context<Self>| {
 ///               // send `SystemExit` to `System` actor.
-///               System::get().send(actix::SystemExit(0));
+///               Arbiter::get_system().send(actix::SystemExit(0));
 ///               fut::ok(())
 ///           })
 ///           .spawn(ctx);
@@ -51,54 +47,59 @@ thread_local!(
 ///
 /// fn main() {
 ///    // initialize system
-///    let sys = System::init();
+///    let sys = System::new("test".to_owned());
 ///
 ///    // Start `Timer` actor
 ///    let _:() = Timer{dur: Duration::new(0, 1)}.start();
 ///
-///    // Run system, this function blocks forever
+///    // Run system, this function blocks current thread
 ///    sys.run()
 /// }
 /// ```
-#[must_use="System must be run"]
 pub struct System {
-    core: Option<Core>,
-    stop: Option<Receiver<(i32, bool)>>,
-    tx: Option<Sender<(i32, bool)>>,
+    stop: Option<Sender<(i32, bool)>>,
+    arbiters: HashMap<String, SyncAddress<Arbiter>>,
 }
 
 impl Actor for System {}
 
 impl System {
 
-    /// This function returns system address,
-    /// `get` function panics if `System` is not initialized.
-    pub fn get() -> SyncAddress<System> {
-        ADDR.with(|cell| match *cell.borrow() {
-            Some(ref addr) => addr.clone(),
-            None => panic!("System is not running"),
-        })
-    }
-
-    /// Initialize system
-    pub fn init() -> System {
-        let (stop_tx, stop_rx) = channel();
+    /// Create new system
+    pub fn new(name: String) -> SystemRunner {
         let core = Arbiter::new_system();
+        let (stop_tx, stop_rx) = channel();
 
         // start system
-        let sys = System {core: None, tx: Some(stop_tx), stop: None}.start();
-        ADDR.with(|cell| {
-            *cell.borrow_mut() = Some(sys);
-        });
+        let sys = System {
+            arbiters: HashMap::new(), stop: Some(stop_tx)}.start();
+        Arbiter::set_system(sys, name);
 
-        System {
-            core: Some(core),
-            stop: Some(stop_rx),
-            tx: None,
+        SystemRunner {
+            core: core,
+            stop: stop_rx,
         }
     }
 
-    /// Returns handle to current event loop. Same as `Arbiter::handle()`
+    fn stop(&mut self, code: i32, exit: bool) {
+        for addr in self.arbiters.values() {
+            addr.send(StopArbiter(0));
+        }
+        if let Some(stop) = self.stop.take() {
+            let _ = stop.send((code, exit));
+        }
+    }
+}
+
+#[must_use="SystemRunner must be run"]
+pub struct SystemRunner {
+    core: Core,
+    stop: Receiver<(i32, bool)>,
+}
+
+impl SystemRunner {
+
+    /// Returns handle to current event loop.
     pub fn handle(&self) -> &Handle {
         Arbiter::handle()
     }
@@ -107,10 +108,10 @@ impl System {
     /// message get received. Once `SystemExit` message get received, process exits
     /// with code encoded in message.
     pub fn run(self) {
-        let System { core, stop, ..} = self;
+        let SystemRunner { mut core, stop, ..} = self;
 
         // run loop
-        let (code, exit) = match core.unwrap().run(stop.unwrap()) {
+        let (code, exit) = match core.run(stop) {
             Ok(code) => code,
             Err(_) => (1, true),
         };
@@ -134,9 +135,7 @@ impl MessageHandler<SystemExit> for System {
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
               -> MessageFuture<Self, SystemExit>
     {
-        if let Some(stop) = self.tx.take() {
-            let _ = stop.send((msg.0, true));
-        }
+        self.stop(msg.0, true);
         ().to_result()
     }
 }
@@ -148,10 +147,41 @@ impl MessageHandler<SystemStop> for System {
 
     fn handle(&mut self, msg: SystemStop, _: &mut Context<Self>)
               -> MessageFuture<Self, SystemStop>
-{
-    if let Some(stop) = self.tx.take() {
-        let _ = stop.send((msg.0, false));
+    {
+        self.stop(msg.0, false);
+        ().to_result()
     }
-    ().to_result()
 }
+
+
+/// Register Arbiter within system
+pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);
+
+impl MessageHandler<RegisterArbiter> for System {
+    type Item = ();
+    type Error = ();
+    type InputError = ();
+
+    fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>)
+              -> MessageFuture<Self, RegisterArbiter>
+    {
+        self.arbiters.insert(msg.0, msg.1);
+        ().to_result()
+    }
+}
+
+/// Unregister Arbiter
+pub(crate) struct UnregisterArbiter(pub String);
+
+impl MessageHandler<UnregisterArbiter> for System {
+    type Item = ();
+    type Error = ();
+    type InputError = ();
+
+    fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>)
+              -> MessageFuture<Self, UnregisterArbiter>
+    {
+        self.arbiters.remove(&msg.0);
+        ().to_result()
+    }
 }

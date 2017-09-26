@@ -36,18 +36,18 @@
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
-//!                 System::get().send(actix::SystemStop(0));
+//!                 Arbiter::get_system().send(actix::SystemStop(0));
 //!             },
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
 //!             },
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
-//!                 System::get().send(actix::SystemStop(0));
+//!                 Arbiter::get_system().send(actix::SystemStop(0));
 //!             },
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
-//!                 System::get().send(actix::SystemStop(0));
+//!                 Arbiter::get_system().send(actix::SystemStop(0));
 //!             }
 //!             _ => (),
 //!         };
@@ -57,7 +57,7 @@
 //!
 //! fn main() {
 //!    // initialize system
-//!    let sys = System::init();
+//!    let sys = System::new("test".to_owned());
 //!
 //!    // Start signals handler
 //!    let addr: SyncAddress<_> = Signals.start();
@@ -226,18 +226,18 @@ impl MessageHandler<Signal> for DefaultSignalsHandler {
         match msg.0 {
             SignalType::Int => {
                 info!("SIGINT received, exiting");
-                System::get().send(actix::SystemExit(0));
+                Arbiter::get_system().send(actix::SystemExit(0));
             }
             SignalType::Hup => {
                 info!("SIGHUP received, reloading");
             }
             SignalType::Term => {
                 info!("SIGTERM received, stopping");
-                System::get().send(actix::SystemExit(0));
+                Arbiter::get_system().send(actix::SystemExit(0));
             }
             SignalType::Quit => {
                 info!("SIGQUIT received, exiting");
-                System::get().send(actix::SystemExit(0));
+                Arbiter::get_system().send(actix::SystemExit(0));
             }
             _ => (),
         };

@@ -1,7 +1,7 @@
 use std;
 use std::thread;
 use std::cell::RefCell;
-use rand::{self, Rng};
+use uuid::Uuid;
 use tokio_core::reactor::{Core, Remote, Handle};
 use futures::future;
 use futures::sync::oneshot::{channel, Sender, Receiver};
@@ -11,29 +11,46 @@ use address::{Address, SyncAddress};
 use builder::ActorBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
+use system::{System, RegisterArbiter, UnregisterArbiter};
 
 thread_local!(
     static HND: RefCell<Option<Handle>> = RefCell::new(None);
     static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
     static ADDR: RefCell<Option<Address<Arbiter>>> = RefCell::new(None);
+    static SYS: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
+    static SYSNAME: RefCell<Option<String>> = RefCell::new(None);
 );
 
 pub struct Arbiter {
     h: Remote,
+    id: Uuid,
     sys: bool,
 }
 
-impl Actor for Arbiter {}
+/// Stop arbiter execution.
+pub struct StopArbiter(pub i32);
+
+impl Actor for Arbiter {
+    fn started(&mut self, ctx: &mut Context<Self>) {
+        // register arbiter within system
+        Arbiter::get_system().send(
+            RegisterArbiter(self.id.simple().to_string(), ctx.address()));
+    }
+}
 
 impl Arbiter {
 
     pub fn new(name: Option<String>) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
 
+        let id = Uuid::new_v4();
+        let id_cloned = id.clone();
+        let sys = Arbiter::get_system();
+        let sys_name = Arbiter::get_system_name();
         let name = if let Some(n) = name {
-            format!("user:{:?}", n)
+            format!("arbiter:{:?}:{:?}", id.hyphenated().to_string(), n)
         } else {
-            format!("user:{:?}", rand::thread_rng().gen::<u64>())
+            format!("arbiter:{:?}", id.hyphenated().to_string())
         };
 
         let _ = thread::Builder::new().name(name).spawn(move|| {
@@ -43,8 +60,13 @@ impl Arbiter {
             HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
 
+            // system
+            SYS.with(|cell| *cell.borrow_mut() = Some(sys));
+            SYSNAME.with(|cell| *cell.borrow_mut() = Some(sys_name));
+
             // start arbiter
-            let addr = ActorBuilder::start(Arbiter {h: core.remote(), sys: true});
+            let addr = ActorBuilder::start(
+                Arbiter {h: core.remote(), sys: true, id: id.clone()});
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
             if tx.send(core.remote()).is_err() {
@@ -56,10 +78,14 @@ impl Arbiter {
                     Err(_) => 1,
                 };
             }
+
+            // unregister arbiter
+            Arbiter::get_system().send(
+                UnregisterArbiter(id.simple().to_string()));
         });
         let remote = rx.recv().unwrap();
 
-        Arbiter {h: remote, sys: false}
+        Arbiter {h: remote, sys: false, id: id_cloned}
     }
 
     pub(crate) fn new_system() -> Core {
@@ -67,10 +93,16 @@ impl Arbiter {
         HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
 
         // start arbiter
-        let addr = ActorBuilder::start(Arbiter {h: core.remote(), sys: true});
+        let addr = ActorBuilder::start(
+            Arbiter {h: core.remote(), sys: true, id: Uuid::new_v4()});
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
         core
+    }
+
+    pub(crate) fn set_system(addr: SyncAddress<System>, name: String) {
+        SYS.with(|cell| *cell.borrow_mut() = Some(addr));
+        SYSNAME.with(|cell| *cell.borrow_mut() = Some(name));
     }
 
     /// Return current arbiter address
@@ -78,6 +110,22 @@ impl Arbiter {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("Arbiter is not running"),
+        })
+    }
+
+    /// This function returns system address,
+    pub fn get_system() -> SyncAddress<System> {
+        SYS.with(|cell| match *cell.borrow() {
+            Some(ref addr) => addr.clone(),
+            None => panic!("System is not running"),
+        })
+    }
+
+    /// This function returns system address,
+    pub fn get_system_name() -> String {
+        SYSNAME.with(|cell| match *cell.borrow() {
+            Some(ref name) => name.clone(),
+            None => panic!("System is not running"),
         })
     }
 
@@ -105,7 +153,7 @@ impl Arbiter {
 
 impl Clone for Arbiter {
     fn clone(&self) -> Self {
-        Arbiter {h: self.h.clone(), sys: false}
+        Arbiter {h: self.h.clone(), sys: false, id: self.id.clone()}
     }
 }
 
@@ -114,9 +162,6 @@ impl Default for Arbiter {
         Arbiter::new(None)
     }
 }
-
-/// Stop arbiter execution.
-pub struct StopArbiter(pub i32);
 
 impl MessageHandler<StopArbiter> for Arbiter {
 
