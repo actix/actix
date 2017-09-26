@@ -29,6 +29,18 @@ impl<A, B, M> MessageResult<A, B, M>
     }
 }
 
+impl<A, B, M> Future for MessageResult<A, B, M>
+    where A: MessageHandler<M>, B: Actor
+{
+    type Item = Result<A::Item, A::Error>;
+    type Error = Canceled;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error>
+    {
+        self.rx.poll()
+    }
+}
+
 impl<A, B, M> ActorFuture for MessageResult<A, B, M>
     where A: MessageHandler<M>,
           B: Actor,

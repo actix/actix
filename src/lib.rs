@@ -1,3 +1,8 @@
+//! # Actix is a rust actor system framework.
+//!
+//!
+//!
+
 #[macro_use]
 extern crate log;
 #[macro_use]

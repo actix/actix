@@ -90,6 +90,18 @@ impl<A> Address<A> where A: Actor {
         MessageResult::new(rx)
     }
 
+    /// Send message to actor `A` and asyncronously wait for response.
+    pub fn call_fut<M>(&self, msg: M) -> Receiver<Result<A::Item, A::Error>>
+        where A: MessageHandler<M>,
+              M: 'static
+    {
+        let (tx, rx) = channel();
+        let _ = self.tx.unbounded_send(
+            Proxy::new(Envelope::new(Some(msg), Some(tx))));
+
+        rx
+    }
+
     /// Upgrade address to SyncAddress.
     pub fn upgrade(&self) -> Receiver<SyncAddress<A>> {
         let (tx, rx) = channel();
