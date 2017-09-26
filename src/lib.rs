@@ -40,5 +40,5 @@ pub use context::{Context, ActixFutureSpawner};
 pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
 pub use message::{MessageResult, MessageFuture, MessageFutureResult, MessageFutureError};
 pub use sink::Sink;
-pub use system::{System, SystemExit};
+pub use system::{System, SystemExit, SystemRunner};
 pub use utils::Condition;
