@@ -8,7 +8,7 @@ use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
 use actor::{Actor, MessageHandler, StreamHandler};
-use address::{Address, SyncAddress, BoxedMessageProxy, Subscriber};
+use address::{ActorAddress, Address, SyncAddress, BoxedMessageProxy, Subscriber};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
 
@@ -46,51 +46,17 @@ type ActSpawnFuture<A> =
 
 impl<A> Context<A> where A: Actor
 {
-    pub(crate) fn new(act: A) -> Context<A>
-    {
-        let (tx, rx) = unbounded();
-        Context {
-            act: act,
-            msgs: rx,
-            sync_addr: None,
-            sync_msgs: None,
-            addr: Address::new(tx),
-            flags: State::empty(),
-            items: Vec::new(),
-        }
-    }
-
-    pub(crate) fn run(self, handle: &Handle) {
-        handle.spawn(self.map(|_| ()).map_err(|_| ()));
-    }
-
-    pub(crate) fn replace_actor(&mut self, srv: A) -> A {
-        std::mem::replace(&mut self.act, srv)
-    }
-
     /// Get service address
-    pub fn address(&self) -> Address<A> {
-        self.addr.clone()
+    pub fn address<Address>(&mut self) -> Address
+        where A: ActorAddress<A, Address>
+    {
+        <A as ActorAddress<A, Address>>::get(self)
     }
 
     pub fn subscriber<M: 'static>(&self) -> Box<Subscriber<M>>
         where A: MessageHandler<M>
     {
         Box::new(self.addr.clone())
-    }
-
-    /// Get service address with `Send` baundary
-    pub fn sync_address(&mut self) -> SyncAddress<A> {
-        if self.sync_addr.is_none() {
-            let (tx, rx) = sync_unbounded();
-            self.sync_addr = Some(SyncAddress::new(tx));
-            self.sync_msgs = Some(rx);
-        }
-
-        if let Some(ref addr) = self.sync_addr {
-            return addr.clone()
-        }
-        unreachable!();
     }
 
     pub fn set_done(&mut self) {
@@ -125,6 +91,51 @@ impl<A> Context<A> where A: Actor
         self.items.push(IoItem::Sink(srv));
 
         Sink::new(psrv)
+    }
+}
+
+
+impl<A> Context<A> where A: Actor
+{
+    pub(crate) fn new(act: A) -> Context<A>
+    {
+        let (tx, rx) = unbounded();
+        Context {
+            act: act,
+            msgs: rx,
+            sync_addr: None,
+            sync_msgs: None,
+            addr: Address::new(tx),
+            flags: State::empty(),
+            items: Vec::new(),
+        }
+    }
+
+    pub(crate) fn run(self, handle: &Handle) {
+        handle.spawn(self.map(|_| ()).map_err(|_| ()));
+    }
+
+    pub(crate) fn replace_actor(&mut self, srv: A) -> A {
+        std::mem::replace(&mut self.act, srv)
+    }
+
+    /// Get service address without `Send` baundary
+    pub(crate) fn loc_address(&mut self) -> Address<A> {
+        self.addr.clone()
+    }
+
+    /// Get service address with `Send` baundary
+    pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
+        if self.sync_addr.is_none() {
+            let (tx, rx) = sync_unbounded();
+            self.sync_addr = Some(SyncAddress::new(tx));
+            self.sync_msgs = Some(rx);
+        }
+
+        if let Some(ref addr) = self.sync_addr {
+            return addr.clone()
+        }
+        unreachable!();
     }
 }
 

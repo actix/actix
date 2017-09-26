@@ -6,7 +6,7 @@ use futures::sync::oneshot::{channel, Canceled, Receiver, Sender};
 
 use fut::ActorFuture;
 use actor::{Actor, MessageHandler};
-use address::{Subscriber, AsyncSubscriber, MessageProxy, BoxedMessageProxy};
+use address::{Subscriber, AsyncSubscriber, MessageProxy, BoxedMessageProxy, ActorAddress};
 use context::Context;
 use message::MessageFuture;
 
@@ -19,6 +19,13 @@ pub struct SyncAddress<A> where A: Actor {
 impl<A> Clone for SyncAddress<A> where A: Actor {
     fn clone(&self) -> Self {
         SyncAddress{tx: self.tx.clone()}
+    }
+}
+
+impl<A> ActorAddress<A, SyncAddress<A>> for A where A: Actor {
+
+    fn get(ctx: &mut Context<A>) -> SyncAddress<A> {
+        ctx.sync_address()
     }
 }
 

@@ -4,7 +4,7 @@ use std;
 use futures::{future, Stream};
 
 use actor::{Actor, MessageHandler, StreamHandler};
-use address::{Address, SyncAddress};
+use address::ActorAddress;
 use arbiter::Arbiter;
 use context::Context;
 
@@ -89,7 +89,7 @@ use context::Context;
 /// instance of actor.
 pub trait ActorBuilder<A, Addr=()>
     where A: Actor + Sized + 'static,
-          Self: AddressExtractor<A, Addr>,
+          Self: ActorAddress<A, Addr>,
 {
     /// Start new actor, returns address of newly created actor.
     /// This is special method if Actor implement `Default` trait.
@@ -116,12 +116,12 @@ pub trait ActorBuilder<A, Addr=()>
 
 impl<A, Addr> ActorBuilder<A, Addr> for A
     where A: Actor,
-          Self: AddressExtractor<A, Addr>,
+          Self: ActorAddress<A, Addr>,
 {
     fn run() -> Addr where Self: Default
     {
         let mut ctx = Context::new(Self::default());
-        let addr =  <Self as AddressExtractor<A, Addr>>::get(&mut ctx);
+        let addr =  <Self as ActorAddress<A, Addr>>::get(&mut ctx);
         ctx.run(Arbiter::handle());
         addr
     }
@@ -129,7 +129,7 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
     fn start(self) -> Addr
     {
         let mut ctx = Context::new(self);
-        let addr =  <Self as AddressExtractor<A, Addr>>::get(&mut ctx);
+        let addr =  <Self as ActorAddress<A, Addr>>::get(&mut ctx);
         ctx.run(Arbiter::handle());
         addr
     }
@@ -141,7 +141,7 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
     {
         let mut ctx = Context::new(self);
         ctx.add_stream(stream);
-        let addr =  <Self as AddressExtractor<A, Addr>>::get(&mut ctx);
+        let addr =  <Self as ActorAddress<A, Addr>>::get(&mut ctx);
         ctx.run(Arbiter::handle());
         addr
     }
@@ -150,7 +150,7 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
         where F: 'static + FnOnce(&mut Context<A>) -> A,
     {
         let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
-        let addr =  <Self as AddressExtractor<A, Addr>>::get(&mut ctx);
+        let addr =  <Self as ActorAddress<A, Addr>>::get(&mut ctx);
 
         Arbiter::handle().spawn_fn(move || {
             let srv = f(&mut ctx);
@@ -169,7 +169,7 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
               A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>,
     {
         let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
-        let addr =  <Self as AddressExtractor<A, Addr>>::get(&mut ctx);
+        let addr =  <Self as ActorAddress<A, Addr>>::get(&mut ctx);
 
         Arbiter::handle().spawn_fn(move || {
             let srv = f(&mut ctx);
@@ -183,29 +183,3 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
     }
 }
 
-#[doc(hidden)]
-pub trait AddressExtractor<A, T> where A: Actor {
-
-    fn get(ctx: &mut Context<A>) -> T;
-}
-
-impl<A> AddressExtractor<A, Address<A>> for A where A: Actor {
-
-    fn get(ctx: &mut Context<A>) -> Address<A> {
-        ctx.address()
-    }
-}
-
-impl<A> AddressExtractor<A, SyncAddress<A>> for A where A: Actor {
-
-    fn get(ctx: &mut Context<A>) -> SyncAddress<A> {
-        ctx.sync_address()
-    }
-}
-
-impl<A> AddressExtractor<A, ()> for A where A: Actor {
-
-    fn get(_: &mut Context<A>) -> () {
-        ()
-    }
-}

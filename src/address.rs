@@ -7,6 +7,12 @@ use message::{Envelope, CallResult, MessageResult};
 use actor::{Actor, MessageHandler};
 pub use sync_address::SyncAddress;
 
+#[doc(hidden)]
+pub trait ActorAddress<A, T> where A: Actor {
+
+    fn get(ctx: &mut Context<A>) -> T;
+}
+
 pub trait Subscriber<M: 'static> {
 
     /// Buffered send
@@ -116,5 +122,19 @@ impl<A, M: 'static> AsyncSubscriber<M> for Address<A>
         let _ = self.tx.unbounded_send(BoxedMessageProxy(Box::new(env)));
 
         Ok(CallResult::new(rx))
+    }
+}
+
+impl<A> ActorAddress<A, Address<A>> for A where A: Actor {
+
+    fn get(ctx: &mut Context<A>) -> Address<A> {
+        ctx.loc_address()
+    }
+}
+
+impl<A> ActorAddress<A, ()> for A where A: Actor {
+
+    fn get(_: &mut Context<A>) -> () {
+        ()
     }
 }

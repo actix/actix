@@ -168,7 +168,7 @@ impl MessageHandler<SignalType> for ProcessSignals {
     fn handle(&mut self, msg: SignalType, _: &mut Context<Self>)
               -> MessageFuture<Self, SignalType>
     {
-        for subscr in self.subscribers.iter() {
+        for subscr in &self.subscribers {
             subscr.send(Signal(msg))
         }
         ().to_result()
