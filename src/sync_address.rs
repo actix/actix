@@ -11,6 +11,7 @@ use context::Context;
 use message::MessageFuture;
 
 
+/// Address of the actor `A` which can run in differend thread.
 pub struct SyncAddress<A> where A: Actor {
     tx: UnboundedSender<BoxedMessageProxy<A>>
 }

@@ -1,9 +1,10 @@
+#![feature(default_type_parameter_fallback)]
+
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate bitflags;
-//#[macro_use]
-//extern crate lazy_static;
+extern crate rand;
 
 extern crate bytes;
 #[macro_use]

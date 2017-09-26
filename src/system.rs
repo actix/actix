@@ -14,6 +14,52 @@ thread_local!(
     static ADDR: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
 );
 
+/// System is an actor which manages process.
+///
+/// Before starting any actix's actors, `System` actor has to be initialized
+/// with `System::init()` call. This method creates new `Arbiter` in current thread
+/// and starts `System` actor.
+///
+/// # Examples
+///
+/// ```rust
+/// #![allow(unused_variables)]
+/// extern crate actix;
+/// extern crate tokio_core;
+///
+/// use std::time::Duration;
+/// use tokio_core::reactor::Timeout;
+/// use actix::prelude::*;
+///
+/// struct Timer {dur: Duration}
+///
+/// impl Actor for Timer {
+///
+///    // stop system in `self.dur` seconds
+///    fn started(&mut self, ctx: &mut Context<Self>) {
+///        Timeout::new(self.dur, Arbiter::handle())
+///           .unwrap()
+///           .actfuture()
+///           .then(|_, srv: &mut Timer, ctx: &mut Context<Self>| {
+///               // send `SystemExit` to `System` actor.
+///               System::get().send(SystemExit(0));
+///               fut::ok(())
+///           })
+///           .spawn(ctx);
+///    }
+/// }
+///
+/// fn main() {
+///    // initialize system
+///    let sys = System::init();
+///
+///    // Start `Timer` actor
+///    let _:() = Timer{dur: Duration::new(0, 1)}.start();
+///
+///    // Run system, this function blocks forever
+///    sys.run()
+/// }
+/// ```
 #[must_use="System must be run"]
 pub struct System {
     core: Option<Core>,
@@ -25,8 +71,8 @@ impl Actor for System {}
 
 impl System {
 
-    /// This function returns system address.
-    /// `System::init` has to be called before, otherwise `get` function panics.
+    /// This function returns system address,
+    /// `get` function panics if `System` is not initialized.
     pub fn get() -> SyncAddress<System> {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
@@ -40,7 +86,7 @@ impl System {
         let core = Arbiter::new_system();
 
         // start system
-        let sys = System {core: None, tx: Some(stop_tx), stop: None}.start_sync();
+        let sys = System {core: None, tx: Some(stop_tx), stop: None}.start();
         ADDR.with(|cell| {
             *cell.borrow_mut() = Some(sys);
         });
@@ -58,8 +104,8 @@ impl System {
     }
 
     /// This function will start tokio event loop and will finish once the `SystemExit`
-    /// get received. Once `SystemExit` message get received, process exits with code
-    /// encoded in message.
+    /// message get received. Once `SystemExit` message get received, process exits
+    /// with code encoded in message.
     pub fn run(self) {
         let System { core, stop, ..} = self;
 

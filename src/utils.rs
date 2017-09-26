@@ -1,5 +1,6 @@
 use futures::unsync::oneshot;
 
+#[doc(hidden)]
 pub struct Condition<T> where T: Clone {
     waiters: Vec<oneshot::Sender<T>>,
 }

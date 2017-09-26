@@ -22,7 +22,7 @@ bitflags! {
     }
 }
 
-/// Service execution context
+/// Actor execution context
 pub struct Context<A> where A: Actor,
 {
     act: A,
@@ -60,10 +60,8 @@ impl<A> Context<A> where A: Actor
         }
     }
 
-    pub(crate) fn run(self, handle: &Handle) -> Address<A> where A: 'static {
-        let addr = self.address();
+    pub(crate) fn run(self, handle: &Handle) {
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
-        addr
     }
 
     pub(crate) fn replace_actor(&mut self, srv: A) -> A {
@@ -359,8 +357,9 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     }
 }
 
+/// Helper trait which can spawn future into actor's context
 pub trait ActixFutureSpawner<A> where A: Actor {
-    /// spawn future into Context
+    /// spawn future into `Context<A>`
     fn spawn(self, fut: &mut Context<A>);
 }
 

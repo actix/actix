@@ -1,6 +1,7 @@
 use std;
 use std::thread;
 use std::cell::RefCell;
+use rand::{self, Rng};
 use tokio_core::reactor::{Core, Remote, Handle};
 use futures::future;
 use futures::sync::oneshot::{channel, Sender, Receiver};
@@ -24,12 +25,18 @@ pub struct Arbiter {
 
 impl Actor for Arbiter {}
 
-impl Default for Arbiter {
+impl Arbiter {
 
-    fn default() -> Self {
+    pub fn new(name: Option<String>) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
 
-        thread::spawn(move|| {
+        let name = if let Some(n) = name {
+            format!("user:{:?}", n)
+        } else {
+            format!("user:{:?}", rand::thread_rng().gen::<u64>())
+        };
+
+        let _ = thread::Builder::new().name(name).spawn(move|| {
             let mut core = Core::new().unwrap();
 
             let (stop_tx, stop_rx) = channel();
@@ -54,9 +61,6 @@ impl Default for Arbiter {
 
         Arbiter {h: remote, sys: false}
     }
-}
-
-impl Arbiter {
 
     pub(crate) fn new_system() -> Core {
         let core = Core::new().unwrap();
@@ -90,7 +94,7 @@ impl Arbiter {
     {
         let (tx, rx) = channel();
         self.h.spawn(move |_| {
-            let addr = T::create_sync(f);
+            let addr = T::create(f);
             let _ = tx.send(addr);
             future::result(Ok(()))
         });
@@ -105,7 +109,13 @@ impl Clone for Arbiter {
     }
 }
 
-/// Stop arbiter execution
+impl Default for Arbiter {
+    fn default() -> Self {
+        Arbiter::new(None)
+    }
+}
+
+/// Stop arbiter execution.
 pub struct StopArbiter(pub i32);
 
 impl MessageHandler<StopArbiter> for Arbiter {

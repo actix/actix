@@ -6,6 +6,7 @@ use message::MessageFuture;
 pub trait ActixActor {}
 
 #[allow(unused_variables)]
+/// An actor that manages state and responds to messages
 pub trait Actor: Sized + 'static {
 
     /// Method is called when actor get polled first time.

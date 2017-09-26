@@ -17,6 +17,7 @@ name = "actix"
 path = "src/lib.rs"
 
 [dependencies]
+rand = "0.3"
 bitflags = "0.9"
 lazy_static = "0.2"
 
