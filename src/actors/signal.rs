@@ -113,6 +113,12 @@ impl Default for ProcessSignals {
 impl Actor for ProcessSignals {
 
     fn started(&mut self, ctx: &mut Context<Self>) {
+        // allow only one instance of the actor
+        if Arbiter::system_registry().register(ctx.address()).is_err() {
+            ctx.set_done();
+            return
+        }
+
         let handle = Arbiter::handle();
 
         // SIGINT
@@ -181,7 +187,7 @@ impl MessageHandler<SignalType> for ProcessSignals {
 }
 
 /// Subscribe to process signals.
-pub struct Subscribe(pub Box<Subscriber<Signal>>);
+pub struct Subscribe(pub Box<Subscriber<Signal> + Send>);
 
 /// Add subscriber for signals
 impl MessageHandler<Subscribe> for ProcessSignals {
@@ -210,8 +216,13 @@ impl Default for DefaultSignalsHandler {
 
 impl Actor for DefaultSignalsHandler {
     fn started(&mut self, ctx: &mut Context<Self>) {
-        let addr: Address<_> = ProcessSignals::run();
-        addr.send(Subscribe(ctx.subscriber()))
+        let addr = if let Some(addr) = Arbiter::system_registry().query::<ProcessSignals>() {
+            addr
+        } else {
+            ProcessSignals::run()
+        };
+        let slf: SyncAddress<_> = ctx.address();
+        addr.send(Subscribe(slf.subscriber()))
     }
 }
 

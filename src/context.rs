@@ -59,6 +59,14 @@ impl<A> Context<A> where A: Actor
         Box::new(self.addr.clone())
     }
 
+    pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
+        where A: MessageHandler<M>,
+              A::Item: Send,
+              A::Error: Send,
+    {
+        self.address::<SyncAddress<_>>().subscriber()
+    }
+
     pub fn set_done(&mut self) {
         self.flags |= DONE;
     }

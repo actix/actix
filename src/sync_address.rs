@@ -60,7 +60,7 @@ impl<A> SyncAddress<A> where A: Actor {
     }
 
     /// Get `Subscriber` for specific message type
-    pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M>>
+    pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M> + Send>
         where A: MessageHandler<M>,
               A::Item: Send,
               A::Error: Send,
