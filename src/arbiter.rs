@@ -24,9 +24,9 @@ pub struct Arbiter {
 
 impl Actor for Arbiter {}
 
-impl Arbiter {
+impl Default for Arbiter {
 
-    pub fn new() -> Arbiter {
+    fn default() -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
 
         thread::spawn(move|| {
@@ -40,7 +40,7 @@ impl Arbiter {
             let addr = ActorBuilder::start(Arbiter {h: core.remote(), sys: true});
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
-            if let Err(_) = tx.send(core.remote()) {
+            if tx.send(core.remote()).is_err() {
                 error!("Can not start Arbiter, remote side is dead");
             } else {
                 // run loop
@@ -54,6 +54,9 @@ impl Arbiter {
 
         Arbiter {h: remote, sys: false}
     }
+}
+
+impl Arbiter {
 
     pub(crate) fn new_system() -> Core {
         let core = Core::new().unwrap();

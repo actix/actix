@@ -16,9 +16,9 @@ bitflags! {
     /// State Bitflags
     struct State: u16 {
         /// Service is started
-        const STARTED = 0b00000001;
+        const STARTED = 0b000_000_001;
         /// Service is done
-        const DONE = 0b00000010;
+        const DONE = 0b000_000_010;
     }
 }
 
@@ -120,8 +120,7 @@ impl<A> Context<A> where A: Actor
         let psrv = srv.as_mut() as *mut _;
         self.items.push(IoItem::Sink(srv));
 
-        let sink = Sink::new(psrv);
-        sink
+        Sink::new(psrv)
     }
 }
 
@@ -144,33 +143,21 @@ impl<A> Future for Context<A> where A: Actor
 
             // check messages
             match self.msgs.poll() {
-                Ok(val) => {
-                    match val {
-                        Async::Ready(Some(mut msg)) => {
-                            not_ready = false;
-                            msg.0.handle(&mut self.act, ctx);
-                        }
-                        Async::Ready(None) => (),
-                        Async::NotReady => (),
-                    }
+                Ok(Async::Ready(Some(mut msg))) => {
+                    not_ready = false;
+                    msg.0.handle(&mut self.act, ctx);
                 }
-                Err(_) => (),
+                Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
             }
 
             // check remote messages
             if let Some(ref mut msgs) = self.sync_msgs {
                 match msgs.poll() {
-                    Ok(val) => {
-                        match val {
-                            Async::Ready(Some(mut msg)) => {
-                                not_ready = false;
-                                msg.0.handle(&mut self.act, ctx);
-                            }
-                            Async::Ready(None) => (),
-                            Async::NotReady => (),
-                        }
+                    Ok(Async::Ready(Some(mut msg))) => {
+                        not_ready = false;
+                        msg.0.handle(&mut self.act, ctx);
                     }
-                    Err(_) => (),
+                    Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
                 }
             }
 
@@ -210,7 +197,7 @@ impl<A> Future for Context<A> where A: Actor
                 // item finishes, we need to remove it,
                 // replace current item with last item
                 if drop {
-                    len = len - 1;
+                    len -= 1;
                     if idx >= len {
                         self.items.pop();
                         break

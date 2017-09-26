@@ -162,7 +162,7 @@ impl<T, E> Sink for ActixFramedWrite<T, E>
         try_nb!(self.inner.flush());
 
         trace!("framed transport flushed");
-        return Ok(Async::Ready(()));
+        Ok(Async::Ready(()))
     }
 
     fn close(&mut self) -> Poll<(), Self::SinkError> {
