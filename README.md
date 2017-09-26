@@ -145,14 +145,12 @@ has to be used.
 
 ### Actor state and subscription for specific message
 
-If noticed methods of `Actor` and `MessageHandler` accept `&mut self`, so you are welcome to 
+If you noticed methods of `Actor` and `MessageHandler` traits accept `&mut self`, so you are welcome to 
 store anything in actor and mutate it whenever you need.
 
 Address object requires actor type, but if we just want to send specific message to 
 and actor that can handle message, we can use `Subscriber` interface. Let's create
-new actor that uses `Subscriber`, also this example will show how to use other asyncronous
-methods.
-
+new actor that uses `Subscriber`, also this example will show how to use standard future objects.
 
 ```rust
 extern crate actix;
@@ -174,7 +172,7 @@ struct Game {
 
 impl Actor for Game {}
 
-// now we need to define `MessageHandler` for `Sum` message.
+// message handler for Ping message
 impl MessageHandler<Ping> for Game {
     type Item = ();
     type Error = ();
@@ -187,9 +185,11 @@ impl MessageHandler<Ping> for Game {
             Arbiter::system().send(actix::SystemExit(0));
         } else {
             println!("Ping received");
-            Timeout::new(Duration::new(0, 10), Arbiter::handle())
+            
+            // wait 100 nanos
+            Timeout::new(Duration::new(0, 100), Arbiter::handle())
                 .unwrap()
-                .actfuture()
+                .actfuture() // if we want get access to actor state we have to use ActorFuture
                 .then(|_, srv: &mut Game, ctx: &mut Context<Self>| {
                      srv.addr.send(Ping);
                      fut::ok(())
@@ -200,7 +200,6 @@ impl MessageHandler<Ping> for Game {
     }
 }
 
-
 fn main() {
     let system = System::new("test".to_owned());
 
@@ -209,13 +208,12 @@ fn main() {
 
     // we need Subscriber object so we need to use different builder method
     // which will allow to postpone actor creation
-    // this is our first actor
     let _: Address<_> = Game::create(|ctx| {
         // now we can get address of first actor and create second actor
         let addr: Address<_> = ctx.address();
         let addr2: Address<_> = Game{counter: 0, addr: addr.subscriber()}.start();
         
-        // lets start game
+        // lets start pings
         addr2.send(Ping);
         
         // now we can finally create first actor
@@ -223,7 +221,6 @@ fn main() {
     });
 
     system.run();
-    println!("Done");
 }
 ```
 
