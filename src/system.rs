@@ -37,7 +37,7 @@ use actor::{Actor, MessageHandler};
 ///           .actfuture()
 ///           .then(|_, srv: &mut Timer, ctx: &mut Context<Self>| {
 ///               // send `SystemExit` to `System` actor.
-///               Arbiter::get_system().send(actix::SystemExit(0));
+///               Arbiter::system().send(actix::SystemExit(0));
 ///               fut::ok(())
 ///           })
 ///           .spawn(ctx);
@@ -65,6 +65,7 @@ impl Actor for System {}
 
 impl System {
 
+    #[cfg_attr(feature="cargo-clippy", allow(new_ret_no_self))]
     /// Create new system
     pub fn new(name: String) -> SystemRunner {
         let core = Arbiter::new_system();
