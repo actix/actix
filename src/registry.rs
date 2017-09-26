@@ -27,7 +27,7 @@ use address::{Address, SyncAddress};
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
 ///       if let Err(_) = Arbiter::registry().register(ctx.address()) {
 ///           println!("Another actor is registered already");
-///           ctx.set_done();
+///           ctx.stop();
 ///       }
 ///    }
 /// }
