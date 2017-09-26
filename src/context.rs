@@ -46,6 +46,11 @@ type ActSpawnFuture<A> =
 
 impl<A> Context<A> where A: Actor
 {
+    /// Stop actor execution.
+    pub fn stop(&mut self) {
+        self.flags |= DONE;
+    }
+
     /// Get service address
     pub fn address<Address>(&mut self) -> Address
         where A: ActorAddress<A, Address>
@@ -65,10 +70,6 @@ impl<A> Context<A> where A: Actor
               A::Error: Send,
     {
         self.address::<SyncAddress<_>>().subscriber()
-    }
-
-    pub fn set_done(&mut self) {
-        self.flags |= DONE;
     }
 
     pub fn spawn<F>(&mut self, fut: F)

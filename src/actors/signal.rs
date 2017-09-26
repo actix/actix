@@ -115,7 +115,7 @@ impl Actor for ProcessSignals {
     fn started(&mut self, ctx: &mut Context<Self>) {
         // allow only one instance of the actor
         if Arbiter::system_registry().register(ctx.address()).is_err() {
-            ctx.set_done();
+            ctx.stop();
             return
         }
 
