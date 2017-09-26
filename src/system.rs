@@ -1,4 +1,3 @@
-use std;
 use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
@@ -53,11 +52,12 @@ use actor::{Actor, MessageHandler};
 ///    let _:() = Timer{dur: Duration::new(0, 1)}.start();
 ///
 ///    // Run system, this function blocks current thread
-///    sys.run()
+///    let code = sys.run();
+///    std::process::exit(code);
 /// }
 /// ```
 pub struct System {
-    stop: Option<Sender<(i32, bool)>>,
+    stop: Option<Sender<i32>>,
     arbiters: HashMap<String, SyncAddress<Arbiter>>,
 }
 
@@ -80,21 +80,12 @@ impl System {
             stop: stop_rx,
         }
     }
-
-    fn stop(&mut self, code: i32, exit: bool) {
-        for addr in self.arbiters.values() {
-            addr.send(StopArbiter(0));
-        }
-        if let Some(stop) = self.stop.take() {
-            let _ = stop.send((code, exit));
-        }
-    }
 }
 
 #[must_use="SystemRunner must be run"]
 pub struct SystemRunner {
     core: Core,
-    stop: Receiver<(i32, bool)>,
+    stop: Receiver<i32>,
 }
 
 impl SystemRunner {
@@ -105,27 +96,20 @@ impl SystemRunner {
     }
 
     /// This function will start tokio event loop and will finish once the `SystemExit`
-    /// message get received. Once `SystemExit` message get received, process exits
-    /// with code encoded in message.
-    pub fn run(self) {
+    /// message get received.
+    pub fn run(self) -> i32 {
         let SystemRunner { mut core, stop, ..} = self;
 
         // run loop
-        let (code, exit) = match core.run(stop) {
+        match core.run(stop) {
             Ok(code) => code,
-            Err(_) => (1, true),
-        };
-        if exit {
-            std::process::exit(code);
+            Err(_) => 1,
         }
     }
 }
 
-/// Stop system execution and exit process with encoded code.
-pub struct SystemExit(pub i32);
-
 /// Stop system execution
-pub struct SystemStop(pub i32);
+pub struct SystemExit(pub i32);
 
 impl MessageHandler<SystemExit> for System {
     type Item = ();
@@ -135,24 +119,17 @@ impl MessageHandler<SystemExit> for System {
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
               -> MessageFuture<Self, SystemExit>
     {
-        self.stop(msg.0, true);
+        // stop rbiters
+        for addr in self.arbiters.values() {
+            addr.send(StopArbiter(msg.0));
+        }
+        // stop event loop
+        if let Some(stop) = self.stop.take() {
+            let _ = stop.send(msg.0);
+        }
         ().to_result()
     }
 }
-
-impl MessageHandler<SystemStop> for System {
-    type Item = ();
-    type Error = ();
-    type InputError = ();
-
-    fn handle(&mut self, msg: SystemStop, _: &mut Context<Self>)
-              -> MessageFuture<Self, SystemStop>
-    {
-        self.stop(msg.0, false);
-        ().to_result()
-    }
-}
-
 
 /// Register Arbiter within system
 pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);

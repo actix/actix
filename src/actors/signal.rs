@@ -36,18 +36,18 @@
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
-//!                 Arbiter::get_system().send(actix::SystemStop(0));
+//!                 Arbiter::get_system().send(actix::SystemExit(0));
 //!             },
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
 //!             },
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
-//!                 Arbiter::get_system().send(actix::SystemStop(0));
+//!                 Arbiter::get_system().send(actix::SystemExit(0));
 //!             },
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
-//!                 Arbiter::get_system().send(actix::SystemStop(0));
+//!                 Arbiter::get_system().send(actix::SystemExit(0));
 //!             }
 //!             _ => (),
 //!         };
@@ -68,8 +68,9 @@
 //!       addr.send(signal::Signal(signal::SignalType::Term));
 //!    });
 //!
-//!    // Run system, this function blocks forever
-//!    sys.run()
+//!    // Run system, this function blocks until system runs
+//!    let code = sys.run();
+//!    std::process::exit(code);
 //! }
 //! ```
 use std::io;
