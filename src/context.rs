@@ -8,7 +8,7 @@ use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
 use actor::{Actor, MessageHandler, StreamHandler};
-use address::{Address, SyncAddress, BoxedMessageProxy};
+use address::{Address, SyncAddress, BoxedMessageProxy, Subscriber};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
 
@@ -71,6 +71,12 @@ impl<A> Context<A> where A: Actor
     /// Get service address
     pub fn address(&self) -> Address<A> {
         self.addr.clone()
+    }
+
+    pub fn subscriber<M: 'static>(&self) -> Box<Subscriber<M>>
+        where A: MessageHandler<M>
+    {
+        Box::new(self.addr.clone())
     }
 
     /// Get service address with `Send` baundary

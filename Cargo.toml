@@ -16,6 +16,12 @@ exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
 name = "actix"
 path = "src/lib.rs"
 
+[features]
+default = ["signal"]
+
+# Include process signal support, on by default
+signal = ["tokio-signal", "libc"]
+
 [dependencies]
 rand = "0.3"
 bitflags = "0.9"
@@ -30,6 +36,12 @@ tokio-core = "0.1"
 
 # logging
 log = "0.3"
+
+libc = { version = "0.2", optional = true }
+
+[dependencies.tokio-signal]
+version = "0.1"
+optional = true
 
 [profile.release]
 lto = true

@@ -11,16 +11,19 @@
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
 pub use actor::{Actor, MessageHandler, StreamHandler};
-pub use arbiter::{Arbiter, ArbiterAddress, StopArbiter};
+pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use builder::ActorBuilder;
 
 pub use context::{Context, ActixFutureSpawner};
 pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
 pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
-pub use system::{System, SystemExit};
+pub use system::System;
 
-pub mod ctx {
+pub mod actix {
+    pub use actors;
     pub use sink::Sink;
     pub use utils::Condition;
+    pub use system::{SystemExit, SystemStop};
+    pub use arbiter::{ArbiterAddress, StopArbiter};
 }

@@ -92,6 +92,10 @@ pub trait ActorBuilder<A, Addr=()>
           Self: AddressExtractor<A, Addr>,
 {
     /// Start new actor, returns address of newly created actor.
+    /// This is special method if Actor implement `Default` trait.
+    fn run() -> Addr where Self: Default;
+
+    /// Start new actor, returns address of newly created actor.
     fn start(self) -> Addr;
 
     /// Start actor and register stream
@@ -114,6 +118,14 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
     where A: Actor,
           Self: AddressExtractor<A, Addr>,
 {
+    fn run() -> Addr where Self: Default
+    {
+        let mut ctx = Context::new(Self::default());
+        let addr =  <Self as AddressExtractor<A, Addr>>::get(&mut ctx);
+        ctx.run(Arbiter::handle());
+        addr
+    }
+
     fn start(self) -> Addr
     {
         let mut ctx = Context::new(self);

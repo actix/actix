@@ -1,6 +1,6 @@
 .PHONY: default build test doc clean
 
-CARGO_FLAGS := --features "$(FEATURES)" --no-default-features
+CARGO_FLAGS := --features "$(FEATURES)"
 
 default: test
 
