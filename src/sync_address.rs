@@ -6,14 +6,14 @@ use futures::sync::oneshot::{channel, Canceled, Receiver, Sender};
 
 use fut::ActorFuture;
 use actor::{Actor, MessageHandler};
-use address::{Subscriber, AsyncSubscriber, MessageProxy, BoxedMessageProxy, ActorAddress};
+use address::{Subscriber, AsyncSubscriber, MessageProxy, Proxy, ActorAddress};
 use context::Context;
 use message::MessageFuture;
 
 
-/// Address of the actor `A` which can run in differend thread.
+/// Address of the actor `A`. Actor can run in differend thread.
 pub struct SyncAddress<A> where A: Actor {
-    tx: UnboundedSender<BoxedMessageProxy<A>>
+    tx: UnboundedSender<Proxy<A>>
 }
 
 impl<A> Clone for SyncAddress<A> where A: Actor {
@@ -31,31 +31,35 @@ impl<A> ActorAddress<A, SyncAddress<A>> for A where A: Actor {
 
 impl<A> SyncAddress<A> where A: Actor {
 
-    pub(crate) fn new(sender: UnboundedSender<BoxedMessageProxy<A>>) -> SyncAddress<A> {
+    pub(crate) fn new(sender: UnboundedSender<Proxy<A>>) -> SyncAddress<A> {
         SyncAddress{tx: sender}
     }
 
+    /// Send message `M` to actor `A`. Message cold be sent to actor running in
+    /// different thread.
     pub fn send<M: 'static + Send>(&self, msg: M)
         where A: MessageHandler<M>,
               A::Item: Send,
               A::Error: Send,
     {
         let _ = self.tx.unbounded_send(
-            BoxedMessageProxy(Box::new(SyncEnvelope::new(Some(msg), None))));
+            Proxy::new(SyncEnvelope::new(Some(msg), None)));
     }
 
+    /// Send message to actor `A` and asyncronously wait for response.
     pub fn call<B: Actor, M: 'static + Send>(&self, msg: M) -> MessageResult<A, B, M>
         where A: MessageHandler<M>,
               A::Item: Send,
               A::Error: Send,
     {
         let (tx, rx) = channel();
-        let env = SyncEnvelope::new(Some(msg), Some(tx));
-        let _ = self.tx.unbounded_send(BoxedMessageProxy(Box::new(env)));
+        let _ = self.tx.unbounded_send(
+            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx))));
 
         MessageResult::new(rx)
     }
 
+    /// Get `Subscriber` for specific message type
     pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M>>
         where A: MessageHandler<M>,
               A::Item: Send,
@@ -102,8 +106,8 @@ impl<A, M> AsyncSubscriber<M> for SyncAddress<A>
     fn call(&self, msg: M) -> Self::Future
     {
         let (tx, rx) = channel();
-        let env = SyncEnvelope::new(Some(msg), Some(tx));
-        let _ = self.tx.unbounded_send(BoxedMessageProxy(Box::new(env)));
+        let _ = self.tx.unbounded_send(
+            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx))));
 
         CallResult::new(rx)
     }

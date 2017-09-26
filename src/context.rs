@@ -8,7 +8,7 @@ use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
 use actor::{Actor, MessageHandler, StreamHandler};
-use address::{ActorAddress, Address, SyncAddress, BoxedMessageProxy, Subscriber};
+use address::{ActorAddress, Address, SyncAddress, Proxy, Subscriber};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
 
@@ -29,8 +29,8 @@ pub struct Context<A> where A: Actor,
     addr: Address<A>,
     sync_addr: Option<SyncAddress<A>>,
     flags: State,
-    msgs: UnboundedReceiver<BoxedMessageProxy<A>>,
-    sync_msgs: Option<SyncUnboundedReceiver<BoxedMessageProxy<A>>>,
+    msgs: UnboundedReceiver<Proxy<A>>,
+    sync_msgs: Option<SyncUnboundedReceiver<Proxy<A>>>,
     items: Vec<IoItem<A>>,
 }
 
