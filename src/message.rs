@@ -88,6 +88,7 @@ enum MessageFutureItem<A, M> where A: Actor + MessageResponse<M>
     Fut(Box<ActorFuture<Item=A::Item, Error=A::Error, Actor=A>>)
 }
 
+/// `MessageFuture` represents asyncronous message handling process.
 pub struct MessageFuture<A, M> where A: Actor + MessageResponse<M>,
 {
     inner: Option<MessageFutureItem<A, M>>,
@@ -141,12 +142,6 @@ impl<A, M, T> MessageFutureError<A, M> for T
 
 impl<A, M> MessageFuture<A, M> where A: Actor + MessageResponse<M>
 {
-    pub fn new<T>(fut: T) -> Self
-        where T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static
-    {
-        MessageFuture {inner: Some(MessageFutureItem::Fut(Box::new(fut)))}
-    }
-
     pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<A::Item, A::Error>
     {
         if let Some(item) = self.inner.take() {

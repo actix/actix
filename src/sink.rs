@@ -7,7 +7,7 @@ use address::{Subscriber, AsyncSubscriber};
 use context::Context;
 use message::CallResult;
 
-
+/// Sink wrapper
 pub struct Sink<I, E> {
     srv: *mut SinkContext<I, E>
 }
