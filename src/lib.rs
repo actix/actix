@@ -39,7 +39,7 @@ pub mod fut;
 pub mod prelude;
 pub mod actors;
 
-pub use actor::{Actor, MessageHandler, StreamHandler};
+pub use actor::{Actor, MessageHandler, MessageResponse, StreamHandler};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use arbiter::{Arbiter, StopArbiter};
 pub use builder::ActorBuilder;

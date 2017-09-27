@@ -114,12 +114,11 @@ impl MessageHandler<Sum> for Summator {
     }
 }
 
-// alow we have to define type of response for `Sum` message
+// we have to define type of response for `Sum` message
 impl MessageResponse<Sum> for Summator {
     type Item = usize;
     type Error = ();
 }
-
 
 fn main() {
     let system = System::new("test".to_owned());
