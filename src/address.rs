@@ -38,7 +38,7 @@ pub(crate) trait MessageProxy {
 
     type Actor: Actor;
 
-    /// handle message within new service and context
+    /// handle message within new actor and context
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<Self::Actor>);
 }
 

@@ -41,7 +41,7 @@ pub mod actors;
 
 pub use actor::{Actor, MessageHandler, MessageResponse, StreamHandler};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
-pub use arbiter::{Arbiter, StopArbiter};
+pub use arbiter::{Arbiter, StartActor, StopArbiter};
 pub use builder::ActorBuilder;
 pub use context::{Context, ActixFutureSpawner};
 pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};

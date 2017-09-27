@@ -111,6 +111,7 @@ impl SystemRunner {
 /// Stop system execution
 pub struct SystemExit(pub i32);
 
+#[doc(hidden)]
 impl MessageResponse<SystemExit> for System {
     type Item = ();
     type Error = ();
@@ -136,11 +137,13 @@ impl MessageHandler<SystemExit> for System {
 /// Register Arbiter within system
 pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);
 
+#[doc(hidden)]
 impl MessageResponse<RegisterArbiter> for System {
     type Item = ();
     type Error = ();
 }
 
+#[doc(hidden)]
 impl MessageHandler<RegisterArbiter> for System {
 
     fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>)
@@ -154,11 +157,13 @@ impl MessageHandler<RegisterArbiter> for System {
 /// Unregister Arbiter
 pub(crate) struct UnregisterArbiter(pub String);
 
+#[doc(hidden)]
 impl MessageResponse<UnregisterArbiter> for System {
     type Item = ();
     type Error = ();
 }
 
+#[doc(hidden)]
 impl MessageHandler<UnregisterArbiter> for System {
 
     fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>)

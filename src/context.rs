@@ -57,19 +57,21 @@ impl<A> Context<A> where A: Actor
         self.flags |= DONE;
     }
 
-    /// Get service address
+    /// Get actor address
     pub fn address<Address>(&mut self) -> Address
         where A: ActorAddress<A, Address>
     {
         <A as ActorAddress<A, Address>>::get(self)
     }
 
+    #[doc(hidden)]
     pub fn subscriber<M: 'static>(&self) -> Box<Subscriber<M>>
         where A: MessageHandler<M>
     {
         Box::new(Address::new(self.addr.clone()))
     }
 
+    #[doc(hidden)]
     pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
         where A: MessageHandler<M>,
               A::Item: Send,
@@ -85,8 +87,8 @@ impl<A> Context<A> where A: Actor
     }
 
     pub fn add_future<F, E: 'static>(&mut self, fut: F)
-        where F: Future<Error=E> + 'static,
-              A: MessageHandler<F::Item, E>,
+        where F: Future + 'static,
+              A: MessageHandler<F::Item, F::Error>,
     {
         self.spawn(ActorFutureCell::new(fut))
     }
@@ -134,12 +136,12 @@ impl<A> Context<A> where A: Actor
         std::mem::replace(&mut self.act, srv)
     }
 
-    /// Get service address without `Send` baundary
+    /// Get actor address without `Send` baundary
     pub(crate) fn loc_address(&mut self) -> Address<A> {
         Address::new(self.addr.clone())
     }
 
-    /// Get service address with `Send` baundary
+    /// Get actor address with `Send` baundary
     pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
         if self.sync_addr.is_none() {
             let (tx, rx) = sync_unbounded();

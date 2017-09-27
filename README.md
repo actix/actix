@@ -11,7 +11,7 @@ Actix is licensed under the [Apache-2.0 license](http://opensource.org/licenses/
 
 ## Features
 
-  * Typed messages (No `Any` type).
+  * Typed messages (No `Any` type). Generic messages are allowed.
   * Actor communication in a local/thread context.
   * Actor supervision.
   * Using Futures for asynchronous message handling.

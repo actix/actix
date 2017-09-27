@@ -28,7 +28,7 @@ pub trait ActorFuture {
     /// normal fashion.
     type Error;
 
-    /// The service within which this future runs
+    /// The actor within which this future runs
     type Actor: Actor;
 
     fn poll(&mut self, srv: &mut Self::Actor, ctx: &mut Context<Self::Actor>)

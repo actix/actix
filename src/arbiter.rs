@@ -3,7 +3,7 @@ use std::thread;
 use std::cell::RefCell;
 use uuid::Uuid;
 use tokio_core::reactor::{Core, Handle};
-use futures::sync::oneshot::{channel, Sender, Receiver};
+use futures::sync::oneshot::{channel, Sender};
 
 use actor::{Actor, MessageHandler, MessageResponse};
 use address::{Address, SyncAddress};
@@ -156,22 +156,9 @@ impl Arbiter {
             None => panic!("System is not running"),
         })
     }
-
-    /// Start actor in arbiter's thread
-    pub fn start<A, F>(arbiter: SyncAddress<Arbiter>, f: F) -> Receiver<SyncAddress<A>>
-        where A: Actor,
-              F: FnOnce(&mut Context<A>) -> A + Send + 'static
-    {
-        let (tx, rx) = channel();
-        let msg = StartActor(Box::new(|| {
-            let _ = tx.send(A::create(f));
-        }));
-        arbiter.send(msg);
-
-        rx
-    }
 }
 
+#[doc(hidden)]
 impl MessageResponse<StopArbiter> for Arbiter {
     type Item = ();
     type Error = ();
@@ -198,32 +185,38 @@ impl MessageHandler<StopArbiter> for Arbiter {
 
 
 /// Start actor in arbiter's context
-struct StartActor(Box<FnBox>);
+pub struct StartActor<A: Actor>(Box<FnBox<A>>);
 
-trait FnBox: Send + 'static {
-    fn call_box(self: Box<Self>);
+impl<A: Actor> StartActor<A>
+{
+    pub fn new<F>(f: F) -> Self
+        where F: FnOnce(&mut Context<A>) -> A + Send + 'static
+    {
+        StartActor(Box::new(|| A::create(f)))
+    }
 }
 
-impl<F: FnOnce() + Send + 'static> FnBox for F {
+trait FnBox<A: Actor>: Send + 'static {
+    fn call_box(self: Box<Self>) -> SyncAddress<A>;
+}
+
+impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
     #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
-    fn call_box(self: Box<Self>) {
+    fn call_box(self: Box<Self>) -> SyncAddress<A> {
         (*self)()
     }
 }
 
-#[doc(hidden)]
-impl MessageResponse<StartActor> for Arbiter {
-    type Item = ();
+impl<A> MessageResponse<StartActor<A>> for Arbiter where A: Actor {
+    type Item = SyncAddress<A>;
     type Error = ();
 }
 
-#[doc(hidden)]
-impl MessageHandler<StartActor> for Arbiter {
+impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
 
-    fn handle(&mut self, msg: StartActor, _: &mut Context<Self>)
-              -> MessageFuture<Self, StartActor>
+    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>)
+              -> MessageFuture<Self, StartActor<A>>
     {
-        msg.0.call_box();
-        ().to_result()
+        msg.0.call_box().to_result()
     }
 }

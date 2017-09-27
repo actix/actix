@@ -49,7 +49,7 @@ pub trait MessageResponse<M> where Self: Actor {
 pub trait StreamHandler<M, E=()>: MessageResponse<M>
     where Self: Actor
 {
-    /// Method is called when service get polled first time.
+    /// Method is called when stream get polled first time.
     fn started(&mut self, ctx: &mut Context<Self>) {}
 
     /// Method is called when stream finishes.

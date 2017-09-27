@@ -92,6 +92,7 @@ pub struct MessageFuture<A, M> where A: Actor + MessageResponse<M>,
     inner: Option<MessageFutureItem<A, M>>,
 }
 
+/// Helper trait that converts compatible `ActorFuture` type to `MessageFuture`.
 impl<A, M, T> std::convert::From<T> for MessageFuture<A, M>
     where A: Actor + MessageHandler<M>,
           T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static,
@@ -101,10 +102,12 @@ impl<A, M, T> std::convert::From<T> for MessageFuture<A, M>
     }
 }
 
+/// Helper trait that converts result value into `MessageFuture` with `.to_result()` method.
 pub trait MessageFutureResult<A, M>
     where A: Actor + MessageResponse<M, Item=Self>,
           Self: Sized + 'static
 {
+    /// Convert value to `MessageFuture`
     fn to_result(self) -> MessageFuture<A, M>;
 }
 
@@ -117,10 +120,12 @@ impl<A, M, T> MessageFutureResult<A, M> for T
     }
 }
 
+/// Helper trait that converts error value into `MessageFuture` with `.to_error()` method.
 pub trait MessageFutureError<A, M>
     where A: Actor + MessageResponse<M, Error=Self>,
           Self: Sized + 'static
 {
+    /// Convert value to `MessageFuture`
     fn to_error(self) -> MessageFuture<A, M>;
 }
 
