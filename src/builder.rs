@@ -53,16 +53,12 @@ use context::Context;
 ///
 /// # Examples
 ///
-/// ```rust,ignore
-/// #![allow(unused_variables)]
+/// ```rust
 /// extern crate actix;
 /// extern crate futures;
 ///
 /// use futures::Stream;
 /// use actix::prelude::*;
-///
-/// // initialize system
-/// System::init();
 ///
 /// struct MyActor;
 /// impl Actor for MyActor {}
@@ -70,17 +66,26 @@ use context::Context;
 /// struct Message;
 ///
 /// impl StreamHandler<Message> for MyActor {}
-/// impl MessageHandler<Message> for MyActor {
+///
+/// impl MessageResponse<Message> for MyActor {
 ///     type Item = ();
 ///     type Error = ();
-///     type InputError = ();
+/// }
+///
+/// impl MessageHandler<Message> for MyActor {
+///    fn handle(&mut self, msg: Message, ctx: &mut Context<Self>)
+///              -> MessageFuture<Self, Message> {
+///        ().to_result()
+///    }
 /// }
 ///
 /// fn start<S>(stream: S)
-///      where S: futures::Stream<Item=Message, Error=()>
+///      where S: futures::Stream<Item=Message, Error=()> + 'static
 /// {
 ///     let _: () = MyActor.start_with(stream);
 /// }
+///
+/// fn main() {}
 /// ```
 ///
 /// If for actor initialization execution context is required then

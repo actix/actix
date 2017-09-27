@@ -86,7 +86,51 @@ impl<A> Context<A> where A: Actor
         self.items.push(IoItem::SpawnFuture(Box::new(fut)))
     }
 
-    pub fn add_future<F, E: 'static>(&mut self, fut: F)
+    /// This method allow to handle Future in similar way as normal actor message.
+    ///
+    /// ```rust
+    /// extern crate actix;
+    /// extern crate futures;
+    /// extern crate tokio_core;
+    ///
+    /// use std::time::Duration;
+    /// use futures::Future;
+    /// use tokio_core::reactor::Timeout;
+    /// use actix::prelude::*;
+    ///
+    /// // Message
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl MessageResponse<Ping> for MyActor {
+    ///     type Item = ();
+    ///     type Error = ();
+    /// }
+    ///
+    /// impl MessageHandler<Ping, std::io::Error> for MyActor {
+    ///     fn error(&mut self, err: std::io::Error, ctx: &mut Context<MyActor>) {
+    ///         println!("Error: {}", err);
+    ///     }
+    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>)
+    ///               -> MessageFuture<Self, Ping> {
+    ///         println!("PING");
+    ///         ().to_result()
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///
+    ///    fn started(&mut self, ctx: &mut Context<Self>) {
+    ///        ctx.add_future(
+    ///            Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
+    ///                .map(|_| Ping)
+    ///        );
+    ///    }
+    /// }
+    /// fn main() {}
+    /// ```
+    pub fn add_future<F>(&mut self, fut: F)
         where F: Future + 'static,
               A: MessageHandler<F::Item, F::Error>,
     {
