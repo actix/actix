@@ -1,8 +1,10 @@
 use std;
 
 use futures::{self, Async, Future, Poll, Stream};
-use futures::unsync::mpsc::{unbounded, UnboundedReceiver};
+use futures::unsync::oneshot::Sender;
+use futures::unsync::mpsc::{unbounded, UnboundedSender, UnboundedReceiver};
 use futures::sync::mpsc::{unbounded as sync_unbounded,
+                          UnboundedSender as SyncUnboundedSender,
                           UnboundedReceiver as SyncUnboundedReceiver};
 use tokio_core::reactor::Handle;
 
@@ -22,27 +24,31 @@ bitflags! {
     }
 }
 
+/// context protocol
+pub(crate) enum ContextProtocol<A: Actor> {
+    /// message envelope
+    Envelope(Proxy<A>),
+    /// Request sync address
+    SyncAddress(Sender<SyncAddress<A>>),
+}
+
 /// Actor execution context
 pub struct Context<A> where A: Actor,
 {
     act: A,
-    addr: Address<A>,
-    sync_addr: Option<SyncAddress<A>>,
     flags: State,
-    msgs: UnboundedReceiver<Proxy<A>>,
-    sync_msgs: Option<SyncUnboundedReceiver<Proxy<A>>>,
     items: Vec<IoItem<A>>,
+    pub(crate) addr: UnboundedSender<ContextProtocol<A>>,
+    msgs: UnboundedReceiver<ContextProtocol<A>>,
+    sync_msgs: Option<SyncUnboundedReceiver<Proxy<A>>>,
+    sync_addr: Option<SyncUnboundedSender<Proxy<A>>>,
 }
 
 /// io items
 enum IoItem<A: Actor> {
-    SpawnFuture(Box<ActSpawnFuture<A>>),
     Sink(Box<SinkContextService<A>>),
+    SpawnFuture(Box<ActorFuture<Item=(), Error=(), Actor=A>>),
 }
-
-type ActSpawnFuture<A> =
-    ActorFuture<Item=(), Error=(), Actor=A>;
-
 
 impl<A> Context<A> where A: Actor
 {
@@ -61,7 +67,7 @@ impl<A> Context<A> where A: Actor
     pub fn subscriber<M: 'static>(&self) -> Box<Subscriber<M>>
         where A: MessageHandler<M>
     {
-        Box::new(self.addr.clone())
+        Box::new(Address::new(self.addr.clone()))
     }
 
     pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
@@ -111,10 +117,10 @@ impl<A> Context<A> where A: Actor
         let (tx, rx) = unbounded();
         Context {
             act: act,
+            addr: tx,
             msgs: rx,
             sync_addr: None,
             sync_msgs: None,
-            addr: Address::new(tx),
             flags: State::empty(),
             items: Vec::new(),
         }
@@ -130,24 +136,25 @@ impl<A> Context<A> where A: Actor
 
     /// Get service address without `Send` baundary
     pub(crate) fn loc_address(&mut self) -> Address<A> {
-        self.addr.clone()
+        Address::new(self.addr.clone())
     }
 
     /// Get service address with `Send` baundary
     pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
         if self.sync_addr.is_none() {
             let (tx, rx) = sync_unbounded();
-            self.sync_addr = Some(SyncAddress::new(tx));
+            self.sync_addr = Some(tx);
             self.sync_msgs = Some(rx);
         }
 
         if let Some(ref addr) = self.sync_addr {
-            return addr.clone()
+            return SyncAddress::new(addr.clone())
         }
         unreachable!();
     }
 }
 
+#[doc(hidden)]
 impl<A> Future for Context<A> where A: Actor
 {
     type Item = ();
@@ -167,9 +174,15 @@ impl<A> Future for Context<A> where A: Actor
 
             // check messages
             match self.msgs.poll() {
-                Ok(Async::Ready(Some(mut msg))) => {
+                Ok(Async::Ready(Some(msg))) => {
                     not_ready = false;
-                    msg.0.handle(&mut self.act, ctx);
+                    match msg {
+                        ContextProtocol::Envelope(mut env) =>
+                            env.0.handle(&mut self.act, ctx),
+                        ContextProtocol::SyncAddress(tx) => {
+                            let _ = tx.send(self.sync_address());
+                        }
+                    }
                 }
                 Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
             }

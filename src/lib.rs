@@ -27,11 +27,13 @@ mod address;
 mod sync_address;
 mod builder;
 mod context;
+mod factory;
 mod framed;
 mod message;
 mod registry;
 mod sink;
 mod system;
+mod supervisor;
 mod utils;
 
 pub mod fut;
@@ -49,3 +51,4 @@ pub use registry::{Registry, SystemRegistry};
 pub use sink::Sink;
 pub use system::{System, SystemExit, SystemRunner};
 pub use utils::Condition;
+pub use supervisor::Supervisor;

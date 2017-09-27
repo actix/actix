@@ -9,13 +9,22 @@ Actix is a rust actor system framework.
 
 Actix is licensed under the [Apache-2.0 license](http://opensource.org/licenses/APACHE-2.0).
 
+## Features
+
+  * Typed messages (No `Any` usage).
+  * Actor communication in a local/thread context.
+  * Actor supervision.
+  * Using Futures for asynchronous message handling.
+  * Compiles with stable rust 
+
+
 ## Usage
 
 To use `actix`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-actix = { git= "https://github.com/fafhrd91/actix.git" }
+actix = { git = "https://github.com/fafhrd91/actix.git" }
 ```
 
 

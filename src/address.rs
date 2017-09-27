@@ -1,10 +1,10 @@
 use futures::Future;
 use futures::unsync::mpsc::UnboundedSender;
-use futures::unsync::oneshot::{channel, Sender, Receiver};
+use futures::unsync::oneshot::{channel, Receiver};
 
-use context::Context;
-use message::{Envelope, CallResult, MessageResult, MessageFuture, MessageFutureResult};
 use actor::{Actor, MessageHandler};
+use context::{Context, ContextProtocol};
+use message::{Envelope, CallResult, MessageResult};
 pub use sync_address::SyncAddress;
 
 #[doc(hidden)]
@@ -56,7 +56,7 @@ unsafe impl<T> Send for Proxy<T> {}
 /// Address of the actor `A`.
 /// Actor has to run in the same thread as owner of the address.
 pub struct Address<A> where A: Actor {
-    tx: UnboundedSender<Proxy<A>>
+    tx: UnboundedSender<ContextProtocol<A>>
 }
 
 impl<A> Clone for Address<A> where A: Actor {
@@ -67,7 +67,7 @@ impl<A> Clone for Address<A> where A: Actor {
 
 impl<A> Address<A> where A: Actor {
 
-    pub(crate) fn new(sender: UnboundedSender<Proxy<A>>) -> Address<A> {
+    pub(crate) fn new(sender: UnboundedSender<ContextProtocol<A>>) -> Address<A> {
         Address{tx: sender}
     }
 
@@ -75,7 +75,8 @@ impl<A> Address<A> where A: Actor {
     pub fn send<M: 'static>(&self, msg: M) where A: MessageHandler<M>
     {
         let _ = self.tx.unbounded_send(
-            Proxy::new(Envelope::new(Some(msg), None)));
+            ContextProtocol::Envelope(
+                Proxy::new(Envelope::new(Some(msg), None))));
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
@@ -85,7 +86,8 @@ impl<A> Address<A> where A: Actor {
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            Proxy::new(Envelope::new(Some(msg), Some(tx))));
+            ContextProtocol::Envelope(
+                Proxy::new(Envelope::new(Some(msg), Some(tx)))));
 
         MessageResult::new(rx)
     }
@@ -97,7 +99,8 @@ impl<A> Address<A> where A: Actor {
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            Proxy::new(Envelope::new(Some(msg), Some(tx))));
+            ContextProtocol::Envelope(
+                Proxy::new(Envelope::new(Some(msg), Some(tx)))));
 
         rx
     }
@@ -106,7 +109,8 @@ impl<A> Address<A> where A: Actor {
     pub fn upgrade(&self) -> Receiver<SyncAddress<A>> {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            Proxy::new(Envelope::new(Some(GetSyncAddress(tx)), None)));
+            ContextProtocol::SyncAddress(tx));
+
         rx
     }
 
@@ -141,7 +145,8 @@ impl<A, M: 'static> AsyncSubscriber<M> for Address<A>
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            Proxy::new(Envelope::new(Some(msg), Some(tx))));
+            ContextProtocol::Envelope(
+                Proxy::new(Envelope::new(Some(msg), Some(tx)))));
 
         CallResult::new(rx)
     }
@@ -150,7 +155,8 @@ impl<A, M: 'static> AsyncSubscriber<M> for Address<A>
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            Proxy::new(Envelope::new(Some(msg), Some(tx))));
+            ContextProtocol::Envelope(
+                Proxy::new(Envelope::new(Some(msg), Some(tx)))));
 
         Ok(CallResult::new(rx))
     }
@@ -167,20 +173,5 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
 
     fn get(_: &mut Context<A>) -> () {
         ()
-    }
-}
-
-struct GetSyncAddress<A: Actor>(Sender<SyncAddress<A>>);
-
-impl<A> MessageHandler<GetSyncAddress<A>> for A where A: Actor {
-    type Item = ();
-    type Error = ();
-    type InputError = ();
-
-    fn handle(&mut self, msg: GetSyncAddress<A>, ctx: &mut Context<A>)
-              -> MessageFuture<Self, GetSyncAddress<A>>
-    {
-        let _ = msg.0.send(ctx.address());
-        ().to_result()
     }
 }
