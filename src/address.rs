@@ -169,6 +169,13 @@ impl<A> ActorAddress<A, Address<A>> for A where A: Actor {
     }
 }
 
+impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A where A: Actor {
+
+    fn get(ctx: &mut Context<A>) -> (Address<A>, SyncAddress<A>) {
+        (ctx.loc_address(), ctx.sync_address())
+    }
+}
+
 impl<A> ActorAddress<A, ()> for A where A: Actor {
 
     fn get(_: &mut Context<A>) -> () {

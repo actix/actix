@@ -2,8 +2,7 @@ use std;
 use std::thread;
 use std::cell::RefCell;
 use uuid::Uuid;
-use tokio_core::reactor::{Core, Remote, Handle};
-use futures::future;
+use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender, Receiver};
 
 use actor::{Actor, MessageHandler};
@@ -25,13 +24,13 @@ thread_local!(
 );
 
 pub struct Arbiter {
-    h: Remote,
     id: Uuid,
     sys: bool,
 }
 
 /// Stop arbiter execution.
 pub struct StopArbiter(pub i32);
+
 
 impl Actor for Arbiter {
     fn started(&mut self, ctx: &mut Context<Self>) {
@@ -43,11 +42,10 @@ impl Actor for Arbiter {
 
 impl Arbiter {
 
-    pub fn new(name: Option<String>) -> Self {
+    pub fn new(name: Option<String>) -> SyncAddress<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
 
         let id = Uuid::new_v4();
-        let id_cloned = id;
         let sys = Arbiter::system();
         let sys_name = Arbiter::system_name();
         let sys_registry = Arbiter::system_registry().clone();
@@ -70,11 +68,11 @@ impl Arbiter {
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
 
             // start arbiter
-            let addr = ActorBuilder::start(
-                Arbiter {h: core.remote(), sys: true, id: id});
+            let (addr, saddr) = ActorBuilder::start(
+                Arbiter {sys: false, id: id});
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
-            if tx.send(core.remote()).is_err() {
+            if tx.send(saddr).is_err() {
                 error!("Can not start Arbiter, remote side is dead");
             } else {
                 // run loop
@@ -88,9 +86,8 @@ impl Arbiter {
             Arbiter::system().send(
                 UnregisterArbiter(id.simple().to_string()));
         });
-        let remote = rx.recv().unwrap();
 
-        Arbiter {h: remote, sys: false, id: id_cloned}
+        rx.recv().unwrap()
     }
 
     pub(crate) fn new_system() -> Core {
@@ -101,7 +98,7 @@ impl Arbiter {
 
         // start arbiter
         let addr = ActorBuilder::start(
-            Arbiter {h: core.remote(), sys: true, id: Uuid::new_v4()});
+            Arbiter {sys: true, id: Uuid::new_v4()});
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
         core
@@ -160,35 +157,22 @@ impl Arbiter {
         })
     }
 
-    pub fn start<F, T>(&self, f: F) -> Receiver<SyncAddress<T>>
-        where T: Actor,
-              F: 'static + Send + FnOnce(&mut Context<T>) -> T
+    /// Start actor in arbiter's thread
+    pub fn start<A, F>(arbiter: SyncAddress<Arbiter>, f: F) -> Receiver<SyncAddress<A>>
+        where A: Actor,
+              F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
         let (tx, rx) = channel();
-        self.h.spawn(move |_| {
-            let addr = T::create(f);
-            let _ = tx.send(addr);
-            future::result(Ok(()))
-        });
+        let msg = StartActor(Box::new(|| {
+            let _ = tx.send(A::create(f));
+        }));
+        arbiter.send(msg);
 
         rx
     }
 }
 
-impl Clone for Arbiter {
-    fn clone(&self) -> Self {
-        Arbiter {h: self.h.clone(), sys: false, id: self.id}
-    }
-}
-
-impl Default for Arbiter {
-    fn default() -> Self {
-        Arbiter::new(None)
-    }
-}
-
 impl MessageHandler<StopArbiter> for Arbiter {
-
     type Item = ();
     type Error = ();
     type InputError = ();
@@ -206,6 +190,33 @@ impl MessageHandler<StopArbiter> for Arbiter {
                 }
             });
         }
+        ().to_result()
+    }
+}
+
+
+/// Start actor in arbiter's context
+struct StartActor(Box<FnBox>);
+
+trait FnBox: Send + 'static {
+    fn call_box(self: Box<Self>);
+}
+
+impl<F: FnOnce() + Send + 'static> FnBox for F {
+    fn call_box(self: Box<Self>) {
+        (*self)()
+    }
+}
+
+impl MessageHandler<StartActor> for Arbiter {
+    type Item = ();
+    type Error = ();
+    type InputError = ();
+
+    fn handle(&mut self, msg: StartActor, _: &mut Context<Self>)
+              -> MessageFuture<Self, StartActor>
+    {
+        msg.0.call_box();
         ().to_result()
     }
 }
