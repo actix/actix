@@ -17,6 +17,48 @@ use factory::ActorFactory;
 /// that actor successfully process incoming message. If actor fails during
 /// message processing, this message can not be recovered. But sender
 /// would receive `Err(Cancelled)` error if actor fails to process message.
+///
+/// ## Example
+///
+/// ```rust
+/// #![allow(unused_variables)]
+/// extern crate actix;
+///
+/// use actix::prelude::*;
+///
+/// struct Die;
+///
+/// struct MyActor;
+///
+/// impl Actor for MyActor {}
+///
+/// impl ActorFactory<MyActor> for MyActor {
+///     fn create(&mut self, _: &mut Context<MyActor>) -> MyActor {
+///         MyActor
+///     }
+/// }
+///
+/// impl MessageHandler<Die> for MyActor {
+///     type Item = ();
+///     type Error = ();
+///     type InputError = ();
+///
+///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> MessageFuture<Self, Die> {
+///         ctx.stop();
+///         Arbiter::system().send(actix::SystemExit(0));
+///         ().to_result()
+///     }
+/// }
+///
+/// fn main() {
+///     let sys = System::new("test".to_owned());
+///
+///     let (addr, _) = Supervisor::start(MyActor, false);
+///
+///     addr.send(Die);
+///     sys.run();
+/// }
+/// ```
 pub struct Supervisor<A: Actor, F: ActorFactory<A>> {
     factory: F,
     lazy: bool,
