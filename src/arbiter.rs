@@ -208,6 +208,7 @@ impl<F: FnOnce() + Send + 'static> FnBox for F {
     }
 }
 
+#[doc(hidden)]
 impl MessageHandler<StartActor> for Arbiter {
     type Item = ();
     type Error = ();
