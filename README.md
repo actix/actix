@@ -11,7 +11,7 @@ Actix is licensed under the [Apache-2.0 license](http://opensource.org/licenses/
 
 ## Features
 
-  * Typed messages (No `Any` usage).
+  * Typed messages (No `Any` type).
   * Actor communication in a local/thread context.
   * Actor supervision.
   * Using Futures for asynchronous message handling.
@@ -107,14 +107,17 @@ impl Actor for Summator {}
 
 // now we need to define `MessageHandler` for `Sum` message.
 impl MessageHandler<Sum> for Summator {
-    type Item = usize;
-    type Error = ();
-    type InputError = ();
 
     fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> MessageFuture<Self, Sum> {
         let sum = msg.0 + msg.1;
         sum.to_result()
     }
+}
+
+// alow we have to define type of response for `Sum` message
+impl MessageResponse<Sum> for Summator {
+    type Item = usize;
+    type Error = ();
 }
 
 
@@ -183,9 +186,6 @@ impl Actor for Game {}
 
 // message handler for Ping message
 impl MessageHandler<Ping> for Game {
-    type Item = ();
-    type Error = ();
-    type InputError = ();
 
     fn handle(&mut self, msg: Ping, ctx: &mut Context<Self>) -> MessageFuture<Self, Ping> {
         self.counter += 1;
@@ -207,6 +207,11 @@ impl MessageHandler<Ping> for Game {
         }
         ().to_result()
     }
+}
+
+impl MessageResponse<Ping> for Game {
+    type Item = ();
+    type Error = ();
 }
 
 fn main() {

@@ -99,19 +99,19 @@ pub trait ActorBuilder<A, Addr=()>
     fn start(self) -> Addr;
 
     /// Start actor and register stream
-    fn start_with<S, E: 'static>(self, stream: S) -> Addr
-        where S: Stream<Error=E> + 'static,
+    fn start_with<S>(self, stream: S) -> Addr
+        where S: Stream + 'static,
               S::Item: 'static,
-              A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>;
+              A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>;
 
     fn create<F>(f: F) -> Addr
         where F: 'static + FnOnce(&mut Context<A>) -> A;
 
-    fn create_with<S, F, E: 'static>(stream: S, f: F) -> Addr
+    fn create_with<S, F>(stream: S, f: F) -> Addr
         where F: 'static + FnOnce(&mut Context<A>) -> A,
-              S: Stream<Error=E> + 'static,
-              S::Item: 'static,
-              A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>;
+              S: Stream + 'static,
+              //S::Item: 'static,
+              A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>;
 }
 
 impl<A, Addr> ActorBuilder<A, Addr> for A
@@ -134,10 +134,10 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
         addr
     }
 
-    fn start_with<S, E: 'static>(self, stream: S) -> Addr
-        where S: Stream<Error=E> + 'static,
+    fn start_with<S>(self, stream: S) -> Addr
+        where S: Stream + 'static,
               S::Item: 'static,
-              A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>,
+              A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
     {
         let mut ctx = Context::new(self);
         ctx.add_stream(stream);
@@ -162,11 +162,12 @@ impl<A, Addr> ActorBuilder<A, Addr> for A
         addr
     }
 
-    fn create_with<S, F, E: 'static>(stream: S, f: F) -> Addr
+    fn create_with<S, F: 'static>(stream: S, f: F) -> Addr
         where F: 'static + FnOnce(&mut Context<A>) -> A,
-              S: Stream<Error=E> + 'static,
+              S: Stream + 'static,
               S::Item: 'static,
-              A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>,
+              S::Error: 'static,
+              A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
     {
         let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
         let addr =  <Self as ActorAddress<A, Addr>>::get(&mut ctx);

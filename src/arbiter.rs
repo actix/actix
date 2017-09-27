@@ -5,7 +5,7 @@ use uuid::Uuid;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender, Receiver};
 
-use actor::{Actor, MessageHandler};
+use actor::{Actor, MessageHandler, MessageResponse};
 use address::{Address, SyncAddress};
 use builder::ActorBuilder;
 use context::Context;
@@ -172,10 +172,12 @@ impl Arbiter {
     }
 }
 
-impl MessageHandler<StopArbiter> for Arbiter {
+impl MessageResponse<StopArbiter> for Arbiter {
     type Item = ();
     type Error = ();
-    type InputError = ();
+}
+
+impl MessageHandler<StopArbiter> for Arbiter {
 
     fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>)
               -> MessageFuture<Self, StopArbiter>
@@ -203,16 +205,20 @@ trait FnBox: Send + 'static {
 }
 
 impl<F: FnOnce() + Send + 'static> FnBox for F {
+    #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
     fn call_box(self: Box<Self>) {
         (*self)()
     }
 }
 
 #[doc(hidden)]
-impl MessageHandler<StartActor> for Arbiter {
+impl MessageResponse<StartActor> for Arbiter {
     type Item = ();
     type Error = ();
-    type InputError = ();
+}
+
+#[doc(hidden)]
+impl MessageHandler<StartActor> for Arbiter {
 
     fn handle(&mut self, msg: StartActor, _: &mut Context<Self>)
               -> MessageFuture<Self, StartActor>

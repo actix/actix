@@ -28,10 +28,12 @@ impl ActorFactory<MyActor> for MyActorFactory {
     }
 }
 
-impl MessageHandler<Die> for MyActor {
+impl MessageResponse<Die> for MyActor {
     type Item = ();
     type Error = ();
-    type InputError = ();
+}
+
+impl MessageHandler<Die> for MyActor {
 
     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> MessageFuture<Self, Die> {
         ctx.stop();

@@ -7,7 +7,7 @@ use futures::unsync::oneshot::{Canceled, Receiver, Sender};
 use fut::ActorFuture;
 use context::Context;
 use address::MessageProxy;
-use actor::{Actor, MessageHandler};
+use actor::{Actor, MessageHandler, MessageResponse};
 
 
 #[must_use = "future do nothing unless polled"]
@@ -80,14 +80,14 @@ impl<I, E> Future for CallResult<I, E>
 }
 
 
-enum MessageFutureItem<A, M> where A: Actor + MessageHandler<M>
+enum MessageFutureItem<A, M> where A: Actor + MessageResponse<M>
 {
     Item(A::Item),
     Error(A::Error),
     Fut(Box<ActorFuture<Item=A::Item, Error=A::Error, Actor=A>>)
 }
 
-pub struct MessageFuture<A, M> where A: Actor + MessageHandler<M>,
+pub struct MessageFuture<A, M> where A: Actor + MessageResponse<M>,
 {
     inner: Option<MessageFutureItem<A, M>>,
 }
@@ -102,14 +102,14 @@ impl<A, M, T> std::convert::From<T> for MessageFuture<A, M>
 }
 
 pub trait MessageFutureResult<A, M>
-    where A: Actor + MessageHandler<M, Item=Self>,
+    where A: Actor + MessageResponse<M, Item=Self>,
           Self: Sized + 'static
 {
     fn to_result(self) -> MessageFuture<A, M>;
 }
 
 impl<A, M, T> MessageFutureResult<A, M> for T
-    where A: Actor + MessageHandler<M, Item=Self>,
+    where A: Actor + MessageResponse<M, Item=Self>,
           Self: Sized + 'static
 {
     fn to_result(self) -> MessageFuture<A, M> {
@@ -118,14 +118,14 @@ impl<A, M, T> MessageFutureResult<A, M> for T
 }
 
 pub trait MessageFutureError<A, M>
-    where A: Actor + MessageHandler<M, Error=Self>,
+    where A: Actor + MessageResponse<M, Error=Self>,
           Self: Sized + 'static
 {
     fn to_error(self) -> MessageFuture<A, M>;
 }
 
 impl<A, M, T> MessageFutureError<A, M> for T
-    where A: Actor + MessageHandler<M, Error=Self>,
+    where A: Actor + MessageResponse<M, Error=Self>,
           Self: Sized + 'static
 {
     fn to_error(self) -> MessageFuture<A, M> {
@@ -133,7 +133,7 @@ impl<A, M, T> MessageFutureError<A, M> for T
     }
 }
 
-impl<A, M> MessageFuture<A, M> where A: Actor + MessageHandler<M>
+impl<A, M> MessageFuture<A, M> where A: Actor + MessageResponse<M>
 {
     pub fn new<T>(fut: T) -> Self
         where T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static

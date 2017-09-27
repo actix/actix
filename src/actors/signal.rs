@@ -24,11 +24,13 @@
 //!   // }
 //! }
 //!
-//! // Shutdown system on and of `SIGINT`, `SIGTERM`, `SIGQUIT` signals
-//! impl MessageHandler<signal::Signal> for Signals {
+//! impl MessageResponse<signal::Signal> for Signals {
 //!     type Item = ();
 //!     type Error = ();
-//!     type InputError = ();
+//! }
+//!
+//! // Shutdown system on and of `SIGINT`, `SIGTERM`, `SIGQUIT` signals
+//! impl MessageHandler<signal::Signal> for Signals {
 //!
 //!     fn handle(&mut self, msg: signal::Signal, _: &mut Context<Self>)
 //!               -> MessageFuture<Self, signal::Signal>
@@ -164,13 +166,15 @@ impl Actor for ProcessSignals {
 }
 
 #[doc(hidden)]
-impl StreamHandler<SignalType> for ProcessSignals {}
+impl StreamHandler<SignalType, io::Error> for ProcessSignals {}
 
-#[doc(hidden)]
-impl MessageHandler<SignalType> for ProcessSignals {
+impl MessageResponse<SignalType> for ProcessSignals {
     type Item = ();
     type Error = ();
-    type InputError = io::Error;
+}
+
+#[doc(hidden)]
+impl MessageHandler<SignalType, io::Error> for ProcessSignals {
 
     fn handle(&mut self, msg: SignalType, _: &mut Context<Self>)
               -> MessageFuture<Self, SignalType>
@@ -181,7 +185,7 @@ impl MessageHandler<SignalType> for ProcessSignals {
         ().to_result()
     }
 
-    fn error(&mut self, err: Self::InputError, _: &mut Context<ProcessSignals>) {
+    fn error(&mut self, err: io::Error, _: &mut Context<ProcessSignals>) {
         error!("Error during signal handling: {}", err);
     }
 }
@@ -189,11 +193,13 @@ impl MessageHandler<SignalType> for ProcessSignals {
 /// Subscribe to process signals.
 pub struct Subscribe(pub Box<Subscriber<Signal> + Send>);
 
-/// Add subscriber for signals
-impl MessageHandler<Subscribe> for ProcessSignals {
+impl MessageResponse<Subscribe> for ProcessSignals {
     type Item = ();
     type Error = ();
-    type InputError = ();
+}
+
+/// Add subscriber for signals
+impl MessageHandler<Subscribe> for ProcessSignals {
 
     fn handle(&mut self, msg: Subscribe,
               _: &mut Context<ProcessSignals>) -> MessageFuture<Self, Subscribe>
@@ -226,12 +232,14 @@ impl Actor for DefaultSignalsHandler {
     }
 }
 
+impl MessageResponse<Signal> for DefaultSignalsHandler {
+    type Item = ();
+    type Error = ();
+}
+
 /// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send `SystemExit(0)`
 /// message to `System` actor.
 impl MessageHandler<Signal> for DefaultSignalsHandler {
-    type Item = ();
-    type Error = ();
-    type InputError = ();
 
     fn handle(&mut self, msg: Signal, _: &mut Context<Self>) -> MessageFuture<Self, Signal>
     {

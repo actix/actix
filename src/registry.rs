@@ -32,17 +32,18 @@ use address::{Address, SyncAddress};
 ///    }
 /// }
 ///
-/// impl MessageHandler<Ping> for MyActor1 {
+/// impl MessageResponse<Ping> for MyActor1 {
 ///    type Item = ();
 ///    type Error = ();
-///    type InputError = ();
+/// }
+///
+/// impl MessageHandler<Ping> for MyActor1 {
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> MessageFuture<Self, Ping> {
 ///       println!("ping");
 ///       Arbiter::system().send(actix::SystemExit(0));
 ///       ().to_result()
 ///    }
-///
 /// }
 ///
 /// struct MyActor2;

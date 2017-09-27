@@ -86,14 +86,14 @@ impl<A> Context<A> where A: Actor
 
     pub fn add_future<F, E: 'static>(&mut self, fut: F)
         where F: Future<Error=E> + 'static,
-              A: MessageHandler<F::Item, InputError=E>,
+              A: MessageHandler<F::Item, E>,
     {
         self.spawn(ActorFutureCell::new(fut))
     }
 
-    pub fn add_stream<S, E: 'static>(&mut self, fut: S)
-        where S: Stream<Error=E> + 'static,
-              A: MessageHandler<S::Item, InputError=E> + StreamHandler<S::Item, InputError=E>,
+    pub fn add_stream<S>(&mut self, fut: S)
+        where S: Stream + 'static,
+              A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
     {
         self.spawn(ActorStreamCell::new(fut))
     }
@@ -261,7 +261,7 @@ impl<A> Future for Context<A> where A: Actor
 
 
 struct ActorFutureCell<A, M, F, E>
-    where A: Actor + MessageHandler<M, InputError=E>,
+    where A: Actor + MessageHandler<M, E>,
           F: Future<Item=M, Error=E>,
 {
     act: std::marker::PhantomData<A>,
@@ -270,7 +270,7 @@ struct ActorFutureCell<A, M, F, E>
 }
 
 impl<A, M, F, E> ActorFutureCell<A, M, F, E>
-    where A: Actor + MessageHandler<M, InputError=E>,
+    where A: Actor + MessageHandler<M, E>,
           F: Future<Item=M, Error=E>,
 {
     pub fn new(fut: F) -> ActorFutureCell<A, M, F, E>
@@ -283,7 +283,7 @@ impl<A, M, F, E> ActorFutureCell<A, M, F, E>
 }
 
 impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
-    where A: Actor + MessageHandler<M, InputError=E>,
+    where A: Actor + MessageHandler<M, E>,
           F: Future<Item=M, Error=E>,
 {
     type Item = ();
@@ -308,14 +308,14 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
 
             match self.fut.poll() {
                 Ok(Async::Ready(msg)) => {
-                    let fut = <Self::Actor as MessageHandler<M>>::handle(act, msg, ctx);
+                    let fut = <Self::Actor as MessageHandler<M, E>>::handle(act, msg, ctx);
                     self.result = Some(fut);
                     continue
                 }
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
                 Err(err) => {
-                    <Self::Actor as MessageHandler<M>>::error(act, err, ctx);
+                    <Self::Actor as MessageHandler<M, E>>::error(act, err, ctx);
                     return Err(())
                 }
             }
@@ -326,7 +326,7 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
 
 struct ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+          A: Actor + MessageHandler<M, E> + StreamHandler<M, E>,
 {
     act: std::marker::PhantomData<A>,
     started: bool,
@@ -336,7 +336,7 @@ struct ActorStreamCell<A, M, E, S>
 
 impl<A, M, E, S> ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
-          A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+          A: Actor + MessageHandler<M, E> + StreamHandler<M, E>,
 {
     pub fn new(fut: S) -> ActorStreamCell<A, M, E, S>
     {
@@ -350,7 +350,7 @@ impl<A, M, E, S> ActorStreamCell<A, M, E, S>
 
 impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + MessageHandler<M, InputError=E> + StreamHandler<M, InputError=E>,
+          A: Actor + MessageHandler<M, E> + StreamHandler<M, E>,
 {
     type Item = ();
     type Error = ();
@@ -360,7 +360,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     {
         if !self.started {
             self.started = true;
-            <A as StreamHandler<M>>::started(act, ctx);
+            <A as StreamHandler<M, E>>::started(act, ctx);
         }
 
         loop {
@@ -377,18 +377,18 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = <Self::Actor as MessageHandler<M>>::handle(act, msg, ctx);
+                    let fut = <Self::Actor as MessageHandler<M, E>>::handle(act, msg, ctx);
                     self.fut = Some(fut);
                     continue
                 }
                 Ok(Async::Ready(None)) => {
-                    <A as StreamHandler<M>>::finished(act, ctx);
+                    <A as StreamHandler<M, E>>::finished(act, ctx);
                     return Ok(Async::Ready(()))
                 }
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
                 Err(err) => {
-                    <Self::Actor as MessageHandler<M>>::error(act, err, ctx);
+                    <Self::Actor as MessageHandler<M, E>>::error(act, err, ctx);
                     return Err(())
                 }
             }

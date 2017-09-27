@@ -10,7 +10,7 @@
 
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
-pub use actor::{Actor, MessageHandler, StreamHandler};
+pub use actor::{Actor, MessageHandler, MessageResponse, StreamHandler};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use builder::ActorBuilder;

@@ -5,7 +5,7 @@ use futures::sync::mpsc::UnboundedSender;
 use futures::sync::oneshot::{channel, Canceled, Receiver, Sender};
 
 use fut::ActorFuture;
-use actor::{Actor, MessageHandler};
+use actor::{Actor, MessageHandler, MessageResponse};
 use address::{Subscriber, AsyncSubscriber, MessageProxy, Proxy, ActorAddress};
 use context::Context;
 use message::MessageFuture;
@@ -38,7 +38,7 @@ impl<A> SyncAddress<A> where A: Actor {
     /// Send message `M` to actor `A`. Message cold be sent to actor running in
     /// different thread.
     pub fn send<M: 'static + Send>(&self, msg: M)
-        where A: MessageHandler<M>,
+        where A: MessageHandler<M> + MessageResponse<M>,
               A::Item: Send,
               A::Error: Send,
     {

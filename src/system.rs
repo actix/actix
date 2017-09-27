@@ -7,7 +7,7 @@ use arbiter::{Arbiter, StopArbiter};
 use builder::ActorBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
-use actor::{Actor, MessageHandler};
+use actor::{Actor, MessageHandler, MessageResponse};
 
 /// System is an actor which manages process.
 ///
@@ -111,10 +111,12 @@ impl SystemRunner {
 /// Stop system execution
 pub struct SystemExit(pub i32);
 
-impl MessageHandler<SystemExit> for System {
+impl MessageResponse<SystemExit> for System {
     type Item = ();
     type Error = ();
-    type InputError = ();
+}
+
+impl MessageHandler<SystemExit> for System {
 
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
               -> MessageFuture<Self, SystemExit>
@@ -134,10 +136,12 @@ impl MessageHandler<SystemExit> for System {
 /// Register Arbiter within system
 pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);
 
-impl MessageHandler<RegisterArbiter> for System {
+impl MessageResponse<RegisterArbiter> for System {
     type Item = ();
     type Error = ();
-    type InputError = ();
+}
+
+impl MessageHandler<RegisterArbiter> for System {
 
     fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>)
               -> MessageFuture<Self, RegisterArbiter>
@@ -150,10 +154,12 @@ impl MessageHandler<RegisterArbiter> for System {
 /// Unregister Arbiter
 pub(crate) struct UnregisterArbiter(pub String);
 
-impl MessageHandler<UnregisterArbiter> for System {
+impl MessageResponse<UnregisterArbiter> for System {
     type Item = ();
     type Error = ();
-    type InputError = ();
+}
+
+impl MessageHandler<UnregisterArbiter> for System {
 
     fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>)
               -> MessageFuture<Self, UnregisterArbiter>
