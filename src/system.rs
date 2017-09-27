@@ -3,7 +3,7 @@ use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
 use address::SyncAddress;
-use arbiter::{Arbiter, StopArbiter};
+use arbiter::{Arbiter, StartActor, StopArbiter};
 use builder::ActorBuilder;
 use context::Context;
 use message::{MessageFuture, MessageFutureResult};
@@ -171,5 +171,20 @@ impl MessageHandler<UnregisterArbiter> for System {
     {
         self.arbiters.remove(&msg.0);
         ().to_result()
+    }
+}
+
+
+impl<A> MessageResponse<StartActor<A>> for System where A: Actor {
+    type Item = SyncAddress<A>;
+    type Error = ();
+}
+
+impl<A> MessageHandler<StartActor<A>> for System where A: Actor {
+
+    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>)
+              -> MessageFuture<Self, StartActor<A>>
+    {
+        msg.call().to_result()
     }
 }

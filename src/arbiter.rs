@@ -194,6 +194,10 @@ impl<A: Actor> StartActor<A>
     {
         StartActor(Box::new(|| A::create(f)))
     }
+
+    pub(crate) fn call(self) -> SyncAddress<A> {
+        self.0.call_box()
+    }
 }
 
 trait FnBox<A: Actor>: Send + 'static {
@@ -217,6 +221,6 @@ impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
     fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>)
               -> MessageFuture<Self, StartActor<A>>
     {
-        msg.0.call_box().to_result()
+        msg.call().to_result()
     }
 }
