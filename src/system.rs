@@ -174,12 +174,12 @@ impl MessageHandler<UnregisterArbiter> for System {
     }
 }
 
-
 impl<A> MessageResponse<StartActor<A>> for System where A: Actor {
     type Item = SyncAddress<A>;
     type Error = ();
 }
 
+/// Start actor in System's context
 impl<A> MessageHandler<StartActor<A>> for System where A: Actor {
 
     fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>)
