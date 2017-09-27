@@ -21,17 +21,18 @@ use factory::ActorFactory;
 /// ## Example
 ///
 /// ```rust
-/// #![allow(unused_variables)]
 /// extern crate actix;
 ///
 /// use actix::prelude::*;
 ///
+/// // message
 /// struct Die;
 ///
 /// struct MyActor;
 ///
 /// impl Actor for MyActor {}
 ///
+/// // To use actor with supervisor actor's `ActorFactory` is required
 /// impl ActorFactory<MyActor> for MyActor {
 ///     fn create(&mut self, _: &mut Context<MyActor>) -> MyActor {
 ///         MyActor

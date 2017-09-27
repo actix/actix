@@ -26,5 +26,5 @@ pub mod actix {
     pub use sink::Sink;
     pub use utils::Condition;
     pub use system::SystemExit;
-    pub use arbiter::{ArbiterAddress, StopArbiter};
+    pub use arbiter::StopArbiter;
 }

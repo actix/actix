@@ -144,6 +144,7 @@ impl Arbiter {
         })
     }
 
+    /// This function returns current event loop's handle,
     pub fn handle() -> &'static Handle {
         HND.with(|cell| match *cell.borrow() {
             Some(ref h) => unsafe{std::mem::transmute(h)},
@@ -206,20 +207,5 @@ impl MessageHandler<StopArbiter> for Arbiter {
             });
         }
         ().to_result()
-    }
-}
-
-/// Request `SyncAddress<Arbiter>` of the arbiter
-pub struct ArbiterAddress;
-
-impl MessageHandler<ArbiterAddress> for Arbiter {
-    type Item = SyncAddress<Arbiter>;
-    type Error = ();
-    type InputError = ();
-
-    fn handle(&mut self, _: ArbiterAddress, ctx: &mut Context<Self>)
-              -> MessageFuture<Self, ArbiterAddress>
-    {
-        ctx.sync_address().to_result()
     }
 }

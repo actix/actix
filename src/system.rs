@@ -18,7 +18,6 @@ use actor::{Actor, MessageHandler};
 /// # Examples
 ///
 /// ```rust
-/// #![allow(unused_variables)]
 /// extern crate actix;
 /// extern crate tokio_core;
 ///
