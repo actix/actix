@@ -9,6 +9,10 @@ use tokio_io::io::{ReadHalf, WriteHalf};
 const INITIAL_CAPACITY: usize = 8 * 1024;
 const BACKPRESSURE_BOUNDARY: usize = INITIAL_CAPACITY;
 
+/// Helper trait
+///
+/// that allows to create `ActixFramedRead` and `ActixFramedWrite`
+/// from `Framed` capable object.
 pub trait ActixFramed {
 
     /// Helper method for splitting this read/write object into two
@@ -28,6 +32,11 @@ pub trait ActixFramed {
 impl<T> ActixFramed for T where T: AsyncRead + AsyncWrite + Sized {}
 
 
+/// `FramedRead` like object.
+///
+/// This is same as
+/// [`tokio_io::codec::Framed`](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html)
+/// but it allow to only `FramedRead` part.
 pub struct ActixFramedRead<T, D> {
     inner: T,
     decoder: D,
@@ -40,7 +49,7 @@ impl<T, D> ActixFramedRead<T, D>
     where T: AsyncRead,
           D: Decoder,
 {
-    /// Creates a new `CtxFramedRead` with the given `decoder`.
+    /// Creates a new `ActixFramedRead` with the given `decoder`.
     pub fn new(inner: T, decoder: D) -> ActixFramedRead<T, D> {
         ActixFramedRead {
             inner: inner,
@@ -98,6 +107,11 @@ impl<T, D> Stream for ActixFramedRead<T, D>
 }
 
 
+/// `FramedWrite` like object
+///
+/// This is same as
+/// [`tokio_io::codec::Framed`](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html)
+/// but it allow to only `FramedWrite` part.
 pub struct ActixFramedWrite<T, E> {
     inner: T,
     encoder: E,
@@ -108,7 +122,7 @@ impl<T, E> ActixFramedWrite<T, E>
     where T: AsyncWrite,
           E: Encoder,
 {
-    /// Creates a new `CtxFramedWrite` with the given `encoder`.
+    /// Creates a new `ActixFramedWrite` with the given `encoder`.
     pub fn new(inner: T, encoder: E) -> ActixFramedWrite<T, E> {
         ActixFramedWrite {
             inner: inner,

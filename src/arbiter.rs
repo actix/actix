@@ -23,6 +23,11 @@ thread_local!(
     static SYSREG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
 );
 
+/// Arbiter
+///
+/// Arbiter controls event loop in it's thread. Each arbiter runs in separate
+/// thread. Arbiter provides several api for event loop acces. Each arbiter
+/// can belongs to specific `System` actor.
 pub struct Arbiter {
     id: Uuid,
     sys: bool,
@@ -42,6 +47,8 @@ impl Actor for Arbiter {
 
 impl Arbiter {
 
+    /// Spawn new thread and run event loop in spawned thread.
+    /// Returns address of newly created arbiter.
     pub fn new(name: Option<String>) -> SyncAddress<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
 
@@ -109,7 +116,7 @@ impl Arbiter {
         SYSNAME.with(|cell| *cell.borrow_mut() = Some(name));
     }
 
-    /// Return current arbiter address
+    /// Returns current arbiter's address
     pub fn arbiter() -> Address<Arbiter> {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),

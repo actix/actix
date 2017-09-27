@@ -10,6 +10,7 @@ use address::MessageProxy;
 use actor::{Actor, MessageHandler, MessageResponse};
 
 
+/// `MessageResult` is a `Future` which represents asyncronous message response.
 #[must_use = "future do nothing unless polled"]
 pub struct MessageResult<A, B, M>
     where A: MessageHandler<M>,

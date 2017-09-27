@@ -137,6 +137,7 @@ impl<A> Context<A> where A: Actor
         self.spawn(ActorFutureCell::new(fut))
     }
 
+    /// This method is similar to `add_future` but works with streams.
     pub fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
@@ -443,13 +444,13 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 }
 
 /// Helper trait which can spawn future into actor's context
-pub trait ActixFutureSpawner<A> where A: Actor {
+pub trait ContextFutureSpawner<A> where A: Actor {
     /// spawn future into `Context<A>`
     fn spawn(self, fut: &mut Context<A>);
 }
 
 
-impl<A, T> ActixFutureSpawner<A> for T
+impl<A, T> ContextFutureSpawner<A> for T
     where A: Actor,
           T: ActorFuture<Item=(), Error=(), Actor=A> + 'static
 {

@@ -82,6 +82,7 @@ impl System {
     }
 }
 
+/// Helper object that runs System's event loop
 #[must_use="SystemRunner must be run"]
 pub struct SystemRunner {
     core: Core,
@@ -90,12 +91,12 @@ pub struct SystemRunner {
 
 impl SystemRunner {
 
-    /// Returns handle to current event loop.
+    /// Returns handle to the current event loop.
     pub fn handle(&self) -> &Handle {
         Arbiter::handle()
     }
 
-    /// This function will start tokio event loop and will finish once the `SystemExit`
+    /// This function will start event loop and will finish once the `SystemExit`
     /// message get received.
     pub fn run(self) -> i32 {
         let SystemRunner { mut core, stop, ..} = self;
