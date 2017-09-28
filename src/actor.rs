@@ -1,20 +1,53 @@
 use context::Context;
 use message::MessageFuture;
 
-
 #[doc(hidden)]
 pub trait ActixActor {}
 
 #[allow(unused_variables)]
-/// An actor that manages state and responds to messages
+/// Actors are objects which encapsulate state and behavior.
+///
+/// Actors run within specific execution context
+/// [Context<A>](https://fafhrd91.github.io/actix/actix/struct.Context.html).
+/// Context object is available only during execution. Each actor has separate
+/// execution context. Also execution context controls lifecycle of an actor.
+///
+/// Actors communicate exclusively by exchanging messages. Sender actor can
+/// wait for response. Actors are not referenced dirrectly, but by
+/// non thread safe [Address<A>](https://fafhrd91.github.io/actix/actix/struct.Address.html)
+/// or thread safe address
+/// [`SyncAddress<A>`](https://fafhrd91.github.io/actix/actix/struct.SyncAddress.html)
+/// To be able to handle specific message actor has to provide
+/// [`MessageHandler<M>`](
+/// file:///Users/nikki/personal/ctx/target/doc/actix/trait.MessageHandler.html)
+/// implementation for this message. All messages are statically typed. Message could be
+/// handled in asynchronous fasion. Actor can spawn other actors or add futures or
+/// streams to execution context. Actor trait provides several method that allows
+/// to control actor lifecycle.
+///
+/// Actor starts in `Started` state, during this state `started` method get called.
+/// Then state transitioned to `Running` state. Actor can stay in `running`
+/// state indefinitely long. Actor execution state changes to `stopping` state in following
+/// situations, `Context::stop` get called by actor itself. All addresses to the actor
+/// get dropped and no more evented objects are registered in context. Actor could
+/// restore from `stopping` state to running state by creating new address or adding
+/// future or stream in `Stopping` method. If non of this happend actor state
+/// changes to `Stopped`. This state is considered final and this point actor get dropped.
 pub trait Actor: Sized + 'static {
 
     /// Method is called when actor get polled first time.
     fn started(&mut self, ctx: &mut Context<Self>) {}
 
-    /// Method is called when context's stream finishes.
-    /// By default returns `ActorStatus::Done`.
-    fn finished(&mut self, ctx: &mut Context<Self>) {}
+    /// Method is called after an actor is in STOPPING state. There could be several
+    /// reasons for stopping. Context::stop get called by actor itself.
+    /// All addresses to current actor get dropped and no more evented objects
+    /// left in context. Actor could restore from stopping state to running state
+    /// by creating new address or adding future or stream to current content.
+    fn stopping(&mut self, ctx: &mut Context<Self>) {}
+
+    /// Method is called after an actor is stopped, it can be used to perform
+    /// any needed cleanup work or spawning more actors.
+    fn stopped(&mut self, ctx: &mut Context<Self>) {}
 }
 
 /// Service is Actor
@@ -22,9 +55,12 @@ impl<T> ActixActor for T where T: Actor {}
 
 /// Message handler
 ///
+/// `MessageHandler` implementation is a general way how to handle
+/// incoming messages, streams, futures.
+///
 /// `M` is message which can be handled by actor
 /// `E` optional error type, if message handler is used for handling messages
-///  from Future or Stream, then `E` type has to be set to correspondent `Error`
+///  from Future or Stream, then `E` type has to be set to correspondent `Error` type.
 #[allow(unused_variables)]
 pub trait MessageHandler<M, E=()> where Self: Actor + MessageResponse<M>
 {
@@ -45,6 +81,10 @@ pub trait MessageResponse<M> where Self: Actor {
     type Error;
 }
 
+/// Stream handler
+///
+/// `StreamHandler` is an extension of a `MessageHandler` with several stream specific
+/// methods.
 #[allow(unused_variables)]
 pub trait StreamHandler<M, E=()>: MessageResponse<M>
     where Self: Actor

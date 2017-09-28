@@ -1,11 +1,12 @@
 use futures::Future;
-use futures::unsync::mpsc::UnboundedSender;
 use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, MessageHandler};
 use context::{Context, ContextProtocol};
 use message::{Envelope, CallResult, MessageResult};
+use queue::unsync;
 pub use sync_address::SyncAddress;
+
 
 #[doc(hidden)]
 pub trait ActorAddress<A, T> where A: Actor {
@@ -56,7 +57,7 @@ unsafe impl<T> Send for Proxy<T> {}
 /// Address of the actor `A`.
 /// Actor has to run in the same thread as owner of the address.
 pub struct Address<A> where A: Actor {
-    tx: UnboundedSender<ContextProtocol<A>>
+    tx: unsync::UnboundedSender<ContextProtocol<A>>
 }
 
 impl<A> Clone for Address<A> where A: Actor {
@@ -67,7 +68,7 @@ impl<A> Clone for Address<A> where A: Actor {
 
 impl<A> Address<A> where A: Actor {
 
-    pub(crate) fn new(sender: UnboundedSender<ContextProtocol<A>>) -> Address<A> {
+    pub(crate) fn new(sender: unsync::UnboundedSender<ContextProtocol<A>>) -> Address<A> {
         Address{tx: sender}
     }
 
@@ -165,14 +166,14 @@ impl<A, M: 'static> AsyncSubscriber<M> for Address<A>
 impl<A> ActorAddress<A, Address<A>> for A where A: Actor {
 
     fn get(ctx: &mut Context<A>) -> Address<A> {
-        ctx.loc_address()
+        ctx.address_cell().unsync_address()
     }
 }
 
 impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A where A: Actor {
 
     fn get(ctx: &mut Context<A>) -> (Address<A>, SyncAddress<A>) {
-        (ctx.loc_address(), ctx.sync_address())
+        (ctx.address_cell().unsync_address(), ctx.address_cell().sync_address())
     }
 }
 

@@ -2,19 +2,19 @@ use std::cell::Cell;
 use std::marker::PhantomData;
 
 use futures::{Async, Future, Poll};
-use futures::sync::mpsc::UnboundedSender;
 use futures::sync::oneshot::{channel, Canceled, Receiver, Sender};
 
 use fut::ActorFuture;
 use actor::{Actor, MessageHandler, MessageResponse};
 use address::{Subscriber, AsyncSubscriber, MessageProxy, Proxy, ActorAddress};
 use context::Context;
+use queue::sync;
 use message::MessageFuture;
 
 
 /// Address of the actor `A`. Actor can run in differend thread.
 pub struct SyncAddress<A> where A: Actor {
-    tx: UnboundedSender<Proxy<A>>,
+    tx: sync::UnboundedSender<Proxy<A>>,
     closed: Cell<bool>,
 }
 
@@ -27,13 +27,13 @@ impl<A> Clone for SyncAddress<A> where A: Actor {
 impl<A> ActorAddress<A, SyncAddress<A>> for A where A: Actor {
 
     fn get(ctx: &mut Context<A>) -> SyncAddress<A> {
-        ctx.sync_address()
+        ctx.address_cell().sync_address()
     }
 }
 
 impl<A> SyncAddress<A> where A: Actor {
 
-    pub(crate) fn new(sender: UnboundedSender<Proxy<A>>) -> SyncAddress<A> {
+    pub(crate) fn new(sender: sync::UnboundedSender<Proxy<A>>) -> SyncAddress<A> {
         SyncAddress{tx: sender, closed: Cell::new(false)}
     }
 

@@ -113,5 +113,5 @@ fn test_supervisor_upgrade_address() {
     });
 
     sys.run();
-    assert_eq!(num.load(Ordering::Relaxed), 2);
+    assert_eq!(num.load(Ordering::Relaxed), 1);
 }

@@ -1,4 +1,4 @@
-//! The `ctx` prelude
+//! The `actix` prelude
 //!
 //! The purpose of this module is to alleviate imports of many common ctx traits
 //! by adding a glob import to the top of ctx heavy modules:
@@ -14,7 +14,7 @@ pub use actor::{Actor, MessageHandler, MessageResponse, StreamHandler};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use builder::ActorBuilder;
-pub use context::{Context, ContextFutureSpawner};
+pub use context::{ActorState, Context, ContextFutureSpawner};
 pub use factory::ActorFactory;
 pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
 pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};

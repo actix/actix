@@ -1,15 +1,12 @@
 use std;
 use futures::{Future, Async, Poll, Stream};
-use futures::unsync::mpsc::{unbounded, UnboundedSender, UnboundedReceiver};
-use futures::sync::mpsc::{unbounded as sync_unbounded,
-                          UnboundedSender as SyncUnboundedSender,
-                          UnboundedReceiver as SyncUnboundedReceiver};
 
 use actor::Actor;
 use arbiter::{Arbiter, Execute};
 use address::{Address, SyncAddress, Proxy};
 use context::{Context, ContextProtocol};
 use factory::ActorFactory;
+use queue::{sync, unsync};
 
 /// Actor supervisor
 ///
@@ -66,14 +63,13 @@ pub struct Supervisor<A: Actor, F: ActorFactory<A>> {
     factory: F,
     lazy: bool,
     actor: Option<ActorCell<A>>,
-    msgs: UnboundedReceiver<ContextProtocol<A>>,
-    sync_addr: SyncUnboundedSender<Proxy<A>>,
-    sync_msgs: SyncUnboundedReceiver<Proxy<A>>,
+    msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
+    sync_msgs: sync::UnboundedReceiver<Proxy<A>>,
 }
 
 struct ActorCell<A: Actor> {
     ctx: Context<A>,
-    addr: UnboundedSender<ContextProtocol<A>>,
+    addr: unsync::UnboundedSender<ContextProtocol<A>>,
 }
 
 impl<A, F> Supervisor<A, F>
@@ -83,17 +79,16 @@ impl<A, F> Supervisor<A, F>
     /// Start new supervised actor. Depends on `lazy` argument actor could be started
     /// immidietly or on first incoming message.
     pub fn start(factory: F, lazy: bool) -> (Address<A>, SyncAddress<A>) {
-        let (tx, rx) = unbounded();
-        let (stx, srx) = sync_unbounded();
-        let supervisor = Supervisor {
+        let rx = unsync::unbounded();
+        let (stx, srx) = sync::unbounded();
+        let mut supervisor = Supervisor {
             factory: factory,
             lazy: lazy,
             actor: None,
             msgs: rx,
             sync_msgs: srx,
-            sync_addr: stx.clone(),
         };
-        let addr = Address::new(tx);
+        let addr = Address::new(supervisor.msgs.sender());
         let saddr = SyncAddress::new(stx);
 
         Arbiter::handle().spawn(supervisor);
@@ -108,18 +103,16 @@ impl<A, F> Supervisor<A, F>
         if addr.is_closed() {
             None
         } else {
-            let (tx, rx) = sync_unbounded();
-            let s_addr = SyncAddress::new(tx.clone());
+            let (tx, rx) = sync::unbounded();
 
             addr.send(Execute::new(move || -> Result<(), ()> {
-                let (_, lrx) = unbounded();
+                let lrx = unsync::unbounded();
                 let supervisor = Supervisor {
                     factory: factory,
                     lazy: lazy,
                     actor: None,
                     msgs: lrx,
                     sync_msgs: rx,
-                    sync_addr: tx.clone(),
                 };
                 Arbiter::handle().spawn(supervisor);
                 Ok(())
@@ -128,7 +121,7 @@ impl<A, F> Supervisor<A, F>
             if addr.is_closed() {
                 None
             } else {
-                Some(s_addr)
+                Some(SyncAddress::new(tx))
             }
         }
     }
@@ -143,7 +136,7 @@ impl<A, F> Supervisor<A, F>
     fn restart(&mut self) {
         let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
 
-        let addr = ctx.addr.clone();
+        let addr = ctx.address_cell().unsync_sender();
         let act = self.factory.create(&mut ctx);
         let old = ctx.replace_actor(act);
         std::mem::forget(old);
@@ -180,7 +173,7 @@ impl<A, F> Future for Supervisor<A, F>
                     not_ready = false;
                     match msg {
                         ContextProtocol::SyncAddress(tx) => {
-                            let _ = tx.send(SyncAddress::new(self.sync_addr.clone()));
+                            let _ = tx.send(SyncAddress::new(self.sync_msgs.sender()));
                         }
                         // if Actor message queue is dead, restart
                         msg => if self.get_cell().addr.unbounded_send(msg).is_err() {

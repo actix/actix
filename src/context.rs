@@ -2,26 +2,30 @@ use std;
 
 use futures::{self, Async, Future, Poll, Stream};
 use futures::unsync::oneshot::Sender;
-use futures::unsync::mpsc::{unbounded, UnboundedSender, UnboundedReceiver};
-use futures::sync::mpsc::{unbounded as sync_unbounded,
-                          UnboundedSender as SyncUnboundedSender,
-                          UnboundedReceiver as SyncUnboundedReceiver};
 use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
+use queue::{sync, unsync};
+
 use actor::{Actor, MessageHandler, StreamHandler};
 use address::{ActorAddress, Address, SyncAddress, Proxy, Subscriber};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
 
-bitflags! {
-    /// State Bitflags
-    struct State: u16 {
-        /// Service is started
-        const STARTED = 0b000_000_001;
-        /// Service is done
-        const DONE = 0b000_000_010;
-    }
+
+/// Actor execution state
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum ActorState {
+    /// Actor is started.
+    Started,
+    /// Actor is running.
+    Running,
+    /// Actor is stopping.
+    Stopping,
+    /// Actor is prepared for stop.
+    PrepStop,
+    /// Actor is stopped.
+    Stopped,
 }
 
 /// context protocol
@@ -36,12 +40,9 @@ pub(crate) enum ContextProtocol<A: Actor> {
 pub struct Context<A> where A: Actor,
 {
     act: A,
-    flags: State,
+    state: ActorState,
     items: Vec<IoItem<A>>,
-    pub(crate) addr: UnboundedSender<ContextProtocol<A>>,
-    msgs: UnboundedReceiver<ContextProtocol<A>>,
-    sync_msgs: Option<SyncUnboundedReceiver<Proxy<A>>>,
-    sync_addr: Option<SyncUnboundedSender<Proxy<A>>>,
+    address: ActorAddressCell<A>,
 }
 
 /// io items
@@ -52,9 +53,17 @@ enum IoItem<A: Actor> {
 
 impl<A> Context<A> where A: Actor
 {
-    /// Stop actor execution.
+    /// Actor execution state
+    pub fn state(&self) -> ActorState {
+        self.state
+    }
+
+    /// Stop actor execution
     pub fn stop(&mut self) {
-        self.flags |= DONE;
+        if self.state == ActorState::Running {
+            self.address.close();
+            self.state = ActorState::Stopping;
+        }
     }
 
     /// Get actor address
@@ -65,10 +74,10 @@ impl<A> Context<A> where A: Actor
     }
 
     #[doc(hidden)]
-    pub fn subscriber<M: 'static>(&self) -> Box<Subscriber<M>>
+    pub fn subscriber<M: 'static>(&mut self) -> Box<Subscriber<M>>
         where A: MessageHandler<M>
     {
-        Box::new(Address::new(self.addr.clone()))
+        Box::new(self.address.unsync_address())
     }
 
     #[doc(hidden)]
@@ -83,7 +92,11 @@ impl<A> Context<A> where A: Actor
     pub fn spawn<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        self.items.push(IoItem::SpawnFuture(Box::new(fut)))
+        if self.state == ActorState::Stopped {
+            error!("Context::spawn called for stopped actor.");
+        } else {
+            self.items.push(IoItem::SpawnFuture(Box::new(fut)))
+        }
     }
 
     /// This method allow to handle Future in similar way as normal actor message.
@@ -134,7 +147,11 @@ impl<A> Context<A> where A: Actor
         where F: Future + 'static,
               A: MessageHandler<F::Item, F::Error>,
     {
-        self.spawn(ActorFutureCell::new(fut))
+        if self.state == ActorState::Stopped {
+            error!("Context::add_future called for stopped actor.");
+        } else {
+            self.spawn(ActorFutureCell::new(fut))
+        }
     }
 
     /// This method is similar to `add_future` but works with streams.
@@ -142,12 +159,20 @@ impl<A> Context<A> where A: Actor
         where S: Stream + 'static,
               A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
     {
-        self.spawn(ActorStreamCell::new(fut))
+        if self.state == ActorState::Stopped {
+            error!("Context::add_stream called for stopped actor.");
+        } else {
+            self.spawn(ActorStreamCell::new(fut))
+        }
     }
 
     pub fn add_sink<S>(&mut self, sink: S) -> Sink<S::SinkItem, S::SinkError>
         where S: futures::Sink + 'static,
     {
+        if self.state == ActorState::Stopped {
+            error!("Context::add_sink called for stopped actor.");
+        }
+
         let mut srv = Box::new(SinkContext::new(sink));
         let psrv = srv.as_mut() as *mut _;
         self.items.push(IoItem::Sink(srv));
@@ -161,15 +186,11 @@ impl<A> Context<A> where A: Actor
 {
     pub(crate) fn new(act: A) -> Context<A>
     {
-        let (tx, rx) = unbounded();
         Context {
             act: act,
-            addr: tx,
-            msgs: rx,
-            sync_addr: None,
-            sync_msgs: None,
-            flags: State::empty(),
+            state: ActorState::Started,
             items: Vec::new(),
+            address: ActorAddressCell::new(),
         }
     }
 
@@ -181,23 +202,8 @@ impl<A> Context<A> where A: Actor
         std::mem::replace(&mut self.act, srv)
     }
 
-    /// Get actor address without `Send` baundary
-    pub(crate) fn loc_address(&mut self) -> Address<A> {
-        Address::new(self.addr.clone())
-    }
-
-    /// Get actor address with `Send` baundary
-    pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
-        if self.sync_addr.is_none() {
-            let (tx, rx) = sync_unbounded();
-            self.sync_addr = Some(tx);
-            self.sync_msgs = Some(rx);
-        }
-
-        if let Some(ref addr) = self.sync_addr {
-            return SyncAddress::new(addr.clone())
-        }
-        unreachable!();
+    pub(crate) fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
+        &mut self.address
     }
 }
 
@@ -211,39 +217,24 @@ impl<A> Future for Context<A> where A: Actor
         let ctx: &mut Context<A> = unsafe {
             std::mem::transmute(self as &mut Context<A>)
         };
-        if !self.flags.contains(STARTED) {
-            self.flags |= STARTED;
-            Actor::started(&mut self.act, ctx);
+
+        // update state
+        match self.state {
+            ActorState::Started => {
+                Actor::started(&mut self.act, ctx);
+                self.state = ActorState::Running;
+            },
+            ActorState::Stopping => {
+                Actor::stopping(&mut self.act, ctx);
+            }
+            _ => ()
         }
 
         loop {
             let mut not_ready = true;
 
-            // check messages
-            match self.msgs.poll() {
-                Ok(Async::Ready(Some(msg))) => {
-                    not_ready = false;
-                    match msg {
-                        ContextProtocol::Envelope(mut env) => {
-                            env.0.handle(&mut self.act, ctx)
-                        }
-                        ContextProtocol::SyncAddress(tx) => {
-                            let _ = tx.send(self.sync_address());
-                        }
-                    }
-                }
-                Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
-            }
-
-            // check remote messages
-            if let Some(ref mut msgs) = self.sync_msgs {
-                match msgs.poll() {
-                    Ok(Async::Ready(Some(mut msg))) => {
-                        not_ready = false;
-                        msg.0.handle(&mut self.act, ctx);
-                    }
-                    Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
-                }
+            if let Ok(Async::Ready(_)) = self.address.poll(&mut self.act, ctx) {
+                not_ready = false
             }
 
             // check secondary streams
@@ -294,12 +285,146 @@ impl<A> Future for Context<A> where A: Actor
                 }
             }
 
-            if self.flags.contains(DONE) {
-                Actor::finished(&mut self.act, ctx);
-                return Ok(Async::Ready(()))
+            // are we done
+            if !not_ready {
+                continue
             }
 
-            // are we done
+            // check state
+            match self.state {
+                ActorState::Stopped => {
+                    self.state = ActorState::Stopped;
+                    Actor::stopped(&mut self.act, ctx);
+                    return Ok(Async::Ready(()))
+                }
+                ActorState::Stopping => {
+                    Actor::stopping(&mut self.act, ctx);
+                    self.state = ActorState::PrepStop;
+                    continue
+                }
+                ActorState::PrepStop => {
+                    if self.address.connected() || !self.items.is_empty() {
+                        self.state = ActorState::Running;
+                        continue
+                    } else {
+                        self.state = ActorState::Stopped;
+                        Actor::stopped(&mut self.act, ctx);
+                        return Ok(Async::Ready(()))
+                    }
+                }
+                ActorState::Running => {
+                    if !self.address.connected() && self.items.is_empty() {
+                        self.state = ActorState::Stopping;
+                        Actor::stopping(&mut self.act, ctx);
+                        self.state = ActorState::PrepStop;
+                        continue
+                    }
+                }
+                _ => (),
+            }
+
+            return Ok(Async::NotReady)
+        }
+    }
+}
+
+
+pub(crate)
+struct ActorAddressCell<A> where A: Actor
+{
+    sync_alive: bool,
+    sync_msgs: Option<sync::UnboundedReceiver<Proxy<A>>>,
+    unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
+}
+
+impl<A> ActorAddressCell<A> where A: Actor
+{
+    fn new() -> ActorAddressCell<A> {
+        ActorAddressCell {
+            sync_alive: false,
+            sync_msgs: None,
+            unsync_msgs: unsync::unbounded(),
+        }
+    }
+
+    pub(crate) fn close(&mut self) {
+        self.unsync_msgs.close();
+        if let Some(ref mut msgs) = self.sync_msgs {
+            msgs.close()
+        }
+    }
+
+
+    pub(crate) fn connected(&mut self) -> bool {
+        self.unsync_msgs.connected() || self.sync_alive
+    }
+
+    pub(crate) fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
+        self.unsync_msgs.sender()
+    }
+
+    pub(crate) fn unsync_address(&mut self) -> Address<A> {
+        Address::new(self.unsync_msgs.sender())
+    }
+
+    pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
+        if self.sync_msgs.is_none() {
+            let (tx, rx) = sync::unbounded();
+            self.sync_msgs = Some(rx);
+            self.sync_alive = true;
+            SyncAddress::new(tx)
+        } else {
+            if let Some(ref mut addr) = self.sync_msgs {
+                return SyncAddress::new(addr.sender())
+            }
+            unreachable!();
+        }
+    }
+}
+
+impl<A> ActorFuture for ActorAddressCell<A> where A: Actor
+{
+    type Item = ();
+    type Error = ();
+    type Actor = A;
+
+    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
+    {
+        loop {
+            let mut not_ready = true;
+
+            // unsync messages
+            match self.unsync_msgs.poll() {
+                Ok(Async::Ready(Some(msg))) => {
+                    not_ready = false;
+                    match msg {
+                        ContextProtocol::Envelope(mut env) => {
+                            env.0.handle(act, ctx)
+                        }
+                        ContextProtocol::SyncAddress(tx) => {
+                            let _ = tx.send(self.sync_address());
+                        }
+                    }
+                }
+                Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
+            }
+
+            // sync messages
+            if self.sync_alive {
+                if let Some(ref mut msgs) = self.sync_msgs {
+                    match msgs.poll() {
+                        Ok(Async::Ready(Some(mut msg))) => {
+                            not_ready = false;
+                            msg.0.handle(act, ctx);
+                        }
+                        Ok(Async::Ready(None)) | Err(_) => {
+                            self.sync_alive = false;
+                        },
+                        Ok(Async::NotReady) => (),
+                    }
+                }
+            }
+
             if not_ready {
                 return Ok(Async::NotReady)
             }
@@ -321,7 +446,7 @@ impl<A, M, F, E> ActorFutureCell<A, M, F, E>
     where A: Actor + MessageHandler<M, E>,
           F: Future<Item=M, Error=E>,
 {
-    pub fn new(fut: F) -> ActorFutureCell<A, M, F, E>
+    fn new(fut: F) -> ActorFutureCell<A, M, F, E>
     {
         ActorFutureCell {
             act: std::marker::PhantomData,
@@ -386,7 +511,7 @@ impl<A, M, E, S> ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
           A: Actor + MessageHandler<M, E> + StreamHandler<M, E>,
 {
-    pub fn new(fut: S) -> ActorStreamCell<A, M, E, S>
+    fn new(fut: S) -> ActorStreamCell<A, M, E, S>
     {
         ActorStreamCell {
             act: std::marker::PhantomData,
