@@ -3,10 +3,10 @@ use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
 use address::SyncAddress;
-use arbiter::{Arbiter, StartActor, StopArbiter};
+use arbiter::{Arbiter, Execute, StartActor, StopArbiter};
 use builder::ActorBuilder;
 use context::Context;
-use message::{MessageFuture, MessageFutureResult};
+use message::{MessageFuture, MessageFutureResult, MessageFutureError};
 use actor::{Actor, MessageHandler, MessageResponse};
 
 /// System is an actor which manages process.
@@ -187,5 +187,24 @@ impl<A> MessageHandler<StartActor<A>> for System where A: Actor {
               -> MessageFuture<Self, StartActor<A>>
     {
         msg.call().to_result()
+    }
+}
+
+/// Execute message response
+impl<I: Send, E: Send> MessageResponse<Execute<I, E>> for System {
+    type Item = I;
+    type Error = E;
+}
+
+/// Execute function in Systems's thread
+impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for System {
+
+    fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
+              -> MessageFuture<Self, Execute<I, E>>
+    {
+        match msg.call() {
+            Ok(i) => i.to_result(),
+            Err(e) => e.to_error(),
+        }
     }
 }

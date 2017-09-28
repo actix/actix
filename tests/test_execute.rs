@@ -6,7 +6,7 @@ use actix::prelude::*;
 
 
 #[test]
-fn test_exeute() {
+fn test_execute() {
     let sys = System::new("test".to_owned());
     assert_eq!(Arbiter::name(), "test");
 
@@ -24,6 +24,31 @@ fn test_exeute() {
             }
             future::result(Ok(()))
         }));
+
+    sys.run();
+}
+
+#[test]
+fn test_system_execute() {
+    let sys = System::new("test".to_owned());
+    assert_eq!(Arbiter::name(), "test");
+
+    let addr = Arbiter::new(None);
+
+    addr.send(actix::Execute::new(
+        || -> Result<(), ()> {
+            Arbiter::handle().spawn_fn(|| {
+                Arbiter::system().send(actix::Execute::new(|| -> Result<(), ()> {
+                    Arbiter::system().send(actix::SystemExit(0));
+
+                    assert_eq!(Arbiter::name(), "test");
+                    Ok(())
+                }));
+                future::ok(())
+            });
+            Ok(())
+        })
+    );
 
     sys.run();
 }

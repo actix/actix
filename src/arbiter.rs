@@ -297,11 +297,13 @@ impl<I, E, F> FnExec<I, E> for F
     }
 }
 
+/// Execute message response
 impl<I: Send, E: Send> MessageResponse<Execute<I, E>> for Arbiter {
     type Item = I;
     type Error = E;
 }
 
+/// Execute function in arbiter's thread
 impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for Arbiter {
 
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
