@@ -244,7 +244,9 @@ impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
 }
 
 
-/// Execute function in arbiter's thread
+/// Execute function in target thread.
+///
+/// `System` and `Arbiter` actors can handle Execute message.
 ///
 /// # Example
 ///
@@ -277,7 +279,8 @@ impl<I, E> Execute<I, E>
         Execute(Box::new(|| f()))
     }
 
-    pub(crate) fn call(self) -> Result<I, E> {
+    /// Execute enclosed function
+    pub fn exec(self) -> Result<I, E> {
         self.0.call_box()
     }
 }
@@ -309,7 +312,7 @@ impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for Arbiter {
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
               -> MessageFuture<Self, Execute<I, E>>
     {
-        match msg.call() {
+        match msg.exec() {
             Ok(i) => i.to_result(),
             Err(e) => e.to_error(),
         }

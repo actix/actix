@@ -202,7 +202,7 @@ impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for System {
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
               -> MessageFuture<Self, Execute<I, E>>
     {
-        match msg.call() {
+        match msg.exec() {
             Ok(i) => i.to_result(),
             Err(e) => e.to_error(),
         }
