@@ -224,8 +224,9 @@ impl<A> Future for Context<A> where A: Actor
                 Ok(Async::Ready(Some(msg))) => {
                     not_ready = false;
                     match msg {
-                        ContextProtocol::Envelope(mut env) =>
-                            env.0.handle(&mut self.act, ctx),
+                        ContextProtocol::Envelope(mut env) => {
+                            env.0.handle(&mut self.act, ctx)
+                        }
                         ContextProtocol::SyncAddress(tx) => {
                             let _ = tx.send(self.sync_address());
                         }

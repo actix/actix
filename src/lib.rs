@@ -41,7 +41,7 @@ pub mod framed;
 
 pub use actor::{Actor, MessageHandler, MessageResponse, StreamHandler};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
-pub use arbiter::{Arbiter, StartActor, StopArbiter};
+pub use arbiter::{Arbiter, Execute, StartActor, StopArbiter};
 pub use builder::ActorBuilder;
 pub use context::{Context, ContextFutureSpawner};
 pub use message::{MessageResult, MessageFuture, MessageFutureResult, MessageFutureError};

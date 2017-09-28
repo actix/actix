@@ -67,7 +67,7 @@ impl System {
     #[cfg_attr(feature="cargo-clippy", allow(new_ret_no_self))]
     /// Create new system
     pub fn new(name: String) -> SystemRunner {
-        let core = Arbiter::new_system();
+        let core = Arbiter::new_system(name.clone());
         let (stop_tx, stop_rx) = channel();
 
         // start system

@@ -59,6 +59,18 @@ impl<A> SyncAddress<A> where A: Actor {
         MessageResult::new(rx)
     }
 
+    /// Send message to actor `A` and asyncronously wait for response.
+    pub fn call_fut<M>(&self, msg: M) -> Receiver<Result<A::Item, A::Error>>
+        where A: MessageHandler<M>,
+              M: 'static
+    {
+        let (tx, rx) = channel();
+        let _ = self.tx.unbounded_send(
+            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx))));
+
+        rx
+    }
+
     /// Get `Subscriber` for specific message type
     pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M> + Send>
         where A: MessageHandler<M>,

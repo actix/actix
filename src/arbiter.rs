@@ -9,7 +9,7 @@ use actor::{Actor, MessageHandler, MessageResponse};
 use address::{Address, SyncAddress};
 use builder::ActorBuilder;
 use context::Context;
-use message::{MessageFuture, MessageFutureResult};
+use message::{MessageFuture, MessageFutureResult, MessageFutureError};
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};
 
@@ -18,6 +18,7 @@ thread_local!(
     static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
     static ADDR: RefCell<Option<Address<Arbiter>>> = RefCell::new(None);
     static REG: RefCell<Option<Registry>> = RefCell::new(None);
+    static NAME: RefCell<Option<String>> = RefCell::new(None);
     static SYS: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
     static SYSNAME: RefCell<Option<String>> = RefCell::new(None);
     static SYSREG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
@@ -62,12 +63,13 @@ impl Arbiter {
             format!("arbiter:{:?}", id.hyphenated().to_string())
         };
 
-        let _ = thread::Builder::new().name(name).spawn(move|| {
+        let _ = thread::Builder::new().name(name.clone()).spawn(move|| {
             let mut core = Core::new().unwrap();
 
             let (stop_tx, stop_rx) = channel();
             HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
+            NAME.with(|cell| *cell.borrow_mut() = Some(name));
 
             // system
             SYS.with(|cell| *cell.borrow_mut() = Some(sys));
@@ -97,10 +99,11 @@ impl Arbiter {
         rx.recv().unwrap()
     }
 
-    pub(crate) fn new_system() -> Core {
+    pub(crate) fn new_system(name: String) -> Core {
         let core = Core::new().unwrap();
         HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
         REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
+        NAME.with(|cell| *cell.borrow_mut() = Some(name));
         SYSREG.with(|cell| *cell.borrow_mut() = Some(SystemRegistry::new()));
 
         // start arbiter
@@ -114,6 +117,14 @@ impl Arbiter {
     pub(crate) fn set_system(addr: SyncAddress<System>, name: String) {
         SYS.with(|cell| *cell.borrow_mut() = Some(addr));
         SYSNAME.with(|cell| *cell.borrow_mut() = Some(name));
+    }
+
+    /// Returns current arbiter's address
+    pub fn name() -> String {
+        NAME.with(|cell| match *cell.borrow() {
+            Some(ref name) => name.clone(),
+            None => panic!("Arbiter is not running"),
+        })
     }
 
     /// Returns current arbiter's address
@@ -191,7 +202,7 @@ impl MessageHandler<StopArbiter> for Arbiter {
 }
 
 
-/// Start actor in arbiter's context
+/// Start actor in arbiter's thread
 pub struct StartActor<A: Actor>(Box<FnBox<A>>);
 
 impl<A: Actor> StartActor<A>
@@ -229,5 +240,76 @@ impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
               -> MessageFuture<Self, StartActor<A>>
     {
         msg.call().to_result()
+    }
+}
+
+
+/// Execute function in arbiter's thread
+///
+/// # Example
+///
+/// ```rust
+/// extern crate actix;
+///
+/// use actix::prelude::*;
+///
+/// struct MyActor{addr: SyncAddress<Arbiter>}
+///
+/// impl Actor for MyActor {
+///
+///    fn started(&mut self, ctx: &mut Context<Self>) {
+///        self.addr.send(actix::Execute::new(|| -> Result<(), ()> {
+///            // do something
+///            // ...
+///            Ok(())
+///        }));
+///    }
+/// }
+/// fn main() {}
+/// ```
+pub struct Execute<I: Send + 'static = (), E: Send + 'static = ()>(Box<FnExec<I, E>>);
+
+impl<I, E> Execute<I, E>
+    where I: Send + 'static, E: Send + 'static
+{
+    pub fn new<F>(f: F) -> Self where F: FnOnce() -> Result<I, E> + Send + 'static
+    {
+        Execute(Box::new(|| f()))
+    }
+
+    pub(crate) fn call(self) -> Result<I, E> {
+        self.0.call_box()
+    }
+}
+
+trait FnExec<I: Send + 'static, E: Send + 'static>: Send + 'static {
+    fn call_box(self: Box<Self>) -> Result<I, E>;
+}
+
+impl<I, E, F> FnExec<I, E> for F
+    where I: Send + 'static,
+          E: Send + 'static,
+          F: FnOnce() -> Result<I, E> + Send + 'static
+{
+    #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
+    fn call_box(self: Box<Self>) -> Result<I, E> {
+        (*self)()
+    }
+}
+
+impl<I: Send, E: Send> MessageResponse<Execute<I, E>> for Arbiter {
+    type Item = I;
+    type Error = E;
+}
+
+impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for Arbiter {
+
+    fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
+              -> MessageFuture<Self, Execute<I, E>>
+    {
+        match msg.call() {
+            Ok(i) => i.to_result(),
+            Err(e) => e.to_error(),
+        }
     }
 }

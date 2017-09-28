@@ -9,6 +9,7 @@ use message::CallResult;
 
 /// Sink wrapper
 pub struct Sink<I, E> {
+    // FIXME: Should this be replaced with Rc<RefCell<SinkContext>>
     srv: *mut SinkContext<I, E>
 }
 
