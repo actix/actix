@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::marker::PhantomData;
 
 use futures::{Async, Future, Poll};
@@ -13,12 +14,13 @@ use message::MessageFuture;
 
 /// Address of the actor `A`. Actor can run in differend thread.
 pub struct SyncAddress<A> where A: Actor {
-    tx: UnboundedSender<Proxy<A>>
+    tx: UnboundedSender<Proxy<A>>,
+    closed: Cell<bool>,
 }
 
 impl<A> Clone for SyncAddress<A> where A: Actor {
     fn clone(&self) -> Self {
-        SyncAddress{tx: self.tx.clone()}
+        SyncAddress{tx: self.tx.clone(), closed: self.closed.clone()}
     }
 }
 
@@ -32,7 +34,12 @@ impl<A> ActorAddress<A, SyncAddress<A>> for A where A: Actor {
 impl<A> SyncAddress<A> where A: Actor {
 
     pub(crate) fn new(sender: UnboundedSender<Proxy<A>>) -> SyncAddress<A> {
-        SyncAddress{tx: sender}
+        SyncAddress{tx: sender, closed: Cell::new(false)}
+    }
+
+    /// Indicates if address is closed on other side.
+    pub fn is_closed(&self) -> bool {
+        self.closed.get()
     }
 
     /// Send message `M` to actor `A`. Message cold be sent to actor running in
@@ -42,8 +49,11 @@ impl<A> SyncAddress<A> where A: Actor {
               A::Item: Send,
               A::Error: Send,
     {
-        let _ = self.tx.unbounded_send(
-            Proxy::new(SyncEnvelope::new(Some(msg), None)));
+        if self.tx.unbounded_send(
+            Proxy::new(SyncEnvelope::new(Some(msg), None))).is_err()
+        {
+            self.closed.set(true)
+        }
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
@@ -53,8 +63,11 @@ impl<A> SyncAddress<A> where A: Actor {
               A::Error: Send,
     {
         let (tx, rx) = channel();
-        let _ = self.tx.unbounded_send(
-            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx))));
+        if self.tx.unbounded_send(
+            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx)))).is_err()
+        {
+            self.closed.set(true)
+        }
 
         MessageResult::new(rx)
     }
@@ -65,8 +78,11 @@ impl<A> SyncAddress<A> where A: Actor {
               M: 'static
     {
         let (tx, rx) = channel();
-        let _ = self.tx.unbounded_send(
-            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx))));
+        if self.tx.unbounded_send(
+            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx)))).is_err()
+        {
+            self.closed.set(true)
+        }
 
         rx
     }
@@ -118,8 +134,11 @@ impl<A, M> AsyncSubscriber<M> for SyncAddress<A>
     fn call(&self, msg: M) -> Self::Future
     {
         let (tx, rx) = channel();
-        let _ = self.tx.unbounded_send(
-            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx))));
+        if self.tx.unbounded_send(
+            Proxy::new(SyncEnvelope::new(Some(msg), Some(tx)))).is_err()
+        {
+            self.closed.set(true)
+        }
 
         CallResult::new(rx)
     }

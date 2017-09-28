@@ -6,7 +6,7 @@ use futures::sync::mpsc::{unbounded as sync_unbounded,
                           UnboundedReceiver as SyncUnboundedReceiver};
 
 use actor::Actor;
-use arbiter::Arbiter;
+use arbiter::{Arbiter, Execute};
 use address::{Address, SyncAddress, Proxy};
 use context::{Context, ContextProtocol};
 use factory::ActorFactory;
@@ -98,6 +98,39 @@ impl<A, F> Supervisor<A, F>
 
         Arbiter::handle().spawn(supervisor);
         (addr, saddr)
+    }
+
+    /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
+    /// actor could be started immidietly or on first incoming message.
+    pub fn start_in(addr: SyncAddress<Arbiter>, factory: F, lazy: bool) -> Option<SyncAddress<A>>
+        where F: Send
+    {
+        if addr.is_closed() {
+            None
+        } else {
+            let (tx, rx) = sync_unbounded();
+            let s_addr = SyncAddress::new(tx.clone());
+
+            addr.send(Execute::new(move || -> Result<(), ()> {
+                let (_, lrx) = unbounded();
+                let supervisor = Supervisor {
+                    factory: factory,
+                    lazy: lazy,
+                    actor: None,
+                    msgs: lrx,
+                    sync_msgs: rx,
+                    sync_addr: tx.clone(),
+                };
+                Arbiter::handle().spawn(supervisor);
+                Ok(())
+            }));
+
+            if addr.is_closed() {
+                None
+            } else {
+                Some(s_addr)
+            }
+        }
     }
 
     fn get_cell(&mut self) -> &mut ActorCell<A> {

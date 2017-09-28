@@ -276,7 +276,7 @@ impl<I, E> Execute<I, E>
 {
     pub fn new<F>(f: F) -> Self where F: FnOnce() -> Result<I, E> + Send + 'static
     {
-        Execute(Box::new(|| f()))
+        Execute(Box::new(f))
     }
 
     /// Execute enclosed function

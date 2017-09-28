@@ -7,7 +7,6 @@
 //! # Examples
 //!
 //! ```rust
-//! #![allow(unused_variables)]
 //! extern crate actix;
 //!
 //! use actix::prelude::*;
