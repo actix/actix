@@ -22,8 +22,6 @@ pub enum ActorState {
     Running,
     /// Actor is stopping.
     Stopping,
-    /// Actor is prepared for stop.
-    PrepStop,
     /// Actor is stopped.
     Stopped,
 }
@@ -241,6 +239,8 @@ impl<A> Future for Context<A> where A: Actor
             _ => ()
         }
 
+        let mut prep_stop = false;
+
         loop {
             let mut not_ready = true;
 
@@ -307,30 +307,31 @@ impl<A> Future for Context<A> where A: Actor
                     self.state = ActorState::Stopped;
                     Actor::stopped(&mut self.act, ctx);
                     return Ok(Async::Ready(()))
-                }
+                },
                 ActorState::Stopping => {
-                    Actor::stopping(&mut self.act, ctx);
-                    self.state = ActorState::PrepStop;
-                    continue
-                }
-                ActorState::PrepStop => {
-                    if self.address.connected() || !self.items.is_empty() {
-                        self.state = ActorState::Running;
-                        continue
+                    if prep_stop {
+                        if self.address.connected() || !self.items.is_empty() {
+                            self.state = ActorState::Running;
+                            continue
+                        } else {
+                            self.state = ActorState::Stopped;
+                            Actor::stopped(&mut self.act, ctx);
+                            return Ok(Async::Ready(()))
+                        }
                     } else {
-                        self.state = ActorState::Stopped;
-                        Actor::stopped(&mut self.act, ctx);
-                        return Ok(Async::Ready(()))
+                        Actor::stopping(&mut self.act, ctx);
+                        prep_stop = true;
+                        continue
                     }
-                }
+                },
                 ActorState::Running => {
                     if !self.address.connected() && self.items.is_empty() {
                         self.state = ActorState::Stopping;
                         Actor::stopping(&mut self.act, ctx);
-                        self.state = ActorState::PrepStop;
+                        prep_stop = true;
                         continue
                     }
-                }
+                },
                 _ => (),
             }
 
