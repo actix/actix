@@ -38,7 +38,7 @@ fn test_system_execute() {
     addr.send(actix::Execute::new(
         || -> Result<(), ()> {
             Arbiter::handle().spawn_fn(|| {
-                Arbiter::system().send(actix::Execute::new(|| -> Result<(), ()> {
+                Arbiter::system_arbiter().send(actix::Execute::new(|| -> Result<(), ()> {
                     Arbiter::system().send(actix::SystemExit(0));
 
                     assert_eq!(Arbiter::name(), "test");

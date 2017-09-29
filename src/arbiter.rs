@@ -20,6 +20,7 @@ thread_local!(
     static REG: RefCell<Option<Registry>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
     static SYS: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
+    static SYSARB: RefCell<Option<SyncAddress<Arbiter>>> = RefCell::new(None);
     static SYSNAME: RefCell<Option<String>> = RefCell::new(None);
     static SYSREG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
 );
@@ -56,6 +57,7 @@ impl Arbiter {
         let id = Uuid::new_v4();
         let sys = Arbiter::system();
         let sys_name = Arbiter::system_name();
+        let sys_arbiter = Arbiter::system_arbiter();
         let sys_registry = Arbiter::system_registry().clone();
         let name = if let Some(n) = name {
             format!("arbiter:{:?}:{:?}", id.hyphenated().to_string(), n)
@@ -73,6 +75,7 @@ impl Arbiter {
 
             // system
             SYS.with(|cell| *cell.borrow_mut() = Some(sys));
+            SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_arbiter));
             SYSNAME.with(|cell| *cell.borrow_mut() = Some(sys_name));
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
 
@@ -107,9 +110,10 @@ impl Arbiter {
         SYSREG.with(|cell| *cell.borrow_mut() = Some(SystemRegistry::new()));
 
         // start arbiter
-        let addr = ActorBuilder::start(
+        let (addr, sys_addr) = ActorBuilder::start(
             Arbiter {sys: true, id: Uuid::new_v4()});
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
+        SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_addr));
 
         core
     }
@@ -138,6 +142,14 @@ impl Arbiter {
     /// This function returns system address,
     pub fn system() -> SyncAddress<System> {
         SYS.with(|cell| match *cell.borrow() {
+            Some(ref addr) => addr.clone(),
+            None => panic!("System is not running"),
+        })
+    }
+
+    /// This function returns system address,
+    pub fn system_arbiter() -> SyncAddress<Arbiter> {
+        SYSARB.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("System is not running"),
         })
@@ -246,7 +258,7 @@ impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
 
 /// Execute function in target thread.
 ///
-/// `System` and `Arbiter` actors can handle Execute message.
+/// Arbiter` actor handles Execute message.
 ///
 /// # Example
 ///
