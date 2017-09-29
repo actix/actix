@@ -7,7 +7,7 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
-use actor::{Actor, MessageHandler, StreamHandler};
+use actor::{Actor, SupervisedActor, MessageHandler, StreamHandler};
 use address::{ActorAddress, Address, SyncAddress, Proxy, Subscriber};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
@@ -198,12 +198,23 @@ impl<A> Context<A> where A: Actor
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
     }
 
+    pub(crate) fn restarting(&mut self) where A: SupervisedActor {
+        let ctx: &mut Context<A> = unsafe {
+            std::mem::transmute(self as &mut Context<A>)
+        };
+        self.act.restarting(ctx);
+    }
+
     pub(crate) fn replace_actor(&mut self, srv: A) -> A {
         std::mem::replace(&mut self.act, srv)
     }
 
     pub(crate) fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
         &mut self.address
+    }
+
+    pub(crate) fn into_inner(self) -> A {
+        self.act
     }
 }
 
@@ -353,7 +364,6 @@ impl<A> ActorAddressCell<A> where A: Actor
             msgs.close()
         }
     }
-
 
     pub(crate) fn connected(&mut self) -> bool {
         self.unsync_msgs.connected() || self.sync_alive

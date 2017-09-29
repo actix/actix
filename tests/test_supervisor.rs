@@ -11,7 +11,7 @@ use actix::prelude::*;
 
 struct Die;
 
-struct MyActor(Arc<AtomicUsize>);
+struct MyActor(Arc<AtomicUsize>, Arc<AtomicUsize>);
 
 impl Actor for MyActor {
     fn started(&mut self, _: &mut Context<MyActor>) {
@@ -19,12 +19,10 @@ impl Actor for MyActor {
         self.0.store(n+1, Ordering::Relaxed);
     }
 }
-
-struct MyActorFactory(Arc<AtomicUsize>);
-
-impl ActorFactory<MyActor> for MyActorFactory {
-    fn create(&mut self, _: &mut Context<MyActor>) -> MyActor {
-        MyActor(Arc::clone(&self.0))
+impl SupervisedActor for MyActor {
+    fn restarting(&mut self, _: &mut Context<MyActor>) {
+        let n = self.1.load(Ordering::Relaxed);
+        self.1.store(n+1, Ordering::Relaxed);
     }
 }
 
@@ -46,9 +44,12 @@ impl MessageHandler<Die> for MyActor {
 fn test_supervisor() {
     let sys = System::new("test".to_owned());
 
-    let num = Arc::new(AtomicUsize::new(0));
-    let factory = MyActorFactory(Arc::clone(&num));
-    let (addr, _) = Supervisor::start(factory, false);
+    let starts = Arc::new(AtomicUsize::new(0));
+    let restarts = Arc::new(AtomicUsize::new(0));
+    let starts2 = Arc::clone(&starts);
+    let restarts2 = Arc::clone(&restarts);
+
+    let (addr, _) = Supervisor::start(false, move|_| MyActor(starts2, restarts2));
 
     addr.send(Die);
 
@@ -61,20 +62,24 @@ fn test_supervisor() {
     );
 
     sys.run();
-    assert_eq!(num.load(Ordering::Relaxed), 2);
+    assert_eq!(starts.load(Ordering::Relaxed), 2);
+    assert_eq!(restarts.load(Ordering::Relaxed), 1);
 }
 
 #[test]
 fn test_supervisor_lazy() {
     let sys = System::new("test".to_owned());
 
-    let num = Arc::new(AtomicUsize::new(0));
-    let factory = MyActorFactory(Arc::clone(&num));
-    let (addr, _) = Supervisor::start(factory, true);
+    let starts = Arc::new(AtomicUsize::new(0));
+    let restarts = Arc::new(AtomicUsize::new(0));
+    let starts2 = Arc::clone(&starts);
+    let restarts2 = Arc::clone(&restarts);
 
-    let num_2 = Arc::clone(&num);
+    let (addr, _) = Supervisor::start(true, move|_| MyActor(starts2, restarts2));
+
+    let starts3 = Arc::clone(&starts);
     Arbiter::handle().spawn_fn(move || {
-        assert_eq!(num_2.load(Ordering::Relaxed), 0);
+        assert_eq!(starts3.load(Ordering::Relaxed), 0);
         addr.send(Die);
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
@@ -85,18 +90,21 @@ fn test_supervisor_lazy() {
     });
 
     sys.run();
-    assert_eq!(num.load(Ordering::Relaxed), 2);
+    assert_eq!(starts.load(Ordering::Relaxed), 2);
+    assert_eq!(restarts.load(Ordering::Relaxed), 1);
 }
 
 #[test]
 fn test_supervisor_upgrade_address() {
     let sys = System::new("test".to_owned());
 
-    let num = Arc::new(AtomicUsize::new(0));
-    let factory = MyActorFactory(Arc::clone(&num));
+    let starts = Arc::new(AtomicUsize::new(0));
+    let restarts = Arc::new(AtomicUsize::new(0));
+    let starts2 = Arc::clone(&starts);
+    let restarts2 = Arc::clone(&restarts);
 
     // lazy supervisor
-    let (addr, _) = Supervisor::start(factory, true);
+    let (addr, _) = Supervisor::start(true, move|_| MyActor(starts2, restarts2));
 
     Arbiter::handle().spawn_fn(move || {
         // upgrade address to SyncAddress
@@ -113,5 +121,6 @@ fn test_supervisor_upgrade_address() {
     });
 
     sys.run();
-    assert_eq!(num.load(Ordering::Relaxed), 1);
+    assert_eq!(starts.load(Ordering::Relaxed), 1);
+    assert_eq!(restarts.load(Ordering::Relaxed), 0);
 }

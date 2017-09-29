@@ -50,6 +50,21 @@ pub trait Actor: Sized + 'static {
     fn stopped(&mut self, ctx: &mut Context<Self>) {}
 }
 
+
+#[allow(unused_variables)]
+/// Actors with ability to restart after failure
+///
+/// Supervised actors can be managed by
+/// [Supervisor](https://fafhrd91.github.io/actix/actix/struct.Supervisor.html)
+/// If actor failes supervisor create new execution context and restart actor.
+/// `restarting` method is called during restart. After call to this method
+/// Actor execute state changes to `Started` and normal lifecycle process starts.
+pub trait SupervisedActor: Actor {
+
+    /// Method called when supervisor restarting failed actor
+    fn restarting(&mut self, ctx: &mut Context<Self>) {}
+}
+
 /// Service is Actor
 impl<T> ActixActor for T where T: Actor {}
 

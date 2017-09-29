@@ -110,12 +110,11 @@ pub trait ActorBuilder<A, Addr=()>
               A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>;
 
     fn create<F>(f: F) -> Addr
-        where F: 'static + FnOnce(&mut Context<A>) -> A;
+        where F: FnOnce(&mut Context<A>) -> A + 'static;
 
     fn create_with<S, F>(stream: S, f: F) -> Addr
-        where F: 'static + FnOnce(&mut Context<A>) -> A,
+        where F: FnOnce(&mut Context<A>) -> A + 'static,
               S: Stream + 'static,
-              //S::Item: 'static,
               A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>;
 }
 

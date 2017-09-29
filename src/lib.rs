@@ -38,7 +38,6 @@ mod address;
 mod sync_address;
 mod builder;
 mod context;
-mod factory;
 mod message;
 mod queue;
 mod registry;
@@ -52,7 +51,7 @@ pub mod prelude;
 pub mod actors;
 pub mod framed;
 
-pub use actor::{Actor, MessageHandler, MessageResponse, StreamHandler};
+pub use actor::{Actor, SupervisedActor, MessageHandler, MessageResponse, StreamHandler};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use arbiter::{Arbiter, Execute, StartActor, StopArbiter};
 pub use builder::ActorBuilder;
