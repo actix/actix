@@ -22,4 +22,7 @@ pub use system::System;
 pub use supervisor::Supervisor;
 pub use registry::{ArbiterService, SystemService};
 
-pub mod actix {}
+pub mod actix {
+    pub use sink::Sink;
+    pub use utils::Condition;
+}
