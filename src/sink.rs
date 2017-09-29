@@ -5,7 +5,7 @@ use futures::unsync::oneshot::{channel, Sender};
 use actor::Actor;
 use address::{Subscriber, AsyncSubscriber};
 use context::Context;
-use message::CallResult;
+use address::CallResult;
 
 /// Sink wrapper
 pub struct Sink<I, E> {

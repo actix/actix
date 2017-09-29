@@ -8,7 +8,7 @@ use arbiter::Arbiter;
 use builder::ActorBuilder;
 use context::Context;
 use msgs::{SystemExit, StopArbiter};
-use message::{MessageFuture, MessageFutureResult};
+use message::{Response, ResponseItem};
 
 /// System is an actor which manages process.
 ///
@@ -118,8 +118,7 @@ impl MessageResponse<SystemExit> for System {
 
 impl MessageHandler<SystemExit> for System {
 
-    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
-              -> MessageFuture<Self, SystemExit>
+    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>) -> Response<Self, SystemExit>
     {
         // stop rbiters
         for addr in self.arbiters.values() {
@@ -129,7 +128,7 @@ impl MessageHandler<SystemExit> for System {
         if let Some(stop) = self.stop.take() {
             let _ = stop.send(msg.0);
         }
-        ().to_result()
+        ().to_response()
     }
 }
 
@@ -146,10 +145,10 @@ impl MessageResponse<RegisterArbiter> for System {
 impl MessageHandler<RegisterArbiter> for System {
 
     fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>)
-              -> MessageFuture<Self, RegisterArbiter>
+              -> Response<Self, RegisterArbiter>
     {
         self.arbiters.insert(msg.0, msg.1);
-        ().to_result()
+        ().to_response()
     }
 }
 
@@ -166,9 +165,9 @@ impl MessageResponse<UnregisterArbiter> for System {
 impl MessageHandler<UnregisterArbiter> for System {
 
     fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>)
-              -> MessageFuture<Self, UnregisterArbiter>
+              -> Response<Self, UnregisterArbiter>
     {
         self.arbiters.remove(&msg.0);
-        ().to_result()
+        ().to_response()
     }
 }

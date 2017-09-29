@@ -25,7 +25,7 @@
 //! impl MessageHandler<signal::Signal> for Signals {
 //!
 //!     fn handle(&mut self, msg: signal::Signal, _: &mut Context<Self>)
-//!               -> MessageFuture<Self, signal::Signal>
+//!               -> Response<Self, signal::Signal>
 //!     {
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
@@ -45,7 +45,7 @@
 //!             }
 //!             _ => (),
 //!         };
-//!         ().to_result()
+//!         ().to_response()
 //!     }
 //! }
 //!
@@ -165,13 +165,12 @@ impl MessageResponse<SignalType> for ProcessSignals {
 #[doc(hidden)]
 impl MessageHandler<SignalType, io::Error> for ProcessSignals {
 
-    fn handle(&mut self, msg: SignalType, _: &mut Context<Self>)
-              -> MessageFuture<Self, SignalType>
+    fn handle(&mut self, msg: SignalType, _: &mut Context<Self>) -> Response<Self, SignalType>
     {
         for subscr in &self.subscribers {
             subscr.send(Signal(msg))
         }
-        ().to_result()
+        ().to_response()
     }
 
     fn error(&mut self, err: io::Error, _: &mut Context<ProcessSignals>) {
@@ -191,10 +190,10 @@ impl MessageResponse<Subscribe> for ProcessSignals {
 impl MessageHandler<Subscribe> for ProcessSignals {
 
     fn handle(&mut self, msg: Subscribe,
-              _: &mut Context<ProcessSignals>) -> MessageFuture<Self, Subscribe>
+              _: &mut Context<ProcessSignals>) -> Response<Self, Subscribe>
     {
         self.subscribers.push(msg.0);
-        ().to_result()
+        ().to_response()
     }
 
 }
@@ -226,7 +225,7 @@ impl MessageResponse<Signal> for DefaultSignalsHandler {
 /// message to `System` actor.
 impl MessageHandler<Signal> for DefaultSignalsHandler {
 
-    fn handle(&mut self, msg: Signal, _: &mut Context<Self>) -> MessageFuture<Self, Signal>
+    fn handle(&mut self, msg: Signal, _: &mut Context<Self>) -> Response<Self, Signal>
     {
         match msg.0 {
             SignalType::Int => {
@@ -246,6 +245,6 @@ impl MessageHandler<Signal> for DefaultSignalsHandler {
             }
             _ => (),
         };
-        ().to_result()
+        ().to_response()
     }
 }

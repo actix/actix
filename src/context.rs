@@ -8,8 +8,9 @@ use fut::ActorFuture;
 use queue::{sync, unsync};
 
 use actor::{Actor, Supervised, MessageHandler, StreamHandler};
-use address::{ActorAddress, Address, SyncAddress, Proxy, Subscriber};
-use message::MessageFuture;
+use address::{ActorAddress, Address, SyncAddress, Subscriber};
+use envelope::Envelope;
+use message::Response;
 use sink::{Sink, SinkContext, SinkContextService};
 
 
@@ -29,7 +30,7 @@ pub enum ActorState {
 /// context protocol
 pub(crate) enum ContextProtocol<A: Actor> {
     /// message envelope
-    Envelope(Proxy<A>),
+    Envelope(Envelope<A>),
     /// Request sync address
     SyncAddress(Sender<SyncAddress<A>>),
 }
@@ -123,10 +124,9 @@ impl<A> Context<A> where A: Actor
     ///     fn error(&mut self, err: std::io::Error, ctx: &mut Context<MyActor>) {
     ///         println!("Error: {}", err);
     ///     }
-    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>)
-    ///               -> MessageFuture<Self, Ping> {
+    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) -> Response<Self, Ping> {
     ///         println!("PING");
-    ///         ().to_result()
+    ///         ().to_response()
     ///     }
     /// }
     ///
@@ -353,7 +353,7 @@ pub(crate)
 struct ActorAddressCell<A> where A: Actor
 {
     sync_alive: bool,
-    sync_msgs: Option<sync::UnboundedReceiver<Proxy<A>>>,
+    sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
     unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
 
@@ -418,7 +418,7 @@ impl<A> ActorFuture for ActorAddressCell<A> where A: Actor
                     not_ready = false;
                     match msg {
                         ContextProtocol::Envelope(mut env) => {
-                            env.0.handle(act, ctx)
+                            env.handle(act, ctx)
                         }
                         ContextProtocol::SyncAddress(tx) => {
                             let _ = tx.send(self.sync_address());
@@ -434,7 +434,7 @@ impl<A> ActorFuture for ActorAddressCell<A> where A: Actor
                     match msgs.poll() {
                         Ok(Async::Ready(Some(mut msg))) => {
                             not_ready = false;
-                            msg.0.handle(act, ctx);
+                            msg.handle(act, ctx);
                         }
                         Ok(Async::Ready(None)) | Err(_) => {
                             self.sync_alive = false;
@@ -458,7 +458,7 @@ struct ActorFutureCell<A, M, F, E>
 {
     act: std::marker::PhantomData<A>,
     fut: F,
-    result: Option<MessageFuture<A, M>>,
+    result: Option<Response<A, M>>,
 }
 
 impl<A, M, F, E> ActorFutureCell<A, M, F, E>
@@ -522,7 +522,7 @@ struct ActorStreamCell<A, M, E, S>
 {
     act: std::marker::PhantomData<A>,
     started: bool,
-    fut: Option<MessageFuture<A, M>>,
+    fut: Option<Response<A, M>>,
     stream: S,
 }
 

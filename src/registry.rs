@@ -44,10 +44,10 @@ use supervisor::Supervisor;
 ///
 /// impl MessageHandler<Ping> for MyActor1 {
 ///
-///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> MessageFuture<Self, Ping> {
+///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
 ///       println!("ping");
 ///       Arbiter::system().send(msgs::SystemExit(0));
-///       ().to_result()
+///       ().to_response()
 ///    }
 /// }
 ///

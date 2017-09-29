@@ -17,7 +17,7 @@ pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use builder::ActorBuilder;
 pub use context::{ActorState, Context, ContextFutureSpawner};
 pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
-pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
+pub use message::{Request, Response, ResponseItem, ResponseError};
 pub use system::System;
 pub use supervisor::Supervisor;
 pub use registry::{ArbiterService, SystemService};

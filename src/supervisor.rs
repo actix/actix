@@ -3,8 +3,9 @@ use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised};
 use arbiter::Arbiter;
-use address::{Address, SyncAddress, Proxy};
+use address::{Address, SyncAddress};
 use context::{Context, ContextProtocol};
+use envelope::Envelope;
 use msgs::Execute;
 use queue::{sync, unsync};
 
@@ -49,10 +50,10 @@ use queue::{sync, unsync};
 ///
 /// impl MessageHandler<Die> for MyActor {
 ///
-///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> MessageFuture<Self, Die> {
+///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> Response<Self, Die> {
 ///         ctx.stop();
 ///         Arbiter::system().send(msgs::SystemExit(0));
-///         ().to_result()
+///         ().to_response()
 ///     }
 /// }
 ///
@@ -69,9 +70,9 @@ pub struct Supervisor<A: Supervised> {
     cell: Option<ActorCell<A>>,
     factory: Option<Box<FnFactory<A>>>,
     msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
-    sync_msgs: sync::UnboundedReceiver<Proxy<A>>,
+    sync_msgs: sync::UnboundedReceiver<Envelope<A>>,
     msg: Option<ContextProtocol<A>>,
-    sync_msg: Option<Proxy<A>>,
+    sync_msg: Option<Envelope<A>>,
     sync_alive: bool,
 }
 

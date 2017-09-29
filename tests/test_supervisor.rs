@@ -33,9 +33,9 @@ impl MessageResponse<Die> for MyActor {
 
 impl MessageHandler<Die> for MyActor {
 
-    fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> MessageFuture<Self, Die> {
+    fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> Response<Self, Die> {
         ctx.stop();
-        ().to_result()
+        ().to_response()
     }
 }
 

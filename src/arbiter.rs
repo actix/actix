@@ -10,7 +10,7 @@ use address::{Address, SyncAddress};
 use builder::ActorBuilder;
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};
-use message::{MessageFuture, MessageFutureResult, MessageFutureError};
+use message::{Response, ResponseItem, ResponseError};
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};
 
@@ -194,8 +194,7 @@ impl MessageResponse<StopArbiter> for Arbiter {
 
 impl MessageHandler<StopArbiter> for Arbiter {
 
-    fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>)
-              -> MessageFuture<Self, StopArbiter>
+    fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>) -> Response<Self, StopArbiter>
     {
         if self.sys {
             warn!("System arbiter received `StopArbiter` message.
@@ -207,7 +206,7 @@ impl MessageHandler<StopArbiter> for Arbiter {
                 }
             });
         }
-        ().to_result()
+        ().to_response()
     }
 }
 
@@ -219,9 +218,9 @@ impl<A> MessageResponse<StartActor<A>> for Arbiter where A: Actor {
 impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
 
     fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>)
-              -> MessageFuture<Self, StartActor<A>>
+              -> Response<Self, StartActor<A>>
     {
-        msg.call().to_result()
+        msg.call().to_response()
     }
 }
 
@@ -235,10 +234,10 @@ impl<I: Send, E: Send> MessageResponse<Execute<I, E>> for Arbiter {
 impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for Arbiter {
 
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
-              -> MessageFuture<Self, Execute<I, E>>
+              -> Response<Self, Execute<I, E>>
     {
         match msg.exec() {
-            Ok(i) => i.to_result(),
+            Ok(i) => i.to_response(),
             Err(e) => e.to_error(),
         }
     }

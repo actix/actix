@@ -2,35 +2,42 @@ use std;
 use std::marker::PhantomData;
 
 use futures::{Async, Future, Poll};
-use futures::unsync::oneshot::{Canceled, Receiver, Sender};
+use futures::unsync::oneshot::{Canceled, Receiver};
+use futures::sync::oneshot::{Receiver as SyncReceiver};
 
 use fut::ActorFuture;
 use context::Context;
-use address::MessageProxy;
 use actor::{Actor, MessageHandler, MessageResponse};
 
+enum RequestIo<M, A: MessageHandler<M>> {
+    Local(Receiver<Result<A::Item, A::Error>>),
+    Remote(SyncReceiver<Result<A::Item, A::Error>>),
+}
 
-/// `MessageResult` is a `Future` which represents asyncronous message response.
+/// `Request` is a `Future` which represents asyncronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct MessageResult<A, B, M>
+pub struct Request<A, B, M>
     where A: MessageHandler<M>,
           B: Actor
 {
-    rx: Receiver<Result<A::Item, A::Error>>,
+    rx: RequestIo<M, A>,
     act: PhantomData<B>,
 }
 
-impl<A, B, M> MessageResult<A, B, M>
+impl<A, B, M> Request<A, B, M>
     where A: MessageHandler<M>, B: Actor
 {
-    pub(crate) fn new(rx: Receiver<Result<A::Item, A::Error>>)
-                      -> MessageResult<A, B, M>
+    pub(crate) fn local(rx: Receiver<Result<A::Item, A::Error>>) -> Request<A, B, M>
     {
-        MessageResult{rx: rx, act: PhantomData}
+        Request{rx: RequestIo::Local(rx), act: PhantomData}
+    }
+    pub(crate) fn remote(rx: SyncReceiver<Result<A::Item, A::Error>>) -> Request<A, B, M>
+    {
+        Request{rx: RequestIo::Remote(rx), act: PhantomData}
     }
 }
 
-impl<A, B, M> Future for MessageResult<A, B, M>
+impl<A, B, M> Future for Request<A, B, M>
     where A: MessageHandler<M>, B: Actor
 {
     type Item = Result<A::Item, A::Error>;
@@ -38,11 +45,14 @@ impl<A, B, M> Future for MessageResult<A, B, M>
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error>
     {
-        self.rx.poll()
+        match self.rx {
+            RequestIo::Local(ref mut rx) => rx.poll(),
+            RequestIo::Remote(ref mut rx) => rx.poll(),
+        }
     }
 }
 
-impl<A, B, M> ActorFuture for MessageResult<A, B, M>
+impl<A, B, M> ActorFuture for Request<A, B, M>
     where A: MessageHandler<M>,
           B: Actor,
 {
@@ -52,183 +62,91 @@ impl<A, B, M> ActorFuture for MessageResult<A, B, M>
 
     fn poll(&mut self, _: &mut B, _: &mut Context<B>) -> Poll<Self::Item, Self::Error>
     {
-        self.rx.poll()
+        match self.rx {
+            RequestIo::Local(ref mut rx) => rx.poll(),
+            RequestIo::Remote(ref mut rx) => rx.poll(),
+        }
     }
 }
 
-#[must_use = "future do nothing unless polled"]
-pub struct CallResult<I, E>
-{
-    rx: Receiver<Result<I, E>>,
-}
-
-impl<I, E> CallResult<I, E>
-{
-    pub(crate) fn new(rx: Receiver<Result<I, E>>) -> CallResult<I, E> {
-        CallResult{rx: rx}
-    }
-}
-
-impl<I, E> Future for CallResult<I, E>
-{
-    type Item = Result<I, E>;
-    type Error = Canceled;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error>
-    {
-        self.rx.poll()
-    }
-}
-
-
-enum MessageFutureItem<A, M> where A: Actor + MessageResponse<M>
+enum ResponseTypeItem<A, M> where A: Actor + MessageResponse<M>
 {
     Item(A::Item),
     Error(A::Error),
     Fut(Box<ActorFuture<Item=A::Item, Error=A::Error, Actor=A>>)
 }
 
-/// `MessageFuture` represents asyncronous message handling process.
-pub struct MessageFuture<A, M> where A: Actor + MessageResponse<M>,
+/// `Response` represents asyncronous message handling process.
+pub struct Response<A, M> where A: Actor + MessageResponse<M>,
 {
-    inner: Option<MessageFutureItem<A, M>>,
+    inner: Option<ResponseTypeItem<A, M>>,
 }
 
-/// Helper trait that converts compatible `ActorFuture` type to `MessageFuture`.
-impl<A, M, T> std::convert::From<T> for MessageFuture<A, M>
+/// Helper trait that converts compatible `ActorFuture` type to `Response`.
+impl<A, M, T> std::convert::From<T> for Response<A, M>
     where A: Actor + MessageHandler<M>,
           T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static,
 {
-    fn from(fut: T) -> MessageFuture<A, M> {
-        MessageFuture {inner: Some(MessageFutureItem::Fut(Box::new(fut)))}
-    }
+    fn from(fut: T) -> Response<A, M> {
+    Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
+}
 }
 
-/// Helper trait that converts result value into `MessageFuture` with `.to_result()` method.
-pub trait MessageFutureResult<A, M>
+/// Helper trait that converts result value into `Response` with `.to_response()` method.
+pub trait ResponseItem<A, M>
     where A: Actor + MessageResponse<M, Item=Self>,
           Self: Sized + 'static
 {
-    /// Convert value to `MessageFuture`
-    fn to_result(self) -> MessageFuture<A, M>;
+    /// Convert value to `Response`
+    fn to_response(self) -> Response<A, M>;
 }
 
-impl<A, M, T> MessageFutureResult<A, M> for T
+impl<A, M, T> ResponseItem<A, M> for T
     where A: Actor + MessageResponse<M, Item=Self>,
           Self: Sized + 'static
 {
-    fn to_result(self) -> MessageFuture<A, M> {
-        MessageFuture {inner: Some(MessageFutureItem::Item(self))}
+    fn to_response(self) -> Response<A, M> {
+        Response {inner: Some(ResponseTypeItem::Item(self))}
     }
 }
 
-/// Helper trait that converts error value into `MessageFuture` with `.to_error()` method.
-pub trait MessageFutureError<A, M>
+/// Helper trait that converts error value into `Response` with `.to_error()` method.
+pub trait ResponseError<A, M>
     where A: Actor + MessageResponse<M, Error=Self>,
           Self: Sized + 'static
 {
-    /// Convert value to `MessageFuture`
-    fn to_error(self) -> MessageFuture<A, M>;
+    /// Convert value to `Response`
+    fn to_error(self) -> Response<A, M>;
 }
 
-impl<A, M, T> MessageFutureError<A, M> for T
+impl<A, M, T> ResponseError<A, M> for T
     where A: Actor + MessageResponse<M, Error=Self>,
           Self: Sized + 'static
 {
-    fn to_error(self) -> MessageFuture<A, M> {
-        MessageFuture {inner: Some(MessageFutureItem::Error(self))}
+    fn to_error(self) -> Response<A, M> {
+        Response {inner: Some(ResponseTypeItem::Error(self))}
     }
 }
 
-impl<A, M> MessageFuture<A, M> where A: Actor + MessageResponse<M>
+impl<A, M> Response<A, M> where A: Actor + MessageResponse<M>
 {
     pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<A::Item, A::Error>
     {
         if let Some(item) = self.inner.take() {
             match item {
-                MessageFutureItem::Fut(mut fut) => {
+                ResponseTypeItem::Fut(mut fut) => {
                     match fut.poll(act, ctx) {
                         Ok(Async::NotReady) => {
-                            self.inner = Some(MessageFutureItem::Fut(fut));
+                            self.inner = Some(ResponseTypeItem::Fut(fut));
                             return Ok(Async::NotReady)
                         }
                         result => return result
                     }
                 }
-                MessageFutureItem::Item(item) => return Ok(Async::Ready(item)),
-                MessageFutureItem::Error(err) => return Err(err)
+                ResponseTypeItem::Item(item) => return Ok(Async::Ready(item)),
+                ResponseTypeItem::Error(err) => return Err(err)
             }
         }
         Ok(Async::NotReady)
-    }
-}
-
-pub(crate)
-struct Envelope<A, M> where A: Actor + MessageHandler<M> {
-    msg: Option<M>,
-    act: PhantomData<A>,
-    tx: Option<Sender<Result<A::Item, A::Error>>>,
-}
-
-impl<A, M> Envelope<A, M>
-    where A: Actor + MessageHandler<M>,
-{
-    pub(crate) fn new(msg: Option<M>,
-                      tx: Option<Sender<Result<A::Item, A::Error>>>) -> Envelope<A, M>
-    {
-        Envelope{msg: msg, tx: tx, act: PhantomData}
-    }
-}
-
-
-impl<A, M> MessageProxy for Envelope<A, M>
-    where M: 'static,
-          A: Actor + MessageHandler<M>,
-{
-    type Actor = A;
-
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<A>)
-    {
-        if let Some(msg) = self.msg.take() {
-            let fut = <Self::Actor as MessageHandler<M>>::handle(act, msg, ctx);
-            let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {msg: PhantomData,
-                                                                  fut: fut,
-                                                                  tx: self.tx.take()};
-            ctx.spawn(f);
-        }
-    }
-}
-
-pub(crate) struct EnvelopFuture<A, M> where A: MessageHandler<M>
-{
-    msg: PhantomData<M>,
-    fut: MessageFuture<A, M>,
-    tx: Option<Sender<Result<A::Item, A::Error>>>,
-}
-
-impl<A, M> ActorFuture for EnvelopFuture<A, M>
-    where A: Actor + MessageHandler<M>
-{
-    type Item = ();
-    type Error = ();
-    type Actor = A;
-
-    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
-    {
-        match self.fut.poll(act, ctx) {
-            Ok(Async::Ready(val)) => {
-                if let Some(tx) = self.tx.take() {
-                    let _ = tx.send(Ok(val));
-                }
-                Ok(Async::Ready(()))
-            },
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Err(err) => {
-                if let Some(tx) = self.tx.take() {
-                    let _ = tx.send(Err(err));
-                }
-                Err(())
-            }
-        }
     }
 }

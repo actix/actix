@@ -108,9 +108,9 @@ impl Actor for Summator {}
 // now we need to define `MessageHandler` for `Sum` message.
 impl MessageHandler<Sum> for Summator {
 
-    fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> MessageFuture<Self, Sum> {
+    fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Response<Self, Sum> {
         let sum = msg.0 + msg.1;
-        sum.to_result()
+        sum.to_response()
     }
 }
 
@@ -186,7 +186,7 @@ impl Actor for Game {}
 // message handler for Ping message
 impl MessageHandler<Ping> for Game {
 
-    fn handle(&mut self, msg: Ping, ctx: &mut Context<Self>) -> MessageFuture<Self, Ping> {
+    fn handle(&mut self, msg: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
         self.counter += 1;
         
         if self.counter > 10 {
@@ -204,7 +204,7 @@ impl MessageHandler<Ping> for Game {
                  })
                  .spawn(ctx);
         }
-        ().to_result()
+        ().to_response()
     }
 }
 

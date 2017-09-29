@@ -1,5 +1,5 @@
 use context::Context;
-use message::MessageFuture;
+use message::Response;
 
 #[doc(hidden)]
 pub trait ActixActor {}
@@ -103,7 +103,7 @@ pub trait MessageHandler<M, E=()> where Self: Actor + MessageResponse<M>
     fn error(&mut self, err: E, ctx: &mut Context<Self>) {}
 
     /// Method is called for every message received by this Actor
-    fn handle(&mut self, msg: M, ctx: &mut Context<Self>) -> MessageFuture<Self, M>;
+    fn handle(&mut self, msg: M, ctx: &mut Context<Self>) -> Response<Self, M>;
 }
 
 /// Message response
