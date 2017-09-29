@@ -46,7 +46,7 @@ use supervisor::Supervisor;
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> MessageFuture<Self, Ping> {
 ///       println!("ping");
-///       Arbiter::system().send(actix::SystemExit(0));
+///       Arbiter::system().send(msgs::SystemExit(0));
 ///       ().to_result()
 ///    }
 /// }

@@ -1,3 +1,5 @@
+//! Custom `Future` implementation with `Actix` support
+
 use std::marker::PhantomData;
 use futures::{future, Poll};
 

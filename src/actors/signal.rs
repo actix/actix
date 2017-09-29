@@ -30,18 +30,18 @@
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
-//!                 Arbiter::system().send(actix::SystemExit(0));
+//!                 Arbiter::system().send(msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
 //!             },
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
-//!                 Arbiter::system().send(actix::SystemExit(0));
+//!                 Arbiter::system().send(msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
-//!                 Arbiter::system().send(actix::SystemExit(0));
+//!                 Arbiter::system().send(msgs::SystemExit(0));
 //!             }
 //!             _ => (),
 //!         };
@@ -231,18 +231,18 @@ impl MessageHandler<Signal> for DefaultSignalsHandler {
         match msg.0 {
             SignalType::Int => {
                 info!("SIGINT received, exiting");
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(msgs::SystemExit(0));
             }
             SignalType::Hup => {
                 info!("SIGHUP received, reloading");
             }
             SignalType::Term => {
                 info!("SIGTERM received, stopping");
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(msgs::SystemExit(0));
             }
             SignalType::Quit => {
                 info!("SIGQUIT received, exiting");
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(msgs::SystemExit(0));
             }
             _ => (),
         };

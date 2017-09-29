@@ -121,7 +121,7 @@ pub trait MessageResponse<M> where Self: Actor {
 /// `StreamHandler` is an extension of a `MessageHandler` with several stream specific
 /// methods.
 #[allow(unused_variables)]
-pub trait StreamHandler<M, E=()>: MessageResponse<M>
+pub trait StreamHandler<M, E>: MessageHandler<M, E> + MessageResponse<M>
     where Self: Actor
 {
     /// Method is called when stream get polled first time.

@@ -65,7 +65,7 @@ use context::Context;
 ///
 /// struct Message;
 ///
-/// impl StreamHandler<Message> for MyActor {}
+/// impl StreamHandler<Message, ()> for MyActor {}
 ///
 /// impl MessageResponse<Message> for MyActor {
 ///     type Item = ();

@@ -2,9 +2,10 @@ use std;
 use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised};
-use arbiter::{Arbiter, Execute};
+use arbiter::Arbiter;
 use address::{Address, SyncAddress, Proxy};
 use context::{Context, ContextProtocol};
+use msgs::Execute;
 use queue::{sync, unsync};
 
 /// Actor supervisor
@@ -50,7 +51,7 @@ use queue::{sync, unsync};
 ///
 ///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> MessageFuture<Self, Die> {
 ///         ctx.stop();
-///         Arbiter::system().send(actix::SystemExit(0));
+///         Arbiter::system().send(msgs::SystemExit(0));
 ///         ().to_result()
 ///     }
 /// }

@@ -57,14 +57,14 @@ the [`Actor`](https://fafhrd91.github.io/actix/actix/trait.Actor.html) trait.
 
 ```rust
 extern crate actix;
-use actix::{Actor, ActorBuilder, Address, Arbiter, Context, System, SystemExit};
+use actix::{msgs, Actor, ActorBuilder, Address, Arbiter, Context, System};
 
 struct MyActor;
 
 impl Actor for MyActor {
     fn started(&mut self, ctx: &mut Context<Self>) {
        println!("I am alive!");
-       Arbiter::system().send(SystemExit(0));
+       Arbiter::system().send(msgs::SystemExit(0));
     }
 }
 
@@ -136,7 +136,7 @@ fn main() {
             _ => println!("Something wrong"),
         }
         
-        Arbiter::system().send(actix::SystemExit(0));
+        Arbiter::system().send(msgs::SystemExit(0));
         future::result(Ok(()))
     }));
 
@@ -190,7 +190,7 @@ impl MessageHandler<Ping> for Game {
         self.counter += 1;
         
         if self.counter > 10 {
-            Arbiter::system().send(actix::SystemExit(0));
+            Arbiter::system().send(msgs::SystemExit(0));
         } else {
             println!("Ping received");
             

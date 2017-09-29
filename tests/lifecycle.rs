@@ -11,6 +11,8 @@ use futures::{future, Future};
 use futures::unsync::oneshot::{channel, Sender};
 use tokio_core::reactor::Timeout;
 use actix::prelude::*;
+use actix::msgs::SystemExit;
+
 
 struct MyActor{
     started: Arc<AtomicBool>,
@@ -58,7 +60,7 @@ fn test_active_address() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -87,7 +89,7 @@ fn test_active_sync_address() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -125,7 +127,7 @@ fn test_stop_after_drop_address() {
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
                 drop(addr);
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(SystemExit(0));
                 future::result(Ok(()))
             })
     });
@@ -163,7 +165,7 @@ fn test_stop_after_drop_sync_address() {
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
                 drop(addr);
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(SystemExit(0));
                 future::result(Ok(()))
             })
     });
@@ -192,7 +194,7 @@ fn test_stop() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -221,7 +223,7 @@ fn test_stop_restore_after_stopping() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(SystemExit(0));
                 future::result(Ok(()))
             })
     );

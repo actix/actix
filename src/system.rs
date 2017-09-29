@@ -2,12 +2,13 @@ use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
+use actor::{Actor, MessageHandler, MessageResponse};
 use address::SyncAddress;
-use arbiter::{Arbiter, StopArbiter};
+use arbiter::Arbiter;
 use builder::ActorBuilder;
 use context::Context;
+use msgs::{SystemExit, StopArbiter};
 use message::{MessageFuture, MessageFutureResult};
-use actor::{Actor, MessageHandler, MessageResponse};
 
 /// System is an actor which manages process.
 ///
@@ -36,7 +37,7 @@ use actor::{Actor, MessageHandler, MessageResponse};
 ///           .actfuture()
 ///           .then(|_, srv: &mut Timer, ctx: &mut Context<Self>| {
 ///               // send `SystemExit` to `System` actor.
-///               Arbiter::system().send(actix::SystemExit(0));
+///               Arbiter::system().send(msgs::SystemExit(0));
 ///               fut::ok(())
 ///           })
 ///           .spawn(ctx);
@@ -108,9 +109,6 @@ impl SystemRunner {
         }
     }
 }
-
-/// Stop system execution
-pub struct SystemExit(pub i32);
 
 #[doc(hidden)]
 impl MessageResponse<SystemExit> for System {

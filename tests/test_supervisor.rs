@@ -56,7 +56,7 @@ fn test_supervisor() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -77,8 +77,8 @@ fn test_supervisor_lazy() {
 
     let (addr, _) = Supervisor::start(true, move|_| MyActor(starts2, restarts2));
 
-    //
-    let super_addr = addr.clone();
+    // ref to supervisor, otherwise it would exit
+    let _super_addr = addr.clone();
 
     let starts3 = Arc::clone(&starts);
     Arbiter::handle().spawn_fn(move || {
@@ -87,7 +87,7 @@ fn test_supervisor_lazy() {
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     });
@@ -118,7 +118,7 @@ fn test_supervisor_upgrade_address() {
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::SystemExit(0));
+                Arbiter::system().send(msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     });

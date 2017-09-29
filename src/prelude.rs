@@ -1,13 +1,14 @@
 //! The `actix` prelude
 //!
-//! The purpose of this module is to alleviate imports of many common ctx traits
-//! by adding a glob import to the top of ctx heavy modules:
+//! The purpose of this module is to alleviate imports of many common actix traits
+//! by adding a glob import to the top of actix heavy modules:
 //!
 //! ```
 //! # #![allow(unused_imports)]
 //! use actix::prelude::*;
 //! ```
 
+pub use msgs;
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
 pub use actor::{Actor, Supervised, MessageHandler, MessageResponse, StreamHandler};
@@ -21,10 +22,4 @@ pub use system::System;
 pub use supervisor::Supervisor;
 pub use registry::{ArbiterService, SystemService};
 
-pub mod actix {
-    pub use actors;
-    pub use sink::Sink;
-    pub use utils::Condition;
-    pub use system::SystemExit;
-    pub use arbiter::{Execute, StartActor, StopArbiter};
-}
+pub mod actix {}
