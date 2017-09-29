@@ -57,7 +57,7 @@ pub use arbiter::{Arbiter, Execute, StartActor, StopArbiter};
 pub use builder::ActorBuilder;
 pub use context::{ActorState, Context, ContextFutureSpawner};
 pub use message::{MessageResult, MessageFuture, MessageFutureResult, MessageFutureError};
-pub use registry::{Registry, SystemRegistry};
+pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use sink::Sink;
 pub use system::{System, SystemExit, SystemRunner};
 pub use utils::Condition;

@@ -14,14 +14,7 @@
 //!
 //! struct Signals;
 //!
-//! impl Actor for Signals {
-//!
-//!   // disable real code for test
-//!   // fn started(&mut self, ctx: &mut Context<Self>) {
-//!   //     let addr: Address<_> = signal::ProcessSignals::run();
-//!   //     addr.send(signal::Subscribe(ctx.subscriber()))
-//!   // }
-//! }
+//! impl Actor for Signals {}
 //!
 //! impl MessageResponse<signal::Signal> for Signals {
 //!     type Item = ();
@@ -111,15 +104,12 @@ impl Default for ProcessSignals {
     }
 }
 
-impl Actor for ProcessSignals {
+impl Actor for ProcessSignals {}
+impl SupervisedActor for ProcessSignals {}
 
-    fn started(&mut self, ctx: &mut Context<Self>) {
-        // allow only one instance of the actor
-        if Arbiter::system_registry().register(ctx.address()).is_err() {
-            ctx.stop();
-            return
-        }
+impl SystemService for ProcessSignals {
 
+    fn service_started(&mut self, ctx: &mut Context<Self>) {
         let handle = Arbiter::handle();
 
         // SIGINT
@@ -221,11 +211,7 @@ impl Default for DefaultSignalsHandler {
 
 impl Actor for DefaultSignalsHandler {
     fn started(&mut self, ctx: &mut Context<Self>) {
-        let addr = if let Some(addr) = Arbiter::system_registry().query::<ProcessSignals>() {
-            addr
-        } else {
-            ProcessSignals::run()
-        };
+        let addr = Arbiter::system_registry().get::<ProcessSignals>();
         let slf: SyncAddress<_> = ctx.address();
         addr.send(Subscribe(slf.subscriber()))
     }

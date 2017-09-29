@@ -19,6 +19,7 @@ pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
 pub use message::{MessageFuture, MessageFutureResult, MessageFutureError, MessageResult};
 pub use system::System;
 pub use supervisor::Supervisor;
+pub use registry::{ArbiterService, SystemService};
 
 pub mod actix {
     pub use actors;
