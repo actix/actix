@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::default::Default;
 
-use actor::SupervisedActor;
+use actor::Supervised;
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
 use builder::ActorBuilder;
@@ -29,7 +29,7 @@ use supervisor::Supervisor;
 /// struct MyActor1;
 ///
 /// impl Actor for MyActor1 {}
-/// impl SupervisedActor for MyActor1 {}
+/// impl Supervised for MyActor1 {}
 ///
 /// impl ArbiterService for MyActor1 {
 ///    fn service_started(&mut self, ctx: &mut Context<Self>) {
@@ -81,12 +81,12 @@ pub struct Registry {
 }
 
 #[allow(unused_variables)]
-pub trait ArbiterService: SupervisedActor + Default {
+pub trait ArbiterService: Supervised + Default {
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 }
 
 #[allow(unused_variables)]
-pub trait SystemService: SupervisedActor + Default {
+pub trait SystemService: Supervised + Default {
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 }
 

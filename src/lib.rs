@@ -51,7 +51,7 @@ pub mod prelude;
 pub mod actors;
 pub mod framed;
 
-pub use actor::{Actor, SupervisedActor, MessageHandler, MessageResponse, StreamHandler};
+pub use actor::{Actor, Supervised, MessageHandler, MessageResponse, StreamHandler};
 pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use arbiter::{Arbiter, Execute, StartActor, StopArbiter};
 pub use builder::ActorBuilder;

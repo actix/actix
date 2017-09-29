@@ -19,7 +19,7 @@ impl Actor for MyActor {
         self.0.store(n+1, Ordering::Relaxed);
     }
 }
-impl SupervisedActor for MyActor {
+impl Supervised for MyActor {
     fn restarting(&mut self, _: &mut Context<MyActor>) {
         let n = self.1.load(Ordering::Relaxed);
         self.1.store(n+1, Ordering::Relaxed);
@@ -76,6 +76,9 @@ fn test_supervisor_lazy() {
     let restarts2 = Arc::clone(&restarts);
 
     let (addr, _) = Supervisor::start(true, move|_| MyActor(starts2, restarts2));
+
+    //
+    let super_addr = addr.clone();
 
     let starts3 = Arc::clone(&starts);
     Arbiter::handle().spawn_fn(move || {

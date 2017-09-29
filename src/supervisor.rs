@@ -1,7 +1,7 @@
 use std;
 use futures::{Future, Async, Poll, Stream};
 
-use actor::{Actor, SupervisedActor};
+use actor::{Actor, Supervised};
 use arbiter::{Arbiter, Execute};
 use address::{Address, SyncAddress, Proxy};
 use context::{Context, ContextProtocol};
@@ -9,8 +9,15 @@ use queue::{sync, unsync};
 
 /// Actor supervisor
 ///
+/// Supervisor manages incomimng message for actor. In case of actor failure, supervisor
+/// creates new execution context and restarts actor lifecycle. Actor can be
+/// constructed lazily.
+///
+/// Supervisor has same livecycle as actor. In situation when all addresses to supervisor
+/// get dropped and actor does not execution anything supervisor terminates.
+///
 /// `Supervisor` can not garantee that actor successfully process incoming message.
-/// If actor fails during message processing, this message can not be recovered. But sender
+/// If actor fails during message processing, this message can not be recovered. Sender
 /// would receive `Err(Cancelled)` error in this situation.
 ///
 /// ## Example
@@ -27,8 +34,8 @@ use queue::{sync, unsync};
 ///
 /// impl Actor for MyActor {}
 ///
-/// // To use actor with supervisor actor has to implement `SupervisedActor` trait
-/// impl SupervisedActor for MyActor {
+/// // To use actor with supervisor actor has to implement `Supervised` trait
+/// impl Supervised for MyActor {
 ///     fn restarting(&mut self, ctx: &mut Context<MyActor>) {
 ///         println!("restarting");
 ///     }
@@ -57,21 +64,22 @@ use queue::{sync, unsync};
 ///     sys.run();
 /// }
 /// ```
-pub struct Supervisor<A: SupervisedActor> {
+pub struct Supervisor<A: Supervised> {
     cell: Option<ActorCell<A>>,
     factory: Option<Box<FnFactory<A>>>,
     msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
     sync_msgs: sync::UnboundedReceiver<Proxy<A>>,
     msg: Option<ContextProtocol<A>>,
     sync_msg: Option<Proxy<A>>,
+    sync_alive: bool,
 }
 
-struct ActorCell<A: SupervisedActor> {
+struct ActorCell<A: Supervised> {
     ctx: Context<A>,
     addr: unsync::UnboundedSender<ContextProtocol<A>>,
 }
 
-impl<A> Supervisor<A> where A: SupervisedActor
+impl<A> Supervisor<A> where A: Supervised
 {
     /// Start new supervised actor. Depends on `lazy` argument actor could be started
     /// immidietly or on first incoming message.
@@ -101,6 +109,7 @@ impl<A> Supervisor<A> where A: SupervisedActor
             sync_msgs: srx,
             msg: None,
             sync_msg: None,
+            sync_alive: true,
         };
         let addr = Address::new(supervisor.msgs.sender());
         let saddr = SyncAddress::new(stx);
@@ -141,6 +150,7 @@ impl<A> Supervisor<A> where A: SupervisedActor
                     sync_msgs: rx,
                     msg: None,
                     sync_msg: None,
+                    sync_alive: true,
                 };
                 Arbiter::handle().spawn(supervisor);
                 Ok(())
@@ -183,7 +193,7 @@ impl<A> Supervisor<A> where A: SupervisedActor
 }
 
 #[doc(hidden)]
-impl<A> Future for Supervisor<A> where A: SupervisedActor
+impl<A> Future for Supervisor<A> where A: Supervised
 {
     type Item = ();
     type Error = ();
@@ -220,6 +230,7 @@ impl<A> Future for Supervisor<A> where A: SupervisedActor
                         not_ready = false;
                         match msg {
                             ContextProtocol::SyncAddress(tx) => {
+                                self.sync_alive = true;
                                 let _ = tx.send(SyncAddress::new(self.sync_msgs.sender()));
                             }
                             // if Actor message queue is dead, store in temp
@@ -258,7 +269,10 @@ impl<A> Future for Supervisor<A> where A: SupervisedActor
                             }
                         }
                     },
-                    Ok(Async::NotReady) | Ok(Async::Ready(None)) | Err(_) => (),
+                    Ok(Async::NotReady) => (),
+                    Ok(Async::Ready(None)) | Err(_) => {
+                        self.sync_alive = false
+                    }
                 }
             }
 
@@ -271,6 +285,13 @@ impl<A> Future for Supervisor<A> where A: SupervisedActor
             match self.get_cell().ctx.poll() {
                 Ok(Async::NotReady) => (),
                 Ok(Async::Ready(_)) | Err(_) => {
+                    // supervisor disconnected
+                    if !self.get_cell().ctx.alive() &&
+                        !self.msgs.connected() &&
+                        !self.sync_alive
+                    {
+                        return Ok(Async::Ready(()))
+                    }
                     self.restart();
                 }
             }

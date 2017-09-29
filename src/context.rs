@@ -7,7 +7,7 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
-use actor::{Actor, SupervisedActor, MessageHandler, StreamHandler};
+use actor::{Actor, Supervised, MessageHandler, StreamHandler};
 use address::{ActorAddress, Address, SyncAddress, Proxy, Subscriber};
 use message::MessageFuture;
 use sink::{Sink, SinkContext, SinkContextService};
@@ -196,7 +196,15 @@ impl<A> Context<A> where A: Actor
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
     }
 
-    pub(crate) fn restarting(&mut self) where A: SupervisedActor {
+    pub(crate) fn alive(&mut self) -> bool {
+        if self.state == ActorState::Stopped {
+            false
+        } else {
+            !self.address.connected() && self.items.is_empty()
+        }
+    }
+
+    pub(crate) fn restarting(&mut self) where A: Supervised {
         let ctx: &mut Context<A> = unsafe {
             std::mem::transmute(self as &mut Context<A>)
         };
@@ -359,26 +367,26 @@ impl<A> ActorAddressCell<A> where A: Actor
         }
     }
 
-    pub(crate) fn close(&mut self) {
+    pub fn close(&mut self) {
         self.unsync_msgs.close();
         if let Some(ref mut msgs) = self.sync_msgs {
             msgs.close()
         }
     }
 
-    pub(crate) fn connected(&mut self) -> bool {
+    pub fn connected(&mut self) -> bool {
         self.unsync_msgs.connected() || self.sync_alive
     }
 
-    pub(crate) fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
+    pub fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
         self.unsync_msgs.sender()
     }
 
-    pub(crate) fn unsync_address(&mut self) -> Address<A> {
+    pub fn unsync_address(&mut self) -> Address<A> {
         Address::new(self.unsync_msgs.sender())
     }
 
-    pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
+    pub fn sync_address(&mut self) -> SyncAddress<A> {
         if self.sync_msgs.is_none() {
             let (tx, rx) = sync::unbounded();
             self.sync_msgs = Some(rx);

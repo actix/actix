@@ -105,7 +105,7 @@ impl Default for ProcessSignals {
 }
 
 impl Actor for ProcessSignals {}
-impl SupervisedActor for ProcessSignals {}
+impl Supervised for ProcessSignals {}
 
 impl SystemService for ProcessSignals {
 

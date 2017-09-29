@@ -25,14 +25,33 @@ pub trait ActixActor {}
 /// streams to execution context. Actor trait provides several method that allows
 /// to control actor lifecycle.
 ///
+/// # Actor lifecycle
+///
+/// ## Started
+///
 /// Actor starts in `Started` state, during this state `started` method get called.
-/// Then state transitioned to `Running` state. Actor can stay in `running`
-/// state indefinitely long. Actor execution state changes to `stopping` state in following
-/// situations, `Context::stop` get called by actor itself. All addresses to the actor
-/// get dropped and no more evented objects are registered in context. Actor could
-/// restore from `stopping` state to running state by creating new address or adding
-/// future or stream in `Stopping` method. If non of this happend actor state
-/// changes to `Stopped`. This state is considered final and this point actor get dropped.
+///
+/// ## Running
+///
+/// Aftre Actor's method `started` get called, actor transitiones to `Running` state.
+/// Actor can stay in `running` state indefinitely long.
+///
+/// ## Stopping
+///
+/// Actor execution state changes to `stopping` state in following situations,
+///
+/// * `Context::stop` get called by actor itself
+/// * all addresses to the actor get dropped
+/// * no evented objects are registered in context.
+///
+/// Actor could restore from `stopping` state to `running` state by creating new
+/// address or adding evented object, like future or stream, in `Actor::stopping` method.
+///
+/// ## Stopped
+///
+/// If actor does not modify execution context during stooping state actor state changes
+/// to `Stopped`. This state is considered final and at this point actor get dropped.
+///
 pub trait Actor: Sized + 'static {
 
     /// Method is called when actor get polled first time.
@@ -56,10 +75,11 @@ pub trait Actor: Sized + 'static {
 ///
 /// Supervised actors can be managed by
 /// [Supervisor](https://fafhrd91.github.io/actix/actix/struct.Supervisor.html)
+/// Livecycle events are extended with `restarting` state for supervised actors.
 /// If actor failes supervisor create new execution context and restart actor.
 /// `restarting` method is called during restart. After call to this method
 /// Actor execute state changes to `Started` and normal lifecycle process starts.
-pub trait SupervisedActor: Actor {
+pub trait Supervised: Actor {
 
     /// Method called when supervisor restarting failed actor
     fn restarting(&mut self, ctx: &mut Context<Self>) {}
