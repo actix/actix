@@ -92,7 +92,10 @@ fn test_sync_address() {
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
                 addr2.send(Ping(4));
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::handle().spawn_fn(move || {
+                    Arbiter::system().send(msgs::SystemExit(0));
+                    future::result(Ok(()))
+                });
                 future::result(Ok(()))
             })
     });
