@@ -88,48 +88,38 @@ impl<A, M, T> std::convert::From<T> for Response<A, M>
           T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static,
 {
     fn from(fut: T) -> Response<A, M> {
-    Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
-}
-}
-
-/// Helper trait that converts result value into `Response` with `.to_response()` method.
-pub trait ResponseItem<A, M>
-    where A: Actor + MessageResponse<M, Item=Self>,
-          Self: Sized + 'static
-{
-    /// Convert value to `Response`
-    fn to_response(self) -> Response<A, M>;
-}
-
-impl<A, M, T> ResponseItem<A, M> for T
-    where A: Actor + MessageResponse<M, Item=Self>,
-          Self: Sized + 'static
-{
-    fn to_response(self) -> Response<A, M> {
-        Response {inner: Some(ResponseTypeItem::Item(self))}
-    }
-}
-
-/// Helper trait that converts error value into `Response` with `.to_error()` method.
-pub trait ResponseError<A, M>
-    where A: Actor + MessageResponse<M, Error=Self>,
-          Self: Sized + 'static
-{
-    /// Convert value to `Response`
-    fn to_error(self) -> Response<A, M>;
-}
-
-impl<A, M, T> ResponseError<A, M> for T
-    where A: Actor + MessageResponse<M, Error=Self>,
-          Self: Sized + 'static
-{
-    fn to_error(self) -> Response<A, M> {
-        Response {inner: Some(ResponseTypeItem::Error(self))}
+        Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
     }
 }
 
 impl<A, M> Response<A, M> where A: Actor + MessageResponse<M>
 {
+    /// Create response
+    #[allow(non_snake_case)]
+    pub fn Reply(val: A::Item) -> Self {
+        Response {inner: Some(ResponseTypeItem::Item(val))}
+    }
+
+    /// Create async response
+    #[allow(non_snake_case)]
+    pub fn AsyncReply<T>(fut: T) -> Self
+        where T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static
+    {
+        Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
+    }
+
+    /// Create unit response
+    #[allow(non_snake_case)]
+    pub fn Empty() -> Self where A: MessageResponse<M, Item=()> {
+        Response {inner: Some(ResponseTypeItem::Item(()))}
+    }
+
+    /// Create error response
+    #[allow(non_snake_case)]
+    pub fn Error(err: A::Error) -> Self {
+        Response {inner: Some(ResponseTypeItem::Error(err))}
+    }
+
     pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<A::Item, A::Error>
     {
         if let Some(item) = self.inner.take() {

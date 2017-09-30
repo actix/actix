@@ -8,7 +8,7 @@ use arbiter::Arbiter;
 use builder::ActorBuilder;
 use context::Context;
 use msgs::{SystemExit, StopArbiter};
-use message::{Response, ResponseItem};
+use message::Response;
 
 /// System is an actor which manages process.
 ///
@@ -128,7 +128,7 @@ impl MessageHandler<SystemExit> for System {
         if let Some(stop) = self.stop.take() {
             let _ = stop.send(msg.0);
         }
-        ().to_response()
+        Response::Reply(())
     }
 }
 
@@ -148,7 +148,7 @@ impl MessageHandler<RegisterArbiter> for System {
               -> Response<Self, RegisterArbiter>
     {
         self.arbiters.insert(msg.0, msg.1);
-        ().to_response()
+        Response::Reply(())
     }
 }
 
@@ -168,6 +168,6 @@ impl MessageHandler<UnregisterArbiter> for System {
               -> Response<Self, UnregisterArbiter>
     {
         self.arbiters.remove(&msg.0);
-        ().to_response()
+        Response::Reply(())
     }
 }

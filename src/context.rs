@@ -126,7 +126,7 @@ impl<A> Context<A> where A: Actor
     ///     }
     ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) -> Response<Self, Ping> {
     ///         println!("PING");
-    ///         ().to_response()
+    ///         Response::Reply(())
     ///     }
     /// }
     ///

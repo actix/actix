@@ -75,7 +75,7 @@ use context::Context;
 /// impl MessageHandler<Message> for MyActor {
 ///    fn handle(&mut self, msg: Message, ctx: &mut Context<Self>)
 ///              -> Response<Self, Message> {
-///        ().to_response()
+///        Response::Reply(())
 ///    }
 /// }
 ///

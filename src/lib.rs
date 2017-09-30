@@ -57,7 +57,7 @@ pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;
 pub use context::{ActorState, Context, ContextFutureSpawner};
-pub use message::{Request, Response, ResponseItem, ResponseError};
+pub use message::{Request, Response};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use sink::Sink;
 pub use system::{System, SystemRunner};

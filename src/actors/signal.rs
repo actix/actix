@@ -45,7 +45,7 @@
 //!             }
 //!             _ => (),
 //!         };
-//!         ().to_response()
+//!         Response::Empty()
 //!     }
 //! }
 //!
@@ -174,7 +174,7 @@ impl MessageHandler<SignalType, io::Error> for ProcessSignals {
                 self.subscribers.push(subscr);
             }
         }
-        ().to_response()
+        Response::Empty()
     }
 
     fn error(&mut self, err: io::Error, _: &mut Context<ProcessSignals>) {
@@ -197,9 +197,8 @@ impl MessageHandler<Subscribe> for ProcessSignals {
               _: &mut Context<ProcessSignals>) -> Response<Self, Subscribe>
     {
         self.subscribers.push(msg.0);
-        ().to_response()
+        Response::Empty()
     }
-
 }
 
 /// Default signals handler. This actor sends `SystemExit` message to `System` actor
@@ -249,6 +248,6 @@ impl MessageHandler<Signal> for DefaultSignalsHandler {
             }
             _ => (),
         };
-        ().to_response()
+        Response::Empty()
     }
 }

@@ -10,7 +10,7 @@ use address::{Address, SyncAddress};
 use builder::ActorBuilder;
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};
-use message::{Response, ResponseItem, ResponseError};
+use message::Response;
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};
 
@@ -206,7 +206,7 @@ impl MessageHandler<StopArbiter> for Arbiter {
                 }
             });
         }
-        ().to_response()
+        Response::Reply(())
     }
 }
 
@@ -220,7 +220,7 @@ impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
     fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>)
               -> Response<Self, StartActor<A>>
     {
-        msg.call().to_response()
+        Response::Reply(msg.call())
     }
 }
 
@@ -237,8 +237,8 @@ impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for Arbiter {
               -> Response<Self, Execute<I, E>>
     {
         match msg.exec() {
-            Ok(i) => i.to_response(),
-            Err(e) => e.to_error(),
+            Ok(i) => Response::Reply(i),
+            Err(e) => Response::Error(e),
         }
     }
 }

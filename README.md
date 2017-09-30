@@ -1,8 +1,9 @@
-# Actix [![Build Status](https://travis-ci.org/fafhrd91/actix.svg?branch=master)](https://travis-ci.org/fafhrd91/actix)
+# Actix [![Build Status](https://travis-ci.org/fafhrd91/actix.svg?branch=master)](https://travis-ci.org/fafhrd91/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
 
 Actix is a rust actor system framework.
 
-* [API Documentation](http://fafhrd91.github.io/actix/actix/)
+* [API Documentation (Releases)](https://docs.rs/actix/)
+* [API Documentation (Development)](http://fafhrd91.github.io/actix/actix/)
 * Cargo package: [actix](https://crates.io/crates/actix)
 
 ---
@@ -110,7 +111,7 @@ impl MessageHandler<Sum> for Summator {
 
     fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Response<Self, Sum> {
         let sum = msg.0 + msg.1;
-        sum.to_response()
+        Response::Reply(sum)
     }
 }
 
@@ -204,7 +205,7 @@ impl MessageHandler<Ping> for Game {
                  })
                  .spawn(ctx);
         }
-        ().to_response()
+        Response::Empty()
     }
 }
 
