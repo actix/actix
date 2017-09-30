@@ -91,7 +91,7 @@ impl<A> Address<A> where A: Actor {
     pub fn upgrade(&self) -> Receiver<SyncAddress<A>> {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            ContextProtocol::SyncAddress(tx));
+            ContextProtocol::Upgrade(tx));
 
         rx
     }

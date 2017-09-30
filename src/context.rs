@@ -32,7 +32,7 @@ pub(crate) enum ContextProtocol<A: Actor> {
     /// message envelope
     Envelope(Envelope<A>),
     /// Request sync address
-    SyncAddress(Sender<SyncAddress<A>>),
+    Upgrade(Sender<SyncAddress<A>>),
 }
 
 /// Actor execution context
@@ -420,7 +420,7 @@ impl<A> ActorFuture for ActorAddressCell<A> where A: Actor
                         ContextProtocol::Envelope(mut env) => {
                             env.handle(act, ctx)
                         }
-                        ContextProtocol::SyncAddress(tx) => {
+                        ContextProtocol::Upgrade(tx) => {
                             let _ = tx.send(self.sync_address());
                         }
                     }

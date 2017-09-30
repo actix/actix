@@ -217,7 +217,7 @@ impl<A> Future for Supervisor<A> where A: Supervised
             // check messages
             if let Some(msg) = self.msg.take() {
                 match msg {
-                    ContextProtocol::SyncAddress(_) => (),
+                    ContextProtocol::Upgrade(_) => (),
                     // if Actor message queue is dead, store in temp
                     msg => {
                         if let Err(msg) = self.get_cell().addr.unbounded_send(msg) {
@@ -231,7 +231,7 @@ impl<A> Future for Supervisor<A> where A: Supervised
                     Ok(Async::Ready(Some(msg))) => {
                         not_ready = false;
                         match msg {
-                            ContextProtocol::SyncAddress(tx) => {
+                            ContextProtocol::Upgrade(tx) => {
                                 self.sync_alive = true;
                                 let _ = tx.send(SyncAddress::new(self.sync_msgs.sender()));
                             }
