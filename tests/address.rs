@@ -40,6 +40,7 @@ impl Actor for MyActor2 {
                 let addr = addr.unwrap();
                 addr.send(Ping(10));
                 act.1 = Some(addr);
+                Arbiter::system().send(msgs::SystemExit(0));
                 fut::ok(())
             }).spawn(ctx);
     }
@@ -83,19 +84,16 @@ fn test_sync_address() {
 
     arbiter.send(msgs::Execute::new(move || -> Result<(), ()> {
         addr3.send(Ping(2));
+        Arbiter::system().send(msgs::SystemExit(0));
         Ok(())
     }));
     
     Arbiter::handle().spawn_fn(move || {
         addr2.send(Ping(3));
 
-        Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
+        Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
                 addr2.send(Ping(4));
-                Arbiter::handle().spawn_fn(move || {
-                    Arbiter::system().send(msgs::SystemExit(0));
-                    future::result(Ok(()))
-                });
                 future::result(Ok(()))
             })
     });

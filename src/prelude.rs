@@ -13,7 +13,7 @@ pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
 pub use actor::{Actor, Supervised, MessageHandler, MessageResponse, StreamHandler};
 pub use arbiter::Arbiter;
-pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
+pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;
 pub use context::{ActorState, Context, ContextFutureSpawner};
 pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};

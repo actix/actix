@@ -1,8 +1,6 @@
 use std::cell::Cell;
-use futures::{Future, Poll};
-use futures::unsync::oneshot::{channel, Canceled, Receiver};
-use futures::sync::oneshot::{channel as sync_channel,
-                             Canceled as SyncCanceled, Receiver as SyncReceiver};
+use futures::unsync::oneshot::{channel, Receiver};
+use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
 use actor::{Actor, MessageHandler, MessageResponse};
 use context::{Context, ContextProtocol};
@@ -13,28 +11,32 @@ use queue::{sync, unsync};
 
 #[doc(hidden)]
 pub trait ActorAddress<A, T> where A: Actor {
-
     fn get(ctx: &mut Context<A>) -> T;
 }
 
-pub trait Subscriber<M: 'static> {
-
-    /// Buffered send
-    fn send(&self, msg: M);
-
-    /// Unbuffered send
-    fn unbuffered_send(&self, msg: M) -> Result<(), M>;
+impl<A> ActorAddress<A, Address<A>> for A where A: Actor {
+    fn get(ctx: &mut Context<A>) -> Address<A> {
+        ctx.address_cell().unsync_address()
+    }
 }
 
-pub trait AsyncSubscriber<M> {
+impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A where A: Actor {
+    fn get(ctx: &mut Context<A>) -> (Address<A>, SyncAddress<A>) {
+        (ctx.address_cell().unsync_address(), ctx.address_cell().sync_address())
+    }
+}
 
-    type Future: Future;
+impl<A> ActorAddress<A, ()> for A where A: Actor {
+    fn get(_: &mut Context<A>) -> () {
+        ()
+    }
+}
 
-    /// Send message, wait response asynchronously
-    fn call(&self, msg: M) -> Self::Future;
 
-    /// Send message, wait response asynchronously
-    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M>;
+pub trait Subscriber<M: 'static> {
+
+    /// Buffered message
+    fn send(&self, msg: M) -> Result<(), M>;
 
 }
 
@@ -54,6 +56,11 @@ impl<A> Address<A> where A: Actor {
 
     pub(crate) fn new(sender: unsync::UnboundedSender<ContextProtocol<A>>) -> Address<A> {
         Address{tx: sender}
+    }
+
+    /// Indicates if address is still connected to the actor.
+    pub fn connected(&self) -> bool {
+        self.tx.connected()
     }
 
     /// Send message `M` to actor `A`.
@@ -104,86 +111,18 @@ impl<A> Address<A> where A: Actor {
     }
 }
 
-impl<A, M: 'static> Subscriber<M> for Address<A>
-    where A: Actor + MessageHandler<M>
+impl<A, M> Subscriber<M> for Address<A>
+    where A: Actor + MessageHandler<M>,
+          M: 'static
 {
 
-    fn send(&self, msg: M) {
-        self.send(msg)
-    }
-
-    fn unbuffered_send(&self, msg: M) -> Result<(), M> {
-        self.send(msg);
-        Ok(())
-    }
-}
-
-impl<A, M: 'static> AsyncSubscriber<M> for Address<A>
-    where A: Actor + MessageHandler<M>
-{
-    type Future = CallResult<A::Item, A::Error>;
-
-    fn call(&self, msg: M) -> Self::Future
-    {
-        let (tx, rx) = channel();
-        let _ = self.tx.unbounded_send(
-            ContextProtocol::Envelope(Envelope::local(msg, Some(tx))));
-
-        CallResult::new(rx)
-    }
-
-    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M>
-    {
-        let (tx, rx) = channel();
-        let _ = self.tx.unbounded_send(
-            ContextProtocol::Envelope(Envelope::local(msg, Some(tx))));
-
-        Ok(CallResult::new(rx))
-    }
-}
-
-impl<A> ActorAddress<A, Address<A>> for A where A: Actor {
-
-    fn get(ctx: &mut Context<A>) -> Address<A> {
-        ctx.address_cell().unsync_address()
-    }
-}
-
-impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A where A: Actor {
-
-    fn get(ctx: &mut Context<A>) -> (Address<A>, SyncAddress<A>) {
-        (ctx.address_cell().unsync_address(), ctx.address_cell().sync_address())
-    }
-}
-
-impl<A> ActorAddress<A, ()> for A where A: Actor {
-
-    fn get(_: &mut Context<A>) -> () {
-        ()
-    }
-}
-
-#[must_use = "future do nothing unless polled"]
-pub struct CallResult<I, E>
-{
-    rx: Receiver<Result<I, E>>,
-}
-
-impl<I, E> CallResult<I, E>
-{
-    pub(crate) fn new(rx: Receiver<Result<I, E>>) -> CallResult<I, E> {
-        CallResult{rx: rx}
-    }
-}
-
-impl<I, E> Future for CallResult<I, E>
-{
-    type Item = Result<I, E>;
-    type Error = Canceled;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error>
-    {
-        self.rx.poll()
+    fn send(&self, msg: M) -> Result<(), M> {
+        if self.connected() {
+            self.send(msg);
+            Ok(())
+        } else {
+            Err(msg)
+        }
     }
 }
 
@@ -195,8 +134,8 @@ pub struct SyncAddress<A> where A: Actor {
 
 impl<A> Clone for SyncAddress<A> where A: Actor {
     fn clone(&self) -> Self {
-    SyncAddress{tx: self.tx.clone(), closed: self.closed.clone()}
-}
+        SyncAddress{tx: self.tx.clone(), closed: self.closed.clone()}
+    }
 }
 
 impl<A> ActorAddress<A, SyncAddress<A>> for A where A: Actor {
@@ -212,9 +151,9 @@ impl<A> SyncAddress<A> where A: Actor {
         SyncAddress{tx: sender, closed: Cell::new(false)}
     }
 
-    /// Indicates if address is closed on other side.
-    pub fn is_closed(&self) -> bool {
-        self.closed.get()
+    /// Indicates if address is still connected to the actor.
+    pub fn connected(&self) -> bool {
+        !self.closed.get()
     }
 
     /// Send message `M` to actor `A`. Message cold be sent to actor running in
@@ -253,8 +192,7 @@ impl<A> SyncAddress<A> where A: Actor {
               A::Error: Send,
     {
         let (tx, rx) = sync_channel();
-        if self.tx.unbounded_send(Envelope::remote(msg, Some(tx))).is_err()
-        {
+        if self.tx.unbounded_send(Envelope::remote(msg, Some(tx))).is_err() {
             self.closed.set(true)
         }
 
@@ -269,78 +207,20 @@ impl<A> SyncAddress<A> where A: Actor {
     {
         Box::new(self.clone())
     }
-
-    pub fn async_subscriber<M>(
-        &self) -> Box<AsyncSubscriber<M, Future=SyncCallResult<A::Item, A::Error>>>
-        where A: MessageHandler<M>,
-              A::Item: Send,
-              A::Error: Send,
-              M: 'static + Send,
-    {
-        Box::new(self.clone())
-    }
 }
 
 impl<A, M> Subscriber<M> for SyncAddress<A>
-    where M: 'static + Send,
+    where A: Actor + MessageHandler<M>,
           A::Item: Send,
           A::Error: Send,
-          A: Actor + MessageHandler<M>
+          M: Send + 'static
 {
-    fn send(&self, msg: M) {
-        self.send(msg)
-    }
-
-    fn unbuffered_send(&self, msg: M) -> Result<(), M> {
-        self.send(msg);
-        Ok(())
-    }
-}
-
-impl<A, M> AsyncSubscriber<M> for SyncAddress<A>
-    where M: 'static + Send,
-          A: Actor + MessageHandler<M>,
-          A::Item: Send,
-          A::Error: Send,
-{
-    type Future = SyncCallResult<A::Item, A::Error>;
-
-    fn call(&self, msg: M) -> Self::Future
-    {
-        let (tx, rx) = sync_channel();
-        if self.tx.unbounded_send(Envelope::remote(msg, Some(tx))).is_err()
-        {
-            self.closed.set(true)
+    fn send(&self, msg: M) -> Result<(), M> {
+        if self.connected() {
+            self.send(msg);
+            Ok(())
+        } else {
+            Err(msg)
         }
-
-        SyncCallResult::new(rx)
-    }
-
-    fn unbuffered_call(&self, msg: M) -> Result<Self::Future, M>
-    {
-        Ok(AsyncSubscriber::call(self, msg))
-    }
-}
-
-#[must_use = "future do nothing unless polled"]
-pub struct SyncCallResult<I, E>
-{
-    rx: SyncReceiver<Result<I, E>>,
-}
-
-impl<I, E> SyncCallResult<I, E>
-{
-    fn new(rx: SyncReceiver<Result<I, E>>) -> SyncCallResult<I, E> {
-        SyncCallResult{rx: rx}
-    }
-}
-
-impl<I, E> Future for SyncCallResult<I, E>
-{
-    type Item = Result<I, E>;
-    type Error = SyncCanceled;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.rx.poll()
     }
 }

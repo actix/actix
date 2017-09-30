@@ -125,9 +125,7 @@ impl<A> Supervisor<A> where A: Supervised
     pub fn start_in<F>(addr: SyncAddress<Arbiter>, lazy: bool, f: F) -> Option<SyncAddress<A>>
         where F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
-        if addr.is_closed() {
-            None
-        } else {
+        if addr.connected() {
             let (tx, rx) = sync::unbounded();
 
             addr.send(Execute::new(move || -> Result<(), ()> {
@@ -158,11 +156,13 @@ impl<A> Supervisor<A> where A: Supervised
                 Ok(())
             }));
 
-            if addr.is_closed() {
-                None
-            } else {
+            if addr.connected() {
                 Some(SyncAddress::new(tx))
+            } else {
+                None
             }
+        } else {
+            None
         }
     }
 

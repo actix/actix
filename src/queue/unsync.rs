@@ -58,6 +58,13 @@ pub struct Sender<T> {
 }
 
 impl<T> Sender<T> {
+    pub fn connected(&self) -> bool {
+        match self.shared.upgrade() {
+            Some(_) => true,
+            None => false,
+        }
+    }
+
     fn do_send(&self, msg: T) -> StartSend<T, SendError<T>> {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -301,15 +308,8 @@ impl<'a, T> Sink for &'a UnboundedSender<T> {
 }
 
 impl<T> UnboundedSender<T> {
-    /// Sends the provided message along this channel.
-    ///
-    /// This is an unbounded sender, so this function differs from `Sink::send`
-    /// by ensuring the return type reflects that the channel is always ready to
-    /// receive messages.
-    #[deprecated(note = "renamed to `unbounded_send`")]
-    #[doc(hidden)]
-    pub fn send(&self, msg: T) -> Result<(), SendError<T>> {
-        self.unbounded_send(msg)
+    pub fn connected(&self) -> bool {
+        self.0.connected()
     }
 
     /// Sends the provided message along this channel.

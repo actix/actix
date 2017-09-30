@@ -1,11 +1,10 @@
 use std::collections::VecDeque;
-use futures::{self, Async, AsyncSink};
-use futures::unsync::oneshot::{channel, Sender};
+use futures::{self, Async, AsyncSink, Future, Poll};
+use futures::unsync::oneshot::{channel, Canceled, Sender, Receiver};
 
 use actor::Actor;
-use address::{Subscriber, AsyncSubscriber};
+use address::Subscriber;
 use context::Context;
-use address::CallResult;
 
 /// Sink wrapper
 pub struct Sink<I, E> {
@@ -17,29 +16,21 @@ impl<I, E> Sink<I, E> {
     pub(crate) fn new(srv: *mut SinkContext<I, E>) -> Sink<I, E> {
         Sink{srv: srv as *mut _}
     }
+
+    pub fn call(&self, msg: I) -> CallResult<(), E> {
+        unsafe {(&mut *self.srv).call(msg)}
+    }
+
+    pub fn unbuffered_call(&self, msg: I) -> Result<CallResult<(), E>, I> {
+        unsafe {(&mut *self.srv).unbuffered_call(msg)}
+    }
 }
 
 impl<I: 'static, E> Subscriber<I> for Sink<I, E> {
 
-    fn send(&self, msg: I) {
-        unsafe {(&mut *self.srv).send(msg)}
-    }
-
-    fn unbuffered_send(&self, msg: I) -> Result<(), I> {
-        unsafe {(&mut *self.srv).unbuffered_send(msg)}
-    }
-}
-
-impl<I, E> AsyncSubscriber<I> for Sink<I, E> {
-
-    type Future = CallResult<(), E>;
-
-    fn call(&self, msg: I) -> Self::Future {
-        unsafe {(&mut *self.srv).call(msg)}
-    }
-
-    fn unbuffered_call(&self, msg: I) -> Result<Self::Future, I> {
-        unsafe {(&mut *self.srv).unbuffered_call(msg)}
+    fn send(&self, msg: I) -> Result<(), I> {
+        unsafe {(&mut *self.srv).send(msg)};
+        Ok(())
     }
 }
 
@@ -90,6 +81,7 @@ impl<I, E> SinkContext<I, E>
         self.sink_items.push_back(IoItem::Message(msg));
     }
 
+    #[allow(dead_code)]
     pub fn unbuffered_send(&mut self, msg: I) -> Result<(), I> {
         if self.sink_items.is_empty() {
             self.sink_items.push_back(IoItem::Message(msg));
@@ -97,6 +89,29 @@ impl<I, E> SinkContext<I, E>
         } else {
             Err(msg)
         }
+    }
+}
+
+#[must_use = "future do nothing unless polled"]
+pub struct CallResult<I, E> {
+    rx: Receiver<Result<I, E>>,
+}
+
+impl<I, E> CallResult<I, E>
+{
+    pub(crate) fn new(rx: Receiver<Result<I, E>>) -> CallResult<I, E> {
+        CallResult{rx: rx}
+    }
+}
+
+impl<I, E> Future for CallResult<I, E>
+{
+    type Item = Result<I, E>;
+    type Error = Canceled;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error>
+    {
+        self.rx.poll()
     }
 }
 

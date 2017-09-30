@@ -67,6 +67,7 @@
 //!    std::process::exit(code);
 //! }
 //! ```
+use std;
 use std::io;
 use libc;
 use futures::{Future, Stream};
@@ -167,8 +168,11 @@ impl MessageHandler<SignalType, io::Error> for ProcessSignals {
 
     fn handle(&mut self, msg: SignalType, _: &mut Context<Self>) -> Response<Self, SignalType>
     {
-        for subscr in &self.subscribers {
-            subscr.send(Signal(msg))
+        let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
+        for subscr in subscribers {
+            if subscr.send(Signal(msg)).is_ok() {
+                self.subscribers.push(subscr);
+            }
         }
         ().to_response()
     }

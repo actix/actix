@@ -53,8 +53,8 @@ pub mod framed;
 pub mod msgs;
 
 pub use actor::{Actor, Supervised, MessageHandler, MessageResponse, StreamHandler};
-pub use address::{Address, SyncAddress, Subscriber, AsyncSubscriber};
 pub use arbiter::Arbiter;
+pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;
 pub use context::{ActorState, Context, ContextFutureSpawner};
 pub use message::{Request, Response, ResponseItem, ResponseError};
