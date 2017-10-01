@@ -18,8 +18,8 @@ pub trait ActixActor {}
 /// or thread safe address
 /// [`SyncAddress<A>`](https://fafhrd91.github.io/actix/actix/struct.SyncAddress.html)
 /// To be able to handle specific message actor has to provide
-/// [`MessageHandler<M>`](
-/// file:///Users/nikki/personal/ctx/target/doc/actix/trait.MessageHandler.html)
+/// [`Handler<M>`](
+/// file:///Users/nikki/personal/ctx/target/doc/actix/trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
 /// handled in asynchronous fasion. Actor can spawn other actors or add futures or
 /// streams to execution context. Actor trait provides several method that allows
@@ -90,24 +90,24 @@ impl<T> ActixActor for T where T: Actor {}
 
 /// Message handler
 ///
-/// `MessageHandler` implementation is a general way how to handle
+/// `Handler` implementation is a general way how to handle
 /// incoming messages, streams, futures.
 ///
 /// `M` is message which can be handled by actor
 /// `E` optional error type, if message handler is used for handling messages
 ///  from Future or Stream, then `E` type has to be set to correspondent `Error` type.
 #[allow(unused_variables)]
-pub trait MessageHandler<M, E=()> where Self: Actor + MessageResponse<M>
+pub trait Handler<M, E=()> where Self: Actor + ResponseType<M>
 {
-    /// Method is called on error. By default it does nothing.
-    fn error(&mut self, err: E, ctx: &mut Context<Self>) {}
-
     /// Method is called for every message received by this Actor
     fn handle(&mut self, msg: M, ctx: &mut Context<Self>) -> Response<Self, M>;
+
+    /// Method is called on error. By default it does nothing.
+    fn error(&mut self, err: E, ctx: &mut Context<Self>) {}
 }
 
-/// Message response
-pub trait MessageResponse<M> where Self: Actor {
+/// Response type
+pub trait ResponseType<M> where Self: Actor {
 
     /// The type of value that this message will resolved with if it is successful.
     type Item;
@@ -118,10 +118,10 @@ pub trait MessageResponse<M> where Self: Actor {
 
 /// Stream handler
 ///
-/// `StreamHandler` is an extension of a `MessageHandler` with several stream specific
+/// `StreamHandler` is an extension of a `Handler` with several stream specific
 /// methods.
 #[allow(unused_variables)]
-pub trait StreamHandler<M, E>: MessageHandler<M, E> + MessageResponse<M>
+pub trait StreamHandler<M, E>: Handler<M, E> + ResponseType<M>
     where Self: Actor
 {
     /// Method is called when stream get polled first time.
@@ -129,5 +129,4 @@ pub trait StreamHandler<M, E>: MessageHandler<M, E> + MessageResponse<M>
 
     /// Method is called when stream finishes.
     fn finished(&mut self, ctx: &mut Context<Self>) {}
-
 }

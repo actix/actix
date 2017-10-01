@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
-use actor::{Actor, MessageHandler, MessageResponse};
+use actor::{Actor, Handler, ResponseType};
 use address::SyncAddress;
 use arbiter::Arbiter;
 use builder::ActorBuilder;
@@ -111,12 +111,12 @@ impl SystemRunner {
 }
 
 #[doc(hidden)]
-impl MessageResponse<SystemExit> for System {
+impl ResponseType<SystemExit> for System {
     type Item = ();
     type Error = ();
 }
 
-impl MessageHandler<SystemExit> for System {
+impl Handler<SystemExit> for System {
 
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>) -> Response<Self, SystemExit>
     {
@@ -136,13 +136,13 @@ impl MessageHandler<SystemExit> for System {
 pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);
 
 #[doc(hidden)]
-impl MessageResponse<RegisterArbiter> for System {
+impl ResponseType<RegisterArbiter> for System {
     type Item = ();
     type Error = ();
 }
 
 #[doc(hidden)]
-impl MessageHandler<RegisterArbiter> for System {
+impl Handler<RegisterArbiter> for System {
 
     fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>)
               -> Response<Self, RegisterArbiter>
@@ -156,13 +156,13 @@ impl MessageHandler<RegisterArbiter> for System {
 pub(crate) struct UnregisterArbiter(pub String);
 
 #[doc(hidden)]
-impl MessageResponse<UnregisterArbiter> for System {
+impl ResponseType<UnregisterArbiter> for System {
     type Item = ();
     type Error = ();
 }
 
 #[doc(hidden)]
-impl MessageHandler<UnregisterArbiter> for System {
+impl Handler<UnregisterArbiter> for System {
 
     fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>)
               -> Response<Self, UnregisterArbiter>

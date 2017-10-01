@@ -107,16 +107,15 @@ struct Summator;
 impl Actor for Summator {}
 
 // now we need to define `MessageHandler` for `Sum` message.
-impl MessageHandler<Sum> for Summator {
+impl Handler<Sum> for Summator {
 
     fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Response<Self, Sum> {
-        let sum = msg.0 + msg.1;
-        Response::Reply(sum)
+        Response::Reply(msg.0 + msg.1)
     }
 }
 
 // we have to define type of response for `Sum` message
-impl MessageResponse<Sum> for Summator {
+impl ResponseType<Sum> for Summator {
     type Item = usize;
     type Error = ();
 }
@@ -185,7 +184,7 @@ struct Game {
 impl Actor for Game {}
 
 // message handler for Ping message
-impl MessageHandler<Ping> for Game {
+impl Handler<Ping> for Game {
 
     fn handle(&mut self, msg: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
         self.counter += 1;
@@ -209,7 +208,7 @@ impl MessageHandler<Ping> for Game {
     }
 }
 
-impl MessageResponse<Ping> for Game {
+impl ResponseType<Ping> for Game {
     type Item = ();
     type Error = ();
 }

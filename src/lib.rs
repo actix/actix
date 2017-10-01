@@ -52,7 +52,7 @@ pub mod actors;
 pub mod framed;
 pub mod msgs;
 
-pub use actor::{Actor, Supervised, MessageHandler, MessageResponse, StreamHandler};
+pub use actor::{Actor, Supervised, Handler, ResponseType, StreamHandler};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;

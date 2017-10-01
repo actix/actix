@@ -7,9 +7,9 @@ use futures::sync::oneshot::{Receiver as SyncReceiver};
 
 use fut::ActorFuture;
 use context::Context;
-use actor::{Actor, MessageHandler, MessageResponse};
+use actor::{Actor, Handler, ResponseType};
 
-enum RequestIo<M, A: MessageHandler<M>> {
+enum RequestIo<M, A: Handler<M>> {
     Local(Receiver<Result<A::Item, A::Error>>),
     Remote(SyncReceiver<Result<A::Item, A::Error>>),
 }
@@ -17,7 +17,7 @@ enum RequestIo<M, A: MessageHandler<M>> {
 /// `Request` is a `Future` which represents asyncronous message sending process.
 #[must_use = "future do nothing unless polled"]
 pub struct Request<A, B, M>
-    where A: MessageHandler<M>,
+    where A: Actor + Handler<M>,
           B: Actor
 {
     rx: RequestIo<M, A>,
@@ -25,7 +25,7 @@ pub struct Request<A, B, M>
 }
 
 impl<A, B, M> Request<A, B, M>
-    where A: MessageHandler<M>, B: Actor
+    where A: Actor + Handler<M>, B: Actor
 {
     pub(crate) fn local(rx: Receiver<Result<A::Item, A::Error>>) -> Request<A, B, M>
     {
@@ -38,7 +38,7 @@ impl<A, B, M> Request<A, B, M>
 }
 
 impl<A, B, M> Future for Request<A, B, M>
-    where A: MessageHandler<M>, B: Actor
+    where A: Actor + Handler<M>, B: Actor
 {
     type Item = Result<A::Item, A::Error>;
     type Error = Canceled;
@@ -53,7 +53,7 @@ impl<A, B, M> Future for Request<A, B, M>
 }
 
 impl<A, B, M> ActorFuture for Request<A, B, M>
-    where A: MessageHandler<M>,
+    where A: Actor + Handler<M>,
           B: Actor,
 {
     type Item = Result<A::Item, A::Error>;
@@ -69,22 +69,22 @@ impl<A, B, M> ActorFuture for Request<A, B, M>
     }
 }
 
-enum ResponseTypeItem<A, M> where A: Actor + MessageResponse<M>
+/// `Response` represents asyncronous message handling process.
+pub struct Response<A, M> where A: Actor + ResponseType<M>,
+{
+    inner: Option<ResponseTypeItem<A, M>>,
+}
+
+enum ResponseTypeItem<A, M> where A: Actor + ResponseType<M>
 {
     Item(A::Item),
     Error(A::Error),
     Fut(Box<ActorFuture<Item=A::Item, Error=A::Error, Actor=A>>)
 }
 
-/// `Response` represents asyncronous message handling process.
-pub struct Response<A, M> where A: Actor + MessageResponse<M>,
-{
-    inner: Option<ResponseTypeItem<A, M>>,
-}
-
 /// Helper trait that converts compatible `ActorFuture` type to `Response`.
 impl<A, M, T> std::convert::From<T> for Response<A, M>
-    where A: Actor + MessageHandler<M>,
+    where A: Actor + Handler<M>,
           T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static,
 {
     fn from(fut: T) -> Response<A, M> {
@@ -92,7 +92,7 @@ impl<A, M, T> std::convert::From<T> for Response<A, M>
     }
 }
 
-impl<A, M> Response<A, M> where A: Actor + MessageResponse<M>
+impl<A, M> Response<A, M> where A: Actor + ResponseType<M>
 {
     /// Create response
     #[allow(non_snake_case)]
@@ -110,7 +110,7 @@ impl<A, M> Response<A, M> where A: Actor + MessageResponse<M>
 
     /// Create unit response
     #[allow(non_snake_case)]
-    pub fn Empty() -> Self where A: MessageResponse<M, Item=()> {
+    pub fn Empty() -> Self where A: ResponseType<M, Item=()> {
         Response {inner: Some(ResponseTypeItem::Item(()))}
     }
 

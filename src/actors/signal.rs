@@ -16,13 +16,13 @@
 //!
 //! impl Actor for Signals {}
 //!
-//! impl MessageResponse<signal::Signal> for Signals {
+//! impl ResponseType<signal::Signal> for Signals {
 //!     type Item = ();
 //!     type Error = ();
 //! }
 //!
 //! // Shutdown system on and of `SIGINT`, `SIGTERM`, `SIGQUIT` signals
-//! impl MessageHandler<signal::Signal> for Signals {
+//! impl Handler<signal::Signal> for Signals {
 //!
 //!     fn handle(&mut self, msg: signal::Signal, _: &mut Context<Self>)
 //!               -> Response<Self, signal::Signal>
@@ -158,13 +158,13 @@ impl SystemService for ProcessSignals {
 #[doc(hidden)]
 impl StreamHandler<SignalType, io::Error> for ProcessSignals {}
 
-impl MessageResponse<SignalType> for ProcessSignals {
+impl ResponseType<SignalType> for ProcessSignals {
     type Item = ();
     type Error = ();
 }
 
 #[doc(hidden)]
-impl MessageHandler<SignalType, io::Error> for ProcessSignals {
+impl Handler<SignalType, io::Error> for ProcessSignals {
 
     fn handle(&mut self, msg: SignalType, _: &mut Context<Self>) -> Response<Self, SignalType>
     {
@@ -185,13 +185,13 @@ impl MessageHandler<SignalType, io::Error> for ProcessSignals {
 /// Subscribe to process signals.
 pub struct Subscribe(pub Box<Subscriber<Signal> + Send>);
 
-impl MessageResponse<Subscribe> for ProcessSignals {
+impl ResponseType<Subscribe> for ProcessSignals {
     type Item = ();
     type Error = ();
 }
 
 /// Add subscriber for signals
-impl MessageHandler<Subscribe> for ProcessSignals {
+impl Handler<Subscribe> for ProcessSignals {
 
     fn handle(&mut self, msg: Subscribe,
               _: &mut Context<ProcessSignals>) -> Response<Self, Subscribe>
@@ -219,14 +219,14 @@ impl Actor for DefaultSignalsHandler {
     }
 }
 
-impl MessageResponse<Signal> for DefaultSignalsHandler {
+impl ResponseType<Signal> for DefaultSignalsHandler {
     type Item = ();
     type Error = ();
 }
 
 /// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send `SystemExit(0)`
 /// message to `System` actor.
-impl MessageHandler<Signal> for DefaultSignalsHandler {
+impl Handler<Signal> for DefaultSignalsHandler {
 
     fn handle(&mut self, msg: Signal, _: &mut Context<Self>) -> Response<Self, Signal>
     {

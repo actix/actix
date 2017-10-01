@@ -11,7 +11,7 @@
 pub use msgs;
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
-pub use actor::{Actor, Supervised, MessageHandler, MessageResponse, StreamHandler};
+pub use actor::{Actor, Supervised, Handler, ResponseType, StreamHandler};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;

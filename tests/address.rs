@@ -16,12 +16,12 @@ struct MyActor(Arc<AtomicUsize>);
 
 impl Actor for MyActor {}
 
-impl MessageResponse<Ping> for MyActor {
+impl ResponseType<Ping> for MyActor {
     type Item = ();
     type Error = ();
 }
 
-impl MessageHandler<Ping> for MyActor {
+impl Handler<Ping> for MyActor {
 
     fn handle(&mut self, msg: Ping, _: &mut Context<MyActor>) -> Response<Self, Ping> {
         println!("PING: {:?}", msg);

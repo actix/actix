@@ -5,7 +5,7 @@ use uuid::Uuid;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
-use actor::{Actor, MessageHandler, MessageResponse};
+use actor::{Actor, Handler, ResponseType};
 use address::{Address, SyncAddress};
 use builder::ActorBuilder;
 use context::Context;
@@ -187,12 +187,12 @@ impl Arbiter {
 }
 
 #[doc(hidden)]
-impl MessageResponse<StopArbiter> for Arbiter {
+impl ResponseType<StopArbiter> for Arbiter {
     type Item = ();
     type Error = ();
 }
 
-impl MessageHandler<StopArbiter> for Arbiter {
+impl Handler<StopArbiter> for Arbiter {
 
     fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>) -> Response<Self, StopArbiter>
     {
@@ -210,28 +210,27 @@ impl MessageHandler<StopArbiter> for Arbiter {
     }
 }
 
-impl<A> MessageResponse<StartActor<A>> for Arbiter where A: Actor {
+impl<A> ResponseType<StartActor<A>> for Arbiter where A: Actor {
     type Item = SyncAddress<A>;
     type Error = ();
 }
 
-impl<A> MessageHandler<StartActor<A>> for Arbiter where A: Actor {
+impl<A> Handler<StartActor<A>> for Arbiter where A: Actor {
 
-    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>)
-              -> Response<Self, StartActor<A>>
+    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Response<Self, StartActor<A>>
     {
         Response::Reply(msg.call())
     }
 }
 
 /// Execute message response
-impl<I: Send, E: Send> MessageResponse<Execute<I, E>> for Arbiter {
+impl<I: Send, E: Send> ResponseType<Execute<I, E>> for Arbiter {
     type Item = I;
     type Error = E;
 }
 
 /// Execute function in arbiter's thread
-impl<I: Send, E: Send> MessageHandler<Execute<I, E>> for Arbiter {
+impl<I: Send, E: Send> Handler<Execute<I, E>> for Arbiter {
 
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
               -> Response<Self, Execute<I, E>>

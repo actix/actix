@@ -1,8 +1,8 @@
 use std::any::{Any, TypeId};
-use std::sync::{Arc, Mutex};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::default::Default;
+use std::sync::{Arc, Mutex};
 
 use actor::Supervised;
 use arbiter::Arbiter;
@@ -13,7 +13,7 @@ use supervisor::Supervisor;
 
 /// Actors registry
 ///
-/// Actor can register itself as service. Service can be defined as
+/// Actor can register itself as a service. Service can be defined as
 /// `ArbiterService` which is unique per arbiter or `SystemService` which is
 /// unique per system.
 ///
@@ -37,12 +37,12 @@ use supervisor::Supervisor;
 ///    }
 /// }
 ///
-/// impl MessageResponse<Ping> for MyActor1 {
+/// impl ResponseType<Ping> for MyActor1 {
 ///    type Item = ();
 ///    type Error = ();
 /// }
 ///
-/// impl MessageHandler<Ping> for MyActor1 {
+/// impl Handler<Ping> for MyActor1 {
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
 ///       println!("ping");
@@ -80,13 +80,17 @@ pub struct Registry {
     registry: RefCell<HashMap<TypeId, Box<Any>>>,
 }
 
+/// Trait defines arbiter's service.
 #[allow(unused_variables)]
 pub trait ArbiterService: Supervised + Default {
+    /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 }
 
+/// Trait defines system's service.
 #[allow(unused_variables)]
 pub trait SystemService: Supervised + Default {
+    /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 }
 

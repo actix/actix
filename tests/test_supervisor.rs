@@ -26,12 +26,12 @@ impl Supervised for MyActor {
     }
 }
 
-impl MessageResponse<Die> for MyActor {
+impl ResponseType<Die> for MyActor {
     type Item = ();
     type Error = ();
 }
 
-impl MessageHandler<Die> for MyActor {
+impl Handler<Die> for MyActor {
 
     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> Response<Self, Die> {
         ctx.stop();

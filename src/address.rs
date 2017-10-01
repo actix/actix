@@ -2,7 +2,7 @@ use std::cell::Cell;
 use futures::unsync::oneshot::{channel, Receiver};
 use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
-use actor::{Actor, MessageHandler, MessageResponse};
+use actor::{Actor, Handler, ResponseType};
 use context::{Context, ContextProtocol};
 use envelope::Envelope;
 use message::Request;
@@ -64,7 +64,7 @@ impl<A> Address<A> where A: Actor {
     }
 
     /// Send message `M` to actor `A`.
-    pub fn send<M: 'static>(&self, msg: M) where A: MessageHandler<M>
+    pub fn send<M: 'static>(&self, msg: M) where A: Handler<M>
     {
         let _ = self.tx.unbounded_send(
             ContextProtocol::Envelope(Envelope::local(msg, None)));
@@ -72,7 +72,7 @@ impl<A> Address<A> where A: Actor {
 
     /// Send message to actor `A` and asyncronously wait for response.
     pub fn call<B: Actor, M>(&self, msg: M) -> Request<A, B, M>
-        where A: MessageHandler<M>,
+        where A: Handler<M>,
               M: 'static
     {
         let (tx, rx) = channel();
@@ -84,7 +84,7 @@ impl<A> Address<A> where A: Actor {
 
     /// Send message to actor `A` and asyncronously wait for response.
     pub fn call_fut<M>(&self, msg: M) -> Receiver<Result<A::Item, A::Error>>
-        where A: MessageHandler<M>,
+        where A: Handler<M>,
               M: 'static
     {
         let (tx, rx) = channel();
@@ -105,14 +105,14 @@ impl<A> Address<A> where A: Actor {
 
     /// Get `Subscriber` for specific message type
     pub fn subscriber<M: 'static>(&self) -> Box<Subscriber<M>>
-        where A: MessageHandler<M>
+        where A: Handler<M>
     {
         Box::new(self.clone())
     }
 }
 
 impl<A, M> Subscriber<M> for Address<A>
-    where A: Actor + MessageHandler<M>,
+    where A: Actor + Handler<M>,
           M: 'static
 {
 
@@ -159,7 +159,7 @@ impl<A> SyncAddress<A> where A: Actor {
     /// Send message `M` to actor `A`. Message cold be sent to actor running in
     /// different thread.
     pub fn send<M: 'static + Send>(&self, msg: M)
-        where A: MessageHandler<M> + MessageResponse<M>,
+        where A: Handler<M> + ResponseType<M>,
               A::Item: Send,
               A::Error: Send,
     {
@@ -171,7 +171,7 @@ impl<A> SyncAddress<A> where A: Actor {
 
     /// Send message to actor `A` and asyncronously wait for response.
     pub fn call<B: Actor, M: 'static + Send>(&self, msg: M) -> Request<A, B, M>
-        where A: MessageHandler<M>,
+        where A: Handler<M>,
               A::Item: Send,
               A::Error: Send,
     {
@@ -186,7 +186,7 @@ impl<A> SyncAddress<A> where A: Actor {
 
     /// Send message to actor `A` and asyncronously wait for response.
     pub fn call_fut<M>(&self, msg: M) -> SyncReceiver<Result<A::Item, A::Error>>
-        where A: MessageHandler<M>,
+        where A: Handler<M>,
               M: Send + 'static,
               A::Item: Send,
               A::Error: Send,
@@ -201,7 +201,7 @@ impl<A> SyncAddress<A> where A: Actor {
 
     /// Get `Subscriber` for specific message type
     pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M> + Send>
-        where A: MessageHandler<M>,
+        where A: Handler<M>,
               A::Item: Send,
               A::Error: Send,
     {
@@ -210,7 +210,7 @@ impl<A> SyncAddress<A> where A: Actor {
 }
 
 impl<A, M> Subscriber<M> for SyncAddress<A>
-    where A: Actor + MessageHandler<M>,
+    where A: Actor + Handler<M>,
           A::Item: Send,
           A::Error: Send,
           M: Send + 'static

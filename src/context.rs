@@ -7,7 +7,7 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
-use actor::{Actor, Supervised, MessageHandler, StreamHandler};
+use actor::{Actor, Supervised, Handler, StreamHandler};
 use address::{ActorAddress, Address, SyncAddress, Subscriber};
 use envelope::Envelope;
 use message::Response;
@@ -74,14 +74,14 @@ impl<A> Context<A> where A: Actor
 
     #[doc(hidden)]
     pub fn subscriber<M: 'static>(&mut self) -> Box<Subscriber<M>>
-        where A: MessageHandler<M>
+        where A: Handler<M>
     {
         Box::new(self.address.unsync_address())
     }
 
     #[doc(hidden)]
     pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
-        where A: MessageHandler<M>,
+        where A: Handler<M>,
               A::Item: Send,
               A::Error: Send,
     {
@@ -115,12 +115,12 @@ impl<A> Context<A> where A: Actor
     ///
     /// struct MyActor;
     ///
-    /// impl MessageResponse<Ping> for MyActor {
+    /// impl ResponseType<Ping> for MyActor {
     ///     type Item = ();
     ///     type Error = ();
     /// }
     ///
-    /// impl MessageHandler<Ping, std::io::Error> for MyActor {
+    /// impl Handler<Ping, std::io::Error> for MyActor {
     ///     fn error(&mut self, err: std::io::Error, ctx: &mut Context<MyActor>) {
     ///         println!("Error: {}", err);
     ///     }
@@ -143,7 +143,7 @@ impl<A> Context<A> where A: Actor
     /// ```
     pub fn add_future<F>(&mut self, fut: F)
         where F: Future + 'static,
-              A: MessageHandler<F::Item, F::Error>,
+              A: Handler<F::Item, F::Error>,
     {
         if self.state == ActorState::Stopped {
             error!("Context::add_future called for stopped actor.");
@@ -155,7 +155,7 @@ impl<A> Context<A> where A: Actor
     /// This method is similar to `add_future` but works with streams.
     pub fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
-              A: MessageHandler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
+              A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
     {
         if self.state == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
@@ -453,7 +453,7 @@ impl<A> ActorFuture for ActorAddressCell<A> where A: Actor
 
 
 struct ActorFutureCell<A, M, F, E>
-    where A: Actor + MessageHandler<M, E>,
+    where A: Actor + Handler<M, E>,
           F: Future<Item=M, Error=E>,
 {
     act: std::marker::PhantomData<A>,
@@ -462,7 +462,7 @@ struct ActorFutureCell<A, M, F, E>
 }
 
 impl<A, M, F, E> ActorFutureCell<A, M, F, E>
-    where A: Actor + MessageHandler<M, E>,
+    where A: Actor + Handler<M, E>,
           F: Future<Item=M, Error=E>,
 {
     fn new(fut: F) -> ActorFutureCell<A, M, F, E>
@@ -475,7 +475,7 @@ impl<A, M, F, E> ActorFutureCell<A, M, F, E>
 }
 
 impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
-    where A: Actor + MessageHandler<M, E>,
+    where A: Actor + Handler<M, E>,
           F: Future<Item=M, Error=E>,
 {
     type Item = ();
@@ -500,14 +500,14 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
 
             match self.fut.poll() {
                 Ok(Async::Ready(msg)) => {
-                    let fut = <Self::Actor as MessageHandler<M, E>>::handle(act, msg, ctx);
+                    let fut = <Self::Actor as Handler<M, E>>::handle(act, msg, ctx);
                     self.result = Some(fut);
                     continue
                 }
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
                 Err(err) => {
-                    <Self::Actor as MessageHandler<M, E>>::error(act, err, ctx);
+                    <Self::Actor as Handler<M, E>>::error(act, err, ctx);
                     return Err(())
                 }
             }
@@ -518,7 +518,7 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
 
 struct ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + MessageHandler<M, E> + StreamHandler<M, E>,
+          A: Actor + Handler<M, E> + StreamHandler<M, E>,
 {
     act: std::marker::PhantomData<A>,
     started: bool,
@@ -528,7 +528,7 @@ struct ActorStreamCell<A, M, E, S>
 
 impl<A, M, E, S> ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
-          A: Actor + MessageHandler<M, E> + StreamHandler<M, E>,
+          A: Actor + Handler<M, E> + StreamHandler<M, E>,
 {
     fn new(fut: S) -> ActorStreamCell<A, M, E, S>
     {
@@ -542,7 +542,7 @@ impl<A, M, E, S> ActorStreamCell<A, M, E, S>
 
 impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + MessageHandler<M, E> + StreamHandler<M, E>,
+          A: Actor + Handler<M, E> + StreamHandler<M, E>,
 {
     type Item = ();
     type Error = ();
@@ -569,7 +569,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = <Self::Actor as MessageHandler<M, E>>::handle(act, msg, ctx);
+                    let fut = <Self::Actor as Handler<M, E>>::handle(act, msg, ctx);
                     self.fut = Some(fut);
                     continue
                 }
@@ -580,7 +580,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
                 Err(err) => {
-                    <Self::Actor as MessageHandler<M, E>>::error(act, err, ctx);
+                    <Self::Actor as Handler<M, E>>::error(act, err, ctx);
                     return Err(())
                 }
             }
