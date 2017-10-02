@@ -1,7 +1,7 @@
 use std;
 use futures::{Future, Async, Poll, Stream};
 
-use actor::{Actor, Supervised};
+use actor::{Actor, Supervised, AsyncContext};
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
 use context::{Context, ContextProtocol};
@@ -34,7 +34,9 @@ use queue::{sync, unsync};
 ///
 /// struct MyActor;
 ///
-/// impl Actor for MyActor {}
+/// impl Actor for MyActor {
+///     type Context = Context<Self>;
+/// }
 ///
 /// // To use actor with supervisor actor has to implement `Supervised` trait
 /// impl Supervised for MyActor {
@@ -66,7 +68,7 @@ use queue::{sync, unsync};
 ///     sys.run();
 /// }
 /// ```
-pub struct Supervisor<A: Supervised> {
+pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
     cell: Option<ActorCell<A>>,
     factory: Option<Box<FnFactory<A>>>,
     msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
@@ -77,16 +79,17 @@ pub struct Supervisor<A: Supervised> {
 }
 
 struct ActorCell<A: Supervised> {
-    ctx: Context<A>,
+    ctx: A::Context,
     addr: unsync::UnboundedSender<ContextProtocol<A>>,
 }
 
-impl<A> Supervisor<A> where A: Supervised
+impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor. Depends on `lazy` argument actor could be started
     /// immidietly or on first incoming message.
     pub fn start<F>(lazy: bool, f: F) -> (Address<A>, SyncAddress<A>)
-        where F: FnOnce(&mut Context<A>) -> A + 'static
+        where A: Actor<Context=Context<A>>,
+              F: FnOnce(&mut A::Context) -> A + 'static
     {
         // create actor
         let (cell, factory) = if !lazy {
@@ -123,7 +126,8 @@ impl<A> Supervisor<A> where A: Supervised
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
     /// actor could be started immidietly or on first incoming message.
     pub fn start_in<F>(addr: SyncAddress<Arbiter>, lazy: bool, f: F) -> Option<SyncAddress<A>>
-        where F: FnOnce(&mut Context<A>) -> A + Send + 'static
+        where A: Actor<Context=Context<A>>,
+              F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
         if addr.connected() {
             let (tx, rx) = sync::unbounded();
@@ -195,7 +199,7 @@ impl<A> Supervisor<A> where A: Supervised
 }
 
 #[doc(hidden)]
-impl<A> Future for Supervisor<A> where A: Supervised
+impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     type Item = ();
     type Error = ();
@@ -301,13 +305,15 @@ impl<A> Future for Supervisor<A> where A: Supervised
     }
 }
 
-trait FnFactory<A: Actor>: 'static {
-    fn call(self: Box<Self>, &mut Context<A>) -> A;
+trait FnFactory<A: Actor>: 'static where A::Context: AsyncContext<A> {
+    fn call(self: Box<Self>, &mut A::Context) -> A;
 }
 
-impl<A: Actor, F: FnOnce(&mut Context<A>) -> A + 'static> FnFactory<A> for F {
+impl<A: Actor, F: FnOnce(&mut A::Context) -> A + 'static> FnFactory<A> for F
+    where A::Context: AsyncContext<A>
+{
     #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
-    fn call(self: Box<Self>, ctx: &mut Context<A>) -> A {
+    fn call(self: Box<Self>, ctx: &mut A::Context) -> A {
         (*self)(ctx)
     }
 }

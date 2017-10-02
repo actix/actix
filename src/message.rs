@@ -6,7 +6,6 @@ use futures::unsync::oneshot::{Canceled, Receiver};
 use futures::sync::oneshot::{Receiver as SyncReceiver};
 
 use fut::ActorFuture;
-use context::Context;
 use actor::{Actor, Handler, ResponseType};
 
 enum RequestIo<M, A: Handler<M>> {
@@ -60,7 +59,9 @@ impl<A, B, M> ActorFuture for Request<A, B, M>
     type Error = Canceled;
     type Actor = B;
 
-    fn poll(&mut self, _: &mut B, _: &mut Context<B>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self,
+            _: &mut B,
+            _: &mut <Self::Actor as Actor>::Context) -> Poll<Self::Item, Self::Error>
     {
         match self.rx {
             RequestIo::Local(ref mut rx) => rx.poll(),
@@ -120,7 +121,7 @@ impl<A, M> Response<A, M> where A: Actor + ResponseType<M>
         Response {inner: Some(ResponseTypeItem::Error(err))}
     }
 
-    pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<A::Item, A::Error>
+    pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<A::Item, A::Error>
     {
         if let Some(item) = self.inner.take() {
             match item {

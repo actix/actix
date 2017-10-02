@@ -2,9 +2,9 @@ use std::collections::VecDeque;
 use futures::{self, Async, AsyncSink, Future, Poll};
 use futures::unsync::oneshot::{channel, Canceled, Sender, Receiver};
 
-use actor::Actor;
+use actor::{Actor, AsyncContext};
 use address::Subscriber;
-use context::Context;
+
 
 /// Sink wrapper
 pub struct Sink<I, E> {
@@ -115,17 +115,17 @@ impl<I, E> Future for CallResult<I, E>
     }
 }
 
-pub(crate) trait SinkContextService<A: Actor> {
+pub(crate) trait SinkContextService<A: Actor> where A::Context: AsyncContext<A> {
 
-    fn poll(&mut self, srv: &mut A, ctx: &mut Context<A>) -> Async<()>;
+    fn poll(&mut self, srv: &mut A, ctx: &mut A::Context) -> Async<()>;
 
 }
 
 impl<A, I, E> SinkContextService<A> for SinkContext<I, E>
-    where A: Actor
+    where A: Actor,
+          A::Context: AsyncContext<A>
 {
-
-    fn poll(&mut self, _act: &mut A, _: &mut Context<A>) -> Async<()>
+    fn poll(&mut self, _act: &mut A, _: &mut A::Context) -> Async<()>
     {
         loop {
             let mut not_ready = true;

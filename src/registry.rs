@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::sync::{Arc, Mutex};
 
-use actor::Supervised;
+use actor::{Actor, Supervised};
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
 use builder::ActorBuilder;
@@ -28,7 +28,9 @@ use supervisor::Supervisor;
 /// #[derive(Default)]
 /// struct MyActor1;
 ///
-/// impl Actor for MyActor1 {}
+/// impl Actor for MyActor1 {
+///     type Context = Context<Self>;
+/// }
 /// impl Supervised for MyActor1 {}
 ///
 /// impl ArbiterService for MyActor1 {
@@ -54,6 +56,8 @@ use supervisor::Supervisor;
 /// struct MyActor2;
 ///
 /// impl Actor for MyActor2 {
+///    type Context = Context<Self>;
+///
 ///    fn started(&mut self, _: &mut Context<Self>) {
 ///       let act = Arbiter::registry().get::<MyActor1>();
 ///       act.send(Ping)
@@ -82,14 +86,14 @@ pub struct Registry {
 
 /// Trait defines arbiter's service.
 #[allow(unused_variables)]
-pub trait ArbiterService: Supervised + Default {
+pub trait ArbiterService: Actor<Context=Context<Self>> + Supervised + Default {
     /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 }
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
-pub trait SystemService: Supervised + Default {
+pub trait SystemService: Actor<Context=Context<Self>> + Supervised + Default {
     /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 }
@@ -103,7 +107,7 @@ impl Registry {
     /// Query registry for specific actor. Returns address of the actor.
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
-    pub fn get<A: ArbiterService>(&self) -> Address<A> {
+    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Address<A> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
             if let Some(addr) = addr.downcast_ref::<Address<A>>() {
@@ -139,7 +143,7 @@ impl SystemRegistry {
 
     /// Return addres of the service. If service actor is not running
     /// it get started in system arbiter.
-    pub fn get<A: SystemService>(&self) -> SyncAddress<A> {
+    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> SyncAddress<A> {
         if let Ok(hm) = self.registry.lock() {
             if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
                 match addr.downcast_ref::<SyncAddress<A>>() {

@@ -7,25 +7,13 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
-use actor::{Actor, Supervised, Handler, StreamHandler};
-use address::{ActorAddress, Address, SyncAddress, Subscriber};
+use actor::{Actor, Supervised,
+            Handler, StreamHandler,
+            ActorState, AsyncContext, BaseContext};
+use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
 use message::Response;
 use sink::{Sink, SinkContext, SinkContextService};
-
-
-/// Actor execution state
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub enum ActorState {
-    /// Actor is started.
-    Started,
-    /// Actor is running.
-    Running,
-    /// Actor is stopping.
-    Stopping,
-    /// Actor is stopped.
-    Stopped,
-}
 
 /// context protocol
 pub(crate) enum ContextProtocol<A: Actor> {
@@ -36,12 +24,33 @@ pub(crate) enum ContextProtocol<A: Actor> {
 }
 
 /// Actor execution context
-pub struct Context<A> where A: Actor,
+pub struct Context<A> where A: Actor<Context=Context<A>>,
 {
     act: A,
     state: ActorState,
     items: Vec<IoItem<A>>,
     address: ActorAddressCell<A>,
+}
+
+impl<A> BaseContext<A> for Context<A> where A: Actor<Context=Self>
+{
+    /// Actor execution state
+    fn state(&self) -> ActorState {
+        self.state
+    }
+}
+
+impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
+{
+    fn spawn<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    {
+        if self.state == ActorState::Stopped {
+            error!("Context::spawn called for stopped actor.");
+        } else {
+            self.items.push(IoItem::SpawnFuture(Box::new(fut)))
+        }
+    }
 }
 
 /// io items
@@ -50,26 +59,14 @@ enum IoItem<A: Actor> {
     SpawnFuture(Box<ActorFuture<Item=(), Error=(), Actor=A>>),
 }
 
-impl<A> Context<A> where A: Actor
+impl<A> Context<A> where A: Actor<Context=Self>
 {
-    /// Actor execution state
-    pub fn state(&self) -> ActorState {
-        self.state
-    }
-
     /// Stop actor execution
     pub fn stop(&mut self) {
         if self.state == ActorState::Running {
             self.address.close();
             self.state = ActorState::Stopping;
         }
-    }
-
-    /// Get actor address
-    pub fn address<Address>(&mut self) -> Address
-        where A: ActorAddress<A, Address>
-    {
-        <A as ActorAddress<A, Address>>::get(self)
     }
 
     #[doc(hidden)]
@@ -88,82 +85,6 @@ impl<A> Context<A> where A: Actor
         self.address::<SyncAddress<_>>().subscriber()
     }
 
-    pub fn spawn<F>(&mut self, fut: F)
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
-    {
-        if self.state == ActorState::Stopped {
-            error!("Context::spawn called for stopped actor.");
-        } else {
-            self.items.push(IoItem::SpawnFuture(Box::new(fut)))
-        }
-    }
-
-    /// This method allow to handle Future in similar way as normal actor message.
-    ///
-    /// ```rust
-    /// extern crate actix;
-    /// extern crate futures;
-    /// extern crate tokio_core;
-    ///
-    /// use std::time::Duration;
-    /// use futures::Future;
-    /// use tokio_core::reactor::Timeout;
-    /// use actix::prelude::*;
-    ///
-    /// // Message
-    /// struct Ping;
-    ///
-    /// struct MyActor;
-    ///
-    /// impl ResponseType<Ping> for MyActor {
-    ///     type Item = ();
-    ///     type Error = ();
-    /// }
-    ///
-    /// impl Handler<Ping, std::io::Error> for MyActor {
-    ///     fn error(&mut self, err: std::io::Error, ctx: &mut Context<MyActor>) {
-    ///         println!("Error: {}", err);
-    ///     }
-    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) -> Response<Self, Ping> {
-    ///         println!("PING");
-    ///         Response::Reply(())
-    ///     }
-    /// }
-    ///
-    /// impl Actor for MyActor {
-    ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        ctx.add_future(
-    ///            Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
-    ///                .map(|_| Ping)
-    ///        );
-    ///    }
-    /// }
-    /// fn main() {}
-    /// ```
-    pub fn add_future<F>(&mut self, fut: F)
-        where F: Future + 'static,
-              A: Handler<F::Item, F::Error>,
-    {
-        if self.state == ActorState::Stopped {
-            error!("Context::add_future called for stopped actor.");
-        } else {
-            self.spawn(ActorFutureCell::new(fut))
-        }
-    }
-
-    /// This method is similar to `add_future` but works with streams.
-    pub fn add_stream<S>(&mut self, fut: S)
-        where S: Stream + 'static,
-              A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>,
-    {
-        if self.state == ActorState::Stopped {
-            error!("Context::add_stream called for stopped actor.");
-        } else {
-            self.spawn(ActorStreamCell::new(fut))
-        }
-    }
-
     pub fn add_sink<S>(&mut self, sink: S) -> Sink<S::SinkItem, S::SinkError>
         where S: futures::Sink + 'static,
     {
@@ -180,7 +101,7 @@ impl<A> Context<A> where A: Actor
 }
 
 
-impl<A> Context<A> where A: Actor
+impl<A> Context<A> where A: Actor<Context=Self>
 {
     pub(crate) fn new(act: A) -> Context<A>
     {
@@ -225,7 +146,7 @@ impl<A> Context<A> where A: Actor
 }
 
 #[doc(hidden)]
-impl<A> Future for Context<A> where A: Actor
+impl<A> Future for Context<A> where A: Actor<Context=Self>
 {
     type Item = ();
     type Error = ();
@@ -350,14 +271,14 @@ impl<A> Future for Context<A> where A: Actor
 
 
 pub(crate)
-struct ActorAddressCell<A> where A: Actor
+struct ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
     sync_alive: bool,
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
     unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
 
-impl<A> ActorAddressCell<A> where A: Actor
+impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
     fn new() -> ActorAddressCell<A> {
         ActorAddressCell {
@@ -401,13 +322,13 @@ impl<A> ActorAddressCell<A> where A: Actor
     }
 }
 
-impl<A> ActorFuture for ActorAddressCell<A> where A: Actor
+impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
     type Item = ();
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
     {
         loop {
             let mut not_ready = true;
@@ -452,8 +373,10 @@ impl<A> ActorFuture for ActorAddressCell<A> where A: Actor
 }
 
 
+pub(crate)
 struct ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
+          A::Context: AsyncContext<A>,
           F: Future<Item=M, Error=E>,
 {
     act: std::marker::PhantomData<A>,
@@ -463,9 +386,10 @@ struct ActorFutureCell<A, M, F, E>
 
 impl<A, M, F, E> ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
+          A::Context: AsyncContext<A>,
           F: Future<Item=M, Error=E>,
 {
-    fn new(fut: F) -> ActorFutureCell<A, M, F, E>
+    pub fn new(fut: F) -> ActorFutureCell<A, M, F, E>
     {
         ActorFutureCell {
             act: std::marker::PhantomData,
@@ -476,13 +400,14 @@ impl<A, M, F, E> ActorFutureCell<A, M, F, E>
 
 impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
+          A::Context: AsyncContext<A>,
           F: Future<Item=M, Error=E>,
 {
     type Item = ();
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
     {
         loop {
             if let Some(mut fut) = self.result.take() {
@@ -515,10 +440,11 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
     }
 }
 
-
+pub(crate)
 struct ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
+          A::Context: AsyncContext<A>
 {
     act: std::marker::PhantomData<A>,
     started: bool,
@@ -529,8 +455,9 @@ struct ActorStreamCell<A, M, E, S>
 impl<A, M, E, S> ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
+          A::Context: AsyncContext<A>
 {
-    fn new(fut: S) -> ActorStreamCell<A, M, E, S>
+    pub fn new(fut: S) -> ActorStreamCell<A, M, E, S>
     {
         ActorStreamCell {
             act: std::marker::PhantomData,
@@ -543,12 +470,13 @@ impl<A, M, E, S> ActorStreamCell<A, M, E, S>
 impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
+          A::Context: AsyncContext<A>
 {
     type Item = ();
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
     {
         if !self.started {
             self.started = true;
@@ -589,17 +517,18 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 }
 
 /// Helper trait which can spawn future into actor's context
-pub trait ContextFutureSpawner<A> where A: Actor {
+pub trait ContextFutureSpawner<A> where A: Actor, A::Context: AsyncContext<A> {
     /// spawn future into `Context<A>`
-    fn spawn(self, fut: &mut Context<A>);
+    fn spawn(self, fut: &mut A::Context);
 }
 
 
 impl<A, T> ContextFutureSpawner<A> for T
     where A: Actor,
+          A::Context: AsyncContext<A>,
           T: ActorFuture<Item=(), Error=(), Actor=A> + 'static
 {
-    fn spawn(self, ctx: &mut Context<A>) {
+    fn spawn(self, ctx: &mut A::Context) {
         ctx.spawn(self)
     }
 }

@@ -14,7 +14,9 @@
 //!
 //! struct Signals;
 //!
-//! impl Actor for Signals {}
+//! impl Actor for Signals {
+//!     type Context = Context<Self>;
+//! }
 //!
 //! impl ResponseType<signal::Signal> for Signals {
 //!     type Item = ();
@@ -105,7 +107,10 @@ impl Default for ProcessSignals {
     }
 }
 
-impl Actor for ProcessSignals {}
+impl Actor for ProcessSignals {
+    type Context = Context<Self>;
+}
+
 impl Supervised for ProcessSignals {}
 
 impl SystemService for ProcessSignals {
@@ -212,6 +217,8 @@ impl Default for DefaultSignalsHandler {
 }
 
 impl Actor for DefaultSignalsHandler {
+    type Context = Context<Self>;
+
     fn started(&mut self, ctx: &mut Context<Self>) {
         let addr = Arbiter::system_registry().get::<ProcessSignals>();
         let slf: SyncAddress<_> = ctx.address();

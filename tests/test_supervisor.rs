@@ -14,6 +14,8 @@ struct Die;
 struct MyActor(Arc<AtomicUsize>, Arc<AtomicUsize>);
 
 impl Actor for MyActor {
+    type Context = Context<Self>;
+
     fn started(&mut self, _: &mut Context<MyActor>) {
         let n = self.0.load(Ordering::Relaxed);
         self.0.store(n+1, Ordering::Relaxed);

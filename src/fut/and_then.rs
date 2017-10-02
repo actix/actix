@@ -1,8 +1,8 @@
 use futures::Poll;
 
+use actor::Actor;
 use super::chain::Chain;
 use super::{ActorFuture, IntoActorFuture};
-use context::Context;
 
 
 /// Future for the `and_then` combinator, chaining a computation onto the end of
@@ -30,13 +30,15 @@ pub fn new<A, B, F>(future: A, f: F) -> AndThen<A, B, F>
 impl<A, B, F> ActorFuture for AndThen<A, B, F>
     where A: ActorFuture,
           B: IntoActorFuture<Actor=A::Actor, Error=A::Error>,
-          F: FnOnce(A::Item, &mut A::Actor, &mut Context<A::Actor>) -> B,
+          F: FnOnce(A::Item, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> B,
 {
     type Item = B::Item;
     type Error = B::Error;
     type Actor = A::Actor;
 
-    fn poll(&mut self, act: &mut A::Actor, ctx: &mut Context<A::Actor>) -> Poll<B::Item, B::Error>
+    fn poll(&mut self,
+            act: &mut A::Actor,
+            ctx: &mut <A::Actor as Actor>::Context) -> Poll<B::Item, B::Error>
     {
         self.state.poll(act, ctx, |result, f, act, ctx| {
             result.map(|e| {

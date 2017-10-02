@@ -17,7 +17,6 @@ pub use self::map_err::MapErr;
 pub use self::result::{result, ok, err, FutureResult};
 
 use actor::Actor;
-use context::Context;
 
 
 pub trait ActorFuture {
@@ -33,18 +32,18 @@ pub trait ActorFuture {
     /// The actor within which this future runs
     type Actor: Actor;
 
-    fn poll(&mut self, srv: &mut Self::Actor, ctx: &mut Context<Self::Actor>)
+    fn poll(&mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
             -> Poll<Self::Item, Self::Error>;
 
     fn map<F, U>(self, f: F) -> Map<Self, F>
-        where F: FnOnce(Self::Item, &mut Self::Actor, &mut Context<Self::Actor>) -> U,
+        where F: FnOnce(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
               Self: Sized,
     {
         map::new(self, f)
     }
 
     fn map_err<F, E>(self, f: F) -> MapErr<Self, F>
-        where F: FnOnce(Self::Error, &mut Self::Actor, &mut Context<Self::Actor>) -> E,
+        where F: FnOnce(Self::Error, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> E,
               Self: Sized,
     {
         map_err::new(self, f)
@@ -52,7 +51,7 @@ pub trait ActorFuture {
 
     fn then<F, B>(self, f: F) -> Then<Self, B, F>
         where F: FnOnce(Result<Self::Item, Self::Error>,
-                        &mut Self::Actor, &mut Context<Self::Actor>) -> B,
+                        &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> B,
               B: IntoActorFuture<Actor=Self::Actor>,
               Self: Sized,
     {
@@ -61,7 +60,7 @@ pub trait ActorFuture {
 
     /// Execute another future after this one has resolved successfully.
     fn and_then<F, B>(self, f: F) -> AndThen<Self, B, F>
-        where F: FnOnce(Self::Item, &mut Self::Actor, &mut Context<Self::Actor>) -> B,
+        where F: FnOnce(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> B,
               B: IntoActorFuture<Error=Self::Error, Actor=Self::Actor>,
               Self: Sized,
     {
@@ -142,7 +141,7 @@ impl<F, A> ActorFuture for FutureWrap<F, A>
     type Error = F::Error;
     type Actor = A;
 
-    fn poll(&mut self, _: &mut Self::Actor, _: &mut Context<Self::Actor>)
+    fn poll(&mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context)
             -> Poll<Self::Item, Self::Error>
     {
         self.fut.poll()

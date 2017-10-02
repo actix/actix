@@ -3,7 +3,7 @@
 use std;
 use futures::{future, Stream};
 
-use actor::{Actor, Handler, StreamHandler};
+use actor::{Actor, Handler, StreamHandler, AsyncContext};
 use address::ActorAddress;
 use arbiter::Arbiter;
 use context::Context;
@@ -24,7 +24,9 @@ use context::Context;
 /// System::new("test".to_owned());
 ///
 /// struct MyActor;
-/// impl Actor for MyActor {}
+/// impl Actor for MyActor {
+///     type Context = Context<Self>;
+/// }
 ///
 /// let addr: Address<MyActor> = MyActor.start();
 /// ```
@@ -38,7 +40,9 @@ use context::Context;
 /// use actix::*;
 ///
 /// struct MyActor;
-/// impl Actor for MyActor {}
+/// impl Actor for MyActor {
+///     type Context = Context<Self>;
+/// }
 ///
 /// fn main() {
 ///    // initialize system
@@ -61,7 +65,9 @@ use context::Context;
 /// use actix::prelude::*;
 ///
 /// struct MyActor;
-/// impl Actor for MyActor {}
+/// impl Actor for MyActor {
+///     type Context = Context<Self>;
+/// }
 ///
 /// struct Message;
 ///
@@ -94,6 +100,7 @@ use context::Context;
 /// instance of actor.
 pub trait ActorBuilder<A, Addr=()>
     where A: Actor + Sized + 'static,
+          A::Context: AsyncContext<A>,
           Self: ActorAddress<A, Addr>,
 {
     /// Start new actor, returns address of newly created actor.
@@ -119,7 +126,7 @@ pub trait ActorBuilder<A, Addr=()>
 }
 
 impl<A, Addr> ActorBuilder<A, Addr> for A
-    where A: Actor,
+    where A: Actor<Context=Context<A>>,
           Self: ActorAddress<A, Addr>,
 {
     fn run() -> Addr where Self: Default

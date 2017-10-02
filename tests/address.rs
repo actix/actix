@@ -14,7 +14,9 @@ struct Ping(usize);
 
 struct MyActor(Arc<AtomicUsize>);
 
-impl Actor for MyActor {}
+impl Actor for MyActor {
+    type Context = Context<Self>;
+}
 
 impl ResponseType<Ping> for MyActor {
     type Item = ();
@@ -33,6 +35,8 @@ impl Handler<Ping> for MyActor {
 struct MyActor2(Option<Address<MyActor>>, Option<SyncAddress<MyActor>>);
 
 impl Actor for MyActor2 {
+    type Context = Context<Self>;
+
     fn started(&mut self, ctx: &mut Context<Self>) {
         self.0.take().unwrap().upgrade()
             .actfuture()

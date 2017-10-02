@@ -23,6 +23,8 @@ struct MyActor{
 }
 
 impl Actor for MyActor {
+    type Context = Context<Self>;
+
     fn started(&mut self, _: &mut Context<MyActor>) {
         self.started.store(true, Ordering::Relaxed);
     }

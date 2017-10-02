@@ -14,7 +14,7 @@ pub struct StopArbiter(pub i32);
 /// Start actor in arbiter's thread
 pub struct StartActor<A: Actor>(Box<FnBox<A>>);
 
-impl<A: Actor> StartActor<A>
+impl<A: Actor<Context=Context<A>>> StartActor<A>
 {
     pub fn new<F>(f: F) -> Self
         where F: FnOnce(&mut Context<A>) -> A + Send + 'static
@@ -52,6 +52,7 @@ impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
 /// struct MyActor{addr: SyncAddress<Arbiter>}
 ///
 /// impl Actor for MyActor {
+///    type Context = Context<Self>;
 ///
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
 ///        self.addr.send(msgs::Execute::new(|| -> Result<(), ()> {

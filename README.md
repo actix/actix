@@ -63,7 +63,9 @@ use actix::{msgs, Actor, ActorBuilder, Address, Arbiter, Context, System};
 struct MyActor;
 
 impl Actor for MyActor {
-    fn started(&mut self, ctx: &mut Context<Self>) {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
        println!("I am alive!");
        Arbiter::system().send(msgs::SystemExit(0));
     }
@@ -104,7 +106,9 @@ struct Sum(usize, usize);
 // Actor definition
 struct Summator;
 
-impl Actor for Summator {}
+impl Actor for Summator {
+    type Context = Context<Self>;
+}
 
 // now we need to define `MessageHandler` for `Sum` message.
 impl Handler<Sum> for Summator {
@@ -181,7 +185,9 @@ struct Game {
     addr: Box<Subscriber<Ping>>
 }
 
-impl Actor for Game {}
+impl Actor for Game {
+    type Context = Context<Self>;
+}
 
 // message handler for Ping message
 impl Handler<Ping> for Game {

@@ -1,8 +1,8 @@
 use std::mem;
 use futures::{Async, Poll};
 
+use actor::Actor;
 use fut::ActorFuture;
-use context::Context;
 
 
 #[derive(Debug)]
@@ -20,11 +20,12 @@ impl<A, B, C> Chain<A, B, C>
         Chain::First(a, c)
     }
 
-    pub fn poll<F>(&mut self, srv: &mut A::Actor,
-                   ctx: &mut Context<A::Actor>, f: F)
+    pub fn poll<F>(&mut self, srv: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context, f: F)
                    -> Poll<B::Item, B::Error>
-        where F: FnOnce(Result<A::Item, A::Error>, C, &mut A::Actor, &mut Context<A::Actor>)
-                        -> Result<Result<B::Item, B>, B::Error>,
+        where F: FnOnce(Result<A::Item, A::Error>,
+                        C,
+                        &mut A::Actor,
+                        &mut <A::Actor as Actor>::Context) -> Result<Result<B::Item, B>, B::Error>,
     {
         let a_result = match *self {
             Chain::First(ref mut a, _) => {

@@ -4,8 +4,7 @@ use futures::unsync::oneshot::Sender;
 use futures::sync::oneshot::Sender as SyncSender;
 
 use fut::ActorFuture;
-use actor::{Actor, Handler};
-use context::{Context};
+use actor::{Actor, AsyncContext, Handler};
 use message::Response;
 
 
@@ -15,7 +14,8 @@ impl<A> Envelope<A> where A: Actor {
 
     pub fn local<M>(msg: M, tx: Option<Sender<Result<A::Item, A::Error>>>) -> Self
         where M: 'static,
-              A: Actor + Handler<M>
+              A: Actor + Handler<M>,
+              A::Context: AsyncContext<A>
     {
         Envelope(Box::new(LocalEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
     }
@@ -25,11 +25,12 @@ impl<A> Envelope<A> where A: Actor {
               A: Actor + Handler<M>,
               A::Item: Send,
               A::Error: Send,
+              A::Context: AsyncContext<A>,
     {
         Envelope(Box::new(RemoteEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
     }
 
-    pub fn handle(&mut self, act: &mut A, ctx: &mut Context<A>) {
+    pub fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
         self.0.handle(act, ctx)
     }
 }
@@ -43,10 +44,10 @@ trait EnvelopeProxy {
     type Actor: Actor;
 
     /// handle message within new actor and context
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<Self::Actor>);
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
 }
 
-struct LocalEnvelope<A, M> where A: Actor + Handler<M> {
+struct LocalEnvelope<A, M> where A: Actor + Handler<M>, A::Context: AsyncContext<A> {
     msg: Option<M>,
     act: PhantomData<A>,
     tx: Option<Sender<Result<A::Item, A::Error>>>,
@@ -55,10 +56,11 @@ struct LocalEnvelope<A, M> where A: Actor + Handler<M> {
 impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
     where M: 'static,
           A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>
 {
     type Actor = A;
 
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<A>)
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
     {
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
@@ -74,7 +76,9 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
     }
 }
 
-struct RemoteEnvelope<A, M> where A: Actor + Handler<M>
+struct RemoteEnvelope<A, M>
+    where A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>,
 {
     msg: Option<M>,
     act: PhantomData<A>,
@@ -82,11 +86,13 @@ struct RemoteEnvelope<A, M> where A: Actor + Handler<M>
 }
 
 impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
-    where M: 'static, A: Actor + Handler<M>,
+    where M: 'static,
+          A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>,
 {
     type Actor = A;
 
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut Context<A>)
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
     {
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
@@ -121,7 +127,9 @@ impl<A, M> ActorFuture for EnvelopFuture<A, M> where A: Actor + Handler<M>
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut Context<A>) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self,
+            act: &mut A,
+            ctx: &mut <Self::Actor as Actor>::Context) -> Poll<Self::Item, Self::Error>
     {
         match self.fut.poll(act, ctx) {
             Ok(Async::Ready(val)) => {

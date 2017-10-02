@@ -52,11 +52,13 @@ pub mod actors;
 pub mod framed;
 pub mod msgs;
 
-pub use actor::{Actor, Supervised, Handler, ResponseType, StreamHandler};
+pub use actor::{Actor, ActorState, Supervised,
+                Handler, ResponseType, StreamHandler,
+                BaseContext, AsyncContext};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;
-pub use context::{ActorState, Context, ContextFutureSpawner};
+pub use context::{Context, ContextFutureSpawner};
 pub use message::{Request, Response};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use sink::Sink;

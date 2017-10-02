@@ -29,6 +29,7 @@ use message::Response;
 /// struct Timer {dur: Duration}
 ///
 /// impl Actor for Timer {
+///    type Context = Context<Self>;
 ///
 ///    // stop system in `self.dur` seconds
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
@@ -61,7 +62,9 @@ pub struct System {
     arbiters: HashMap<String, SyncAddress<Arbiter>>,
 }
 
-impl Actor for System {}
+impl Actor for System {
+    type Context = Context<Self>;
+}
 
 impl System {
 

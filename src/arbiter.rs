@@ -5,7 +5,7 @@ use uuid::Uuid;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
-use actor::{Actor, Handler, ResponseType};
+use actor::{Actor, Handler, ResponseType, BaseContext};
 use address::{Address, SyncAddress};
 use builder::ActorBuilder;
 use context::Context;
@@ -38,6 +38,8 @@ pub struct Arbiter {
 
 
 impl Actor for Arbiter {
+    type Context = Context<Self>;
+
     fn started(&mut self, ctx: &mut Context<Self>) {
         // register arbiter within system
         Arbiter::system().send(
@@ -210,12 +212,12 @@ impl Handler<StopArbiter> for Arbiter {
     }
 }
 
-impl<A> ResponseType<StartActor<A>> for Arbiter where A: Actor {
+impl<A> ResponseType<StartActor<A>> for Arbiter where A: Actor<Context=Context<A>> {
     type Item = SyncAddress<A>;
     type Error = ();
 }
 
-impl<A> Handler<StartActor<A>> for Arbiter where A: Actor {
+impl<A> Handler<StartActor<A>> for Arbiter where A: Actor<Context=Context<A>> {
 
     fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Response<Self, StartActor<A>>
     {

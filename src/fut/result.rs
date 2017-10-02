@@ -5,7 +5,6 @@ use futures::{Poll, Async};
 
 use fut::ActorFuture;
 use actor::Actor;
-use context::Context;
 
 
 /// A future representing a value that is immediately ready.
@@ -28,10 +27,12 @@ pub struct FutureResult<T, E, A> {
 /// # Examples
 ///
 /// ```
-/// use actix::{fut, Actor};
+/// use actix::{fut, Actor, Context};
 ///
 /// struct MyActor;
-/// impl Actor for MyActor {}
+/// impl Actor for MyActor {
+///    type Context = Context<Self>;
+/// }
 ///
 /// let future_of_1 = fut::result::<u32, u32, MyActor>(Ok(1));
 /// let future_of_err_2 = fut::result::<u32, u32, MyActor>(Err(2));
@@ -49,11 +50,13 @@ pub fn result<T, E, A>(r: Result<T, E>) -> FutureResult<T, E, A> {
 /// # Examples
 ///
 /// ```
-/// use actix::Actor;
+/// use actix::{Actor, Context};
 /// use actix::fut::*;
 ///
 /// struct MyActor;
-/// impl Actor for MyActor {}
+/// impl Actor for MyActor {
+///    type Context = Context<Self>;
+/// }
 ///
 /// let future_of_1 = ok::<u32, u32, MyActor>(1);
 /// ```
@@ -69,10 +72,12 @@ pub fn ok<T, E, S>(t: T) -> FutureResult<T, E, S> {
 /// # Examples
 ///
 /// ```
-/// use actix::{fut, Actor};
+/// use actix::{fut, Actor, Context};
 ///
 /// struct MyActor;
-/// impl Actor for MyActor {}
+/// impl Actor for MyActor {
+///    type Context = Context<Self>;
+/// }
 ///
 /// let future_of_err_1 = fut::err::<u32, u32, MyActor>(1);
 /// ```
@@ -85,7 +90,7 @@ impl<T, E, A> ActorFuture for FutureResult<T, E, A> where A:Actor {
     type Error = E;
     type Actor = A;
 
-    fn poll(&mut self, _: &mut Self::Actor, _: &mut Context<Self::Actor>) -> Poll<T, E>
+    fn poll(&mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context) -> Poll<T, E>
     {
         self.inner.take().expect("cannot poll Result twice").map(Async::Ready)
     }
