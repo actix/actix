@@ -11,20 +11,19 @@
 pub use msgs;
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
-pub use actor::{Actor, ActorState, Supervised,
+pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,
                 BaseContext, AsyncContext};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;
 pub use context::{Context, ContextFutureSpawner};
-pub use framed::{ActixFramed, ActixFramedRead, ActixFramedWrite};
+pub use framed::FramedContext;
 pub use message::{Request, Response};
 pub use system::System;
 pub use supervisor::Supervisor;
 pub use registry::{ArbiterService, SystemService};
 
 pub mod actix {
-    pub use sink::Sink;
     pub use utils::Condition;
 }

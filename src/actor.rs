@@ -1,9 +1,14 @@
-use futures::{Future, Stream};
+use std;
+use futures::{future, Future, Stream};
+use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::codec::{Encoder, Decoder};
 
 use fut::ActorFuture;
 use message::Response;
+use arbiter::Arbiter;
 use address::ActorAddress;
 use context::{ActorFutureCell, ActorStreamCell};
+use framed::FramedContext;
 
 
 #[allow(unused_variables)]
@@ -72,6 +77,49 @@ pub trait Actor: Sized + 'static {
     /// Method is called after an actor is stopped, it can be used to perform
     /// any needed cleanup work or spawning more actors.
     fn stopped(&mut self, ctx: &mut Self::Context) {}
+}
+
+#[allow(unused_variables)]
+pub trait FramedActor: Actor {
+    type Io: AsyncRead + AsyncWrite;
+    type Codec: Encoder + Decoder;
+
+    /// Method is called on sink error. By default it does nothing.
+    fn error(&mut self, err: <Self::Codec as Encoder>::Error, ctx: &mut Self::Context) {}
+
+    /// Start new actor, returns address of this actor.
+    fn start<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
+        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
+              Self: Handler<<<Self as FramedActor>::Codec as Decoder>::Item,
+                            <<Self as FramedActor>::Codec as Decoder>::Error>
+    {
+        let mut ctx = FramedContext::new(self, io, codec);
+        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+        ctx.run(Arbiter::handle());
+        addr
+    }
+
+    /// This function starts new actor, returns address of this actor.
+    /// Actor is created by factory function.
+    fn create<Addr, F>(io: Self::Io, codec: Self::Codec, f: F) -> Addr
+        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
+              Self: Handler<<<Self as FramedActor>::Codec as Decoder>::Item,
+                            <<Self as FramedActor>::Codec as Decoder>::Error>,
+              F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
+    {
+        let mut ctx = FramedContext::new(unsafe{std::mem::uninitialized()}, io, codec);
+        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+
+        Arbiter::handle().spawn_fn(move || {
+            let act = f(&mut ctx);
+            let old = ctx.replace_actor(act);
+            std::mem::forget(old);
+            ctx.run(Arbiter::handle());
+            future::ok(())
+        });
+
+        addr
+    }
 }
 
 #[allow(unused_variables)]
@@ -146,6 +194,9 @@ pub enum ActorState {
 }
 
 pub trait BaseContext<A>: Sized where A: Actor<Context=Self> {
+
+    /// Stop actor execution
+    fn stop(&mut self);
 
     /// Actor execution state
     fn state(&self) -> ActorState;

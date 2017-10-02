@@ -1,186 +1,301 @@
-use std::io;
+#![allow(dead_code)]
 
-use bytes::BytesMut;
-use futures::{Async, AsyncSink, Poll, Stream, Sink, StartSend};
-use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_io::codec::{Encoder, Decoder};
-use tokio_io::io::{ReadHalf, WriteHalf};
+use std;
+use std::collections::VecDeque;
 
-const INITIAL_CAPACITY: usize = 8 * 1024;
-const BACKPRESSURE_BOUNDARY: usize = INITIAL_CAPACITY;
+use futures::{Async, AsyncSink, Future, Poll, Sink};
+use tokio_core::reactor::Handle;
+use tokio_io::{AsyncRead, };
+use tokio_io::codec::{Framed, Encoder, Decoder};
 
-/// Helper trait
-///
-/// that allows to create `ActixFramedRead` and `ActixFramedWrite`
-/// from `Framed` capable object.
-pub trait ActixFramed {
+use fut::ActorFuture;
+// use queue::{sync, unsync};
 
-    /// Helper method for splitting this read/write object into two
-    /// ActixFramedRead and ActixFramedWrite.
-    fn actix_framed<D, E>(self, decoder: D, encoder: E)
-                          -> (ActixFramedRead<ReadHalf<Self>, D>,
-                              ActixFramedWrite<WriteHalf<Self>, E>)
-        where D: Decoder,
-              E: Encoder,
-              Self: AsyncRead + AsyncWrite + Sized
+use actor::{Actor, Supervised,
+            Handler, FramedActor, ActorState, AsyncContext, BaseContext};
+use address::{Subscriber};
+use context::{ActorAddressCell, AsyncContextApi};
+
+
+/// Actor execution context
+pub struct FramedContext<A> where A: FramedActor + Actor<Context=FramedContext<A>>,
+{
+    act: A,
+    state: ActorState,
+    address: ActorAddressCell<A>,
+    framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>,
+    items: Vec<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
+    sink_items: VecDeque<<<A as FramedActor>::Codec as Encoder>::Item>,
+    sink_flushed: bool,
+    sink_closed: bool,
+}
+
+impl<A> BaseContext<A> for FramedContext<A> where A: Actor<Context=Self> + FramedActor
+{
+    /// Stop actor execution
+    fn stop(&mut self) {
+        if self.state == ActorState::Running {
+            self.address.close();
+            self.state = ActorState::Stopping;
+        }
+    }
+
+    /// Actor execution state
+    fn state(&self) -> ActorState {
+        self.state
+    }
+}
+
+impl<A> AsyncContext<A> for FramedContext<A> where A: Actor<Context=Self> + FramedActor
+{
+    fn spawn<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        let (r, w) = self.split();
-        (ActixFramedRead::new(r, decoder), ActixFramedWrite::new(w, encoder))
-    }
-}
-
-impl<T> ActixFramed for T where T: AsyncRead + AsyncWrite + Sized {}
-
-
-/// `FramedRead` like object.
-///
-/// This is same as
-/// [`tokio_io::codec::Framed`](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html)
-/// but it allow to only `FramedRead` part.
-pub struct ActixFramedRead<T, D> {
-    inner: T,
-    decoder: D,
-    eof: bool,
-    is_readable: bool,
-    buffer: BytesMut,
-}
-
-impl<T, D> ActixFramedRead<T, D>
-    where T: AsyncRead,
-          D: Decoder,
-{
-    /// Creates a new `ActixFramedRead` with the given `decoder`.
-    pub fn new(inner: T, decoder: D) -> ActixFramedRead<T, D> {
-        ActixFramedRead {
-            inner: inner,
-            decoder: decoder,
-            eof: false,
-            is_readable: false,
-            buffer: BytesMut::with_capacity(INITIAL_CAPACITY),
+        if self.state == ActorState::Stopped {
+            error!("Context::spawn called for stopped actor.");
+        } else {
+            self.items.push(Box::new(fut))
         }
     }
 }
 
-impl<T, D> Stream for ActixFramedRead<T, D>
-    where T: AsyncRead,
-          D: Decoder,
-{
-    type Item = D::Item;
-    type Error = D::Error;
+impl<A> AsyncContextApi<A> for FramedContext<A> where A: Actor<Context=Self> + FramedActor {
+    fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
+        &mut self.address
+    }
+}
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
+{
+    #[doc(hidden)]
+    pub fn subscriber<M: 'static>(&mut self) -> Box<Subscriber<M>>
+        where A: Handler<M>
+    {
+        Box::new(self.address.unsync_address())
+    }
+
+    /*#[doc(hidden)]
+    pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
+        where A: Handler<M>,
+              A::Item: Send,
+              A::Error: Send,
+    {
+        self.address::<SyncAddress<_>>().subscriber()
+    }*/
+
+    pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item) {
+        self.sink_items.push_back(msg);
+    }
+
+    /// Gracefully close sink part of the Framed object. FramedContext
+    /// will try to send all buffered items and then close.
+    /// FramedContext::stop() could be used to force stop sending process.
+    pub fn close(&mut self) {
+        // self.sink_items.push_back(msg);
+    }
+}
+
+impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
+{
+    pub(crate) fn new(act: A, io: <A as FramedActor>::Io,
+                      codec: <A as FramedActor>::Codec) -> FramedContext<A>
+        where A: Handler<<<A as FramedActor>::Codec as Decoder>::Item,
+                         <<A as FramedActor>::Codec as Decoder>::Error>
+    {
+        FramedContext {
+            act: act,
+            state: ActorState::Started,
+            address: ActorAddressCell::new(),
+            framed: io.framed(codec),
+            items: Vec::new(),
+            sink_items: VecDeque::new(),
+            sink_flushed: true,
+            sink_closed: false,
+        }
+    }
+
+    pub(crate) fn run(self, handle: &Handle) {
+        handle.spawn(self.map(|_| ()).map_err(|_| ()));
+    }
+
+    pub(crate) fn alive(&mut self) -> bool {
+        if self.state == ActorState::Stopped {
+            false
+        } else {
+            !self.address.connected() && self.items.is_empty()
+        }
+    }
+
+    pub(crate) fn restarting(&mut self) where A: Supervised {
+        let ctx: &mut FramedContext<A> = unsafe {
+            std::mem::transmute(self as &mut FramedContext<A>)
+        };
+        self.act.restarting(ctx);
+    }
+
+    pub(crate) fn replace_actor(&mut self, srv: A) -> A {
+        std::mem::replace(&mut self.act, srv)
+    }
+
+    pub(crate) fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
+        &mut self.address
+    }
+
+    pub(crate) fn into_inner(self) -> A {
+        self.act
+    }
+}
+
+#[doc(hidden)]
+impl<A> Future for FramedContext<A> where A: Actor<Context=Self> + FramedActor
+{
+    type Item = ();
+    type Error = ();
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let ctx: &mut FramedContext<A> = unsafe {
+            std::mem::transmute(self as &mut FramedContext<A>)
+        };
+
+        // update state
+        match self.state {
+            ActorState::Started => {
+                Actor::started(&mut self.act, ctx);
+                self.state = ActorState::Running;
+            },
+            ActorState::Stopping => {
+                Actor::stopping(&mut self.act, ctx);
+            }
+            _ => ()
+        }
+
+        let mut prep_stop = false;
+
         loop {
-            // Repeatedly call `decode` or `decode_eof` as long as it is
-            // "readable". Readable is defined as not having returned `None`. If
-            // the upstream has returned EOF, and the decoder is no longer
-            // readable, it can be assumed that the decoder will never become
-            // readable again, at which point the stream is terminated.
-            if self.is_readable {
-                if self.eof {
-                    let frame = try!(self.decoder.decode_eof(&mut self.buffer));
-                    return Ok(Async::Ready(frame));
+            let mut not_ready = true;
+
+            if let Ok(Async::Ready(_)) = self.address.poll(&mut self.act, ctx) {
+                not_ready = false
+            }
+
+            // check secondary streams
+            let mut idx = 0;
+            let mut len = self.items.len();
+            loop {
+                if idx >= len {
+                    break
                 }
 
-                trace!("attempting to decode a frame");
+                let (drop, item) = match self.items[idx].poll(&mut self.act, ctx) {
+                    Ok(val) => match val {
+                        Async::Ready(_) => {
+                            not_ready = false;
+                            (true, None)
+                        }
+                        Async::NotReady => (false, None),
+                    },
+                    Err(_) => (true, None)
+                };
 
-                if let Some(frame) = try!(self.decoder.decode(&mut self.buffer)) {
-                    trace!("frame decoded from buffer");
-                    return Ok(Async::Ready(Some(frame)));
+                // we have new pollable item
+                if let Some(item) = item {
+                    self.items.push(item);
                 }
 
-                self.is_readable = false;
+                // number of items could be different, context can add more items
+                len = self.items.len();
+
+                // item finishes, we need to remove it,
+                // replace current item with last item
+                if drop {
+                    len -= 1;
+                    if idx >= len {
+                        self.items.pop();
+                        break
+                    } else {
+                        self.items[idx] = self.items.pop().unwrap();
+                    }
+                } else {
+                    idx += 1;
+                }
             }
 
-            assert!(!self.eof);
-
-            // Otherwise, try to read more data and try again. Make sure we've
-            // got room for at least one byte to read to ensure that we don't
-            // get a spurious 0 that looks like EOF
-            self.buffer.reserve(1);
-            if 0 == try_ready!(self.inner.read_buf(&mut self.buffer)) {
-                self.eof = true;
+            // send sink items
+            if !self.sink_closed {
+                loop {
+                    if let Some(msg) = self.sink_items.pop_front() {
+                        match self.framed.start_send(msg) {
+                            Ok(AsyncSink::NotReady(msg)) => {
+                                self.sink_items.push_front(msg);
+                            }
+                            Ok(AsyncSink::Ready) => {
+                                self.sink_flushed = false;
+                                continue
+                            }
+                            Err(_) => {
+                                self.sink_closed = true;
+                                break
+                            }
+                        }
+                    }
+                    break
+                }
             }
 
-            self.is_readable = true;
-        }
-    }
-}
-
-
-/// `FramedWrite` like object
-///
-/// This is same as
-/// [`tokio_io::codec::Framed`](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html)
-/// but it allow to only `FramedWrite` part.
-pub struct ActixFramedWrite<T, E> {
-    inner: T,
-    encoder: E,
-    buffer: BytesMut,
-}
-
-impl<T, E> ActixFramedWrite<T, E>
-    where T: AsyncWrite,
-          E: Encoder,
-{
-    /// Creates a new `ActixFramedWrite` with the given `encoder`.
-    pub fn new(inner: T, encoder: E) -> ActixFramedWrite<T, E> {
-        ActixFramedWrite {
-            inner: inner,
-            encoder: encoder,
-            buffer: BytesMut::with_capacity(INITIAL_CAPACITY),
-        }
-    }
-}
-
-impl<T, E> Sink for ActixFramedWrite<T, E>
-    where T: AsyncWrite,
-          E: Encoder,
-{
-    type SinkItem = E::Item;
-    type SinkError = E::Error;
-
-    fn start_send(&mut self, item: E::Item) -> StartSend<E::Item, E::Error> {
-        // If the buffer is already over 8KiB, then attempt to flush it. If after flushing it's
-        // *still* over 8KiB, then apply backpressure (reject the send).
-        if self.buffer.len() >= BACKPRESSURE_BOUNDARY {
-            try!(self.poll_complete());
-
-            if self.buffer.len() >= BACKPRESSURE_BOUNDARY {
-                return Ok(AsyncSink::NotReady(item));
-            }
-        }
-
-        try!(self.encoder.encode(item, &mut self.buffer));
-
-        Ok(AsyncSink::Ready)
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        trace!("flushing framed transport");
-
-        while !self.buffer.is_empty() {
-            trace!("writing; remaining={}", self.buffer.len());
-
-            let n = try_nb!(self.inner.write(&self.buffer));
-
-            if n == 0 {
-                return Err(io::Error::new(io::ErrorKind::WriteZero,
-                                          "failed to write frame to transport").into());
+            // flush sink
+            if !self.sink_flushed && !self.sink_closed {
+                match self.framed.poll_complete() {
+                    Ok(Async::Ready(_)) => {
+                        not_ready = false;
+                        self.sink_flushed = true;
+                    }
+                    Ok(Async::NotReady) => (),
+                    Err(_) => {
+                        self.sink_closed = true;
+                    }
+                }
             }
 
-            // TODO: Add a way to `bytes` to do this w/o returning the drained // data.
-            let _ = self.buffer.split_to(n);
+            // are we done
+            if !not_ready {
+                continue
+            }
+
+            // check state
+            match self.state {
+                ActorState::Stopped => {
+                    self.state = ActorState::Stopped;
+                    Actor::stopped(&mut self.act, ctx);
+                    return Ok(Async::Ready(()))
+                },
+                ActorState::Stopping => {
+                    if prep_stop {
+                        if self.address.connected() || !self.items.is_empty() {
+                            self.state = ActorState::Running;
+                            continue
+                        } else {
+                            self.state = ActorState::Stopped;
+                            Actor::stopped(&mut self.act, ctx);
+                            return Ok(Async::Ready(()))
+                        }
+                    } else {
+                        Actor::stopping(&mut self.act, ctx);
+                        prep_stop = true;
+                        continue
+                    }
+                },
+                ActorState::Running => {
+                    if !self.address.connected() && self.items.is_empty() {
+                        self.state = ActorState::Stopping;
+                        Actor::stopping(&mut self.act, ctx);
+                        prep_stop = true;
+                        continue
+                    }
+                },
+                _ => (),
+            }
+
+            return Ok(Async::NotReady)
         }
-
-        // Try flushing the underlying IO
-        try_nb!(self.inner.flush());
-
-        trace!("framed transport flushed");
-        Ok(Async::Ready(()))
-    }
-
-    fn close(&mut self) -> Poll<(), Self::SinkError> {
-        try_ready!(self.poll_complete());
-        Ok(try!(self.inner.shutdown()))
     }
 }

@@ -20,10 +20,7 @@
 extern crate log;
 extern crate uuid;
 
-extern crate bytes;
-#[macro_use]
 extern crate futures;
-#[macro_use]
 extern crate tokio_io;
 extern crate tokio_core;
 
@@ -38,10 +35,10 @@ mod address;
 mod builder;
 mod context;
 mod envelope;
+mod framed;
 mod queue;
 mod message;
 mod registry;
-mod sink;
 mod system;
 mod supervisor;
 mod utils;
@@ -49,7 +46,6 @@ mod utils;
 pub mod fut;
 pub mod prelude;
 pub mod actors;
-pub mod framed;
 pub mod msgs;
 
 pub use actor::{Actor, ActorState, Supervised,
@@ -59,9 +55,9 @@ pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
 pub use builder::ActorBuilder;
 pub use context::{Context, ContextFutureSpawner};
+pub use framed::FramedContext;
 pub use message::{Request, Response};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
-pub use sink::Sink;
 pub use system::{System, SystemRunner};
 pub use utils::Condition;
 pub use supervisor::Supervisor;

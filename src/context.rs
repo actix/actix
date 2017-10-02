@@ -1,6 +1,6 @@
 use std;
 
-use futures::{self, Async, Future, Poll, Stream};
+use futures::{Async, Future, Poll, Stream};
 use futures::unsync::oneshot::Sender;
 use tokio_core::reactor::Handle;
 
@@ -13,7 +13,10 @@ use actor::{Actor, Supervised,
 use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
 use message::Response;
-use sink::{Sink, SinkContext, SinkContextService};
+
+pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
+    fn address_cell(&mut self) -> &mut ActorAddressCell<A>;
+}
 
 /// context protocol
 pub(crate) enum ContextProtocol<A: Actor> {
@@ -28,12 +31,20 @@ pub struct Context<A> where A: Actor<Context=Context<A>>,
 {
     act: A,
     state: ActorState,
-    items: Vec<IoItem<A>>,
+    items: Vec<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
     address: ActorAddressCell<A>,
 }
 
 impl<A> BaseContext<A> for Context<A> where A: Actor<Context=Self>
 {
+    /// Stop actor execution
+    fn stop(&mut self) {
+        if self.state == ActorState::Running {
+            self.address.close();
+            self.state = ActorState::Stopping;
+        }
+    }
+
     /// Actor execution state
     fn state(&self) -> ActorState {
         self.state
@@ -48,27 +59,19 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
         if self.state == ActorState::Stopped {
             error!("Context::spawn called for stopped actor.");
         } else {
-            self.items.push(IoItem::SpawnFuture(Box::new(fut)))
+            self.items.push(Box::new(fut))
         }
     }
 }
 
-/// io items
-enum IoItem<A: Actor> {
-    Sink(Box<SinkContextService<A>>),
-    SpawnFuture(Box<ActorFuture<Item=(), Error=(), Actor=A>>),
+impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
+    fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
+        &mut self.address
+    }
 }
 
 impl<A> Context<A> where A: Actor<Context=Self>
 {
-    /// Stop actor execution
-    pub fn stop(&mut self) {
-        if self.state == ActorState::Running {
-            self.address.close();
-            self.state = ActorState::Stopping;
-        }
-    }
-
     #[doc(hidden)]
     pub fn subscriber<M: 'static>(&mut self) -> Box<Subscriber<M>>
         where A: Handler<M>
@@ -84,22 +87,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
     {
         self.address::<SyncAddress<_>>().subscriber()
     }
-
-    pub fn add_sink<S>(&mut self, sink: S) -> Sink<S::SinkItem, S::SinkError>
-        where S: futures::Sink + 'static,
-    {
-        if self.state == ActorState::Stopped {
-            error!("Context::add_sink called for stopped actor.");
-        }
-
-        let mut srv = Box::new(SinkContext::new(sink));
-        let psrv = srv.as_mut() as *mut _;
-        self.items.push(IoItem::Sink(srv));
-
-        Sink::new(psrv)
-    }
 }
-
 
 impl<A> Context<A> where A: Actor<Context=Self>
 {
@@ -134,10 +122,6 @@ impl<A> Context<A> where A: Actor<Context=Self>
 
     pub(crate) fn replace_actor(&mut self, srv: A) -> A {
         std::mem::replace(&mut self.act, srv)
-    }
-
-    pub(crate) fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
-        &mut self.address
     }
 
     pub(crate) fn into_inner(self) -> A {
@@ -185,21 +169,15 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
                     break
                 }
 
-                let (drop, item) = match self.items[idx] {
-                    IoItem::Sink(ref mut sink) => match sink.poll(&mut self.act, ctx) {
-                        Async::Ready(_) => (true, None),
-                        Async::NotReady => (false, None)
+                let (drop, item) = match self.items[idx].poll(&mut self.act, ctx) {
+                    Ok(val) => match val {
+                        Async::Ready(_) => {
+                            not_ready = false;
+                            (true, None)
+                        }
+                        Async::NotReady => (false, None),
                     },
-                    IoItem::SpawnFuture(ref mut fut) => match fut.poll(&mut self.act, ctx) {
-                        Ok(val) => match val {
-                            Async::Ready(_) => {
-                                not_ready = false;
-                                (true, None)
-                            }
-                            Async::NotReady => (false, None),
-                        },
-                        Err(_) => (true, None)
-                    }
+                    Err(_) => (true, None)
                 };
 
                 // we have new pollable item
@@ -270,8 +248,7 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
 }
 
 
-pub(crate)
-struct ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
+pub struct ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
     sync_alive: bool,
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
@@ -280,7 +257,7 @@ struct ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 
 impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
-    fn new() -> ActorAddressCell<A> {
+    pub(crate) fn new() -> ActorAddressCell<A> {
         ActorAddressCell {
             sync_alive: false,
             sync_msgs: None,
@@ -288,7 +265,7 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
         }
     }
 
-    pub fn close(&mut self) {
+    pub(crate) fn close(&mut self) {
         self.unsync_msgs.close();
         if let Some(ref mut msgs) = self.sync_msgs {
             msgs.close()
@@ -299,15 +276,15 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
         self.unsync_msgs.connected() || self.sync_alive
     }
 
-    pub fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
+    pub(crate) fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
         self.unsync_msgs.sender()
     }
 
-    pub fn unsync_address(&mut self) -> Address<A> {
+    pub(crate) fn unsync_address(&mut self) -> Address<A> {
         Address::new(self.unsync_msgs.sender())
     }
 
-    pub fn sync_address(&mut self) -> SyncAddress<A> {
+    pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
         if self.sync_msgs.is_none() {
             let (tx, rx) = sync::unbounded();
             self.sync_msgs = Some(rx);

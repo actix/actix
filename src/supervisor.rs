@@ -4,7 +4,7 @@ use futures::{Future, Async, Poll, Stream};
 use actor::{Actor, Supervised, AsyncContext};
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
-use context::{Context, ContextProtocol};
+use context::{Context, ContextProtocol, AsyncContextApi};
 use envelope::Envelope;
 use msgs::Execute;
 use queue::{sync, unsync};

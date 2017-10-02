@@ -3,7 +3,7 @@ use futures::unsync::oneshot::{channel, Receiver};
 use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
 use actor::{Actor, Handler, ResponseType, AsyncContext};
-use context::{Context, ContextProtocol};
+use context::{Context, ContextProtocol, AsyncContextApi};
 use envelope::Envelope;
 use message::Request;
 use queue::{sync, unsync};
@@ -14,14 +14,21 @@ pub trait ActorAddress<A, T> where A: Actor {
     fn get(ctx: &mut A::Context) -> T;
 }
 
-impl<A> ActorAddress<A, Address<A>> for A where A: Actor<Context=Context<A>> {
+impl<A> ActorAddress<A, Address<A>> for A
+    where A: Actor,
+          A::Context: AsyncContext<A> + AsyncContextApi<A>
+{
     fn get(ctx: &mut A::Context) -> Address<A> {
         ctx.address_cell().unsync_address()
     }
 }
 
-impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A where A: Actor<Context=Context<A>> {
-    fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>) {
+impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
+    where A: Actor,
+          A::Context: AsyncContext<A> + AsyncContextApi<A>
+{
+    fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>)
+    {
         (ctx.address_cell().unsync_address(), ctx.address_cell().sync_address())
     }
 }
