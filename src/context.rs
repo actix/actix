@@ -39,8 +39,8 @@ impl<A> BaseContext<A> for Context<A> where A: Actor<Context=Self>
 {
     /// Stop actor execution
     fn stop(&mut self) {
+        self.address.close();
         if self.state == ActorState::Running {
-            self.address.close();
             self.state = ActorState::Stopping;
         }
     }
