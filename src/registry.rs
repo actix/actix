@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 use actor::{Actor, Supervised};
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
-use builder::ActorBuilder;
 use context::Context;
 use supervisor::Supervisor;
 

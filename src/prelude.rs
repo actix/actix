@@ -13,10 +13,9 @@ pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,
-                BaseContext, AsyncContext};
+                ActorContext, AsyncActorContext};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
-pub use builder::ActorBuilder;
 pub use context::{Context, ContextFutureSpawner};
 pub use framed::FramedContext;
 pub use message::{Request, Response};

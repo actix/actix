@@ -4,7 +4,7 @@ use futures::unsync::oneshot::Sender;
 use futures::sync::oneshot::Sender as SyncSender;
 
 use fut::ActorFuture;
-use actor::{Actor, AsyncContext, Handler};
+use actor::{Actor, AsyncActorContext, Handler};
 use message::Response;
 
 
@@ -15,7 +15,7 @@ impl<A> Envelope<A> where A: Actor {
     pub fn local<M>(msg: M, tx: Option<Sender<Result<A::Item, A::Error>>>) -> Self
         where M: 'static,
               A: Actor + Handler<M>,
-              A::Context: AsyncContext<A>
+              A::Context: AsyncActorContext<A>
     {
         Envelope(Box::new(LocalEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
     }
@@ -25,7 +25,7 @@ impl<A> Envelope<A> where A: Actor {
               A: Actor + Handler<M>,
               A::Item: Send,
               A::Error: Send,
-              A::Context: AsyncContext<A>,
+              A::Context: AsyncActorContext<A>,
     {
         Envelope(Box::new(RemoteEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
     }
@@ -47,7 +47,7 @@ trait EnvelopeProxy {
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
 }
 
-struct LocalEnvelope<A, M> where A: Actor + Handler<M>, A::Context: AsyncContext<A> {
+struct LocalEnvelope<A, M> where A: Actor + Handler<M>, A::Context: AsyncActorContext<A> {
     msg: Option<M>,
     act: PhantomData<A>,
     tx: Option<Sender<Result<A::Item, A::Error>>>,
@@ -56,7 +56,7 @@ struct LocalEnvelope<A, M> where A: Actor + Handler<M>, A::Context: AsyncContext
 impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
     where M: 'static,
           A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>
+          A::Context: AsyncActorContext<A>
 {
     type Actor = A;
 
@@ -78,7 +78,7 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
 
 struct RemoteEnvelope<A, M>
     where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncActorContext<A>,
 {
     msg: Option<M>,
     act: PhantomData<A>,
@@ -88,7 +88,7 @@ struct RemoteEnvelope<A, M>
 impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
     where M: 'static,
           A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncActorContext<A>,
 {
     type Actor = A;
 

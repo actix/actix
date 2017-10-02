@@ -5,7 +5,6 @@ use futures::sync::oneshot::{channel, Receiver, Sender};
 use actor::{Actor, Handler, ResponseType};
 use address::SyncAddress;
 use arbiter::Arbiter;
-use builder::ActorBuilder;
 use context::Context;
 use msgs::{SystemExit, StopArbiter};
 use message::Response;

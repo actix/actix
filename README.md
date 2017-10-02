@@ -58,7 +58,7 @@ the [`Actor`](https://fafhrd91.github.io/actix/actix/trait.Actor.html) trait.
 
 ```rust
 extern crate actix;
-use actix::{msgs, Actor, ActorBuilder, Address, Arbiter, Context, System};
+use actix::{msgs, Actor, Address, Arbiter, Context, System};
 
 struct MyActor;
 
@@ -81,12 +81,11 @@ fn main() {
 }
 ```
 
-Spawning a new actor is achieved via the methods of
-[ActorBuilder](https://fafhrd91.github.io/actix/actix/trait.ActorBuilder.html) 
-trait. It provides several different ways of creating actos, for details check docs. 
-This trait is implemented for all actors. You can implement `started` and `finished`
-mthods of Actor trait, `started` method get called when actor starts and 
-`finished` when actor finishes.
+Spawning a new actor is achieved via the `start` and `create` methods of
+[Actor](https://fafhrd91.github.io/actix/actix/trait.Actor.html) 
+trait. It provides several different ways of creating actors, for details check docs. 
+You can implement `started`, `stopping` and `stopped`mthods of Actor trait, 
+`started` method get called when actor starts and `stopping` when actor finishes.
 
 ### Handle messages
 
@@ -150,7 +149,7 @@ fn main() {
 ```
 
 All communications with actors go through `Address` object. You can `send` message
-without waiting response or `call` actor with specific message. `MessageHandler`
+without waiting response or `call` actor with specific message. `ResponseType`
 trait defines response type for message, `Item` and `Error` for value and error respectevily.
 There are different types of addresses.
 [`Address<A>`](https://fafhrd91.github.io/actix/actix/struct.Address.html) is address
@@ -160,7 +159,7 @@ has to be used.
 
 ### Actor state and subscription for specific message
 
-If you noticed methods of `Actor` and `MessageHandler` traits accept `&mut self`, so you are welcome to 
+If you noticed methods of `Actor` and `Handler` traits accept `&mut self`, so you are welcome to 
 store anything in actor and mutate it whenever you need.
 
 Address object requires actor type, but if we just want to send specific message to 

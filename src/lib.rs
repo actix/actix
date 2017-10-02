@@ -32,7 +32,6 @@ extern crate libc;
 mod actor;
 mod arbiter;
 mod address;
-mod builder;
 mod context;
 mod envelope;
 mod framed;
@@ -48,12 +47,11 @@ pub mod prelude;
 pub mod actors;
 pub mod msgs;
 
-pub use actor::{Actor, ActorState, Supervised,
+pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,
-                BaseContext, AsyncContext};
+                ActorContext, AsyncActorContext};
 pub use arbiter::Arbiter;
-pub use address::{Address, SyncAddress, Subscriber};
-pub use builder::ActorBuilder;
+pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::{Context, ContextFutureSpawner};
 pub use framed::FramedContext;
 pub use message::{Request, Response};

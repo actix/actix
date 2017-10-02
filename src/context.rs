@@ -7,14 +7,13 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
-use actor::{Actor, Supervised,
-            Handler, StreamHandler,
-            ActorState, AsyncContext, BaseContext};
+use actor::{Actor, Supervised, Handler, StreamHandler,
+            ActorState, ActorContext, AsyncActorContext};
 use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
 use message::Response;
 
-pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
+pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncActorContext<A> {
     fn address_cell(&mut self) -> &mut ActorAddressCell<A>;
 }
 
@@ -35,7 +34,7 @@ pub struct Context<A> where A: Actor<Context=Context<A>>,
     address: ActorAddressCell<A>,
 }
 
-impl<A> BaseContext<A> for Context<A> where A: Actor<Context=Self>
+impl<A> ActorContext<A> for Context<A> where A: Actor<Context=Self>
 {
     /// Stop actor execution
     fn stop(&mut self) {
@@ -45,13 +44,20 @@ impl<A> BaseContext<A> for Context<A> where A: Actor<Context=Self>
         }
     }
 
+    /// Terminate actor execution
+    fn terminate(&mut self) {
+        self.address.close();
+        self.items.clear();
+        self.state = ActorState::Stopped;
+    }
+
     /// Actor execution state
     fn state(&self) -> ActorState {
         self.state
     }
 }
 
-impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
+impl<A> AsyncActorContext<A> for Context<A> where A: Actor<Context=Self>
 {
     fn spawn<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
@@ -109,7 +115,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
         if self.state == ActorState::Stopped {
             false
         } else {
-            !self.address.connected() && self.items.is_empty()
+            self.address.connected() || !self.items.is_empty()
         }
     }
 
@@ -248,14 +254,14 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
 }
 
 
-pub struct ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
+pub struct ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
 {
     sync_alive: bool,
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
     unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
 
-impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
+impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
 {
     pub(crate) fn new() -> ActorAddressCell<A> {
         ActorAddressCell {
@@ -299,7 +305,7 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
     }
 }
 
-impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
+impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
 {
     type Item = ();
     type Error = ();
@@ -353,7 +359,7 @@ impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncCon
 pub(crate)
 struct ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncActorContext<A>,
           F: Future<Item=M, Error=E>,
 {
     act: std::marker::PhantomData<A>,
@@ -363,7 +369,7 @@ struct ActorFutureCell<A, M, F, E>
 
 impl<A, M, F, E> ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncActorContext<A>,
           F: Future<Item=M, Error=E>,
 {
     pub fn new(fut: F) -> ActorFutureCell<A, M, F, E>
@@ -377,7 +383,7 @@ impl<A, M, F, E> ActorFutureCell<A, M, F, E>
 
 impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncActorContext<A>,
           F: Future<Item=M, Error=E>,
 {
     type Item = ();
@@ -421,7 +427,7 @@ pub(crate)
 struct ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
-          A::Context: AsyncContext<A>
+          A::Context: AsyncActorContext<A>
 {
     act: std::marker::PhantomData<A>,
     started: bool,
@@ -432,7 +438,7 @@ struct ActorStreamCell<A, M, E, S>
 impl<A, M, E, S> ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
-          A::Context: AsyncContext<A>
+          A::Context: AsyncActorContext<A>
 {
     pub fn new(fut: S) -> ActorStreamCell<A, M, E, S>
     {
@@ -447,7 +453,7 @@ impl<A, M, E, S> ActorStreamCell<A, M, E, S>
 impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
-          A::Context: AsyncContext<A>
+          A::Context: AsyncActorContext<A>
 {
     type Item = ();
     type Error = ();
@@ -494,7 +500,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 }
 
 /// Helper trait which can spawn future into actor's context
-pub trait ContextFutureSpawner<A> where A: Actor, A::Context: AsyncContext<A> {
+pub trait ContextFutureSpawner<A> where A: Actor, A::Context: AsyncActorContext<A> {
     /// spawn future into `Context<A>`
     fn spawn(self, fut: &mut A::Context);
 }
@@ -502,7 +508,7 @@ pub trait ContextFutureSpawner<A> where A: Actor, A::Context: AsyncContext<A> {
 
 impl<A, T> ContextFutureSpawner<A> for T
     where A: Actor,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncActorContext<A>,
           T: ActorFuture<Item=(), Error=(), Actor=A> + 'static
 {
     fn spawn(self, ctx: &mut A::Context) {

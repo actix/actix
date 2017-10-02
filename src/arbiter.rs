@@ -5,9 +5,8 @@ use uuid::Uuid;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
-use actor::{Actor, Handler, ResponseType, BaseContext};
+use actor::{Actor, Handler, ResponseType, ActorContext};
 use address::{Address, SyncAddress};
-use builder::ActorBuilder;
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};
 use message::Response;
@@ -80,7 +79,7 @@ impl Arbiter {
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
 
             // start arbiter
-            let (addr, saddr) = ActorBuilder::start(
+            let (addr, saddr) = Actor::start(
                 Arbiter {sys: false, id: id});
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
@@ -110,7 +109,7 @@ impl Arbiter {
         SYSREG.with(|cell| *cell.borrow_mut() = Some(SystemRegistry::new()));
 
         // start arbiter
-        let (addr, sys_addr) = ActorBuilder::start(
+        let (addr, sys_addr) = Actor::start(
             Arbiter {sys: true, id: Uuid::new_v4()});
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
         SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_addr));

@@ -7,7 +7,7 @@ use fut::ActorFuture;
 use message::Response;
 use arbiter::Arbiter;
 use address::ActorAddress;
-use context::{ActorFutureCell, ActorStreamCell};
+use context::{Context, ActorFutureCell, ActorStreamCell};
 use framed::FramedContext;
 
 
@@ -62,7 +62,7 @@ use framed::FramedContext;
 pub trait Actor: Sized + 'static {
 
     /// Actor execution context type
-    type Context: BaseContext<Self>;
+    type Context: ActorContext<Self>;
 
     /// Method is called when actor get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
@@ -77,8 +77,71 @@ pub trait Actor: Sized + 'static {
     /// Method is called after an actor is stopped, it can be used to perform
     /// any needed cleanup work or spawning more actors.
     fn stopped(&mut self, ctx: &mut Self::Context) {}
+
+    /// Start new asynchronous actor, returns address of this actor.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix::*;
+    ///
+    /// // initialize system
+    /// System::new("test".to_owned());
+    ///
+    /// struct MyActor;
+    /// impl Actor for MyActor {
+    ///     type Context = Context<Self>;
+    /// }
+    ///
+    /// let addr: Address<MyActor> = MyActor.start();
+    /// ```
+    fn start<Addr>(self) -> Addr
+        where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
+    {
+        let mut ctx = Context::new(self);
+        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+        ctx.run(Arbiter::handle());
+        addr
+    }
+
+    /// Use `create` method, if you need `Context` object during actor initialization.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix::*;
+    ///
+    /// // initialize system
+    /// System::new("test".to_owned());
+    ///
+    /// struct MyActor{val: usize};
+    /// impl Actor for MyActor {
+    ///     type Context = Context<Self>;
+    /// }
+    ///
+    /// let addr: Address<MyActor> = MyActor::create(|ctx| {
+    ///     MyActor{val: 10}
+    /// });
+    /// ```
+    fn create<Addr, F>(f: F) -> Addr
+        where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>,
+              F: FnOnce(&mut Context<Self>) -> Self + 'static
+    {
+        let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
+        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+
+        Arbiter::handle().spawn_fn(move || {
+            let srv = f(&mut ctx);
+            let old = ctx.replace_actor(srv);
+            std::mem::forget(old);
+            ctx.run(Arbiter::handle());
+            future::ok(())
+        });
+        addr
+    }
 }
 
+/// Actor trait that allow to handle `tokio_io::codec::Framed` objects.
 #[allow(unused_variables)]
 pub trait FramedActor: Actor {
     type Io: AsyncRead + AsyncWrite;
@@ -88,10 +151,10 @@ pub trait FramedActor: Actor {
     fn error(&mut self, err: <Self::Codec as Encoder>::Error, ctx: &mut Self::Context) {}
 
     /// Start new actor, returns address of this actor.
-    fn start<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
+    fn framed<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              Self: Handler<<<Self as FramedActor>::Codec as Decoder>::Item,
-                            <<Self as FramedActor>::Codec as Decoder>::Error>
+              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
+                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
     {
         let mut ctx = FramedContext::new(self, io, codec);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
@@ -101,10 +164,10 @@ pub trait FramedActor: Actor {
 
     /// This function starts new actor, returns address of this actor.
     /// Actor is created by factory function.
-    fn create<Addr, F>(io: Self::Io, codec: Self::Codec, f: F) -> Addr
+    fn create_framed<Addr, F>(io: Self::Io, codec: Self::Codec, f: F) -> Addr
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              Self: Handler<<<Self as FramedActor>::Codec as Decoder>::Item,
-                            <<Self as FramedActor>::Codec as Decoder>::Error>,
+              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
+                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
               F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
     {
         let mut ctx = FramedContext::new(unsafe{std::mem::uninitialized()}, io, codec);
@@ -193,13 +256,22 @@ pub enum ActorState {
     Stopped,
 }
 
-pub trait BaseContext<A>: Sized where A: Actor<Context=Self> {
+/// Actor execution context
+pub trait ActorContext<A>: Sized where A: Actor<Context=Self> {
 
-    /// Stop actor execution
+    /// Gracefuly stop actor execution
     fn stop(&mut self);
+
+    /// Terminate actor execution
+    fn terminate(&mut self);
 
     /// Actor execution state
     fn state(&self) -> ActorState;
+
+    /// Check if execution context is alive
+    fn alive(&self) -> bool {
+        self.state() == ActorState::Stopped
+    }
 
     /// Get actor address
     fn address<Address>(&mut self) -> Address where A: ActorAddress<A, Address>
@@ -208,7 +280,8 @@ pub trait BaseContext<A>: Sized where A: Actor<Context=Self> {
     }
 }
 
-pub trait AsyncContext<A>: BaseContext<A> where A: Actor<Context=Self>
+/// Asynchronous execution context
+pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
 {
     /// Spawn async future into context
     fn spawn<F>(&mut self, fut: F)
@@ -268,13 +341,13 @@ pub trait AsyncContext<A>: BaseContext<A> where A: Actor<Context=Self>
         }
     }
 
-    /// This method is similar to `add_future` but works with streams.
+    /// This method is similar to `spawn_future` but works with streams.
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>
     {
         if self.state() == ActorState::Stopped {
-            error!("Context::add_stream called for stopped actor.");
+            error!("Context::spawn_stream called for stopped actor.");
         } else {
             self.spawn(ActorStreamCell::new(fut))
         }
