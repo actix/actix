@@ -9,6 +9,7 @@
 //! ```
 
 pub use msgs;
+
 pub use fut::{self, ActorFuture, WrapFuture, IntoActorFuture};
 
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
@@ -21,6 +22,7 @@ pub use framed::FramedContext;
 pub use message::{Request, Response};
 pub use system::System;
 pub use supervisor::Supervisor;
+pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{ArbiterService, SystemService};
 
 pub mod actix {

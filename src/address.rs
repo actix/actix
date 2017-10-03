@@ -3,8 +3,8 @@ use futures::unsync::oneshot::{channel, Receiver};
 use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
 use actor::{Actor, Handler, ResponseType, AsyncActorContext};
-use context::{Context, ContextProtocol, AsyncContextApi};
-use envelope::Envelope;
+use context::{ContextProtocol, AsyncContextApi};
+use envelope::{Envelope, ToEnvelope};
 use message::Request;
 use queue::{sync, unsync};
 
@@ -21,6 +21,15 @@ impl<A> ActorAddress<A, Address<A>> for A
 {
     fn get(ctx: &mut A::Context) -> Address<A> {
         ctx.address_cell().unsync_address()
+    }
+}
+
+impl<A> ActorAddress<A, SyncAddress<A>> for A
+    where A: Actor,
+          A::Context: AsyncActorContext<A> + AsyncContextApi<A>
+{
+    fn get(ctx: &mut A::Context) -> SyncAddress<A> {
+        ctx.address_cell().sync_address()
     }
 }
 
@@ -43,7 +52,7 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
 
 pub trait Subscriber<M: 'static> {
 
-    /// Buffered message
+    /// Send buffered message
     fn send(&self, msg: M) -> Result<(), M>;
 
 }
@@ -140,16 +149,12 @@ pub struct SyncAddress<A> where A: Actor {
     closed: Cell<bool>,
 }
 
+unsafe impl<A> Send for SyncAddress<A> where A: Actor {}
+unsafe impl<A> Sync for SyncAddress<A> where A: Actor {}
+
 impl<A> Clone for SyncAddress<A> where A: Actor {
     fn clone(&self) -> Self {
         SyncAddress{tx: self.tx.clone(), closed: self.closed.clone()}
-    }
-}
-
-impl<A> ActorAddress<A, SyncAddress<A>> for A where A: Actor<Context=Context<A>> {
-
-    fn get(ctx: &mut A::Context) -> SyncAddress<A> {
-        ctx.address_cell().sync_address()
     }
 }
 
@@ -170,9 +175,10 @@ impl<A> SyncAddress<A> where A: Actor {
         where A: Handler<M> + ResponseType<M>,
               A::Item: Send,
               A::Error: Send,
-              A::Context: AsyncActorContext<A>,
+              A: ToEnvelope<A, <A as Actor>::Context, M>,
     {
-        if self.tx.unbounded_send(Envelope::remote(msg, None)).is_err()
+        if self.tx.unbounded_send(
+            <A as ToEnvelope<A, <A as Actor>::Context, M>>::pack(msg, None)).is_err()
         {
             self.closed.set(true)
         }
@@ -183,10 +189,11 @@ impl<A> SyncAddress<A> where A: Actor {
         where A: Handler<M>,
               A::Item: Send,
               A::Error: Send,
-              A::Context: AsyncActorContext<A>,
+              A: ToEnvelope<A, <A as Actor>::Context, M>,
     {
         let (tx, rx) = sync_channel();
-        if self.tx.unbounded_send(Envelope::remote(msg, Some(tx))).is_err()
+        if self.tx.unbounded_send(
+            <A as ToEnvelope<A, <A as Actor>::Context, M>>::pack(msg, Some(tx))).is_err()
         {
             self.closed.set(true)
         }
@@ -197,13 +204,15 @@ impl<A> SyncAddress<A> where A: Actor {
     /// Send message to actor `A` and asyncronously wait for response.
     pub fn call_fut<M>(&self, msg: M) -> SyncReceiver<Result<A::Item, A::Error>>
         where A: Handler<M>,
-              M: Send + 'static,
+              M: 'static,
               A::Item: Send,
               A::Error: Send,
-              A::Context: AsyncActorContext<A>,
+              A: ToEnvelope<A, <A as Actor>::Context, M>,
     {
         let (tx, rx) = sync_channel();
-        if self.tx.unbounded_send(Envelope::remote(msg, Some(tx))).is_err() {
+        if self.tx.unbounded_send(
+            <A as ToEnvelope<A, <A as Actor>::Context, M>>::pack(msg, Some(tx))).is_err()
+        {
             self.closed.set(true)
         }
 
@@ -215,7 +224,7 @@ impl<A> SyncAddress<A> where A: Actor {
         where A: Handler<M>,
               A::Item: Send,
               A::Error: Send,
-              A::Context: AsyncActorContext<A>,
+              A: ToEnvelope<A, <A as Actor>::Context, M>,
     {
         Box::new(self.clone())
     }
@@ -225,7 +234,7 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
     where A: Actor + Handler<M>,
           A::Item: Send,
           A::Error: Send,
-          A::Context: AsyncActorContext<A>,
+          A: ToEnvelope<A, <A as Actor>::Context, M>,
           M: Send + 'static
 {
     fn send(&self, msg: M) -> Result<(), M> {

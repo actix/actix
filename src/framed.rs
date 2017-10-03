@@ -4,6 +4,7 @@ use std;
 use std::collections::VecDeque;
 
 use futures::{Async, AsyncSink, Future, Poll, Sink, Stream};
+use futures::sync::oneshot::Sender as SyncSender;
 use tokio_core::reactor::Handle;
 use tokio_io::AsyncRead;
 use tokio_io::codec::{Framed, Encoder, Decoder};
@@ -12,9 +13,11 @@ use fut::ActorFuture;
 // use queue::{sync, unsync};
 
 use actor::{Actor, Supervised,
-            Handler, StreamHandler, FramedActor, ActorState, ActorContext, AsyncActorContext};
+            Handler, ResponseType, StreamHandler,
+            FramedActor, ActorState, ActorContext, AsyncActorContext};
 use address::{Subscriber};
 use context::{ActorAddressCell, AsyncContextApi};
+use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 use message::Response;
 
 
@@ -29,6 +32,22 @@ pub struct FramedContext<A>
     address: ActorAddressCell<A>,
     framed: Option<ActorFramedCell<A>>,
     items: Vec<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
+}
+
+type ToEnvelopeSender<A, M> = SyncSender<Result<<A as ResponseType<M>>::Item,
+                                                <A as ResponseType<M>>::Error>>;
+
+impl<A, M> ToEnvelope<A, FramedContext<A>, M> for A
+    where M: Send + 'static,
+          A: FramedActor + Actor<Context=FramedContext<A>> + Handler<M>,
+          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
+                           <<A as FramedActor>::Codec as Decoder>::Error>,
+          <A as ResponseType<M>>::Item: Send, <A as ResponseType<M>>::Item: Send
+{
+    fn pack(msg: M, tx: Option<ToEnvelopeSender<A, M>>) -> Envelope<A>
+    {
+        Envelope::new(RemoteEnvelope::new(msg, tx))
+    }
 }
 
 impl<A> ActorContext<A> for FramedContext<A>

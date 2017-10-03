@@ -121,6 +121,25 @@ impl<A, M> Response<A, M> where A: Actor + ResponseType<M>
         Response {inner: Some(ResponseTypeItem::Error(err))}
     }
 
+    pub(crate) fn result(&mut self) -> Option<Result<A::Item, A::Error>> {
+        if let Some(item) = self.inner.take() {
+            match item {
+                ResponseTypeItem::Item(item) => Some(Ok(item)),
+                ResponseTypeItem::Error(err) => Some(Err(err)),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn is_async(&self) -> bool {
+        match self.inner {
+            Some(ResponseTypeItem::Fut(_)) => true,
+            _ => false,
+        }
+    }
+
     pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<A::Item, A::Error>
     {
         if let Some(item) = self.inner.take() {
