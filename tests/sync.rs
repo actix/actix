@@ -75,7 +75,7 @@ fn test_sync() {
     );
 
     Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
+        Timeout::new(Duration::new(0, 5000), Arbiter::handle()).unwrap()
             .then(move |_| {
                 for n in 5..10 {
                     addr.send(Fibonacci(n));
