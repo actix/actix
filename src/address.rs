@@ -88,8 +88,9 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
-    pub fn call<B: Actor, M>(&self, msg: M) -> Request<A, B, M>
+    pub fn call<B, M>(&self, _: &B, msg: M) -> Request<A, B, M>
         where A: Handler<M>,
+              B: Actor,
               M: 'static
     {
         let (tx, rx) = channel();
@@ -185,7 +186,7 @@ impl<A> SyncAddress<A> where A: Actor {
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
-    pub fn call<B: Actor, M: 'static + Send>(&self, msg: M) -> Request<A, B, M>
+    pub fn call<B: Actor, M: 'static + Send>(&self, _: &B, msg: M) -> Request<A, B, M>
         where A: Handler<M>,
               A::Item: Send,
               A::Error: Send,
