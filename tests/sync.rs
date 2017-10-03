@@ -3,8 +3,11 @@ extern crate actix;
 extern crate futures;
 extern crate tokio_core;
 
+use std::time::Duration;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use futures::{future, Future};
+use tokio_core::reactor::Timeout;
 use actix::prelude::*;
 
 
@@ -71,9 +74,15 @@ fn test_sync() {
                             addr: s_addr.clone()}
     );
 
-    for n in 5..10 {
-        addr.send(Fibonacci(n));
-    }
+    Arbiter::handle().spawn(
+        Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
+            .then(move |_| {
+                for n in 5..10 {
+                    addr.send(Fibonacci(n));
+                }
+                future::result(Ok(()))
+            })
+    );
 
     sys.run();
     assert_eq!(counter.load(Ordering::Relaxed), 2, "Not started");
