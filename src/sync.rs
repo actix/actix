@@ -93,23 +93,21 @@ pub struct SyncArbiter<A> where A: Actor<Context=SyncContext<A>> {
     threads: usize,
 }
 
-impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> {
+impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of started actor.
     pub fn start<F>(threads: usize, f: F) -> SyncAddress<A>
-        where F: Fn() -> A + Sync + Send + 'static
+        where F: Fn() -> A + 'static
     {
-        let f = Arc::new(f);
         let queue = Arc::new(MsQueue::new());
 
-
         for _ in 0..threads {
-            let factory = Arc::clone(&f);
+            let actor = f();
             let actor_queue = Arc::clone(&queue);
 
             thread::spawn(move || {
-                SyncContext::new(factory(), actor_queue)
+                SyncContext::new(actor, actor_queue)
                     .run()
             });
         }

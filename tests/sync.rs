@@ -3,17 +3,17 @@ extern crate actix;
 extern crate futures;
 extern crate tokio_core;
 
-use std::time::Duration;
-use std::sync::Arc;
+use std::sync::{Arc, Condvar, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use futures::{future, Future};
-use tokio_core::reactor::Timeout;
+use futures::future;
 use actix::prelude::*;
 
 
 struct Fibonacci(pub u32);
 
 struct SyncActor {
+    cond: Arc<Condvar>,
+    cond_l: Arc<Mutex<bool>>,
     counter: Arc<AtomicUsize>,
     messages: Arc<AtomicUsize>,
     addr: SyncAddress<System>,
@@ -23,7 +23,11 @@ impl Actor for SyncActor {
     type Context = SyncContext<Self>;
 
     fn started(&mut self, _: &mut Self::Context) {
-        self.counter.fetch_add(1, Ordering::Relaxed);
+        let old = self.counter.fetch_add(1, Ordering::Relaxed);
+        if old == 1 {
+            *self.cond_l.lock().unwrap() = true;
+            self.cond.notify_one();
+        }
     }
 }
 
@@ -60,29 +64,38 @@ impl Handler<Fibonacci> for SyncActor {
 }
 
 #[test]
+#[cfg_attr(feature="cargo-clippy", allow(mutex_atomic))]
 fn test_sync() {
     let sys = System::new("test".to_owned());
+    let l = Arc::new(Mutex::new(false));
+    let cond = Arc::new(Condvar::new());
     let counter = Arc::new(AtomicUsize::new(0));
     let messages = Arc::new(AtomicUsize::new(0));
 
+    let cond_c = Arc::clone(&cond);
+    let cond_l_c = Arc::clone(&l);
     let counter_c = Arc::clone(&counter);
     let messages_c = Arc::clone(&messages);
     let s_addr = Arbiter::system();
     let addr = SyncArbiter::start(
-        2, move|| SyncActor{counter: Arc::clone(&counter_c),
+        2, move|| SyncActor{cond: Arc::clone(&cond_c),
+                            cond_l: Arc::clone(&cond_l_c),
+                            counter: Arc::clone(&counter_c),
                             messages: Arc::clone(&messages_c),
                             addr: s_addr.clone()}
     );
 
-    Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 5000), Arbiter::handle()).unwrap()
-            .then(move |_| {
-                for n in 5..10 {
-                    addr.send(Fibonacci(n));
-                }
-                future::result(Ok(()))
-            })
-    );
+    let mut started = l.lock().unwrap();
+    while !*started {
+        started = cond.wait(started).unwrap();
+    }
+
+    Arbiter::handle().spawn_fn(move || {
+        for n in 5..10 {
+            addr.send(Fibonacci(n));
+        }
+        future::result(Ok(()))
+    });
 
     sys.run();
     assert_eq!(counter.load(Ordering::Relaxed), 2, "Not started");
