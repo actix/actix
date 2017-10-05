@@ -47,6 +47,7 @@ pub mod prelude;
 pub mod actors;
 pub mod msgs;
 pub mod sync;
+pub mod dev;
 
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,

@@ -18,7 +18,7 @@ pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncActorContext<A> {
 }
 
 /// context protocol
-pub(crate) enum ContextProtocol<A: Actor> {
+pub enum ContextProtocol<A: Actor> {
     /// message envelope
     Envelope(Envelope<A>),
     /// Request sync address
@@ -263,7 +263,7 @@ pub struct ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
 
 impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
 {
-    pub(crate) fn new() -> ActorAddressCell<A> {
+    pub fn new() -> ActorAddressCell<A> {
         ActorAddressCell {
             sync_alive: false,
             sync_msgs: None,
@@ -271,7 +271,7 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
         }
     }
 
-    pub(crate) fn close(&mut self) {
+    pub fn close(&mut self) {
         self.unsync_msgs.close();
         if let Some(ref mut msgs) = self.sync_msgs {
             msgs.close()
@@ -282,15 +282,15 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
         self.unsync_msgs.connected() || self.sync_alive
     }
 
-    pub(crate) fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
+    pub fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
         self.unsync_msgs.sender()
     }
 
-    pub(crate) fn unsync_address(&mut self) -> Address<A> {
+    pub fn unsync_address(&mut self) -> Address<A> {
         Address::new(self.unsync_msgs.sender())
     }
 
-    pub(crate) fn sync_address(&mut self) -> SyncAddress<A> {
+    pub fn sync_address(&mut self) -> SyncAddress<A> {
         if self.sync_msgs.is_none() {
             let (tx, rx) = sync::unbounded();
             self.sync_msgs = Some(rx);
