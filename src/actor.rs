@@ -341,13 +341,17 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
         }
     }
 
-    /// This method is similar to `spawn_future` but works with streams.
+    /// This method is similar to `add_future` but works with streams.
+    ///
+    /// One note to consider. Actor wont receive next item from a stream
+    /// until `Response` future resolves to result. `Response::Reply` and
+    /// `Response::Error` resolves immediately.
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>
     {
         if self.state() == ActorState::Stopped {
-            error!("Context::spawn_stream called for stopped actor.");
+            error!("Context::add_stream called for stopped actor.");
         } else {
             self.spawn(ActorStreamCell::new(fut))
         }
