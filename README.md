@@ -222,7 +222,7 @@ fn main() {
     let system = System::new("test".to_owned());
 
     // this is helper actor that manages unix signals, by default stops System
-    let _: () = signal::DefaultSignalsHandler.start();
+    signal::DefaultSignalsHandler.start::<()>();
 
     // we need Subscriber object so we need to use different builder method
     // which will allow to postpone actor creation
