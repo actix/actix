@@ -37,7 +37,7 @@ impl Handler<Die> for MyActor {
 
     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> Response<Self, Die> {
         ctx.stop();
-        Response::Empty()
+        Self::empty()
     }
 }
 

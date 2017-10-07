@@ -113,7 +113,7 @@ impl Actor for Summator {
 impl Handler<Sum> for Summator {
 
     fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Response<Self, Sum> {
-        Response::Reply(msg.0 + msg.1)
+        Self::reply(msg.0 + msg.1)
     }
 }
 
@@ -209,7 +209,7 @@ impl Handler<Ping> for Game {
                  })
                  .spawn(ctx);
         }
-        Response::Empty()
+        Self::empty()
     }
 }
 

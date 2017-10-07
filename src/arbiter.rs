@@ -207,7 +207,7 @@ impl Handler<StopArbiter> for Arbiter {
                 }
             });
         }
-        Response::Reply(())
+        Self::empty()
     }
 }
 
@@ -220,7 +220,7 @@ impl<A> Handler<StartActor<A>> for Arbiter where A: Actor<Context=Context<A>> {
 
     fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Response<Self, StartActor<A>>
     {
-        Response::Reply(msg.call())
+        Self::reply(msg.call())
     }
 }
 
@@ -237,8 +237,8 @@ impl<I: Send, E: Send> Handler<Execute<I, E>> for Arbiter {
               -> Response<Self, Execute<I, E>>
     {
         match msg.exec() {
-            Ok(i) => Response::Reply(i),
-            Err(e) => Response::Error(e),
+            Ok(i) => Self::reply(i),
+            Err(e) => Self::reply_error(e),
         }
     }
 }

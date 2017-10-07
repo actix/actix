@@ -47,7 +47,7 @@
 //!             }
 //!             _ => (),
 //!         };
-//!         Response::Empty()
+//!         Self::empty()
 //!     }
 //! }
 //!
@@ -179,7 +179,7 @@ impl Handler<SignalType, io::Error> for ProcessSignals {
                 self.subscribers.push(subscr);
             }
         }
-        Response::Empty()
+        Self::empty()
     }
 
     fn error(&mut self, err: io::Error, _: &mut Context<ProcessSignals>) {
@@ -202,7 +202,7 @@ impl Handler<Subscribe> for ProcessSignals {
               _: &mut Context<ProcessSignals>) -> Response<Self, Subscribe>
     {
         self.subscribers.push(msg.0);
-        Response::Empty()
+        Self::empty()
     }
 }
 
@@ -255,6 +255,6 @@ impl Handler<Signal> for DefaultSignalsHandler {
             }
             _ => (),
         };
-        Response::Empty()
+        Self::empty()
     }
 }

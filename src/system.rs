@@ -130,7 +130,7 @@ impl Handler<SystemExit> for System {
         if let Some(stop) = self.stop.take() {
             let _ = stop.send(msg.0);
         }
-        Response::Reply(())
+        Self::empty()
     }
 }
 
@@ -150,7 +150,7 @@ impl Handler<RegisterArbiter> for System {
               -> Response<Self, RegisterArbiter>
     {
         self.arbiters.insert(msg.0, msg.1);
-        Response::Reply(())
+        Self::empty()
     }
 }
 
@@ -170,6 +170,6 @@ impl Handler<UnregisterArbiter> for System {
               -> Response<Self, UnregisterArbiter>
     {
         self.arbiters.remove(&msg.0);
-        Response::Reply(())
+        Self::empty()
     }
 }

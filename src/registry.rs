@@ -48,7 +48,7 @@ use supervisor::Supervisor;
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
 ///       println!("ping");
 ///       Arbiter::system().send(msgs::SystemExit(0));
-///       Response::Reply(())
+///       Self::empty()
 ///    }
 /// }
 ///

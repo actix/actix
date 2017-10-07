@@ -28,7 +28,7 @@ impl Handler<Ping> for MyActor {
     fn handle(&mut self, msg: Ping, _: &mut Context<MyActor>) -> Response<Self, Ping> {
         println!("PING: {:?}", msg);
         self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
-        Response::Empty()
+        Self::empty()
     }
 }
 

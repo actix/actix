@@ -55,7 +55,7 @@ use queue::{sync, unsync};
 ///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> Response<Self, Die> {
 ///         ctx.stop();
 ///         Arbiter::system().send(msgs::SystemExit(0));
-///         Response::Reply(())
+///         Self::empty()
 ///     }
 /// }
 ///

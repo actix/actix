@@ -158,7 +158,7 @@ impl<A> FramedContext<A>
         FramedContext {
             act: act,
             state: ActorState::Started,
-            address: ActorAddressCell::new(),
+            address: ActorAddressCell::default(),
             framed: Some(ActorFramedCell::new(io.framed(codec))),
             items: Vec::new(),
         }

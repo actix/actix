@@ -139,6 +139,29 @@ pub trait Actor: Sized + 'static {
         });
         addr
     }
+
+    /// Create response
+    fn reply<M>(val: Self::Item) -> Response<Self, M> where Self: ResponseType<M> {
+        Response::reply(val)
+    }
+
+    /// Create async response
+    fn async_reply<T, M>(fut: T) -> Response<Self, M>
+        where Self: ResponseType<M>,
+              T: ActorFuture<Item=Self::Item, Error=Self::Error, Actor=Self> + Sized + 'static
+    {
+        Response::async_reply(fut)
+    }
+
+    /// Create unit response
+    fn empty<M>() -> Response<Self, M> where Self: ResponseType<M, Item=()> {
+        Response::empty()
+    }
+
+    /// Create error response
+    fn reply_error<M>(err: Self::Error) -> Response<Self, M> where Self: ResponseType<M> {
+        Response::error(err)
+    }
 }
 
 /// Actor trait that allow to handle `tokio_io::codec::Framed` objects.
@@ -315,7 +338,7 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
     ///     }
     ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) -> Response<Self, Ping> {
     ///         println!("PING");
-    ///         Response::Reply(())
+    ///         Self::empty()
     ///     }
     /// }
     ///
@@ -344,8 +367,8 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// This method is similar to `add_future` but works with streams.
     ///
     /// One note to consider. Actor wont receive next item from a stream
-    /// until `Response` future resolves to result. `Response::Reply` and
-    /// `Response::Error` resolves immediately.
+    /// until `Response` future resolves to result. `Self::reply` and
+    /// `Self::reply_error` resolves immediately.
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>

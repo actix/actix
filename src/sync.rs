@@ -31,9 +31,9 @@
 //! impl Handler<Fibonacci> for SyncActor {
 //!     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Response<Self, Fibonacci> {
 //!         if msg.0 == 0 {
-//!             Response::Error(())
+//!             Self::reply_error(())
 //!         } else if msg.0 == 1 {
-//!             Response::Reply(1)
+//!             Self::reply(1)
 //!         } else {
 //!             let mut i = 0;
 //!             let mut sum = 0;
@@ -45,7 +45,7 @@
 //!                 curr = sum;
 //!                 i += 1;
 //!             }
-//!             Response::Reply(sum)
+//!             Self::reply(sum)
 //!         }
 //!    }
 //! }

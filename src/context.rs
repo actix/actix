@@ -103,7 +103,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
             act: act,
             state: ActorState::Started,
             items: Vec::new(),
-            address: ActorAddressCell::new(),
+            address: ActorAddressCell::default(),
         }
     }
 
@@ -261,16 +261,19 @@ pub struct ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
     unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
 
-impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
-{
-    pub fn new() -> ActorAddressCell<A> {
+impl<A> Default for ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A> {
+
+    fn default() -> Self {
         ActorAddressCell {
             sync_alive: false,
             sync_msgs: None,
             unsync_msgs: unsync::unbounded(),
         }
     }
+}
 
+impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
+{
     pub fn close(&mut self) {
         self.unsync_msgs.close();
         if let Some(ref mut msgs) = self.sync_msgs {

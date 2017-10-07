@@ -96,28 +96,24 @@ impl<A, M, T> std::convert::From<T> for Response<A, M>
 impl<A, M> Response<A, M> where A: Actor + ResponseType<M>
 {
     /// Create response
-    #[allow(non_snake_case)]
-    pub fn Reply(val: A::Item) -> Self {
+    pub fn reply(val: A::Item) -> Self {
         Response {inner: Some(ResponseTypeItem::Item(val))}
     }
 
     /// Create async response
-    #[allow(non_snake_case)]
-    pub fn AsyncReply<T>(fut: T) -> Self
+    pub fn async_reply<T>(fut: T) -> Self
         where T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static
     {
         Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
     }
 
     /// Create unit response
-    #[allow(non_snake_case)]
-    pub fn Empty() -> Self where A: ResponseType<M, Item=()> {
+    pub fn empty() -> Self where A: ResponseType<M, Item=()> {
         Response {inner: Some(ResponseTypeItem::Item(()))}
     }
 
     /// Create error response
-    #[allow(non_snake_case)]
-    pub fn Error(err: A::Error) -> Self {
+    pub fn error(err: A::Error) -> Self {
         Response {inner: Some(ResponseTypeItem::Error(err))}
     }
 

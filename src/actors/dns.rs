@@ -79,12 +79,10 @@ impl Handler<GetAddressInfo> for DnsResolver {
               -> Response<Self, GetAddressInfo>
     {
         match get_addrinfo(msg.host, msg.port, msg.family, msg.flags, msg.socktype) {
-            Err(err) => {
-                Response::Error(err)
-            },
-            Ok(addrs) => {
-                Response::Reply(addrs.collect())
-            },
+            Err(err) =>
+                Self::reply_error(err),
+            Ok(addrs) =>
+                Self::reply(addrs.collect()),
         }
     }
 }
