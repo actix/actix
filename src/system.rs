@@ -1,3 +1,4 @@
+use std::string::ToString;
 use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
@@ -46,7 +47,7 @@ use message::Response;
 ///
 /// fn main() {
 ///    // initialize system
-///    let sys = System::new("test".to_owned());
+///    let sys = System::new("test");
 ///
 ///    // Start `Timer` actor
 ///    let _:() = Timer{dur: Duration::new(0, 1)}.start();
@@ -69,14 +70,14 @@ impl System {
 
     #[cfg_attr(feature="cargo-clippy", allow(new_ret_no_self))]
     /// Create new system
-    pub fn new(name: String) -> SystemRunner {
-        let core = Arbiter::new_system(name.clone());
+    pub fn new<T: ToString>(name: T) -> SystemRunner {
+        let core = Arbiter::new_system(name.to_string());
         let (stop_tx, stop_rx) = channel();
 
         // start system
         let sys = System {
             arbiters: HashMap::new(), stop: Some(stop_tx)}.start();
-        Arbiter::set_system(sys, name);
+        Arbiter::set_system(sys, name.to_string());
 
         SystemRunner {
             core: core,

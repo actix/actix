@@ -51,7 +51,7 @@
 //! }
 //!
 //! fn main() {
-//!     let sys = System::new("test".to_owned());
+//!     let sys = System::new("test");
 //!
 //!     // start sync arbiter with 2 threads
 //!     let addr = SyncArbiter::start(2, || SyncActor);

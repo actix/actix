@@ -66,7 +66,7 @@ impl Handler<Fibonacci> for SyncActor {
 #[test]
 #[cfg_attr(feature="cargo-clippy", allow(mutex_atomic))]
 fn test_sync() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
     let l = Arc::new(Mutex::new(false));
     let cond = Arc::new(Condvar::new());
     let counter = Arc::new(AtomicUsize::new(0));

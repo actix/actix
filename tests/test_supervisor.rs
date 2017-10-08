@@ -44,7 +44,7 @@ impl Handler<Die> for MyActor {
 
 #[test]
 fn test_supervisor() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let starts = Arc::new(AtomicUsize::new(0));
     let restarts = Arc::new(AtomicUsize::new(0));
@@ -70,7 +70,7 @@ fn test_supervisor() {
 
 #[test]
 fn test_supervisor_lazy() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let starts = Arc::new(AtomicUsize::new(0));
     let restarts = Arc::new(AtomicUsize::new(0));
@@ -101,7 +101,7 @@ fn test_supervisor_lazy() {
 
 #[test]
 fn test_supervisor_upgrade_address() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let starts = Arc::new(AtomicUsize::new(0));
     let restarts = Arc::new(AtomicUsize::new(0));

@@ -46,7 +46,7 @@ impl Actor for MyActor {
 
 #[test]
 fn test_active_address() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let started = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));
@@ -75,7 +75,7 @@ fn test_active_address() {
 
 #[test]
 fn test_active_sync_address() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let started = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));
@@ -104,7 +104,7 @@ fn test_active_sync_address() {
 
 #[test]
 fn test_stop_after_drop_address() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let started = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));
@@ -142,7 +142,7 @@ fn test_stop_after_drop_address() {
 
 #[test]
 fn test_stop_after_drop_sync_address() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let started = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));
@@ -180,7 +180,7 @@ fn test_stop_after_drop_sync_address() {
 
 #[test]
 fn test_stop() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let started = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));
@@ -209,7 +209,7 @@ fn test_stop() {
 
 #[test]
 fn test_stop_restore_after_stopping() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
 
     let started = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));

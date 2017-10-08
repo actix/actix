@@ -86,7 +86,7 @@ pub trait Actor: Sized + 'static {
     /// use actix::*;
     ///
     /// // initialize system
-    /// System::new("test".to_owned());
+    /// System::new("test");
     ///
     /// struct MyActor;
     /// impl Actor for MyActor {
@@ -112,7 +112,7 @@ pub trait Actor: Sized + 'static {
     /// use actix::*;
     ///
     /// // initialize system
-    /// System::new("test".to_owned());
+    /// System::new("test");
     ///
     /// struct MyActor{val: usize};
     /// impl Actor for MyActor {

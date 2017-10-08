@@ -53,7 +53,7 @@ impl Actor for MyActor2 {
 
 #[test]
 fn test_address() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: Address<_> = MyActor(Arc::clone(&count)).start();
@@ -77,7 +77,7 @@ fn test_address() {
 
 #[test]
 fn test_sync_address() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
     let arbiter = Arbiter::new(None);
 
@@ -108,7 +108,7 @@ fn test_sync_address() {
 
 #[test]
 fn test_address_upgrade() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: Address<_> = MyActor(Arc::clone(&count)).start();

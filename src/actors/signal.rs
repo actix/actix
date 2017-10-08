@@ -53,7 +53,7 @@
 //!
 //! fn main() {
 //!    // initialize system
-//!    let sys = System::new("test".to_owned());
+//!    let sys = System::new("test");
 //!
 //!    // Start signals handler
 //!    let addr: SyncAddress<_> = Signals.start();

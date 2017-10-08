@@ -38,7 +38,7 @@ In order to use actix you first need to create an `System`.
 extern crate actix;
 
 fn main() {
-    let system = actix::System::new("test".to_owned());
+    let system = actix::System::new("test");
     
     system.run();
 }
@@ -73,7 +73,7 @@ impl Actor for MyActor {
 }
 
 fn main() {
-    let system = System::new("test".to_owned());
+    let system = System::new("test");
 
     let addr: Address<_> = MyActor.start();
 
@@ -125,7 +125,7 @@ impl ResponseType<Sum> for Summator {
 }
 
 fn main() {
-    let system = System::new("test".to_owned());
+    let system = System::new("test");
 
     let addr: Address<_> = Summator.start();
 
@@ -220,7 +220,7 @@ impl ResponseType<Ping> for Game {
 }
 
 fn main() {
-    let system = System::new("test".to_owned());
+    let system = System::new("test");
 
     // this is helper actor that manages unix signals, by default stops System
     signal::DefaultSignalsHandler.start::<()>();

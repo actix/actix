@@ -66,7 +66,7 @@ use supervisor::Supervisor;
 ///
 /// fn main() {
 ///    // initialize system
-///    let sys = System::new("test".to_owned());
+///    let sys = System::new("test");
 ///
 ///    // Start MyActor1
 ///    let _:() = MyActor1.start();

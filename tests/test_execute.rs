@@ -8,7 +8,7 @@ use actix::msgs::{Execute, SystemExit};
 
 #[test]
 fn test_execute() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
     assert_eq!(Arbiter::name(), "test");
 
     let addr = Arbiter::new(None);
@@ -31,7 +31,7 @@ fn test_execute() {
 
 #[test]
 fn test_system_execute() {
-    let sys = System::new("test".to_owned());
+    let sys = System::new("test");
     assert_eq!(Arbiter::name(), "test");
 
     let addr = Arbiter::new(None);

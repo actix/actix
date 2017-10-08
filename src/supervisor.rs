@@ -60,7 +60,7 @@ use queue::{sync, unsync};
 /// }
 ///
 /// fn main() {
-///     let sys = System::new("test".to_owned());
+///     let sys = System::new("test");
 ///
 ///     let (addr, _) = Supervisor::start(false, |_| MyActor);
 ///

@@ -11,7 +11,7 @@
 //! use actix::actors::dns;
 //!
 //! fn main() {
-//!     let sys = System::new("test".to_owned());
+//!     let sys = System::new("test");
 //!
 //!     let addr = SyncArbiter::start(3, || dns::DnsResolver);
 //!
