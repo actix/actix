@@ -65,7 +65,7 @@ impl<A> AsyncActorContext<A> for Context<A> where A: Actor<Context=Self>
         self.items.spawn(fut)
     }
 
-    fn cancel_future(&mut self, handle: SpawnHandle) {
+    fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.items.cancel_future(handle)
     }
 }
@@ -303,13 +303,14 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncActorContext<A>
         self.index
     }
 
-    pub fn cancel_future(&mut self, handle: SpawnHandle) {
+    pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         for index in 0..self.items.len() {
             if self.items[index].0 == handle {
                 self.items.remove(index);
-                return
+                return true
             }
         }
+        false
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {

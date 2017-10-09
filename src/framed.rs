@@ -90,7 +90,7 @@ impl<A> AsyncActorContext<A> for FramedContext<A>
         self.items.spawn(fut)
     }
 
-    fn cancel_future(&mut self, handle: SpawnHandle) {
+    fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.items.cancel_future(handle)
     }
 }
