@@ -3,7 +3,6 @@ use std::time::Duration;
 use futures::{future, Future, Stream};
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Encoder, Decoder};
-use tokio_core::reactor::Timeout;
 
 use fut::ActorFuture;
 use message::Response;
@@ -11,6 +10,7 @@ use arbiter::Arbiter;
 use address::ActorAddress;
 use context::{Context, ActorFutureCell, ActorStreamCell};
 use framed::FramedContext;
+use utils::TimeoutWrapper;
 
 
 #[allow(unused_variables)]
@@ -405,8 +405,8 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
 
     /// Send message `msg` when timeout fires. Returned handle could be used
     /// for cancelling timeout.
-    fn add_timeout<M>(&mut self, msg: M, timeout: Duration) -> SpawnHandle
-        where A: Handler<M, ()>, M: 'static
+    fn add_timeout<M, E>(&mut self, msg: M, timeout: Duration) -> SpawnHandle
+        where A: Handler<M, E>, M: 'static, E: 'static
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");
@@ -414,10 +414,7 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
         } else {
             self.spawn(
                 ActorFutureCell::new(
-                    Timeout::new(timeout, Arbiter::handle())
-                        .unwrap()
-                        .map_err(|_| ())
-                        .map(move |_| msg)
+                    TimeoutWrapper::new(msg, timeout)
                 ))
         }
     }
