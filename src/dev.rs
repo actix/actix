@@ -10,4 +10,4 @@
 pub use prelude::*;
 
 pub use address::{ActorAddress};
-pub use context::{AsyncContextApi, ActorAddressCell};
+pub use context::{AsyncContextApi, ActorAddressCell, ActorItemsCell};
