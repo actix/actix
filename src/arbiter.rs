@@ -25,7 +25,7 @@ thread_local!(
     static SYSREG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
 );
 
-/// Arbiter
+/// Event loop controller
 ///
 /// Arbiter controls event loop in it's thread. Each arbiter runs in separate
 /// thread. Arbiter provides several api for event loop acces. Each arbiter

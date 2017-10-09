@@ -21,7 +21,8 @@ use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 use message::Response;
 
 
-/// Actor execution context
+/// Actor execution context for
+/// [Framed](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html) object
 pub struct FramedContext<A>
     where A: FramedActor + Actor<Context=FramedContext<A>>,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,

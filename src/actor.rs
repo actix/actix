@@ -229,7 +229,7 @@ pub trait Supervised: Actor {
 /// incoming messages, streams, futures.
 ///
 /// `M` is message which can be handled by actor
-/// `E` optional error type, if message handler is used for handling messages
+/// `E` is optional error type, if message handler is used for handling messages
 ///  from Future or Stream, then `E` type has to be set to correspondent `Error` type.
 #[allow(unused_variables)]
 pub trait Handler<M, E=()> where Self: Actor + ResponseType<M>
@@ -241,7 +241,7 @@ pub trait Handler<M, E=()> where Self: Actor + ResponseType<M>
     fn error(&mut self, err: E, ctx: &mut Self::Context) {}
 }
 
-/// Response type
+/// Message response type
 pub trait ResponseType<M> where Self: Actor {
 
     /// The type of value that this message will resolved with if it is successful.
