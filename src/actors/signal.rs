@@ -122,35 +122,35 @@ impl SystemService for ProcessSignals {
         tokio_signal::ctrl_c(handle).map_err(|_| ())
             .actfuture()
             .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
-                 {let _ = ctx.add_stream(sig.map(|_| SignalType::Int));})
+                 ctx.add_stream(sig.map(|_| SignalType::Int)))
             .spawn(ctx);
 
         // SIGHUP
         unix::Signal::new(libc::SIGHUP, handle).map_err(|_| ())
             .actfuture()
             .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
-                 {let _ = ctx.add_stream(sig.map(|_| SignalType::Hup));})
+                 ctx.add_stream(sig.map(|_| SignalType::Hup)))
             .spawn(ctx);
 
         // SIGTERM
         unix::Signal::new(libc::SIGTERM, handle).map_err(|_| ())
             .actfuture()
             .map(|sig, _: &mut Self, ctx: &mut Context<Self>|
-                 {let _ = ctx.add_stream(sig.map(|_| SignalType::Term));})
+                 ctx.add_stream(sig.map(|_| SignalType::Term)))
             .spawn(ctx);
 
         // SIGQUIT
         unix::Signal::new(libc::SIGQUIT, handle).map_err(|_| ())
             .actfuture()
             .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
-                 {let _ = ctx.add_stream(sig.map(|_| SignalType::Quit));})
+                 ctx.add_stream(sig.map(|_| SignalType::Quit)))
             .spawn(ctx);
 
         // SIGCHLD
         unix::Signal::new(libc::SIGCHLD, handle).map_err(|_| ())
             .actfuture()
             .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
-                 {let _ = ctx.add_stream(sig.map(|_| SignalType::Child));})
+                 ctx.add_stream(sig.map(|_| SignalType::Child)))
             .spawn(ctx);
     }
 }

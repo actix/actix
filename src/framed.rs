@@ -13,7 +13,7 @@ use fut::ActorFuture;
 // use queue::{sync, unsync};
 
 use actor::{Actor, Supervised,
-            Handler, ResponseType, StreamHandler,
+            Handler, ResponseType, StreamHandler, SpawnHandle,
             FramedActor, ActorState, ActorContext, AsyncActorContext};
 use address::{Subscriber};
 use context::{ActorAddressCell, ActorItemsCell, AsyncContextApi};
@@ -84,14 +84,14 @@ impl<A> AsyncActorContext<A> for FramedContext<A>
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
 {
-    fn spawn<F>(&mut self, fut: F) -> usize
+    fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.items.spawn(fut)
     }
 
-    fn cancel_future(&mut self, idx: usize) {
-        self.items.cancel_future(idx)
+    fn cancel_future(&mut self, handle: SpawnHandle) {
+        self.items.cancel_future(handle)
     }
 }
 

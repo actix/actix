@@ -8,7 +8,7 @@ use fut::ActorFuture;
 use queue::{sync, unsync};
 
 use actor::{Actor, Supervised, Handler, StreamHandler,
-            ActorState, ActorContext, AsyncActorContext};
+            ActorState, ActorContext, AsyncActorContext, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
 use message::Response;
@@ -59,14 +59,14 @@ impl<A> ActorContext<A> for Context<A> where A: Actor<Context=Self>
 
 impl<A> AsyncActorContext<A> for Context<A> where A: Actor<Context=Self>
 {
-    fn spawn<F>(&mut self, fut: F) -> usize
+    fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.items.spawn(fut)
     }
 
-    fn cancel_future(&mut self, idx: usize) {
-        self.items.cancel_future(idx)
+    fn cancel_future(&mut self, handle: SpawnHandle) {
+        self.items.cancel_future(handle)
     }
 }
 
@@ -268,10 +268,10 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
     }
 }
 
-type Item<A> = (usize, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
+type Item<A> = (SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
 
 pub struct ActorItemsCell<A> where A: Actor, A::Context: AsyncActorContext<A> {
-    index: usize,
+    index: SpawnHandle,
     items: Vec<Item<A>>,
 }
 
@@ -279,7 +279,7 @@ impl<A> Default for ActorItemsCell<A> where A: Actor, A::Context: AsyncActorCont
 
     fn default() -> Self {
         ActorItemsCell {
-            index: 0,
+            index: SpawnHandle::default(),
             items: Vec::new(),
         }
     }
@@ -295,17 +295,17 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncActorContext<A>
         self.items.clear()
     }
 
-    pub fn spawn<F>(&mut self, fut: F) -> usize
+    pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        self.index += 1;
+        self.index = self.index.next();
         self.items.push((self.index, Box::new(fut)));
         self.index
     }
 
-    pub fn cancel_future(&mut self, idx: usize) {
+    pub fn cancel_future(&mut self, handle: SpawnHandle) {
         for index in 0..self.items.len() {
-            if self.items[index].0 == idx {
+            if self.items[index].0 == handle {
                 self.items.remove(index);
                 return
             }

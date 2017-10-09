@@ -51,7 +51,7 @@ pub mod dev;
 
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,
-                ActorContext, AsyncActorContext};
+                ActorContext, AsyncActorContext, SpawnHandle};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::{Context, ContextFutureSpawner};

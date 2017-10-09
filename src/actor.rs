@@ -1,7 +1,9 @@
 use std;
+use std::time::Duration;
 use futures::{future, Future, Stream};
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Encoder, Decoder};
+use tokio_core::reactor::Timeout;
 
 use fut::ActorFuture;
 use message::Response;
@@ -303,16 +305,33 @@ pub trait ActorContext<A>: Sized where A: Actor<Context=Self> {
     }
 }
 
+/// Spawned future handle. Could be used for cancelling spawned future.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub struct SpawnHandle(usize);
+
+impl SpawnHandle {
+    /// Get next handle
+    pub fn next(self) -> SpawnHandle {
+        SpawnHandle(self.0 + 1)
+    }
+}
+
+impl Default for SpawnHandle {
+    fn default() -> SpawnHandle {
+        SpawnHandle(0)
+    }
+}
+
 /// Asynchronous execution context
 pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
 {
-    /// Spawn async future into context. Returns id of the item,
+    /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
-    fn spawn<F>(&mut self, fut: F) -> usize
+    fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
 
     /// Cancel future. idx is a value returned by `spawn` method.
-    fn cancel_future(&mut self, idx: usize);
+    fn cancel_future(&mut self, idx: SpawnHandle);
 
     /// This method allow to handle Future in similar way as normal actor message.
     ///
@@ -358,14 +377,13 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// }
     /// fn main() {}
     /// ```
-    fn add_future<F>(&mut self, fut: F) -> usize
+    fn add_future<F>(&mut self, fut: F)
         where F: Future + 'static, A: Handler<F::Item, F::Error>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_future called for stopped actor.");
-            0
         } else {
-            self.spawn(ActorFutureCell::new(fut))
+            self.spawn(ActorFutureCell::new(fut));
         }
     }
 
@@ -374,15 +392,33 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// One note to consider. Actor wont receive next item from a stream
     /// until `Response` future resolves to result. `Self::reply` and
     /// `Self::reply_error` resolves immediately.
-    fn add_stream<S>(&mut self, fut: S) -> usize
+    fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
-            0
         } else {
-            self.spawn(ActorStreamCell::new(fut))
+            self.spawn(ActorStreamCell::new(fut));
+        }
+    }
+
+    /// Send message `msg` when timeout fires. Returned handle could be used
+    /// for cancelling timeout.
+    fn add_timeout<M>(&mut self, msg: M, timeout: Duration) -> SpawnHandle
+        where A: Handler<M, ()>, M: 'static
+    {
+        if self.state() == ActorState::Stopped {
+            error!("Context::add_timeout called for stopped actor.");
+            SpawnHandle::default()
+        } else {
+            self.spawn(
+                ActorFutureCell::new(
+                    Timeout::new(timeout, Arbiter::handle())
+                        .unwrap()
+                        .map_err(|_| ())
+                        .map(move |_| msg)
+                ))
         }
     }
 }
