@@ -281,6 +281,20 @@ impl<A> Future for FramedContext<A>
     }
 }
 
+impl<A> std::fmt::Debug for FramedContext<A>
+    where A: Actor<Context=Self> + FramedActor,
+          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
+                           <<A as FramedActor>::Codec as Decoder>::Error>,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f,
+               "FramedContext({:?}: actor:{:?}) {{ state: {:?}, connected: {}, items: {} }}",
+               self as *const _,
+               &self.act as *const _,
+               self.state, "-", self.items.is_empty())
+    }
+}
+
 /// Framed object wrapper
 pub(crate)
 struct ActorFramedCell<A>

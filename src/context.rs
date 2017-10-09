@@ -213,6 +213,14 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
     }
 }
 
+impl<A> std::fmt::Debug for Context<A> where A: Actor<Context=Self> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Context({:?}: actor:{:?}) {{ state: {:?}, connected: {}, items: {} }}",
+               self as *const _,
+               &self.act as *const _,
+               self.state, "-", self.items.is_empty())
+    }
+}
 
 pub struct ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
 {
@@ -314,42 +322,44 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncActorContext<A>
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
-        let mut idx = 0;
-        let mut len = self.items.len();
-        while idx < len {
+        loop {
+            let mut idx = 0;
+            let mut len = self.items.len();
             let mut not_ready = true;
 
-            let (drop, item) = match self.items[idx].1.poll(act, ctx) {
-                Ok(val) => match val {
-                    Async::Ready(_) => {
-                        not_ready = false;
-                        (true, None)
-                    }
-                    Async::NotReady => (false, None),
-                },
-                Err(_) => (true, None)
-            };
+            while idx < len {
+                let (drop, item) = match self.items[idx].1.poll(act, ctx) {
+                    Ok(val) => match val {
+                        Async::Ready(_) => {
+                            not_ready = false;
+                            (true, None)
+                        }
+                        Async::NotReady => (false, None),
+                    },
+                    Err(_) => (true, None)
+                };
 
-            // we have new pollable item
-            if let Some(item) = item {
-                self.items.push(item);
-            }
-
-            // number of items could be different, context can add more items
-            len = self.items.len();
-
-            // item finishes, we need to remove it,
-            // replace current item with last item
-            if drop {
-                len -= 1;
-                if idx >= len {
-                    self.items.pop();
-                    return
-                } else {
-                    self.items[idx] = self.items.pop().unwrap();
+                // we have new pollable item
+                if let Some(item) = item {
+                    self.items.push(item);
                 }
-            } else {
-                idx += 1;
+
+                // number of items could be different, context can add more items
+                len = self.items.len();
+
+                // item finishes, we need to remove it,
+                // replace current item with last item
+                if drop {
+                    len -= 1;
+                    if idx >= len {
+                        self.items.pop();
+                        return
+                    } else {
+                        self.items[idx] = self.items.pop().unwrap();
+                    }
+                } else {
+                    idx += 1;
+                }
             }
 
             // are we done
