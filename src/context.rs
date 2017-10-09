@@ -30,7 +30,7 @@ pub struct Context<A> where A: Actor<Context=Context<A>>,
 {
     act: A,
     state: ActorState,
-    items: Vec<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
+    items: ActorItemsCell<A>,
     address: ActorAddressCell<A>,
 }
 
@@ -47,7 +47,7 @@ impl<A> ActorContext<A> for Context<A> where A: Actor<Context=Self>
     /// Terminate actor execution
     fn terminate(&mut self) {
         self.address.close();
-        self.items.clear();
+        self.items.close();
         self.state = ActorState::Stopped;
     }
 
@@ -59,14 +59,14 @@ impl<A> ActorContext<A> for Context<A> where A: Actor<Context=Self>
 
 impl<A> AsyncActorContext<A> for Context<A> where A: Actor<Context=Self>
 {
-    fn spawn<F>(&mut self, fut: F)
+    fn spawn<F>(&mut self, fut: F) -> usize
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        if self.state == ActorState::Stopped {
-            error!("Context::spawn called for stopped actor.");
-        } else {
-            self.items.push(Box::new(fut))
-        }
+        self.items.spawn(fut)
+    }
+
+    fn cancel_future(&mut self, idx: usize) {
+        self.items.cancel_future(idx)
     }
 }
 
@@ -102,7 +102,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
         Context {
             act: act,
             state: ActorState::Started,
-            items: Vec::new(),
+            items: ActorItemsCell::default(),
             address: ActorAddressCell::default(),
         }
     }
@@ -167,47 +167,7 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
                 not_ready = false
             }
 
-            // check secondary streams
-            let mut idx = 0;
-            let mut len = self.items.len();
-            loop {
-                if idx >= len {
-                    break
-                }
-
-                let (drop, item) = match self.items[idx].poll(&mut self.act, ctx) {
-                    Ok(val) => match val {
-                        Async::Ready(_) => {
-                            not_ready = false;
-                            (true, None)
-                        }
-                        Async::NotReady => (false, None),
-                    },
-                    Err(_) => (true, None)
-                };
-
-                // we have new pollable item
-                if let Some(item) = item {
-                    self.items.push(item);
-                }
-
-                // number of items could be different, context can add more items
-                len = self.items.len();
-
-                // item finishes, we need to remove it,
-                // replace current item with last item
-                if drop {
-                    len -= 1;
-                    if idx >= len {
-                        self.items.pop();
-                        break
-                    } else {
-                        self.items[idx] = self.items.pop().unwrap();
-                    }
-                } else {
-                    idx += 1;
-                }
-            }
+            self.items.poll(&mut self.act, ctx);
 
             // are we done
             if !not_ready {
@@ -308,6 +268,98 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
     }
 }
 
+type Item<A> = (usize, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
+
+pub struct ActorItemsCell<A> where A: Actor, A::Context: AsyncActorContext<A> {
+    index: usize,
+    items: Vec<Item<A>>,
+}
+
+impl<A> Default for ActorItemsCell<A> where A: Actor, A::Context: AsyncActorContext<A> {
+
+    fn default() -> Self {
+        ActorItemsCell {
+            index: 0,
+            items: Vec::new(),
+        }
+    }
+}
+
+impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncActorContext<A>
+{
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn close(&mut self) {
+        self.items.clear()
+    }
+
+    pub fn spawn<F>(&mut self, fut: F) -> usize
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    {
+        self.index += 1;
+        self.items.push((self.index, Box::new(fut)));
+        self.index
+    }
+
+    pub fn cancel_future(&mut self, idx: usize) {
+        for index in 0..self.items.len() {
+            if self.items[index].0 == idx {
+                self.items.remove(index);
+                return
+            }
+        }
+    }
+
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
+        let mut idx = 0;
+        let mut len = self.items.len();
+        while idx < len {
+            let mut not_ready = true;
+
+            let (drop, item) = match self.items[idx].1.poll(act, ctx) {
+                Ok(val) => match val {
+                    Async::Ready(_) => {
+                        not_ready = false;
+                        (true, None)
+                    }
+                    Async::NotReady => (false, None),
+                },
+                Err(_) => (true, None)
+            };
+
+            // we have new pollable item
+            if let Some(item) = item {
+                self.items.push(item);
+            }
+
+            // number of items could be different, context can add more items
+            len = self.items.len();
+
+            // item finishes, we need to remove it,
+            // replace current item with last item
+            if drop {
+                len -= 1;
+                if idx >= len {
+                    self.items.pop();
+                    return
+                } else {
+                    self.items[idx] = self.items.pop().unwrap();
+                }
+            } else {
+                idx += 1;
+            }
+
+            // are we done
+            if not_ready {
+                break
+            }
+        }
+    }
+}
+
+
 impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncActorContext<A>
 {
     type Item = ();
@@ -357,7 +409,6 @@ impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncAct
         }
     }
 }
-
 
 pub(crate)
 struct ActorFutureCell<A, M, F, E>
@@ -515,6 +566,6 @@ impl<A, T> ContextFutureSpawner<A> for T
           T: ActorFuture<Item=(), Error=(), Actor=A> + 'static
 {
     fn spawn(self, ctx: &mut A::Context) {
-        ctx.spawn(self)
+        let _ = ctx.spawn(self);
     }
 }

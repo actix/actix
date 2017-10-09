@@ -16,7 +16,7 @@ use actor::{Actor, Supervised,
             Handler, ResponseType, StreamHandler,
             FramedActor, ActorState, ActorContext, AsyncActorContext};
 use address::{Subscriber};
-use context::{ActorAddressCell, AsyncContextApi};
+use context::{ActorAddressCell, ActorItemsCell, AsyncContextApi};
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 use message::Response;
 
@@ -32,7 +32,7 @@ pub struct FramedContext<A>
     state: ActorState,
     address: ActorAddressCell<A>,
     framed: Option<ActorFramedCell<A>>,
-    items: Vec<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
+    items: ActorItemsCell<A>,
 }
 
 type ToEnvelopeSender<A, M> = SyncSender<Result<<A as ResponseType<M>>::Item,
@@ -69,7 +69,7 @@ impl<A> ActorContext<A> for FramedContext<A>
     fn terminate(&mut self) {
         self.close();
         self.address.close();
-        self.items.clear();
+        self.items.close();
         self.state = ActorState::Stopped;
     }
 
@@ -84,14 +84,14 @@ impl<A> AsyncActorContext<A> for FramedContext<A>
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
 {
-    fn spawn<F>(&mut self, fut: F)
+    fn spawn<F>(&mut self, fut: F) -> usize
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        if self.state == ActorState::Stopped {
-            error!("Context::spawn called for stopped actor.");
-        } else {
-            self.items.push(Box::new(fut))
-        }
+        self.items.spawn(fut)
+    }
+
+    fn cancel_future(&mut self, idx: usize) {
+        self.items.cancel_future(idx)
     }
 }
 
@@ -116,15 +116,6 @@ impl<A> FramedContext<A>
     {
         Box::new(self.address.unsync_address())
     }
-
-    /*#[doc(hidden)]
-    pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
-        where A: Handler<M>,
-              A::Item: Send,
-              A::Error: Send,
-    {
-        self.address::<SyncAddress<_>>().subscriber()
-    }*/
 
     /// Send item to sink. If sink is closed item returned as an error.
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item)
@@ -161,7 +152,7 @@ impl<A> FramedContext<A>
             state: ActorState::Started,
             address: ActorAddressCell::default(),
             framed: Some(ActorFramedCell::new(io.framed(codec))),
-            items: Vec::new(),
+            items: ActorItemsCell::default(),
         }
     }
 
@@ -239,46 +230,7 @@ impl<A> Future for FramedContext<A>
             }
 
             // check secondary streams
-            let mut idx = 0;
-            let mut len = self.items.len();
-            loop {
-                if idx >= len {
-                    break
-                }
-
-                let (drop, item) = match self.items[idx].poll(&mut self.act, ctx) {
-                    Ok(val) => match val {
-                        Async::Ready(_) => {
-                            not_ready = false;
-                            (true, None)
-                        }
-                        Async::NotReady => (false, None),
-                    },
-                    Err(_) => (true, None)
-                };
-
-                // we have new pollable item
-                if let Some(item) = item {
-                    self.items.push(item);
-                }
-
-                // number of items could be different, context can add more items
-                len = self.items.len();
-
-                // item finishes, we need to remove it,
-                // replace current item with last item
-                if drop {
-                    len -= 1;
-                    if idx >= len {
-                        self.items.pop();
-                        break
-                    } else {
-                        self.items[idx] = self.items.pop().unwrap();
-                    }
-                } else {
-                    idx += 1;
-                }
-            }
+            self.items.poll(&mut self.act, ctx);
 
             // are we done
             if !not_ready {
