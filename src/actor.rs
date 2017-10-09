@@ -403,9 +403,9 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
         }
     }
 
-    /// Send message `msg` when timeout fires. Returned handle could be used
-    /// for cancelling timeout.
-    fn add_timeout<M, E>(&mut self, msg: M, timeout: Duration) -> SpawnHandle
+    /// Send message `msg` to self after specified period. Returns spawn handle
+    /// which could be used for notification cancelling.
+    fn notify<M, E>(&mut self, msg: M, dur: Duration) -> SpawnHandle
         where A: Handler<M, E>, M: 'static, E: 'static
     {
         if self.state() == ActorState::Stopped {
@@ -413,16 +413,14 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
             SpawnHandle::default()
         } else {
             self.spawn(
-                ActorFutureCell::new(
-                    TimeoutWrapper::new(msg, timeout)
-                ))
+                ActorFutureCell::new(TimeoutWrapper::new(msg, dur)))
         }
     }
 
-    /// Execute closure after `timeout` duration within same Actor and Context
-    fn run_after<F>(&mut self, timeout: Duration, f: F)
+    /// Execute closure after specified period within same Actor and Context
+    fn run_later<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
         where F: FnOnce(&mut A, &mut A::Context) + 'static
     {
-        self.spawn(TimerFunc::new(timeout, f));
+        self.spawn(TimerFunc::new(dur, f))
     }
 }
