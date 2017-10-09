@@ -10,7 +10,7 @@ use arbiter::Arbiter;
 use address::ActorAddress;
 use context::{Context, ActorFutureCell, ActorStreamCell};
 use framed::FramedContext;
-use utils::TimeoutWrapper;
+use utils::{TimerFunc, TimeoutWrapper};
 
 
 #[allow(unused_variables)]
@@ -417,5 +417,12 @@ pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
                     TimeoutWrapper::new(msg, timeout)
                 ))
         }
+    }
+
+    /// Execute closure after `timeout` duration within same Actor and Context
+    fn run_after<F>(&mut self, timeout: Duration, f: F)
+        where F: FnOnce(&mut A, &mut A::Context) + 'static
+    {
+        self.spawn(TimerFunc::new(timeout, f));
     }
 }

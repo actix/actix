@@ -9,15 +9,32 @@ use tokio_core::reactor::Timeout;
 use actix::prelude::*;
 use actix::msgs::SystemExit;
 
-struct MyActor{cancel: bool}
+#[derive(PartialEq)]
+enum Op {
+    Cancel,
+    Timeout,
+    RunAfter,
+}
+
+struct MyActor{op: Op}
 
 impl Actor for MyActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Context<MyActor>) {
-        let handle = ctx.add_timeout(TimeoutMessage, Duration::new(0, 100));
-        if self.cancel {
-            ctx.cancel_future(handle);
+        match self.op {
+            Op::Cancel => {
+                let handle = ctx.add_timeout(TimeoutMessage, Duration::new(0, 100));
+                ctx.cancel_future(handle);
+            },
+            Op::Timeout => {
+                ctx.add_timeout(TimeoutMessage, Duration::new(0, 100));
+            },
+            Op::RunAfter => {
+                ctx.run_after(Duration::new(0, 100), |_, _| {
+                    Arbiter::system().send(SystemExit(0));
+                });
+            }
         }
     }
 }
@@ -32,7 +49,7 @@ impl ResponseType<TimeoutMessage> for MyActor {
 impl Handler<TimeoutMessage> for MyActor {
     fn handle(&mut self, _: TimeoutMessage, _: &mut Context<Self>)
               -> Response<Self, TimeoutMessage> {
-        if self.cancel {
+        if self.op != Op::Timeout {
             assert!(false, "should not happen");
         }
         Arbiter::system().send(SystemExit(0));
@@ -44,7 +61,7 @@ impl Handler<TimeoutMessage> for MyActor {
 fn test_add_timeout() {
     let sys = System::new("test");
 
-    let _addr: Address<_> = MyActor{cancel: false}.start();
+    let _addr: Address<_> = MyActor{op: Op::Timeout}.start();
 
     sys.run();
 }
@@ -54,7 +71,7 @@ fn test_add_timeout() {
 fn test_add_timeout_cancel() {
     let sys = System::new("test");
 
-    let _addr: Address<_> = MyActor{cancel: false}.start();
+    let _addr: Address<_> = MyActor{op: Op::Cancel}.start();
 
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
@@ -63,6 +80,15 @@ fn test_add_timeout_cancel() {
                 future::result(Ok(()))
             })
     );
+
+    sys.run();
+}
+
+#[test]
+fn test_run_after() {
+    let sys = System::new("test");
+
+    let _addr: Address<_> = MyActor{op: Op::RunAfter}.start();
 
     sys.run();
 }
