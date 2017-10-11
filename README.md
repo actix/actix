@@ -88,6 +88,8 @@ Spawning a new actor is achieved via the `start` and `create` methods of
 trait. It provides several different ways of creating actors, for details check docs. 
 You can implement `started`, `stopping` and `stopped`mthods of Actor trait, 
 `started` method get called when actor starts and `stopping` when actor finishes.
+Check [api documentation](https://fafhrd91.github.io/actix/actix/trait.Actor.html#actor-lifecycle) 
+for more information on actor lifecycle.
 
 ### Handle messages
 
