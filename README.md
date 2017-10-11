@@ -172,8 +172,6 @@ extern crate actix;
 extern crate tokio_core;
 
 use std::time::Duration;
-use tokio_core::reactor::Timeout;
-
 use actix::prelude::*;
 use actix::actors::signal;
 
@@ -201,14 +199,9 @@ impl Handler<Ping> for Game {
             println!("Ping received");
             
             // wait 100 nanos
-            Timeout::new(Duration::new(0, 100), Arbiter::handle())
-                .unwrap()
-                .actfuture() // if we want get access to actor state we have to use ActorFuture
-                .then(|_, srv: &mut Game, ctx: &mut Context<Self>| {
-                     srv.addr.send(Ping);
-                     fut::ok(())
-                 })
-                 .spawn(ctx);
+            ctx.run_later(Duration::new(0, 100), |act: &mut Self, _: &mut Context<Self>| {
+                act.addr.send(Ping);
+            });
         }
         Self::empty()
     }
