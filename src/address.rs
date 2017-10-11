@@ -57,7 +57,8 @@ pub trait Subscriber<M: 'static> {
 
 }
 
-/// Address of the actor `A`.
+/// Address of the actor
+///
 /// Actor has to run in the same thread as owner of the address.
 pub struct Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
     tx: unsync::UnboundedSender<ContextProtocol<A>>
@@ -80,7 +81,8 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
         self.tx.connected()
     }
 
-    /// Send message `M` to actor `A`.
+    /// Send message `M` to actor `A`. Communication channel to the actor is
+    /// unbuonded.
     pub fn send<M: 'static>(&self, msg: M) where A: Handler<M>
     {
         let _ = self.tx.unbounded_send(
@@ -88,6 +90,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
+    /// Communication channel to the actor is unbuonded.
     pub fn call<B, M>(&self, _: &B, msg: M) -> Request<A, B, M>
         where A: Handler<M>,
               B: Actor,
@@ -100,7 +103,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
         Request::local(rx)
     }
 
-    /// Send message to actor `A` and asyncronously wait for response.
+    /// Send message to the actor `A` and asyncronously wait for response.
     pub fn call_fut<M>(&self, msg: M) -> Receiver<Result<A::Item, A::Error>>
         where A: Handler<M>,
               M: 'static
@@ -144,7 +147,7 @@ impl<A, M> Subscriber<M> for Address<A>
     }
 }
 
-/// Address of the actor `A`. Actor can run in differend thread.
+/// `Send` address of the actor. Actor can run in differend thread
 pub struct SyncAddress<A> where A: Actor {
     tx: sync::UnboundedSender<Envelope<A>>,
     closed: Cell<bool>,

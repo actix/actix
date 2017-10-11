@@ -20,10 +20,8 @@ use message::Response;
 ///
 /// ```rust
 /// extern crate actix;
-/// extern crate tokio_core;
 ///
 /// use std::time::Duration;
-/// use tokio_core::reactor::Timeout;
 /// use actix::prelude::*;
 ///
 /// struct Timer {dur: Duration}
@@ -31,17 +29,12 @@ use message::Response;
 /// impl Actor for Timer {
 ///    type Context = Context<Self>;
 ///
-///    // stop system in `self.dur` seconds
+///    // stop system after `self.dur` seconds
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
-///        Timeout::new(self.dur, Arbiter::handle())
-///           .unwrap()
-///           .actfuture()
-///           .then(|_, srv: &mut Timer, ctx: &mut Context<Self>| {
-///               // send `SystemExit` to `System` actor.
-///               Arbiter::system().send(msgs::SystemExit(0));
-///               fut::ok(())
-///           })
-///           .spawn(ctx);
+///        ctx.run_later(self.dur, |act, ctx| {
+///            // send `SystemExit` to `System` actor.
+///            Arbiter::system().send(msgs::SystemExit(0));
+///        });
 ///    }
 /// }
 ///
