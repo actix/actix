@@ -574,6 +574,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
                     return Ok(Async::NotReady),
                 Err(err) => {
                     <Self::Actor as Handler<M, E>>::error(act, err, ctx);
+                    <A as StreamHandler<M, E>>::finished(act, ctx);
                     return Err(())
                 }
             }

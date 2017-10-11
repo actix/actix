@@ -266,7 +266,7 @@ pub trait StreamHandler<M, E=()>: Handler<M, E> + ResponseType<M>
     /// Method is called when stream get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
 
-    /// Method is called when stream finishes.
+    /// Method is called when stream finishes, even if stream finishes with error.
     fn finished(&mut self, ctx: &mut Self::Context) {}
 }
 
