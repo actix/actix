@@ -329,11 +329,16 @@ impl Default for SpawnHandle {
 }
 
 /// Asynchronous execution context
-pub trait AsyncActorContext<A>: ActorContext<A> where A: Actor<Context=Self>
+pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
 {
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
+
+    /// Spawn future into the context. Stop processing any of incoming events
+    /// until this future resolves.
+    fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
 
     /// Cancel future. idx is a value returned by `spawn` method.

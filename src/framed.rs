@@ -14,7 +14,7 @@ use fut::ActorFuture;
 
 use actor::{Actor, Supervised,
             Handler, ResponseType, StreamHandler, SpawnHandle,
-            FramedActor, ActorState, ActorContext, AsyncActorContext};
+            FramedActor, ActorState, ActorContext, AsyncContext};
 use address::{Subscriber};
 use context::{ActorAddressCell, ActorItemsCell, AsyncContextApi};
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
@@ -32,6 +32,7 @@ pub struct FramedContext<A>
     state: ActorState,
     address: ActorAddressCell<A>,
     framed: Option<ActorFramedCell<A>>,
+    wait: Option<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
     items: ActorItemsCell<A>,
 }
 
@@ -79,7 +80,7 @@ impl<A> ActorContext<A> for FramedContext<A>
     }
 }
 
-impl<A> AsyncActorContext<A> for FramedContext<A>
+impl<A> AsyncContext<A> for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
@@ -88,6 +89,12 @@ impl<A> AsyncActorContext<A> for FramedContext<A>
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.items.spawn(fut)
+    }
+
+    fn wait<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    {
+        self.wait = Some(Box::new(fut));
     }
 
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
@@ -152,6 +159,7 @@ impl<A> FramedContext<A>
             state: ActorState::Started,
             address: ActorAddressCell::default(),
             framed: Some(ActorFramedCell::new(io.framed(codec))),
+            wait: None,
             items: ActorItemsCell::default(),
         }
     }
@@ -204,6 +212,16 @@ impl<A> Future for FramedContext<A>
                 Actor::stopping(&mut self.act, ctx);
             }
             _ => ()
+        }
+
+        // check wait future
+        if self.wait.is_some() {
+            if let Some(ref mut fut) = self.wait {
+                if let Ok(Async::NotReady) = fut.poll(&mut self.act, ctx) {
+                    return Ok(Async::NotReady)
+                }
+            }
+            self.wait = None;
         }
 
         let mut prep_stop = false;
@@ -299,7 +317,7 @@ impl<A> std::fmt::Debug for FramedContext<A>
 pub(crate)
 struct ActorFramedCell<A>
     where A: Actor + FramedActor,
-          A::Context: AsyncActorContext<A>,
+          A::Context: AsyncContext<A>,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
 {
@@ -315,7 +333,7 @@ struct ActorFramedCell<A>
 
 impl<A> ActorFramedCell<A>
     where A: Actor + FramedActor,
-          A::Context: AsyncActorContext<A>,
+          A::Context: AsyncContext<A>,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
 {
@@ -349,7 +367,7 @@ impl<A> ActorFramedCell<A>
 
 impl<A> ActorFuture for ActorFramedCell<A>
     where A: Actor + FramedActor,
-          A::Context: AsyncActorContext<A>,
+          A::Context: AsyncContext<A>,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
 {

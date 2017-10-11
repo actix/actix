@@ -2,7 +2,7 @@ use std::cell::Cell;
 use futures::unsync::oneshot::{channel, Receiver};
 use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
-use actor::{Actor, Handler, ResponseType, AsyncActorContext};
+use actor::{Actor, Handler, ResponseType, AsyncContext};
 use context::{ContextProtocol, AsyncContextApi};
 use envelope::{Envelope, ToEnvelope};
 use message::Request;
@@ -17,7 +17,7 @@ pub trait ActorAddress<A, T> where A: Actor {
 
 impl<A> ActorAddress<A, Address<A>> for A
     where A: Actor,
-          A::Context: AsyncActorContext<A> + AsyncContextApi<A>
+          A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
     fn get(ctx: &mut A::Context) -> Address<A> {
         ctx.address_cell().unsync_address()
@@ -26,7 +26,7 @@ impl<A> ActorAddress<A, Address<A>> for A
 
 impl<A> ActorAddress<A, SyncAddress<A>> for A
     where A: Actor,
-          A::Context: AsyncActorContext<A> + AsyncContextApi<A>
+          A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
     fn get(ctx: &mut A::Context) -> SyncAddress<A> {
         ctx.address_cell().sync_address()
@@ -35,7 +35,7 @@ impl<A> ActorAddress<A, SyncAddress<A>> for A
 
 impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
     where A: Actor,
-          A::Context: AsyncActorContext<A> + AsyncContextApi<A>
+          A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
     fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>)
     {
@@ -60,17 +60,17 @@ pub trait Subscriber<M: 'static> {
 /// Address of the actor
 ///
 /// Actor has to run in the same thread as owner of the address.
-pub struct Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
+pub struct Address<A> where A: Actor, A::Context: AsyncContext<A> {
     tx: unsync::UnboundedSender<ContextProtocol<A>>
 }
 
-impl<A> Clone for Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
+impl<A> Clone for Address<A> where A: Actor, A::Context: AsyncContext<A> {
     fn clone(&self) -> Self {
         Address{tx: self.tx.clone() }
     }
 }
 
-impl<A> Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
+impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
 
     pub(crate) fn new(sender: unsync::UnboundedSender<ContextProtocol<A>>) -> Address<A> {
         Address{tx: sender}
@@ -134,7 +134,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncActorContext<A> {
 
 impl<A, M> Subscriber<M> for Address<A>
     where A: Actor + Handler<M>,
-          A::Context: AsyncActorContext<A>,
+          A::Context: AsyncContext<A>,
           M: 'static
 {
     fn send(&self, msg: M) -> Result<(), M> {

@@ -1,7 +1,7 @@
 use std;
 use futures::{Future, Async, Poll, Stream};
 
-use actor::{Actor, Supervised, AsyncActorContext};
+use actor::{Actor, Supervised, AsyncContext};
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
 use context::{Context, ContextProtocol, AsyncContextApi};
@@ -305,12 +305,12 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     }
 }
 
-trait FnFactory<A: Actor>: 'static where A::Context: AsyncActorContext<A> {
+trait FnFactory<A: Actor>: 'static where A::Context: AsyncContext<A> {
     fn call(self: Box<Self>, &mut A::Context) -> A;
 }
 
 impl<A: Actor, F: FnOnce(&mut A::Context) -> A + 'static> FnFactory<A> for F
-    where A::Context: AsyncActorContext<A>
+    where A::Context: AsyncContext<A>
 {
     #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
     fn call(self: Box<Self>, ctx: &mut A::Context) -> A {
