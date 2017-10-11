@@ -154,20 +154,20 @@ fn main() {
 
 All communications with actors go through `Address` object. You can `send` message
 without waiting response or `call` actor with specific message. `ResponseType`
-trait defines response type for message, `Item` and `Error` for value and error respectevily.
+trait defines response type for a message, `Item` and `Error` for value and error respectevily.
 There are different types of addresses.
-[`Address<A>`](https://fafhrd91.github.io/actix/actix/struct.Address.html) is address
+[`Address<A>`](https://fafhrd91.github.io/actix/actix/struct.Address.html) is an address
 of an actor that runs in same arbiter (event loop). If actor is running in different
 thread [`SyncAddress<A>`](https://fafhrd91.github.io/actix/actix/struct.SyncAddress.html)
 has to be used.
 
 ### Actor state and subscription for specific message
 
-If you noticed methods of `Actor` and `Handler` traits accept `&mut self`, so you are welcome to 
-store anything in actor and mutate it whenever you need.
+If you noticed, methods of `Actor` and `Handler` traits accept `&mut self`, so you are welcome to 
+store anything in an actor and mutate it whenever you need.
 
 Address object requires actor type, but if we just want to send specific message to 
-and actor that can handle message, we can use `Subscriber` interface. Let's create
+an actor that can handle message, we can use `Subscriber` interface. Let's create
 new actor that uses `Subscriber`, also this example will show how to use standard future objects.
 
 ```rust
