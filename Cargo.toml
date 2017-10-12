@@ -26,6 +26,9 @@ default = ["signal"]
 # Include process signal support, on by default
 signal = ["tokio-signal", "libc"]
 
+# Include dns resolver actor
+dns = ["libc"]
+
 [dependencies]
 # tokio
 futures = "0.1"
