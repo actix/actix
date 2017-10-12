@@ -23,12 +23,15 @@ pub struct Disconnect {
 
 /// Send message
 pub struct Message {
+    /// Id of the client session
     pub id: usize,
+    /// Peer message
     pub msg: String,
+    /// Room name
     pub room: String,
 }
 
-/// List of rooms
+/// List of available rooms
 pub struct ListRooms;
 
 /// Join room, is room does not exists create new one.
