@@ -2,7 +2,7 @@
 name = "actix"
 version = "0.1.0"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
-description = "Actor Library"
+description = "Actor framework for Rust"
 readme = "README.md"
 keywords = ["actor", "asynchronous", "concurrency"]
 homepage = "https://github.com/fafhrd91/actix/"
