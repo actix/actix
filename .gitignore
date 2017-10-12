@@ -9,4 +9,4 @@ __pycache__
 *.sock
 *~
 target/
-*.egg-info/
+examples/chat/target/

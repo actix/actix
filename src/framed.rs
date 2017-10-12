@@ -58,6 +58,8 @@ impl<A> ActorContext<A> for FramedContext<A>
                            <<A as FramedActor>::Codec as Decoder>::Error>,
 {
     /// Stop actor execution
+    ///
+    /// This method closes actor address and framed object.
     fn stop(&mut self) {
         self.close();
         self.address.close();

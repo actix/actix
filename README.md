@@ -30,6 +30,8 @@ To use `actix`, add this to your `Cargo.toml`:
 actix = { git = "https://github.com/fafhrd91/actix.git" }
 ```
 
+You may consider to check 
+[chat example](https://github.com/fafhrd91/actix/tree/master/examples/chat). 
 
 ### Initiate the Actix
 
@@ -241,6 +243,14 @@ fn main() {
 
 More information on signals handling is in
 [signal](https://fafhrd91.github.io/actix/actix/actors/signal/index.html) module.
+
+
+### chat example
+
+You may consider to check 
+[chat example](https://github.com/fafhrd91/actix/tree/master/examples/chat). 
+It provides basic example of networking client/server service.
+
 
 ### fectl
 
