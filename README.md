@@ -33,7 +33,7 @@ actix = "0.1"
 You may consider to check 
 [chat example](https://github.com/fafhrd91/actix/tree/master/examples/chat). 
 
-### Initiate the Actix
+### Initialize the Actix
 
 In order to use actix you first need to create an `System`.
 
