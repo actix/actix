@@ -12,6 +12,10 @@ license = "Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
 build = "build.rs"
 
+[badges]
+travis-ci = { repository = "fafhrd91/actix", branch = "master" }
+appveyor = { repository = "fafhrd91/actix" }
+
 [lib]
 name = "actix"
 path = "src/lib.rs"
