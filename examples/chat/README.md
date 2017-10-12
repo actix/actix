@@ -8,6 +8,8 @@ Chat server listens for incoming tcp connections. Server can access several type
   * `\list` - list all available rooms
   * `\join name` - join room, if room does not exist, create new one
   * `some message` - just string, send messsage to all peers in same room
+  * client has to send heartbeat `Ping` messages, if server does not receive heartbeat 
+  message for 10 secons connection get droppped
   
 To start server use command: `cargo run --bin server`
 
