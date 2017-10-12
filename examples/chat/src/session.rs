@@ -1,3 +1,5 @@
+//! `ClientSession` is an actor, it manages peer tcp connection and
+//! proxy commands from peer to `ChatServer`.
 use std::io;
 use std::time::{Instant, Duration};
 use tokio_core::net::TcpStream;
