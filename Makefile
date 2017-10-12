@@ -9,6 +9,7 @@ build:
 
 test: build
 	cargo test $(CARGO_FLAGS)
+	cd examples/chat && cargo build
 
 # cd examples/word-count && python setup.py install && pytest -v tests
 
