@@ -11,7 +11,7 @@ use session;
 
 /// Message for chat server communications
 
-/// New session is created
+/// New chat session is created
 pub struct Connect {
     pub addr: Address<session::ChatSession>,
 }
@@ -21,7 +21,7 @@ pub struct Disconnect {
     pub id: usize,
 }
 
-/// Send message
+/// Send message to specific room
 pub struct Message {
     /// Id of the client session
     pub id: usize,
@@ -34,7 +34,7 @@ pub struct Message {
 /// List of available rooms
 pub struct ListRooms;
 
-/// Join room, is room does not exists create new one.
+/// Join room, if room does not exists create new one.
 pub struct Join {
     /// Client id
     pub id: usize,
@@ -42,7 +42,8 @@ pub struct Join {
     pub name: String,
 }
 
-/// `ChatServer` is managing chat room and responsible for coordinating chat session.
+/// `ChatServer` manages chat rooms and responsible for coordinating chat session.
+/// implementation is super primitive
 pub struct ChatServer {
     sessions: HashMap<usize, Address<session::ChatSession>>,
     rooms: HashMap<String, HashSet<usize>>,
@@ -81,7 +82,7 @@ impl ChatServer {
 /// Make actor from `ChatServer`
 impl Actor for ChatServer {
     /// We are going to use simple Context, we just need ability to communicate
-    /// with different actors.
+    /// with other actors.
     type Context = Context<Self>;
 }
 
