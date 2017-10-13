@@ -1,5 +1,5 @@
 //! `ClientSession` is an actor, it manages peer tcp connection and
-//! proxy commands from peer to `ChatServer`.
+//! proxies commands from peer to `ChatServer`.
 use std::io;
 use std::time::{Instant, Duration};
 use tokio_core::net::TcpStream;
@@ -9,15 +9,15 @@ use server::{self, ChatServer};
 use codec::{ChatRequest, ChatResponse, ChatCodec};
 
 
-/// Chat server send this messages to session
+/// Chat server sends this messages to session
 pub struct Message(pub String);
 
 
-/// `ChatSession` actor is responsible for tcp client communitions.
+/// `ChatSession` actor is responsible for tcp peer communitions.
 pub struct ChatSession {
     /// unique session id
     id: usize,
-    /// this is address of our chat server
+    /// this is address of chat server
     addr: Address<ChatServer>,
     /// Client must send ping at least once per 10 seconds, otherwise we drop connection.
     hb: Instant,
@@ -27,7 +27,7 @@ pub struct ChatSession {
 
 impl Actor for ChatSession {
     /// For tcp communication we are going to use `FramedContext`.
-    /// It is convinient wrapper around `Framed` object from tokio_io
+    /// It is convinient wrapper around `Framed` object from `tokio_io`
     type Context = FramedContext<Self>;
 }
 
@@ -37,7 +37,7 @@ impl FramedActor for ChatSession {
     type Codec= ChatCodec;
 }
 
-/// Also `FramedContext` requires Actor which able to handle stream
+/// Also `FramedContext` requires Actor which is able to handle stream
 /// of `<Codec as Decoder>::Item` items.
 impl StreamHandler<ChatRequest, io::Error> for ChatSession {
 
@@ -97,7 +97,7 @@ impl Handler<ChatRequest, io::Error> for ChatSession {
                     fut::ok(())
                 }).wait(ctx)
                 // .wait(ctx) pauses all events in context,
-                // so actor wont receive new messages until it get list of rooms back
+                // so actor wont receive any new messages until it get list of rooms back
             },
             ChatRequest::Join(name) => {
                 println!("Join to room: {}", name);
@@ -113,6 +113,7 @@ impl Handler<ChatRequest, io::Error> for ChatSession {
                                     msg: message, room:
                                     self.room.clone()})
             }
+            // we update heartbeat time on ping from peer
             ChatRequest::Ping =>
                 self.hb = Instant::now(),
         }
@@ -121,7 +122,7 @@ impl Handler<ChatRequest, io::Error> for ChatSession {
     }
 }
 
-/// Handler for Message, send message to peer
+/// Handler for Message, chat server sends this message, we just send string to peer
 impl Handler<Message> for ChatSession {
 
     fn handle(&mut self, msg: Message, ctx: &mut FramedContext<Self>)
