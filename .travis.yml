@@ -7,6 +7,21 @@ rust:
 sudo: required
 dist: trusty
 
+env:
+  global:
+    - RUSTFLAGS="-C link-dead-code"
+
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - cmake
+      - gcc
+      - binutils-dev
+      - libiberty-dev
+
 # Add clippy
 before_script:
   #- |
