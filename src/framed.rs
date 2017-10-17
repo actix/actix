@@ -10,13 +10,12 @@ use tokio_io::AsyncRead;
 use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
-// use queue::{sync, unsync};
 
 use actor::{Actor, Supervised,
             Handler, ResponseType, StreamHandler, SpawnHandle,
             FramedActor, ActorState, ActorContext, AsyncContext};
 use address::{Subscriber};
-use context::{ActorAddressCell, ActorItemsCell, AsyncContextApi};
+use context::{ActorAddressCell, ActorItemsCell, ActorWaitCell, AsyncContextApi};
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 use message::Response;
 
@@ -32,7 +31,7 @@ pub struct FramedContext<A>
     state: ActorState,
     address: ActorAddressCell<A>,
     framed: Option<ActorFramedCell<A>>,
-    wait: Option<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
+    wait: ActorWaitCell<A>,
     items: ActorItemsCell<A>,
 }
 
@@ -96,7 +95,7 @@ impl<A> AsyncContext<A> for FramedContext<A>
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        self.wait = Some(Box::new(fut));
+        self.wait.add(fut)
     }
 
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
@@ -161,7 +160,7 @@ impl<A> FramedContext<A>
             state: ActorState::Started,
             address: ActorAddressCell::default(),
             framed: Some(ActorFramedCell::new(io.framed(codec))),
-            wait: None,
+            wait: ActorWaitCell::default(),
             items: ActorItemsCell::default(),
         }
     }
@@ -216,14 +215,9 @@ impl<A> Future for FramedContext<A>
             _ => ()
         }
 
-        // check wait future
-        if self.wait.is_some() {
-            if let Some(ref mut fut) = self.wait {
-                if let Ok(Async::NotReady) = fut.poll(&mut self.act, ctx) {
-                    return Ok(Async::NotReady)
-                }
-            }
-            self.wait = None;
+        // check wait futures
+        if let Ok(Async::NotReady) = self.wait.poll(&mut self.act, ctx) {
+            return Ok(Async::NotReady)
         }
 
         let mut prep_stop = false;

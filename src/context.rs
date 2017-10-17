@@ -1,4 +1,5 @@
 use std;
+use std::collections::VecDeque;
 
 use futures::{Async, Future, Poll, Stream};
 use futures::unsync::oneshot::Sender;
@@ -30,8 +31,8 @@ pub struct Context<A> where A: Actor<Context=Context<A>>,
 {
     act: A,
     state: ActorState,
+    wait: ActorWaitCell<A>,
     items: ActorItemsCell<A>,
-    wait: Option<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
     address: ActorAddressCell<A>,
 }
 
@@ -69,7 +70,7 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        self.wait = Some(Box::new(fut));
+        self.wait.add(fut)
     }
 
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
@@ -109,8 +110,8 @@ impl<A> Context<A> where A: Actor<Context=Self>
         Context {
             act: act,
             state: ActorState::Started,
+            wait: ActorWaitCell::default(),
             items: ActorItemsCell::default(),
-            wait: None,
             address: ActorAddressCell::default(),
         }
     }
@@ -166,14 +167,9 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
             _ => ()
         }
 
-        // check wait future
-        if self.wait.is_some() {
-            if let Some(ref mut fut) = self.wait {
-                if let Ok(Async::NotReady) = fut.poll(&mut self.act, ctx) {
-                    return Ok(Async::NotReady)
-                }
-            }
-            self.wait = None;
+        // check wait futures
+        if let Ok(Async::NotReady) = self.wait.poll(&mut self.act, ctx) {
+            return Ok(Async::NotReady)
         }
 
         let mut prep_stop = false;
@@ -581,6 +577,63 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
         }
     }
 }
+
+pub struct ActorWaitCell<A>
+    where A: Actor, A::Context: AsyncContext<A>,
+{
+    act: std::marker::PhantomData<A>,
+    fut: VecDeque<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
+}
+
+impl<A> Default for ActorWaitCell<A>
+    where A: Actor, A::Context: AsyncContext<A>
+{
+    fn default() -> ActorWaitCell<A>
+    {
+        ActorWaitCell {
+            act: std::marker::PhantomData,
+            fut: VecDeque::new() }
+    }
+}
+
+impl<A> ActorWaitCell<A>
+    where A: Actor, A::Context: AsyncContext<A>,
+{
+    pub fn add<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    {
+        self.fut.push_back(Box::new(fut));
+    }
+}
+
+impl<A> ActorFuture for ActorWaitCell<A>
+    where A: Actor,
+          A::Context: AsyncContext<A>,
+{
+    type Item = ();
+    type Error = ();
+    type Actor = A;
+
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
+    {
+        loop {
+            if let Some(fut) = self.fut.front_mut() {
+                match fut.poll(act, ctx) {
+                    Ok(Async::NotReady) => {
+                        return Ok(Async::NotReady)
+                    }
+                    Ok(Async::Ready(_)) | Err(_) => (),
+                }
+            }
+            if self.fut.is_empty() {
+                return Ok(Async::Ready(()))
+            } else {
+                self.fut.pop_front();
+            }
+        }
+    }
+}
+
 
 /// Helper trait which can spawn future into actor's context
 pub trait ContextFutureSpawner<A> where A: Actor, A::Context: AsyncContext<A> {
