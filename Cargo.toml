@@ -10,7 +10,6 @@ repository = "https://github.com/fafhrd91/actix.git"
 categories = ["network-programming", "asynchronous"]
 license = "Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
-build = "build.rs"
 
 [badges]
 travis-ci = { repository = "fafhrd91/actix", branch = "master" }
@@ -45,12 +44,6 @@ uuid = { version = "0.5", features = ["v4"] }
 [dependencies.tokio-signal]
 version = "0.1"
 optional = true
-
-[dev-dependencies]
-skeptic = "0.13"
-
-[build-dependencies]
-skeptic = "0.13"
 
 [profile.release]
 lto = true
