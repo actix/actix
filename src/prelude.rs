@@ -10,7 +10,7 @@
 
 pub use msgs;
 
-pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream, IntoActorFuture};
+pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
 
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,

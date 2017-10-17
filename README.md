@@ -102,7 +102,7 @@ accept this message and return sum of those two numbers.
 extern crate actix;
 extern crate futures;
 use futures::{future, Future};
-use actix::prelude::*;
+use actix::*;
 
 // this is our Message
 struct Sum(usize, usize);
@@ -176,7 +176,7 @@ extern crate actix;
 extern crate tokio_core;
 
 use std::time::Duration;
-use actix::prelude::*;
+use actix::*;
 use actix::actors::signal;
 
 struct Ping;
