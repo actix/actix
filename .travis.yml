@@ -31,7 +31,8 @@ before_script:
   - export PATH=$PATH:~/.cargo/bin
 
 script:
-  - make test
+  - cargo build --features signal
+  - cargo test --features signal
   - |
     if [[ "$TRAVIS_RUST_VERSION" == "nightly" && $CLIPPY ]]; then
         cargo clippy
