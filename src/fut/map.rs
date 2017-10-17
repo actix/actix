@@ -6,7 +6,7 @@ use fut::ActorFuture;
 
 /// Future for the `map` combinator, changing the type of a future.
 ///
-/// This is created by the `Future::map` method.
+/// This is created by the `ACtorFuture::map` method.
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 pub struct Map<A, F> where A: ActorFuture {

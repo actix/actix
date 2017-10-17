@@ -20,6 +20,7 @@
 extern crate log;
 extern crate uuid;
 extern crate crossbeam;
+#[macro_use]
 extern crate futures;
 extern crate tokio_io;
 extern crate tokio_core;
@@ -49,6 +50,7 @@ pub mod msgs;
 pub mod sync;
 pub mod dev;
 
+pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,
                 ActorContext, AsyncContext, SpawnHandle};
