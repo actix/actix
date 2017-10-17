@@ -80,7 +80,6 @@ fn main() {
     let addr: Address<_> = MyActor.start();
 
     system.run();
-    println!("Done");
 }
 ```
 
@@ -149,7 +148,6 @@ fn main() {
     }));
 
     system.run();
-    println!("Done");
 }
 ```
 
