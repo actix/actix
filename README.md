@@ -26,7 +26,7 @@ To use `actix`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-actix = "0.1"
+actix = "0.2"
 ```
 
 You may consider to check 
