@@ -13,6 +13,7 @@ mod stream_map;
 mod stream_map_err;
 mod stream_then;
 mod stream_and_then;
+mod stream_finish;
 
 pub use self::and_then::AndThen;
 pub use self::then::Then;
@@ -23,6 +24,7 @@ pub use self::stream_map::StreamMap;
 pub use self::stream_map_err::StreamMapErr;
 pub use self::stream_then::StreamThen;
 pub use self::stream_and_then::StreamAndThen;
+pub use self::stream_finish::StreamFinish;
 
 use actor::Actor;
 
@@ -47,6 +49,8 @@ pub trait ActorFuture {
     fn poll(&mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
             -> Poll<Self::Item, Self::Error>;
 
+    /// Map this future's result to a different type, returning a new future of
+    /// the resulting type.
     fn map<F, U>(self, f: F) -> Map<Self, F>
         where F: FnOnce(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
               Self: Sized,
@@ -54,6 +58,7 @@ pub trait ActorFuture {
         map::new(self, f)
     }
 
+    /// Map this future's error to a different error, returning a new future.
     fn map_err<F, E>(self, f: F) -> MapErr<Self, F>
         where F: FnOnce(Self::Error, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> E,
               Self: Sized,
@@ -61,6 +66,8 @@ pub trait ActorFuture {
         map_err::new(self, f)
     }
 
+    /// Chain on a computation for when a future finished, passing the result of
+    /// the future to the provided closure `f`.
     fn then<F, B>(self, f: F) -> Then<Self, B, F>
         where F: FnOnce(Result<Self::Item, Self::Error>,
                         &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> B,
@@ -106,6 +113,7 @@ pub trait ActorStream {
         stream_map::new(self, f)
     }
 
+    /// Converts a stream of error type `T` to a stream of error type `E`.
     fn map_err<E, F>(self, f: F) -> StreamMapErr<Self, F>
         where F: FnMut(Self::Error, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> E,
               Self: Sized,
@@ -113,6 +121,8 @@ pub trait ActorStream {
         stream_map_err::new(self, f)
     }
 
+    /// Chain on a computation for when a value is ready, passing the resulting
+    /// item to the provided closure `f`.
     fn then<F, U>(self, f: F) -> StreamThen<Self, F, U>
         where F: FnMut(Result<Self::Item, Self::Error>,
                        &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
@@ -122,13 +132,21 @@ pub trait ActorStream {
         stream_then::new(self, f)
     }
 
-    /// Execute another future after this one has resolved successfully.
+    /// Chain on a computation for when a value is ready, passing the successful
+    /// results to the provided closure `f`.
     fn and_then<F, U>(self, f: F) -> StreamAndThen<Self, F, U>
         where F: FnMut(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
               U: IntoActorFuture<Error=Self::Error, Actor=Self::Actor>,
               Self: Sized,
     {
         stream_and_then::new(self, f)
+    }
+
+    /// Converts a stream to a future that resolves when stream completes.
+    fn finish(self) -> StreamFinish<Self>
+        where Self: Sized
+    {
+        stream_finish::new(self)
     }
 }
 
