@@ -5,6 +5,7 @@ use futures::{Future, Poll, Stream};
 
 mod chain;
 mod and_then;
+mod either;
 mod result;
 mod then;
 mod map;
@@ -15,6 +16,7 @@ mod stream_then;
 mod stream_and_then;
 mod stream_finish;
 
+pub use self::either::Either;
 pub use self::and_then::AndThen;
 pub use self::then::Then;
 pub use self::map::Map;
