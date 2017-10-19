@@ -20,7 +20,7 @@ pub use self::either::Either;
 pub use self::and_then::AndThen;
 pub use self::then::Then;
 pub use self::map::Map;
-pub use self::map_err::MapErr;
+pub use self::map_err::{MapErr, DropErr};
 pub use self::result::{result, ok, err, FutureResult};
 pub use self::stream_map::StreamMap;
 pub use self::stream_map_err::StreamMapErr;
@@ -66,6 +66,12 @@ pub trait ActorFuture {
               Self: Sized,
     {
         map_err::new(self, f)
+    }
+
+    /// Drop this future's error, returning a new future.
+    fn drop_err(self) -> DropErr<Self> where Self: Sized
+    {
+        map_err::DropErr::new(self)
     }
 
     /// Chain on a computation for when a future finished, passing the result of

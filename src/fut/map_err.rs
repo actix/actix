@@ -45,3 +45,35 @@ impl<U, A, F> ActorFuture for MapErr<A, F>
         }
     }
 }
+
+pub struct DropErr<A> where A: ActorFuture {
+    future: A
+}
+
+impl<A>DropErr<A> where A: ActorFuture {
+    pub(crate) fn new(future: A) -> DropErr<A>
+    {
+        DropErr {
+            future: future,
+        }
+    }
+}
+
+impl<A> ActorFuture for DropErr<A>
+    where A: ActorFuture
+{
+    type Item = A::Item;
+    type Error = ();
+    type Actor = A::Actor;
+
+    fn poll(&mut self,
+            act: &mut A::Actor,
+            ctx: &mut <A::Actor as Actor>::Context) -> Poll<A::Item, ()>
+    {
+        match self.future.poll(act, ctx) {
+            Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
+            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Err(_) => Err(()),
+        }
+    }
+}
