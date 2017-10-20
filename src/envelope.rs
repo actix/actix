@@ -88,7 +88,7 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
             };
             let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
                 msg: PhantomData, fut: fut, tx: tx};
-            ctx.spawn(f);
+            ctx.spawn_nowait(f);
         }
     }
 }
@@ -116,7 +116,7 @@ impl<A, M> RemoteEnvelope<A, M>
 impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
     where M: 'static,
           A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncContext<A>
 {
     type Actor = A;
 
@@ -131,7 +131,7 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
             };
             let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
                 msg: PhantomData, fut: fut, tx: tx};
-            ctx.spawn(f);
+            ctx.spawn_nowait(f);
         }
     }
 }
@@ -139,7 +139,7 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
 impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
     where M: Send + 'static,
           A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
+          A::Context: AsyncContext<A>
 {
     fn from(env: RemoteEnvelope<A, M>) -> Self {
         Envelope::new(env)

@@ -336,6 +336,11 @@ pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
 
+    /// Spawn async future into context but get polled even if wait got called.
+    #[doc(hidden)]
+    fn spawn_nowait<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
+
     /// Spawn future into the context. Stop processing any of incoming events
     /// until this future resolves.
     fn wait<F>(&mut self, fut: F)

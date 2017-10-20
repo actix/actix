@@ -67,6 +67,12 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
         self.items.spawn(fut)
     }
 
+    fn spawn_nowait<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    {
+        self.wait.spawn_fut(fut)
+    }
+
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
@@ -167,14 +173,14 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
             _ => ()
         }
 
-        // check wait futures
-        if let Ok(Async::NotReady) = self.wait.poll(&mut self.act, ctx) {
-            return Ok(Async::NotReady)
-        }
-
         let mut prep_stop = false;
         loop {
             let mut not_ready = true;
+
+            // check wait futures
+            if let Ok(Async::NotReady) = self.wait.poll(&mut self.act, ctx) {
+                return Ok(Async::NotReady)
+            }
 
             if let Ok(Async::Ready(_)) = self.address.poll(&mut self.act, ctx) {
                 not_ready = false
@@ -341,21 +347,16 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
             let mut not_ready = true;
 
             while idx < len {
-                let (drop, item) = match self.items[idx].1.poll(act, ctx) {
+                let drop = match self.items[idx].1.poll(act, ctx) {
                     Ok(val) => match val {
                         Async::Ready(_) => {
                             not_ready = false;
-                            (true, None)
+                            true
                         }
-                        Async::NotReady => (false, None),
+                        Async::NotReady => false,
                     },
-                    Err(_) => (true, None)
+                    Err(_) => true,
                 };
-
-                // we have new pollable item
-                if let Some(item) = item {
-                    self.items.push(item);
-                }
 
                 // number of items could be different, context can add more items
                 len = self.items.len();
@@ -382,7 +383,6 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
         }
     }
 }
-
 
 impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
@@ -583,6 +583,7 @@ pub struct ActorWaitCell<A>
 {
     act: std::marker::PhantomData<A>,
     fut: VecDeque<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
+    items: Vec<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
 }
 
 impl<A> Default for ActorWaitCell<A>
@@ -592,7 +593,8 @@ impl<A> Default for ActorWaitCell<A>
     {
         ActorWaitCell {
             act: std::marker::PhantomData,
-            fut: VecDeque::new() }
+            fut: VecDeque::new(),
+            items: Vec::new() }
     }
 }
 
@@ -603,6 +605,12 @@ impl<A> ActorWaitCell<A>
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.fut.push_back(Box::new(fut));
+    }
+
+    pub fn spawn_fut<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    {
+        self.items.push(Box::new(fut));
     }
 }
 
@@ -617,6 +625,45 @@ impl<A> ActorFuture for ActorWaitCell<A>
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
     {
         loop {
+            loop {
+                let mut idx = 0;
+                let mut len = self.items.len();
+                let mut not_ready = true;
+
+                while idx < len {
+                    let drop = match self.items[idx].poll(act, ctx) {
+                        Ok(val) => match val {
+                            Async::Ready(_) => {
+                                not_ready = false;
+                                true
+                            }
+                            Async::NotReady => false,
+                        },
+                        Err(_) => true,
+                    };
+
+                    // number of items could be different, context can add more items
+                    len = self.items.len();
+
+                    // item finishes, we need to remove it,
+                    // replace current item with last item
+                    if drop {
+                        len -= 1;
+                        if idx >= len {
+                            self.items.pop();
+                            break
+                        } else {
+                            self.items[idx] = self.items.pop().unwrap();
+                        }
+                    } else {
+                        idx += 1;
+                    }
+                }
+                if not_ready {
+                    break
+                }
+            }
+
             if let Some(fut) = self.fut.front_mut() {
                 match fut.poll(act, ctx) {
                     Ok(Async::NotReady) => {

@@ -92,6 +92,12 @@ impl<A> AsyncContext<A> for FramedContext<A>
         self.items.spawn(fut)
     }
 
+    fn spawn_nowait<F>(&mut self, fut: F)
+        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    {
+        self.wait.spawn_fut(fut)
+    }
+
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
@@ -230,14 +236,14 @@ impl<A> Future for FramedContext<A>
             _ => ()
         }
 
-        // check wait futures
-        if let Ok(Async::NotReady) = self.wait.poll(&mut self.act, ctx) {
-            return Ok(Async::NotReady)
-        }
-
         let mut prep_stop = false;
         loop {
             let mut not_ready = true;
+
+            // check wait futures
+            if let Ok(Async::NotReady) = self.wait.poll(&mut self.act, ctx) {
+                return Ok(Async::NotReady)
+            }
 
             // messages
             if let Ok(Async::Ready(_)) = self.address.poll(&mut self.act, ctx) {
