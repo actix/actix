@@ -150,7 +150,7 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
     }
 }
 
-impl<A, M> ToEnvelope<A, SyncContext<A>, M> for A
+impl<A, M> ToEnvelope<A, M> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
           M: Send + 'static,
           A::Item: Send,

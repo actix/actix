@@ -11,3 +11,4 @@ pub use prelude::*;
 
 pub use address::{ActorAddress};
 pub use context::{AsyncContextApi, ActorAddressCell, ActorItemsCell, ActorWaitCell};
+pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};

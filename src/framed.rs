@@ -38,7 +38,7 @@ pub struct FramedContext<A>
 type ToEnvelopeSender<A, M> = SyncSender<Result<<A as ResponseType<M>>::Item,
                                                 <A as ResponseType<M>>::Error>>;
 
-impl<A, M> ToEnvelope<A, FramedContext<A>, M> for A
+impl<A, M> ToEnvelope<A, M> for FramedContext<A>
     where M: Send + 'static,
           A: FramedActor + Actor<Context=FramedContext<A>> + Handler<M>,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,

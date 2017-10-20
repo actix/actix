@@ -4,22 +4,21 @@ use futures::unsync::oneshot::Sender;
 use futures::sync::oneshot::Sender as SyncSender;
 
 use fut::ActorFuture;
-use actor::{Actor, ActorContext, AsyncContext, Handler, ResponseType};
+use actor::{Actor, AsyncContext, Handler, ResponseType};
 use message::Response;
 use context::Context;
 
 
 /// Converter trait, packs message to suitable envelope
-pub trait ToEnvelope<A, C, M>
-    where A: Actor<Context=C> + Handler<M>,
-          C: ActorContext<A>,
+pub trait ToEnvelope<A, M>
+    where A: Actor + Handler<M>,
           M: 'static,
 {
     /// Pack message into envelope
     fn pack(msg: M, tx: Option<SyncSender<Result<A::Item, A::Error>>>) -> Envelope<A>;
 }
 
-impl<A, M> ToEnvelope<A, Context<A>, M> for A
+impl<A, M> ToEnvelope<A, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>,
           M: Send + 'static,
           A::Item: Send,
@@ -56,7 +55,6 @@ impl<A> Envelope<A> where A: Actor {
 
 // This is not safe! Local envelope could be send to different thread!
 unsafe impl<T> Send for Envelope<T> {}
-
 
 pub trait EnvelopeProxy {
 
@@ -95,7 +93,7 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
     }
 }
 
-pub(crate) struct RemoteEnvelope<A, M>
+pub struct RemoteEnvelope<A, M>
     where A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
 {
@@ -138,6 +136,15 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
     }
 }
 
+impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
+    where M: Send + 'static,
+          A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>,
+{
+    fn from(env: RemoteEnvelope<A, M>) -> Self {
+        Envelope::new(env)
+    }
+}
 
 enum EnvelopFutureItem<A, M> where A: Handler<M> {
     Local(Sender<Result<A::Item, A::Error>>),
