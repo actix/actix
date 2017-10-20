@@ -99,7 +99,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
               A::Item: Send,
               A::Error: Send,
     {
-        self.address::<SyncAddress<_>>().subscriber()
+        Box::new(self.address.sync_address())
     }
 }
 

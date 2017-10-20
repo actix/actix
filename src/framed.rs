@@ -118,13 +118,6 @@ impl<A> FramedContext<A>
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
 {
-    #[doc(hidden)]
-    pub fn subscriber<M: 'static>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>
-    {
-        Box::new(self.address.unsync_address())
-    }
-
     /// Send item to sink. If sink is closed item returned as an error.
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item)
                 -> Result<(), <<A as FramedActor>::Codec as Encoder>::Item>
@@ -144,6 +137,28 @@ impl<A> FramedContext<A>
         if let Some(ref mut framed) = self.framed.take() {
             framed.close();
         }
+    }
+}
+
+impl<A> FramedContext<A>
+    where A: Actor<Context=Self> + FramedActor,
+          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
+                           <<A as FramedActor>::Codec as Decoder>::Error>,
+{
+    #[doc(hidden)]
+    pub fn subscriber<M: 'static>(&mut self) -> Box<Subscriber<M>>
+        where A: Handler<M>
+    {
+        Box::new(self.address.unsync_address())
+    }
+
+    #[doc(hidden)]
+    pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
+        where A: Handler<M>,
+              <A as ResponseType<M>>::Item: Send,
+              <A as ResponseType<M>>::Error: Send,
+    {
+        Box::new(self.address.sync_address())
     }
 }
 
