@@ -50,6 +50,19 @@ impl Actor for MyActor2 {
     }
 }
 
+struct MyActor3;
+
+impl Actor for MyActor3 {
+    type Context = Context<Self>;
+}
+
+impl Handler<Ping> for MyActor3 {
+
+    fn handle(&mut self, msg: Ping, _: &mut Context<MyActor3>) -> Response<Self, Ping> {
+        Arbiter::system().send(msgs::SystemExit(0));
+        Self::reply_error(())
+    }
+}
 
 #[test]
 fn test_address() {
@@ -131,4 +144,24 @@ fn test_address_upgrade() {
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 3);
+}
+
+#[test]
+fn test_error_result() {
+    let sys = System::new("test");
+
+    let addr: Address<_> = MyActor3.start();
+
+    Arbiter::handle().spawn_fn(move || {
+        addr.call_fut(Ping(0)).then(|res| {
+            match res {
+                Ok(Err(_)) => (),
+                Ok(Ok(_)) => panic!("Should not happen"),
+                Err(_) => panic!("Should not happen"),
+            }
+            futures::future::result(Ok(()))
+        })
+    });
+
+    sys.run();
 }
