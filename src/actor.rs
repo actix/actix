@@ -347,7 +347,7 @@ pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// Cancel future. idx is a value returned by `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
 
-    /// This method allow to handle Future in similar way as normal actor message.
+    /// This method allow to handle Future in similar way as normal actor messages.
     ///
     /// ```rust
     /// extern crate actix;
