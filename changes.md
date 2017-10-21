@@ -1,8 +1,11 @@
 # CHANGES
 
-## 0.2.1 (2017-10-xx)
 
-* added `Either` future
+## 0.3.0 (2017-10-xx)
+
+* Added `Either` future
+
+* Message has to provide `ResponseType` impl, before Actor had to provide impl 
 
 
 ## 0.2.0 (2017-10-17)
