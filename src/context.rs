@@ -275,7 +275,7 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
     pub fn new(rx: sync::UnboundedReceiver<Envelope<A>>) -> Self {
         ActorAddressCell {
-            sync_alive: false,
+            sync_alive: true,
             sync_msgs: Some(rx),
             unsync_msgs: unsync::unbounded(),
         }
