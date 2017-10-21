@@ -31,7 +31,6 @@ before_script:
   - export PATH=$PATH:~/.cargo/bin
 
 script:
-  - cd examples/chat; cargo build
   - cargo build --features signal
   - cargo test --features signal
   - |
