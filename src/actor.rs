@@ -134,8 +134,8 @@ pub trait Actor: Sized + 'static {
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
 
         Arbiter::handle().spawn_fn(move || {
-            let srv = f(&mut ctx);
-            let old = ctx.replace_actor(srv);
+            let act = f(&mut ctx);
+            let old = ctx.replace_actor(act);
             std::mem::forget(old);
             ctx.run(Arbiter::handle());
             future::ok(())

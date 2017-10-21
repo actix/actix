@@ -12,6 +12,7 @@ use msgs::{Execute, StartActor, StopArbiter};
 use message::Response;
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};
+use queue::sync;
 
 thread_local!(
     static HND: RefCell<Option<Handle>> = RefCell::new(None);
@@ -184,6 +185,31 @@ impl Arbiter {
             Some(ref reg) => unsafe{std::mem::transmute(reg)},
             None => panic!("System is not running"),
         })
+    }
+
+    /// Start new arbiter and then start actor in created arbiter
+    pub fn start<A, F>(f: F) -> SyncAddress<A>
+        where A: Actor<Context=Context<A>>,
+              F: FnOnce(&mut A::Context) -> A + Send + 'static
+    {
+        let (stx, srx) = sync::unbounded();
+
+        // new arbiter
+        let addr = Arbiter::new(None);
+
+        // create actor
+        addr.send::<Execute>(
+            Execute::new(move || {
+                let mut ctx = Context::with_receiver(
+                    unsafe{std::mem::uninitialized()}, srx);
+                let act = f(&mut ctx);
+                let old = ctx.replace_actor(act);
+                std::mem::forget(old);
+                ctx.run(Arbiter::handle());
+                Ok(())
+            }));
+
+        SyncAddress::new(stx)
     }
 }
 

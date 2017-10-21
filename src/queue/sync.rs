@@ -1,4 +1,4 @@
-//! This is copy of sync/mpsc/ from https://github.com/alexcrichton/futures-rs
+//! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
 //!
 //! A multi-producer, single-consumer, futures-aware, FIFO queue with back pressure.
 //!

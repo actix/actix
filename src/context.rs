@@ -116,6 +116,17 @@ impl<A> Context<A> where A: Actor<Context=Self>
         }
     }
 
+    pub(crate) fn with_receiver(act: A, rx: sync::UnboundedReceiver<Envelope<A>>) -> Context<A>
+    {
+        Context {
+            act: act,
+            state: ActorState::Started,
+            wait: ActorWaitCell::default(),
+            items: ActorItemsCell::default(),
+            address: ActorAddressCell::new(rx),
+        }
+    }
+
     pub(crate) fn run(self, handle: &Handle) {
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
     }
@@ -260,6 +271,14 @@ impl<A> Default for ActorAddressCell<A> where A: Actor, A::Context: AsyncContext
 
 impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 {
+    pub fn new(rx: sync::UnboundedReceiver<Envelope<A>>) -> Self {
+        ActorAddressCell {
+            sync_alive: false,
+            sync_msgs: Some(rx),
+            unsync_msgs: unsync::unbounded(),
+        }
+    }
+
     pub fn close(&mut self) {
         self.unsync_msgs.close();
         if let Some(ref mut msgs) = self.sync_msgs {

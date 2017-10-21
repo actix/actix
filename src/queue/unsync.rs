@@ -1,4 +1,4 @@
-//! This is copy of unsync/mpsc.rs from https://github.com/alexcrichton/futures-rs
+//! This is copy of [unsync/mpsc.rs](https://github.com/alexcrichton/futures-rs)
 //!
 //! A multi-producer, single-consumer, futures-aware, FIFO queue with back
 //! pressure, for use communicating between tasks on the same thread.
