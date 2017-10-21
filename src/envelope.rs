@@ -88,7 +88,7 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
             };
             let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
                 msg: PhantomData, fut: fut, tx: tx};
-            ctx.spawn_nowait(f);
+            ctx.spawn(f);
         }
     }
 }
@@ -131,7 +131,7 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
             };
             let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
                 msg: PhantomData, fut: fut, tx: tx};
-            ctx.spawn_nowait(f);
+            ctx.spawn(f);
         }
     }
 }

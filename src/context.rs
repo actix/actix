@@ -67,12 +67,6 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
         self.items.spawn(fut)
     }
 
-    fn spawn_nowait<F>(&mut self, fut: F)
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
-    {
-        self.wait.spawn_fut(fut)
-    }
-
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
@@ -173,20 +167,25 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
             _ => ()
         }
 
+        // check wait futures
+        if self.wait.poll(&mut self.act, ctx) {
+            return Ok(Async::NotReady)
+        }
+
         let mut prep_stop = false;
         loop {
             let mut not_ready = true;
 
-            // check wait futures
-            if let Ok(Async::NotReady) = self.wait.poll(&mut self.act, ctx) {
-                return Ok(Async::NotReady)
-            }
-
-            if let Ok(Async::Ready(_)) = self.address.poll(&mut self.act, ctx) {
+            if self.address.poll(&mut self.act, ctx) {
                 not_ready = false
             }
 
             self.items.poll(&mut self.act, ctx);
+
+            // check wait futures
+            if self.wait.poll(&mut self.act, ctx) {
+                return Ok(Async::NotReady)
+            }
 
             // are we done
             if !not_ready {
@@ -293,6 +292,52 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
             unreachable!();
         }
     }
+
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool
+    {
+        let mut has_messages = false;
+        loop {
+            let mut not_ready = true;
+
+            // unsync messages
+            match self.unsync_msgs.poll() {
+                Ok(Async::Ready(Some(msg))) => {
+                    not_ready = false;
+                    match msg {
+                        ContextProtocol::Envelope(mut env) => {
+                            has_messages = true;
+                            env.handle(act, ctx)
+                        }
+                        ContextProtocol::Upgrade(tx) => {
+                            let _ = tx.send(self.sync_address());
+                        }
+                    }
+                }
+                Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
+            }
+
+            // sync messages
+            if self.sync_alive {
+                if let Some(ref mut msgs) = self.sync_msgs {
+                    match msgs.poll() {
+                        Ok(Async::Ready(Some(mut msg))) => {
+                            not_ready = false;
+                            has_messages = true;
+                            msg.handle(act, ctx);
+                        }
+                        Ok(Async::Ready(None)) | Err(_) => {
+                            self.sync_alive = false;
+                        },
+                        Ok(Async::NotReady) => (),
+                    }
+                }
+            }
+
+            if not_ready {
+                return has_messages
+            }
+        }
+    }
 }
 
 type Item<A> = (SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
@@ -379,56 +424,6 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
             // are we done
             if not_ready {
                 break
-            }
-        }
-    }
-}
-
-impl<A> ActorFuture for ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
-{
-    type Item = ();
-    type Error = ();
-    type Actor = A;
-
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
-    {
-        loop {
-            let mut not_ready = true;
-
-            // unsync messages
-            match self.unsync_msgs.poll() {
-                Ok(Async::Ready(Some(msg))) => {
-                    not_ready = false;
-                    match msg {
-                        ContextProtocol::Envelope(mut env) => {
-                            env.handle(act, ctx)
-                        }
-                        ContextProtocol::Upgrade(tx) => {
-                            let _ = tx.send(self.sync_address());
-                        }
-                    }
-                }
-                Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => (),
-            }
-
-            // sync messages
-            if self.sync_alive {
-                if let Some(ref mut msgs) = self.sync_msgs {
-                    match msgs.poll() {
-                        Ok(Async::Ready(Some(mut msg))) => {
-                            not_ready = false;
-                            msg.handle(act, ctx);
-                        }
-                        Ok(Async::Ready(None)) | Err(_) => {
-                            self.sync_alive = false;
-                        },
-                        Ok(Async::NotReady) => (),
-                    }
-                }
-            }
-
-            if not_ready {
-                return Ok(Async::NotReady)
             }
         }
     }
@@ -583,7 +578,6 @@ pub struct ActorWaitCell<A>
 {
     act: std::marker::PhantomData<A>,
     fut: VecDeque<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
-    items: Vec<Box<ActorFuture<Item=(), Error=(), Actor=A>>>,
 }
 
 impl<A> Default for ActorWaitCell<A>
@@ -593,8 +587,7 @@ impl<A> Default for ActorWaitCell<A>
     {
         ActorWaitCell {
             act: std::marker::PhantomData,
-            fut: VecDeque::new(),
-            items: Vec::new() }
+            fut: VecDeque::new() }
     }
 }
 
@@ -607,73 +600,19 @@ impl<A> ActorWaitCell<A>
         self.fut.push_back(Box::new(fut));
     }
 
-    pub fn spawn_fut<F>(&mut self, fut: F)
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
-    {
-        self.items.push(Box::new(fut));
-    }
-}
-
-impl<A> ActorFuture for ActorWaitCell<A>
-    where A: Actor,
-          A::Context: AsyncContext<A>,
-{
-    type Item = ();
-    type Error = ();
-    type Actor = A;
-
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool
     {
         loop {
-            loop {
-                let mut idx = 0;
-                let mut len = self.items.len();
-                let mut not_ready = true;
-
-                while idx < len {
-                    let drop = match self.items[idx].poll(act, ctx) {
-                        Ok(val) => match val {
-                            Async::Ready(_) => {
-                                not_ready = false;
-                                true
-                            }
-                            Async::NotReady => false,
-                        },
-                        Err(_) => true,
-                    };
-
-                    // number of items could be different, context can add more items
-                    len = self.items.len();
-
-                    // item finishes, we need to remove it,
-                    // replace current item with last item
-                    if drop {
-                        len -= 1;
-                        if idx >= len {
-                            self.items.pop();
-                            break
-                        } else {
-                            self.items[idx] = self.items.pop().unwrap();
-                        }
-                    } else {
-                        idx += 1;
-                    }
-                }
-                if not_ready {
-                    break
-                }
-            }
-
             if let Some(fut) = self.fut.front_mut() {
                 match fut.poll(act, ctx) {
                     Ok(Async::NotReady) => {
-                        return Ok(Async::NotReady)
+                        return true
                     }
                     Ok(Async::Ready(_)) | Err(_) => (),
                 }
             }
             if self.fut.is_empty() {
-                return Ok(Async::Ready(()))
+                return false
             } else {
                 self.fut.pop_front();
             }
