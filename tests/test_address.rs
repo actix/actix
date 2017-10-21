@@ -79,7 +79,7 @@ fn test_address() {
 fn test_sync_address() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
-    let arbiter = Arbiter::new(None);
+    let arbiter = Arbiter::new("sync-test");
 
     let addr: SyncAddress<_> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();

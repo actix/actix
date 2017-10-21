@@ -51,7 +51,7 @@ impl Arbiter {
 
     /// Spawn new thread and run event loop in spawned thread.
     /// Returns address of newly created arbiter.
-    pub fn new(name: Option<String>) -> SyncAddress<Arbiter> {
+    pub fn new<T: ToString>(name: T) -> SyncAddress<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
 
         let id = Uuid::new_v4();
@@ -59,11 +59,8 @@ impl Arbiter {
         let sys_name = Arbiter::system_name();
         let sys_arbiter = Arbiter::system_arbiter();
         let sys_registry = Arbiter::system_registry().clone();
-        let name = if let Some(n) = name {
-            format!("arbiter:{:?}:{:?}", id.hyphenated().to_string(), n)
-        } else {
-            format!("arbiter:{:?}", id.hyphenated().to_string())
-        };
+        let name =
+            format!("arbiter:{:?}:{:?}", id.hyphenated().to_string(), name.to_string());
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move|| {
             let mut core = Core::new().unwrap();
@@ -195,7 +192,7 @@ impl Arbiter {
         let (stx, srx) = sync::unbounded();
 
         // new arbiter
-        let addr = Arbiter::new(None);
+        let addr = Arbiter::new("actor");
 
         // create actor
         addr.send::<Execute>(

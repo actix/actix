@@ -11,7 +11,7 @@ fn test_execute() {
     let sys = System::new("test");
     assert_eq!(Arbiter::name(), "test");
 
-    let addr = Arbiter::new(None);
+    let addr = Arbiter::new("exec-test");
 
     Arbiter::handle().spawn(
         addr.call_fut(Execute::new(|| {
@@ -34,7 +34,7 @@ fn test_system_execute() {
     let sys = System::new("test");
     assert_eq!(Arbiter::name(), "test");
 
-    let addr = Arbiter::new(None);
+    let addr = Arbiter::new("exec-test");
 
     addr.send(Execute::new(
         || -> Result<(), ()> {
