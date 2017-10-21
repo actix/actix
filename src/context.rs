@@ -31,6 +31,7 @@ pub struct Context<A> where A: Actor<Context=Context<A>>,
 {
     act: A,
     state: ActorState,
+    modified: bool,
     wait: ActorWaitCell<A>,
     items: ActorItemsCell<A>,
     address: ActorAddressCell<A>,
@@ -64,16 +65,19 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
+        self.modified = true;
         self.items.spawn(fut)
     }
 
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
+        self.modified = true;
         self.wait.add(fut)
     }
 
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
+        self.modified = true;
         self.items.cancel_future(handle)
     }
 }
@@ -112,6 +116,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
         Context {
             act: act,
             state: ActorState::Started,
+            modified: false,
             wait: ActorWaitCell::default(),
             items: ActorItemsCell::default(),
             address: ActorAddressCell::default(),
@@ -123,6 +128,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
         Context {
             act: act,
             state: ActorState::Started,
+            modified: false,
             wait: ActorWaitCell::default(),
             items: ActorItemsCell::default(),
             address: ActorAddressCell::new(rx),
@@ -180,28 +186,23 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
             _ => ()
         }
 
-        // check wait futures
-        if self.wait.poll(&mut self.act, ctx) {
-            return Ok(Async::NotReady)
-        }
-
         let mut prep_stop = false;
         loop {
-            let mut not_ready = true;
-
-            if self.address.poll(&mut self.act, ctx) {
-                not_ready = false
-            }
-
-            self.items.poll(&mut self.act, ctx);
+            self.modified = false;
 
             // check wait futures
             if self.wait.poll(&mut self.act, ctx) {
                 return Ok(Async::NotReady)
             }
 
-            // are we done
-            if !not_ready {
+            // check for incoming messages
+            self.address.poll(&mut self.act, ctx);
+
+            // process futures
+            self.items.poll(&mut self.act, ctx);
+
+            // modified indicates that new IO item has been added during poll process
+            if self.modified {
                 continue
             }
 
@@ -314,9 +315,8 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
         }
     }
 
-    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context)
     {
-        let mut has_messages = false;
         loop {
             let mut not_ready = true;
 
@@ -326,7 +326,6 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
                     not_ready = false;
                     match msg {
                         ContextProtocol::Envelope(mut env) => {
-                            has_messages = true;
                             env.handle(act, ctx)
                         }
                         ContextProtocol::Upgrade(tx) => {
@@ -343,7 +342,6 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
                     match msgs.poll() {
                         Ok(Async::Ready(Some(mut msg))) => {
                             not_ready = false;
-                            has_messages = true;
                             msg.handle(act, ctx);
                         }
                         Ok(Async::Ready(None)) | Err(_) => {
@@ -355,7 +353,7 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
             }
 
             if not_ready {
-                return has_messages
+                return
             }
         }
     }

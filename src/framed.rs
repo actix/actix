@@ -30,6 +30,7 @@ pub struct FramedContext<A>
 {
     act: A,
     state: ActorState,
+    modified: bool,
     address: ActorAddressCell<A>,
     framed: Option<ActorFramedCell<A>>,
     wait: ActorWaitCell<A>,
@@ -93,16 +94,19 @@ impl<A> AsyncContext<A> for FramedContext<A>
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
+        self.modified = true;
         self.items.spawn(fut)
     }
 
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
+        self.modified = true;
         self.wait.add(fut)
     }
 
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
+        self.modified = true;
         self.items.cancel_future(handle)
     }
 }
@@ -183,6 +187,7 @@ impl<A> FramedContext<A>
         FramedContext {
             act: act,
             state: ActorState::Started,
+            modified: false,
             address: ActorAddressCell::default(),
             framed: Some(ActorFramedCell::new(io.framed(codec))),
             wait: ActorWaitCell::default(),
@@ -241,25 +246,23 @@ impl<A> Future for FramedContext<A>
             _ => ()
         }
 
-        // check wait futures
-        if self.wait.poll(&mut self.act, ctx) {
-            return Ok(Async::NotReady)
-        }
-
         let mut prep_stop = false;
         loop {
-            let mut not_ready = true;
+            self.modified = false;
 
-            // messages
-            if self.address.poll(&mut self.act, ctx) {
-                not_ready = false
+            // check wait futures
+            if self.wait.poll(&mut self.act, ctx) {
+                return Ok(Async::NotReady)
             }
+
+            // incoming messages
+            self.address.poll(&mut self.act, ctx);
 
             // framed
             let closed = if let Some(ref mut framed) = self.framed {
                 match framed.poll(&mut self.act, ctx) {
                     Ok(Async::Ready(_)) | Err(_) => {
-                        not_ready = false;
+                        self.modified = true;
                         true
                     },
                     _ => false
@@ -272,13 +275,8 @@ impl<A> Future for FramedContext<A>
             // check secondary streams
             self.items.poll(&mut self.act, ctx);
 
-            // check wait futures
-            if self.wait.poll(&mut self.act, ctx) {
-                return Ok(Async::NotReady)
-            }
-
             // are we done
-            if !not_ready {
+            if self.modified {
                 continue
             }
 
