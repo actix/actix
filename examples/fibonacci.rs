@@ -9,15 +9,16 @@ use actix::prelude::*;
 
 struct Fibonacci(pub u32);
 
+impl ResponseType for Fibonacci {
+    type Item = u64;
+    type Error = ();
+}
+
+
 struct SyncActor;
 
 impl Actor for SyncActor {
     type Context = SyncContext<Self>;
-}
-
-impl ResponseType<Fibonacci> for SyncActor {
-    type Item = u64;
-    type Error = ();
 }
 
 impl Handler<Fibonacci> for SyncActor {

@@ -1,17 +1,32 @@
 //! Actix system messages
 
-use actor::Actor;
+use actor::{Actor, ResponseType};
 use address::SyncAddress;
 use context::Context;
 
 /// Stop system execution
 pub struct SystemExit(pub i32);
 
+impl ResponseType for SystemExit {
+    type Item = ();
+    type Error = ();
+}
+
 /// Stop arbiter execution
 pub struct StopArbiter(pub i32);
 
+impl ResponseType for StopArbiter {
+    type Item = ();
+    type Error = ();
+}
+
 /// Start actor in arbiter's thread
 pub struct StartActor<A: Actor>(Box<FnBox<A>>);
+
+impl<A: Actor> ResponseType for StartActor<A> {
+    type Item = SyncAddress<A>;
+    type Error = ();
+}
 
 impl<A: Actor<Context=Context<A>>> StartActor<A>
 {
@@ -64,6 +79,12 @@ impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
 /// fn main() {}
 /// ```
 pub struct Execute<I: Send + 'static = (), E: Send + 'static = ()>(Box<FnExec<I, E>>);
+
+/// Execute message response
+impl<I: Send, E: Send> ResponseType for Execute<I, E> {
+    type Item = I;
+    type Error = E;
+}
 
 impl<I, E> Execute<I, E>
     where I: Send + 'static, E: Send + 'static

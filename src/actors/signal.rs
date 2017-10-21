@@ -18,11 +18,6 @@
 //!     type Context = Context<Self>;
 //! }
 //!
-//! impl ResponseType<signal::Signal> for Signals {
-//!     type Item = ();
-//!     type Error = ();
-//! }
-//!
 //! // Shutdown system on and of `SIGINT`, `SIGTERM`, `SIGQUIT` signals
 //! impl Handler<signal::Signal> for Signals {
 //!
@@ -93,8 +88,18 @@ pub enum SignalType {
     Child,
 }
 
+impl ResponseType for SignalType {
+    type Item = ();
+    type Error = ();
+}
+
 /// Process signal message
 pub struct Signal(pub SignalType);
+
+impl ResponseType for Signal {
+    type Item = ();
+    type Error = ();
+}
 
 /// An actor implementation of Unix signal handling
 pub struct ProcessSignals {
@@ -158,11 +163,6 @@ impl SystemService for ProcessSignals {
 #[doc(hidden)]
 impl StreamHandler<SignalType, io::Error> for ProcessSignals {}
 
-impl ResponseType<SignalType> for ProcessSignals {
-    type Item = ();
-    type Error = ();
-}
-
 #[doc(hidden)]
 impl Handler<SignalType, io::Error> for ProcessSignals {
 
@@ -185,7 +185,7 @@ impl Handler<SignalType, io::Error> for ProcessSignals {
 /// Subscribe to process signals.
 pub struct Subscribe(pub Box<Subscriber<Signal> + Send>);
 
-impl ResponseType<Subscribe> for ProcessSignals {
+impl ResponseType for Subscribe {
     type Item = ();
     type Error = ();
 }
@@ -219,11 +219,6 @@ impl Actor for DefaultSignalsHandler {
         let slf: SyncAddress<_> = ctx.address();
         addr.send(Subscribe(slf.subscriber()))
     }
-}
-
-impl ResponseType<Signal> for DefaultSignalsHandler {
-    type Item = ();
-    type Error = ();
 }
 
 /// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send `SystemExit(0)`

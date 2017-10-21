@@ -24,6 +24,11 @@ use supervisor::Supervisor;
 ///
 /// struct Ping;
 ///
+/// impl ResponseType for Ping {
+///    type Item = ();
+///    type Error = ();
+/// }
+///
 /// #[derive(Default)]
 /// struct MyActor1;
 ///
@@ -36,11 +41,6 @@ use supervisor::Supervisor;
 ///    fn service_started(&mut self, ctx: &mut Context<Self>) {
 ///       println!("Service started");
 ///    }
-/// }
-///
-/// impl ResponseType<Ping> for MyActor1 {
-///    type Item = ();
-///    type Error = ();
 /// }
 ///
 /// impl Handler<Ping> for MyActor1 {

@@ -8,38 +8,40 @@ use futures::sync::oneshot::{Receiver as SyncReceiver};
 use fut::ActorFuture;
 use actor::{Actor, Handler, ResponseType};
 
-enum RequestIo<M, A: Handler<M>> {
-    Local(Receiver<Result<A::Item, A::Error>>),
-    Remote(SyncReceiver<Result<A::Item, A::Error>>),
+enum RequestIo<M: ResponseType> {
+    Local(Receiver<Result<M::Item, M::Error>>),
+    Remote(SyncReceiver<Result<M::Item, M::Error>>),
 }
 
 /// `Request` is a `Future` which represents asyncronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct Request<A, B, M>
-    where A: Actor + Handler<M>,
-          B: Actor
+pub struct Request<A, M>
+    where A: Actor,
+          M: ResponseType,
 {
-    rx: RequestIo<M, A>,
-    act: PhantomData<B>,
+    rx: RequestIo<M>,
+    act: PhantomData<A>,
 }
 
-impl<A, B, M> Request<A, B, M>
-    where A: Actor + Handler<M>, B: Actor
+impl<A, M> Request<A, M>
+    where A: Actor,
+          M: ResponseType,
 {
-    pub(crate) fn local(rx: Receiver<Result<A::Item, A::Error>>) -> Request<A, B, M>
+    pub(crate) fn local(rx: Receiver<Result<M::Item, M::Error>>) -> Request<A, M>
     {
         Request{rx: RequestIo::Local(rx), act: PhantomData}
     }
-    pub(crate) fn remote(rx: SyncReceiver<Result<A::Item, A::Error>>) -> Request<A, B, M>
+    pub(crate) fn remote(rx: SyncReceiver<Result<M::Item, M::Error>>) -> Request<A, M>
     {
         Request{rx: RequestIo::Remote(rx), act: PhantomData}
     }
 }
 
-impl<A, B, M> Future for Request<A, B, M>
-    where A: Actor + Handler<M>, B: Actor
+impl<A, M> Future for Request<A, M>
+    where A: Actor,
+          M: ResponseType,
 {
-    type Item = Result<A::Item, A::Error>;
+    type Item = Result<M::Item, M::Error>;
     type Error = Canceled;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error>
@@ -51,16 +53,16 @@ impl<A, B, M> Future for Request<A, B, M>
     }
 }
 
-impl<A, B, M> ActorFuture for Request<A, B, M>
-    where A: Actor + Handler<M>,
-          B: Actor,
+impl<A, M> ActorFuture for Request<A, M>
+    where A: Actor,
+          M: ResponseType,
 {
-    type Item = Result<A::Item, A::Error>;
+    type Item = Result<M::Item, M::Error>;
     type Error = Canceled;
-    type Actor = B;
+    type Actor = A;
 
     fn poll(&mut self,
-            _: &mut B,
+            _: &mut A,
             _: &mut <Self::Actor as Actor>::Context) -> Poll<Self::Item, Self::Error>
     {
         match self.rx {
@@ -71,53 +73,54 @@ impl<A, B, M> ActorFuture for Request<A, B, M>
 }
 
 /// `Response` represents asyncronous message handling process.
-pub struct Response<A, M> where A: Actor + ResponseType<M>,
+pub struct Response<A, M> where A: Actor, M: ResponseType,
 {
     inner: Option<ResponseTypeItem<A, M>>,
 }
 
-enum ResponseTypeItem<A, M> where A: Actor + ResponseType<M>
+enum ResponseTypeItem<A, M> where A: Actor, M: ResponseType
 {
-    Item(A::Item),
-    Error(A::Error),
-    Fut(Box<ActorFuture<Item=A::Item, Error=A::Error, Actor=A>>)
+    Item(M::Item),
+    Error(M::Error),
+    Fut(Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>)
 }
 
 /// Helper trait that converts compatible `ActorFuture` type to `Response`.
 impl<A, M, T> std::convert::From<T> for Response<A, M>
     where A: Actor + Handler<M>,
-          T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static,
+          M: ResponseType,
+          T: ActorFuture<Item=M::Item, Error=M::Error, Actor=A> + Sized + 'static,
 {
     fn from(fut: T) -> Response<A, M> {
         Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
     }
 }
 
-impl<A, M> Response<A, M> where A: Actor + ResponseType<M>
+impl<A, M> Response<A, M> where A: Actor, M: ResponseType
 {
     /// Create response
-    pub fn reply(val: A::Item) -> Self {
+    pub fn reply(val: M::Item) -> Self {
         Response {inner: Some(ResponseTypeItem::Item(val))}
     }
 
     /// Create async response
     pub fn async_reply<T>(fut: T) -> Self
-        where T: ActorFuture<Item=A::Item, Error=A::Error, Actor=A> + Sized + 'static
+        where T: ActorFuture<Item=M::Item, Error=M::Error, Actor=A> + Sized + 'static
     {
         Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
     }
 
     /// Create unit response
-    pub fn empty() -> Self where A: ResponseType<M, Item=()> {
+    pub fn empty() -> Self where M: ResponseType<Item=()> {
         Response {inner: Some(ResponseTypeItem::Item(()))}
     }
 
     /// Create error response
-    pub fn error(err: A::Error) -> Self {
+    pub fn error(err: M::Error) -> Self {
         Response {inner: Some(ResponseTypeItem::Error(err))}
     }
 
-    pub(crate) fn result(&mut self) -> Option<Result<A::Item, A::Error>> {
+    pub(crate) fn result(&mut self) -> Option<Result<M::Item, M::Error>> {
         if let Some(item) = self.inner.take() {
             match item {
                 ResponseTypeItem::Item(item) => Some(Ok(item)),
@@ -136,7 +139,7 @@ impl<A, M> Response<A, M> where A: Actor + ResponseType<M>
         }
     }
 
-    pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<A::Item, A::Error>
+    pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<M::Item, M::Error>
     {
         if let Some(item) = self.inner.take() {
             match item {

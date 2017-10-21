@@ -41,7 +41,7 @@ impl Actor for MyActor {
 
 struct TimeoutMessage;
 
-impl ResponseType<TimeoutMessage> for MyActor {
+impl ResponseType for TimeoutMessage {
     type Item = ();
     type Error = ();
 }

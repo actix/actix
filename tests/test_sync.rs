@@ -10,6 +10,11 @@ use actix::prelude::*;
 
 struct Fibonacci(pub u32);
 
+impl ResponseType for Fibonacci {
+    type Item = u64;
+    type Error = ();
+}
+
 struct SyncActor {
     cond: Arc<Condvar>,
     cond_l: Arc<Mutex<bool>>,
@@ -28,11 +33,6 @@ impl Actor for SyncActor {
             self.cond.notify_one();
         }
     }
-}
-
-impl ResponseType<Fibonacci> for SyncActor {
-    type Item = u64;
-    type Error = ();
 }
 
 impl Handler<Fibonacci> for SyncActor {

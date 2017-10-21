@@ -12,15 +12,15 @@ use actix::prelude::*;
 #[derive(Debug)]
 struct Ping(usize);
 
+impl ResponseType for Ping {
+    type Item = ();
+    type Error = ();
+}
+
 struct MyActor(Arc<AtomicUsize>);
 
 impl Actor for MyActor {
     type Context = Context<Self>;
-}
-
-impl ResponseType<Ping> for MyActor {
-    type Item = ();
-    type Error = ();
 }
 
 impl Handler<Ping> for MyActor {

@@ -106,12 +106,6 @@ impl SystemRunner {
     }
 }
 
-#[doc(hidden)]
-impl ResponseType<SystemExit> for System {
-    type Item = ();
-    type Error = ();
-}
-
 impl Handler<SystemExit> for System {
 
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>) -> Response<Self, SystemExit>
@@ -132,7 +126,7 @@ impl Handler<SystemExit> for System {
 pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);
 
 #[doc(hidden)]
-impl ResponseType<RegisterArbiter> for System {
+impl ResponseType for RegisterArbiter {
     type Item = ();
     type Error = ();
 }
@@ -152,7 +146,7 @@ impl Handler<RegisterArbiter> for System {
 pub(crate) struct UnregisterArbiter(pub String);
 
 #[doc(hidden)]
-impl ResponseType<UnregisterArbiter> for System {
+impl ResponseType for UnregisterArbiter {
     type Item = ();
     type Error = ();
 }

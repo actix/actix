@@ -12,6 +12,10 @@ use codec::{ChatRequest, ChatResponse, ChatCodec};
 /// Chat server sends this messages to session
 pub struct Message(pub String);
 
+impl ResponseType for Message {
+    type Item = ();
+    type Error = ();
+}
 
 /// `ChatSession` actor is responsible for tcp peer communitions.
 pub struct ChatSession {
@@ -64,11 +68,6 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
 
         ctx.stop()
     }
-}
-
-impl ResponseType<ChatRequest> for ChatSession {
-    type Item = ();
-    type Error = ();
 }
 
 impl Handler<ChatRequest, io::Error> for ChatSession {
@@ -134,12 +133,6 @@ impl Handler<Message> for ChatSession {
         Self::empty()
     }
 }
-
-impl ResponseType<Message> for ChatSession {
-    type Item = ();
-    type Error = ();
-}
-
 
 /// Helper methods
 impl ChatSession {

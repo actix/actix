@@ -11,6 +11,12 @@ use actix::prelude::*;
 
 struct Die;
 
+impl ResponseType for Die {
+    type Item = ();
+    type Error = ();
+}
+
+
 struct MyActor(Arc<AtomicUsize>, Arc<AtomicUsize>);
 
 impl Actor for MyActor {
@@ -26,11 +32,6 @@ impl Supervised for MyActor {
         let n = self.1.load(Ordering::Relaxed);
         self.1.store(n+1, Ordering::Relaxed);
     }
-}
-
-impl ResponseType<Die> for MyActor {
-    type Item = ();
-    type Error = ();
 }
 
 impl Handler<Die> for MyActor {

@@ -8,7 +8,7 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
-use actor::{Actor, Supervised, Handler, StreamHandler,
+use actor::{Actor, Supervised, Handler, StreamHandler, ResponseType,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
@@ -87,17 +87,19 @@ impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
 impl<A> Context<A> where A: Actor<Context=Self>
 {
     #[doc(hidden)]
-    pub fn subscriber<M: 'static>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>
+    pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
+        where A: Handler<M>,
+              M: ResponseType + 'static
     {
         Box::new(self.address.unsync_address())
     }
 
     #[doc(hidden)]
-    pub fn sync_subscriber<M: 'static + Send>(&mut self) -> Box<Subscriber<M> + Send>
+    pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
-              A::Item: Send,
-              A::Error: Send,
+              M: ResponseType + Send + 'static,
+              M::Item: Send,
+              M::Error: Send,
     {
         Box::new(self.address.sync_address())
     }
@@ -452,6 +454,7 @@ pub(crate)
 struct ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
           A::Context: AsyncContext<A>,
+          M: ResponseType,
           F: Future<Item=M, Error=E>,
 {
     act: std::marker::PhantomData<A>,
@@ -462,6 +465,7 @@ struct ActorFutureCell<A, M, F, E>
 impl<A, M, F, E> ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
           A::Context: AsyncContext<A>,
+          M: ResponseType,
           F: Future<Item=M, Error=E>,
 {
     pub fn new(fut: F) -> ActorFutureCell<A, M, F, E>
@@ -476,6 +480,7 @@ impl<A, M, F, E> ActorFutureCell<A, M, F, E>
 impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
     where A: Actor + Handler<M, E>,
           A::Context: AsyncContext<A>,
+          M: ResponseType,
           F: Future<Item=M, Error=E>,
 {
     type Item = ();
@@ -519,7 +524,8 @@ pub(crate)
 struct ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
-          A::Context: AsyncContext<A>
+          A::Context: AsyncContext<A>,
+          M: ResponseType,
 {
     act: std::marker::PhantomData<A>,
     started: bool,
@@ -530,7 +536,8 @@ struct ActorStreamCell<A, M, E, S>
 impl<A, M, E, S> ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
-          A::Context: AsyncContext<A>
+          A::Context: AsyncContext<A>,
+          M: ResponseType
 {
     pub fn new(fut: S) -> ActorStreamCell<A, M, E, S>
     {
@@ -545,7 +552,8 @@ impl<A, M, E, S> ActorStreamCell<A, M, E, S>
 impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
           A: Actor + Handler<M, E> + StreamHandler<M, E>,
-          A::Context: AsyncContext<A>
+          A::Context: AsyncContext<A>,
+          M: ResponseType
 {
     type Item = ();
     type Error = ();

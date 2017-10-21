@@ -32,6 +32,11 @@ use queue::{sync, unsync};
 /// // message
 /// struct Die;
 ///
+/// impl ResponseType for Die {
+///     type Item = ();
+///     type Error = ();
+/// }
+///
 /// struct MyActor;
 ///
 /// impl Actor for MyActor {
@@ -43,11 +48,6 @@ use queue::{sync, unsync};
 ///     fn restarting(&mut self, ctx: &mut Context<MyActor>) {
 ///         println!("restarting");
 ///     }
-/// }
-///
-/// impl ResponseType<Die> for MyActor {
-///     type Item = ();
-///     type Error = ();
 /// }
 ///
 /// impl Handler<Die> for MyActor {

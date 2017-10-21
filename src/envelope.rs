@@ -12,21 +12,21 @@ use context::Context;
 /// Converter trait, packs message to suitable envelope
 pub trait ToEnvelope<A, M>
     where A: Actor + Handler<M>,
-          M: 'static,
+          M: ResponseType + 'static,
 {
     /// Pack message into envelope
-    fn pack(msg: M, tx: Option<SyncSender<Result<A::Item, A::Error>>>) -> Envelope<A>;
+    fn pack(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>;
 }
 
 impl<A, M> ToEnvelope<A, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>,
-          M: Send + 'static,
-          A::Item: Send,
-          A::Error: Send
+          M: ResponseType + Send + 'static,
+          M::Item: Send,
+          M::Error: Send,
 {
-    fn pack(msg: M, tx: Option<SyncSender<Result<A::Item, A::Error>>>) -> Envelope<A>
+    fn pack(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
     {
-        Envelope(Box::new(RemoteEnvelope{msg: Some(msg), tx: tx}))
+        Envelope(Box::new(RemoteEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
     }
 }
 
@@ -40,8 +40,8 @@ impl<A> Envelope<A> where A: Actor {
         Envelope(Box::new(envelop))
     }
 
-    pub(crate) fn local<M>(msg: M, tx: Option<Sender<Result<A::Item, A::Error>>>) -> Self
-        where M: 'static,
+    pub(crate) fn local<M>(msg: M, tx: Option<Sender<Result<M::Item, M::Error>>>) -> Self
+        where M: ResponseType + 'static,
               A: Actor + Handler<M>,
               A::Context: AsyncContext<A>
     {
@@ -64,14 +64,18 @@ pub trait EnvelopeProxy {
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
 }
 
-struct LocalEnvelope<A, M> where A: Actor + Handler<M>, A::Context: AsyncContext<A> {
+struct LocalEnvelope<A, M>
+    where A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>,
+          M: ResponseType,
+{
     msg: Option<M>,
     act: PhantomData<A>,
-    tx: Option<Sender<Result<A::Item, A::Error>>>,
+    tx: Option<Sender<Result<M::Item, M::Error>>>,
 }
 
 impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
-    where M: 'static,
+    where M: ResponseType + 'static,
           A: Actor + Handler<M>,
           A::Context: AsyncContext<A>
 {
@@ -96,25 +100,29 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
 pub struct RemoteEnvelope<A, M>
     where A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
+          M: ResponseType,
 {
+    act: PhantomData<A>,
     msg: Option<M>,
-    tx: Option<SyncSender<Result<A::Item, A::Error>>>,
+    tx: Option<SyncSender<Result<M::Item, M::Error>>>,
 }
 
 impl<A, M> RemoteEnvelope<A, M>
     where A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
+          M: ResponseType,
 {
-    pub fn new(msg: M, tx: Option<SyncSender<Result<A::Item, A::Error>>>) -> RemoteEnvelope<A, M>
-        where M: Send + 'static,
-              A: Handler<M>, <A as ResponseType<M>>::Item: Send, <A as ResponseType<M>>::Item: Send
+    pub fn new(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> RemoteEnvelope<A, M>
+        where A: Handler<M>,
+              M: Send + 'static,
+              M::Item: Send, M::Item: Send
     {
-        RemoteEnvelope{msg: Some(msg), tx: tx}
+        RemoteEnvelope{msg: Some(msg), tx: tx, act: PhantomData}
     }
 }
 
 impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
-    where M: 'static,
+    where M: ResponseType + 'static,
           A: Actor + Handler<M>,
           A::Context: AsyncContext<A>
 {
@@ -137,28 +145,30 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
 }
 
 impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
-    where M: Send + 'static,
-          A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>
+    where A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>,
+          M: ResponseType + Send + 'static,
 {
     fn from(env: RemoteEnvelope<A, M>) -> Self {
         Envelope::new(env)
     }
 }
 
-enum EnvelopFutureItem<A, M> where A: Handler<M> {
-    Local(Sender<Result<A::Item, A::Error>>),
-    Remote(SyncSender<Result<A::Item, A::Error>>),
+enum EnvelopFutureItem<M> where M: ResponseType {
+    Local(Sender<Result<M::Item, M::Error>>),
+    Remote(SyncSender<Result<M::Item, M::Error>>),
 }
 
-pub(crate) struct EnvelopFuture<A, M> where A: Handler<M>
+pub(crate) struct EnvelopFuture<A, M> where A: Handler<M>, M: ResponseType
 {
     msg: PhantomData<M>,
     fut: Response<A, M>,
-    tx: Option<EnvelopFutureItem<A, M>>,
+    tx: Option<EnvelopFutureItem<M>>,
 }
 
-impl<A, M> ActorFuture for EnvelopFuture<A, M> where A: Actor + Handler<M>
+impl<A, M> ActorFuture for EnvelopFuture<A, M>
+    where A: Actor + Handler<M>,
+          M: ResponseType,
 {
     type Item = ();
     type Error = ();

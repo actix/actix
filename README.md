@@ -106,6 +106,12 @@ use actix::*;
 // this is our Message
 struct Sum(usize, usize);
 
+// we have to define type of response for `Sum` message
+impl ResponseType for Sum {
+    type Item = usize;
+    type Error = ();
+}
+
 // Actor definition
 struct Summator;
 
@@ -119,12 +125,6 @@ impl Handler<Sum> for Summator {
     fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Response<Self, Sum> {
         Self::reply(msg.0 + msg.1)
     }
-}
-
-// we have to define type of response for `Sum` message
-impl ResponseType<Sum> for Summator {
-    type Item = usize;
-    type Error = ();
 }
 
 fn main() {
@@ -179,6 +179,11 @@ use actix::actors::signal;
 
 struct Ping;
 
+impl ResponseType for Ping {
+    type Item = ();
+    type Error = ();
+}
+
 // Actor definition
 struct Game {
     counter: usize, 
@@ -207,11 +212,6 @@ impl Handler<Ping> for Game {
         }
         Self::empty()
     }
-}
-
-impl ResponseType<Ping> for Game {
-    type Item = ();
-    type Error = ();
 }
 
 fn main() {

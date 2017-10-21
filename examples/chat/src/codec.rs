@@ -4,6 +4,7 @@ use serde_json as json;
 use byteorder::{BigEndian , ByteOrder};
 use bytes::{BytesMut, BufMut};
 use tokio_io::codec::{Encoder, Decoder};
+use actix::ResponseType;
 
 
 /// Client request
@@ -18,6 +19,11 @@ pub enum ChatRequest {
     Message(String),
     /// Ping
     Ping
+}
+
+impl ResponseType for ChatRequest {
+    type Item = ();
+    type Error = ();
 }
 
 /// Server response
@@ -36,6 +42,10 @@ pub enum ChatResponse {
     Message(String),
 }
 
+impl ResponseType for ChatResponse {
+    type Item = ();
+    type Error = ();
+}
 
 /// Codec for Client -> Server transport
 pub struct ChatCodec;

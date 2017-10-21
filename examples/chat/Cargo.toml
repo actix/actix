@@ -23,6 +23,6 @@ serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"
 
-actix = "0.1"
+# actix = "0.1"
 # { git = "https://github.com/fafhrd91/actix.git" }
-# actix = { path = "../../" }
+actix = { path = "../../" }

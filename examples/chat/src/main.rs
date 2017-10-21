@@ -2,6 +2,7 @@
 extern crate rand;
 extern crate bytes;
 extern crate byteorder;
+extern crate futures;
 extern crate tokio_io;
 extern crate tokio_core;
 extern crate serde;
@@ -12,6 +13,7 @@ extern crate actix;
 
 use std::{io, net};
 use std::str::FromStr;
+use futures::Stream;
 use tokio_core::net::{TcpListener, TcpStream};
 use actix::prelude::*;
 
@@ -36,18 +38,21 @@ impl Actor for Server {
     type Context = Context<Self>;
 }
 
-/// Handle stream of TcpStream's
-impl StreamHandler<(TcpStream, net::SocketAddr), io::Error> for Server {}
+struct TcpConnect(pub TcpStream, pub net::SocketAddr);
 
-impl ResponseType<(TcpStream, net::SocketAddr)> for Server {
+impl ResponseType for TcpConnect {
     type Item = ();
     type Error = ();
 }
 
-impl Handler<(TcpStream, net::SocketAddr), io::Error> for Server {
 
-    fn handle(&mut self, msg: (TcpStream, net::SocketAddr), _: &mut Context<Self>)
-              -> Response<Self, (TcpStream, net::SocketAddr)>
+/// Handle stream of TcpStream's
+impl StreamHandler<TcpConnect, io::Error> for Server {}
+
+impl Handler<TcpConnect, io::Error> for Server {
+
+    fn handle(&mut self, msg: TcpConnect, _: &mut Context<Self>)
+              -> Response<Self, TcpConnect>
     {
         // For each incoming connection we create `ChatSession` actor
         // with out chat server address.
@@ -77,7 +82,7 @@ fn main() {
     // So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
     let _: () = Server::create(|ctx| {
-        ctx.add_stream(listener.incoming());
+        ctx.add_stream(listener.incoming().map(|(st, addr)| TcpConnect(st, addr)));
         Server{chat: server}
     });
 

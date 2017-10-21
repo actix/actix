@@ -144,25 +144,25 @@ pub trait Actor: Sized + 'static {
     }
 
     /// Create static response.
-    fn reply<M>(val: Self::Item) -> Response<Self, M> where Self: ResponseType<M> {
+    fn reply<M>(val: M::Item) -> Response<Self, M> where M: ResponseType {
         Response::reply(val)
     }
 
     /// Create async response process.
     fn async_reply<T, M>(fut: T) -> Response<Self, M>
-        where Self: ResponseType<M>,
-              T: ActorFuture<Item=Self::Item, Error=Self::Error, Actor=Self> + Sized + 'static
+        where M: ResponseType,
+              T: ActorFuture<Item=M::Item, Error=M::Error, Actor=Self> + Sized + 'static
     {
         Response::async_reply(fut)
     }
 
     /// Create unit response, for case when `ResponseType::Item = ()`
-    fn empty<M>() -> Response<Self, M> where Self: ResponseType<M, Item=()> {
+    fn empty<M>() -> Response<Self, M> where M: ResponseType<Item=()> {
         Response::empty()
     }
 
     /// Create error response
-    fn reply_error<M>(err: Self::Error) -> Response<Self, M> where Self: ResponseType<M> {
+    fn reply_error<M>(err: M::Error) -> Response<Self, M> where M: ResponseType {
         Response::error(err)
     }
 }
@@ -183,6 +183,7 @@ pub trait FramedActor: Actor {
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
               Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
                                   <<Self as FramedActor>::Codec as Decoder>::Error>,
+            <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
     {
         let mut ctx = FramedContext::new(self, io, codec);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
@@ -196,6 +197,7 @@ pub trait FramedActor: Actor {
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
               Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
                                   <<Self as FramedActor>::Codec as Decoder>::Error>,
+            <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
               F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
     {
         let mut ctx = FramedContext::new(unsafe{std::mem::uninitialized()}, io, codec);
@@ -237,7 +239,7 @@ pub trait Supervised: Actor {
 /// `E` is an optional error type, if message handler is used for handling
 /// Future or Stream results, then `E` type has to be set to correspondent `Error` type.
 #[allow(unused_variables)]
-pub trait Handler<M, E=()> where Self: Actor + ResponseType<M>
+pub trait Handler<M, E=()> where Self: Actor, M: ResponseType
 {
     /// Method is called for every message received by this Actor
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Response<Self, M>;
@@ -247,7 +249,7 @@ pub trait Handler<M, E=()> where Self: Actor + ResponseType<M>
 }
 
 /// Message response type
-pub trait ResponseType<M> where Self: Actor {
+pub trait ResponseType {
 
     /// The type of value that this message will resolved with if it is successful.
     type Item;
@@ -260,8 +262,9 @@ pub trait ResponseType<M> where Self: Actor {
 ///
 /// `StreamHandler` is an extension of a `Handler` with stream specific methods.
 #[allow(unused_variables)]
-pub trait StreamHandler<M, E=()>: Handler<M, E> + ResponseType<M>
-    where Self: Actor
+pub trait StreamHandler<M, E=()>: Handler<M, E>
+    where Self: Actor,
+          M: ResponseType,
 {
     /// Method is called when stream get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
@@ -355,12 +358,12 @@ pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// // Message
     /// struct Ping;
     ///
-    /// struct MyActor;
-    ///
-    /// impl ResponseType<Ping> for MyActor {
+    /// impl ResponseType for Ping {
     ///     type Item = ();
     ///     type Error = ();
     /// }
+    ///
+    /// struct MyActor;
     ///
     /// impl Handler<Ping, std::io::Error> for MyActor {
     ///     fn error(&mut self, err: std::io::Error, ctx: &mut Context<MyActor>) {
@@ -383,7 +386,9 @@ pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// fn main() {}
     /// ```
     fn add_future<F>(&mut self, fut: F)
-        where F: Future + 'static, A: Handler<F::Item, F::Error>
+        where F: Future + 'static,
+              F::Item: ResponseType,
+              A: Handler<F::Item, F::Error>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_future called for stopped actor.");
@@ -399,6 +404,7 @@ pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// `Self::reply_error` resolves immediately.
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
+              S::Item: ResponseType,
               A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>
     {
         if self.state() == ActorState::Stopped {
@@ -411,7 +417,7 @@ pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
     /// Send message `msg` to self after specified period of time. Returns spawn handle
     /// which could be used for cancelation.
     fn notify<M, E>(&mut self, msg: M, after: Duration) -> SpawnHandle
-        where A: Handler<M, E>, M: 'static, E: 'static
+        where A: Handler<M, E>, M: ResponseType + 'static, E: 'static
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");
