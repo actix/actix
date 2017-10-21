@@ -184,7 +184,8 @@ impl Arbiter {
         })
     }
 
-    /// Start new arbiter and then start actor in created arbiter
+    /// Start new arbiter and then start actor in created arbiter.
+    /// Returns `SyncAddress` of created actor.
     pub fn start<A, F>(f: F) -> SyncAddress<A>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + Send + 'static
