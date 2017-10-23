@@ -1,8 +1,8 @@
-# Actix [![Build Status](https://travis-ci.org/fafhrd91/actix.svg?branch=master)](https://travis-ci.org/fafhrd91/actix) [![Build Status](https://ci.appveyor.com/api/projects/status/github/fafhrd91/actix?branch=master&svg=true)](https://ci.appveyor.com/project/fafhrd91/actix) [![codecov](https://codecov.io/gh/fafhrd91/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/fafhrd91/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
+# Actix [![Build Status](https://travis-ci.org/actix/actix.svg?branch=master)](https://travis-ci.org/actix/actix) [![Build Status](https://ci.appveyor.com/api/projects/status/github/fafhrd91/actix?branch=master&svg=true)](https://ci.appveyor.com/project/fafhrd91/actix) [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
 
 Actix is a rust actor system framework.
 
-* [API Documentation (Development)](http://fafhrd91.github.io/actix/actix/)
+* [API Documentation (Development)](http://actix.github.io/actix/actix/)
 * [API Documentation (Releases)](https://docs.rs/actix/)
 * Cargo package: [actix](https://crates.io/crates/actix)
 
@@ -30,7 +30,7 @@ actix = "0.2"
 ```
 
 You may consider to check 
-[chat example](https://github.com/fafhrd91/actix/tree/master/examples/chat). 
+[chat example](https://github.com/actix/actix/tree/master/examples/chat). 
 
 ### Initialize the Actix
 
@@ -56,7 +56,7 @@ Let's create simple Actor.
 ### Implement an Actor
 
 In order to define an actor you need to define a struct and have it implement 
-the [`Actor`](https://fafhrd91.github.io/actix/actix/trait.Actor.html) trait.
+the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
 
 
 ```rust
@@ -84,11 +84,11 @@ fn main() {
 ```
 
 Spawning a new actor is achieved via the `start` and `create` methods of
-[Actor](https://fafhrd91.github.io/actix/actix/trait.Actor.html) 
+[Actor](https://actix.github.io/actix/actix/trait.Actor.html) 
 trait. It provides several different ways of creating actors, for details check docs. 
 You can implement `started`, `stopping` and `stopped`mthods of Actor trait, 
 `started` method get called when actor starts and `stopping` when actor finishes.
-Check [api documentation](https://fafhrd91.github.io/actix/actix/trait.Actor.html#actor-lifecycle) 
+Check [api documentation](https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle) 
 for more information on actor lifecycle.
 
 ### Handle messages
@@ -155,9 +155,9 @@ All communications with actors go through `Address` object. You can `send` messa
 without waiting response or `call` actor with specific message. `ResponseType`
 trait defines response type for a message, `Item` and `Error` for value and error respectevily.
 There are different types of addresses.
-[`Address<A>`](https://fafhrd91.github.io/actix/actix/struct.Address.html) is an address
+[`Address<A>`](https://actix.github.io/actix/actix/struct.Address.html) is an address
 of an actor that runs in same arbiter (event loop). If actor is running in different
-thread [`SyncAddress<A>`](https://fafhrd91.github.io/actix/actix/struct.SyncAddress.html)
+thread [`SyncAddress<A>`](https://actix.github.io/actix/actix/struct.SyncAddress.html)
 has to be used.
 
 ### Actor state and subscription for specific message
@@ -239,13 +239,13 @@ fn main() {
 ```
 
 More information on signals handling is in
-[signal](https://fafhrd91.github.io/actix/actix/actors/signal/index.html) module.
+[signal](https://actix.github.io/actix/actix/actors/signal/index.html) module.
 
 
 ### chat example
 
 You may consider to check 
-[chat example](https://github.com/fafhrd91/actix/tree/master/examples/chat). 
+[chat example](https://github.com/actix/actix/tree/master/examples/chat). 
 It provides basic example of networking client/server service.
 
 

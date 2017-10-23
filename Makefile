@@ -22,11 +22,8 @@ doc: build
 clean:
 	rm -r target
 
-gh-pages:
-	git clone --branch gh-pages git@github.com:fafhrd91/ctx.git gh-pages
-
 .PHONY: gh-pages-doc
-gh-pages-doc: doc | gh-pages
+gh-pages-doc: doc
 	cd gh-pages && git pull
 	rm -r gh-pages/doc
 	cp -r target/doc gh-pages/

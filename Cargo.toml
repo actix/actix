@@ -5,17 +5,17 @@ authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
 keywords = ["actor", "asynchronous", "concurrency"]
-homepage = "https://github.com/fafhrd91/actix/"
-repository = "https://github.com/fafhrd91/actix.git"
+homepage = "https://github.com/actix/actix/"
+repository = "https://github.com/actix/actix.git"
 categories = ["network-programming", "asynchronous"]
 license = "Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
 build = "build.rs"
 
 [badges]
-travis-ci = { repository = "fafhrd91/actix", branch = "master" }
-appveyor = { repository = "fafhrd91/actix" }
-codecov = { repository = "fafhrd91/actix", branch = "master", service = "github" }
+travis-ci = { repository = "actix/actix", branch = "master" }
+appveyor = { repository = "actix/actix" }
+codecov = { repository = "actix/actix", branch = "master", service = "github" }
 
 [lib]
 name = "actix"
