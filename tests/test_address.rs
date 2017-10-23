@@ -58,7 +58,7 @@ impl Actor for MyActor3 {
 
 impl Handler<Ping> for MyActor3 {
 
-    fn handle(&mut self, msg: Ping, _: &mut Context<MyActor3>) -> Response<Self, Ping> {
+    fn handle(&mut self, _: Ping, _: &mut Context<MyActor3>) -> Response<Self, Ping> {
         Arbiter::system().send(msgs::SystemExit(0));
         Self::reply_error(())
     }
@@ -156,8 +156,7 @@ fn test_error_result() {
         addr.call_fut(Ping(0)).then(|res| {
             match res {
                 Ok(Err(_)) => (),
-                Ok(Ok(_)) => panic!("Should not happen"),
-                Err(_) => panic!("Should not happen"),
+                _ => panic!("Should not happen"),
             }
             futures::future::result(Ok(()))
         })

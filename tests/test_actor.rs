@@ -20,14 +20,14 @@ impl Actor for MyActor {
 }
 
 impl StreamHandler<Num> for MyActor {
-    fn finished(&mut self, ctx: &mut Self::Context) {
+    fn finished(&mut self, _: &mut Self::Context) {
         Arbiter::system().send(msgs::SystemExit(0));
     }
 }
 
 impl Handler<Num> for MyActor {
 
-    fn error(&mut self, err: (), ctx: &mut Self::Context) {
+    fn error(&mut self, _: (), _: &mut Self::Context) {
         self.1.store(true, Ordering::Relaxed);
     }
 
