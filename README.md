@@ -1,4 +1,4 @@
-# Actix [![Build Status](https://travis-ci.org/actix/actix.svg?branch=master)](https://travis-ci.org/actix/actix) [![Build Status](https://ci.appveyor.com/api/projects/status/github/actix/actix?branch=master&svg=true)](https://ci.appveyor.com/project/actix/actix) [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
+# Actix [![Build Status](https://travis-ci.org/actix/actix.svg?branch=master)](https://travis-ci.org/actix/actix) [![Build Status](https://ci.appveyor.com/api/projects/status/github/fafhrd91/actix-n9e64?branch=master&svg=true)](https://ci.appveyor.com/project/fafhrd91/actix-n9e64) [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
 
 Actix is a rust actor system framework.
 
