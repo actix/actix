@@ -1,4 +1,4 @@
-# Actix [![Build Status](https://travis-ci.org/actix/actix.svg?branch=master)](https://travis-ci.org/actix/actix) [![Build Status](https://ci.appveyor.com/api/projects/status/github/fafhrd91/actix?branch=master&svg=true)](https://ci.appveyor.com/project/fafhrd91/actix) [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
+# Actix [![Build Status](https://travis-ci.org/actix/actix.svg?branch=master)](https://travis-ci.org/actix/actix) [![Build Status](https://ci.appveyor.com/api/projects/status/github/actix/actix?branch=master&svg=true)](https://ci.appveyor.com/project/actix/actix) [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
 
 Actix is a rust actor system framework.
 
@@ -16,7 +16,7 @@ Actix is licensed under the [Apache-2.0 license](http://opensource.org/licenses/
   * Async/Sync actors.
   * Actor communication in a local/thread context.
   * Using Futures for asynchronous message handling.
-  * Http support ([actix-web](https://github.com/fafhrd91/actix-web))
+  * Http support ([actix-web](https://github.com/actix/actix-web))
   * Actor supervision.
 
 
