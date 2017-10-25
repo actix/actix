@@ -65,7 +65,7 @@ use utils::{TimerFunc, TimeoutWrapper};
 pub trait Actor: Sized + 'static {
 
     /// Actor execution context type
-    type Context: ActorContext;
+    type Context: ActorContext + ToEnvelope<Self>;
 
     /// Method is called when actor get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
