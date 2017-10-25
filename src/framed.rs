@@ -37,18 +37,21 @@ pub struct FramedContext<A>
     items: ActorItemsCell<A>,
 }
 
-//type ToEnvelopeSender<A, M: ResponseType> = SyncSender<Result<M::Item, M::Error>>;
-
-impl<A, M> ToEnvelope<A, M> for FramedContext<A>
-    where M: ResponseType + Send + 'static,
-          A: FramedActor + Actor<Context=FramedContext<A>> + Handler<M>,
+impl<A> ToEnvelope<A> for FramedContext<A>
+    where A: FramedActor + Actor<Context=FramedContext<A>>,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,
         <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
-          M::Item: Send,
-          M::Error: Send,
 {
-    fn pack(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+        where M: ResponseType + Send + 'static,
+              A: Handler<M>,
+              A: FramedActor + Actor<Context=FramedContext<A>>,
+              A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
+                               <<A as FramedActor>::Codec as Decoder>::Error>,
+            <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
+              M::Item: Send,
+              M::Error: Send,
     {
         Envelope::new(RemoteEnvelope::new(msg, tx))
     }

@@ -10,21 +10,24 @@ use context::Context;
 
 
 /// Converter trait, packs message to suitable envelope
-pub trait ToEnvelope<A, M>
-    where A: Actor + Handler<M>,
-          M: ResponseType + 'static,
+pub trait ToEnvelope<A: Actor>
 {
     /// Pack message into envelope
-    fn pack(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>;
+    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+        where A: Handler<M>,
+              M: ResponseType + Send + 'static,
+              M::Item: Send,
+              M::Error: Send;
 }
 
-impl<A, M> ToEnvelope<A, M> for Context<A>
-    where A: Actor<Context=Context<A>> + Handler<M>,
-          M: ResponseType + Send + 'static,
-          M::Item: Send,
-          M::Error: Send,
+impl<A> ToEnvelope<A> for Context<A>
+    where A: Actor<Context=Context<A>>
 {
-    fn pack(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+        where A: Handler<M>,
+              M: ResponseType + 'static,
+              M::Item: Send,
+              M::Error: Send,
     {
         Envelope(Box::new(RemoteEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
     }
@@ -159,7 +162,7 @@ enum EnvelopFutureItem<M> where M: ResponseType {
     Remote(SyncSender<Result<M::Item, M::Error>>),
 }
 
-pub(crate) struct EnvelopFuture<A, M> where A: Handler<M>, M: ResponseType
+pub(crate) struct EnvelopFuture<A, M> where A: Actor + Handler<M>, M: ResponseType
 {
     msg: PhantomData<M>,
     fut: Response<A, M>,

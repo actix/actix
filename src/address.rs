@@ -49,11 +49,13 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
     }
 }
 
-
 pub trait Subscriber<M: 'static> {
 
     /// Send buffered message
     fn send(&self, msg: M) -> Result<(), M>;
+
+    /// Clone subscriber
+    fn subscriber(&self) -> Box<Subscriber<M>>;
 
 }
 
@@ -131,7 +133,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
         where A: Handler<M>,
               M: ResponseType + 'static
     {
-        Box::new(self.clone())
+        Box::new(Clone::clone(self))
     }
 }
 
@@ -147,6 +149,10 @@ impl<A, M> Subscriber<M> for Address<A>
         } else {
             Err(msg)
         }
+    }
+
+    fn subscriber(&self) -> Box<Subscriber<M>> {
+        Box::new(self.clone())
     }
 }
 
@@ -179,14 +185,13 @@ impl<A> SyncAddress<A> where A: Actor {
     /// Send message `M` to actor `A`. Message cold be sent to actor running in
     /// different thread.
     pub fn send<M>(&self, msg: M)
-        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A, M>,
+        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A>,
               M: ResponseType + Send + 'static,
               M::Item: Send,
               M::Error: Send,
     {
         if self.tx.unbounded_send(
-            <<A as Actor>::Context as ToEnvelope<A, M>>
-                ::pack(msg, None)).is_err()
+            <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, None)).is_err()
         {
             self.closed.set(true)
         }
@@ -198,11 +203,11 @@ impl<A> SyncAddress<A> where A: Actor {
               M: ResponseType + Send + 'static,
               M::Item: Send,
               M::Error: Send,
-             <A as Actor>::Context: ToEnvelope<A, M>,
+             <A as Actor>::Context: ToEnvelope<A>,
     {
         let (tx, rx) = sync_channel();
         if self.tx.unbounded_send(
-            <<A as Actor>::Context as ToEnvelope<A, M>>::pack(msg, Some(tx))).is_err()
+            <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, Some(tx))).is_err()
         {
             self.closed.set(true)
         }
@@ -216,11 +221,11 @@ impl<A> SyncAddress<A> where A: Actor {
               M: ResponseType + Send + 'static,
               M::Item: Send,
               M::Error: Send,
-             <A as Actor>::Context: ToEnvelope<A, M>,
+             <A as Actor>::Context: ToEnvelope<A>,
     {
         let (tx, rx) = sync_channel();
         if self.tx.unbounded_send(
-            <<A as Actor>::Context as ToEnvelope<A, M>>::pack(msg, Some(tx))).is_err()
+            <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, Some(tx))).is_err()
         {
             self.closed.set(true)
         }
@@ -234,7 +239,7 @@ impl<A> SyncAddress<A> where A: Actor {
               M: ResponseType + Send + 'static,
               M::Item: Send,
               M::Error: Send,
-             <A as Actor>::Context: ToEnvelope<A, M>,
+             <A as Actor>::Context: ToEnvelope<A>,
     {
         Box::new(self.clone())
     }
@@ -242,7 +247,7 @@ impl<A> SyncAddress<A> where A: Actor {
 
 impl<A, M> Subscriber<M> for SyncAddress<A>
     where A: Actor + Handler<M>,
-          <A as Actor>::Context: ToEnvelope<A, M>,
+          <A as Actor>::Context: ToEnvelope<A>,
           M: ResponseType + Send + 'static,
           M::Item: Send,
           M::Error: Send,
@@ -254,5 +259,9 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
         } else {
             Err(msg)
         }
+    }
+
+    fn subscriber(&self) -> Box<Subscriber<M>> {
+        Box::new(Clone::clone(self))
     }
 }

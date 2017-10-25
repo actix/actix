@@ -1,6 +1,12 @@
 # CHANGES
 
 
+## 0.3.1 (2017-10-xx)
+
+* Simplify `ToEnvelope` trait, do not generalize over Message type.
+
+* Added `Subscriber::subscriber() -> Box<Subscriber>`
+
 ## 0.3.0 (2017-10-23)
 
 * Added `Either` future

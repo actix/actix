@@ -27,7 +27,7 @@ pub enum ContextProtocol<A: Actor> {
 }
 
 /// Actor execution context
-pub struct Context<A> where A: Actor<Context=Context<A>>,
+pub struct Context<A> where A: Actor, A::Context: AsyncContext<A>,
 {
     act: A,
     state: ActorState,
