@@ -9,6 +9,9 @@
 
 * Added `Subscriber::subscriber() -> Box<Subscriber>`
 
+* Simplify `ActorContext` trait, it does not need to know about `Actor`
+
+
 ## 0.3.0 (2017-10-23)
 
 * Added `Either` future

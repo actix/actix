@@ -37,7 +37,7 @@ pub struct Context<A> where A: Actor, A::Context: AsyncContext<A>,
     address: ActorAddressCell<A>,
 }
 
-impl<A> ActorContext<A> for Context<A> where A: Actor<Context=Self>
+impl<A> ActorContext for Context<A> where A: Actor<Context=Self>
 {
     /// Stop actor execution
     fn stop(&mut self) {

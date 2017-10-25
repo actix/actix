@@ -5,7 +5,7 @@ use uuid::Uuid;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
-use actor::{Actor, Handler, ActorContext};
+use actor::{Actor, Handler, AsyncContext};
 use address::{Address, SyncAddress};
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};

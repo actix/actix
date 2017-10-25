@@ -57,7 +57,7 @@ impl<A> ToEnvelope<A> for FramedContext<A>
     }
 }
 
-impl<A> ActorContext<A> for FramedContext<A>
+impl<A> ActorContext for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
           A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                            <<A as FramedActor>::Codec as Decoder>::Error>,

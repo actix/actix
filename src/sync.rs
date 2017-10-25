@@ -223,7 +223,7 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
     }
 }
 
-impl<A> ActorContext<A> for SyncContext<A> where A: Actor<Context=Self>
+impl<A> ActorContext for SyncContext<A> where A: Actor<Context=Self>
 {
     /// Stop actor execution
     fn stop(&mut self) {

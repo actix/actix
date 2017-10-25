@@ -65,7 +65,7 @@ use utils::{TimerFunc, TimeoutWrapper};
 pub trait Actor: Sized + 'static {
 
     /// Actor execution context type
-    type Context: ActorContext<Self>;
+    type Context: ActorContext;
 
     /// Method is called when actor get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
@@ -292,7 +292,7 @@ pub enum ActorState {
 /// Each actor runs within specific execution context. `Actor::Context` defines
 /// context. Execution context defines type of execution, actor communition channels
 /// (message handling).
-pub trait ActorContext<A>: ToEnvelope<A> + Sized where A: Actor<Context=Self> {
+pub trait ActorContext: Sized {
 
     /// Gracefuly stop actor execution
     fn stop(&mut self);
@@ -307,34 +307,16 @@ pub trait ActorContext<A>: ToEnvelope<A> + Sized where A: Actor<Context=Self> {
     fn alive(&self) -> bool {
         self.state() == ActorState::Stopped
     }
-
-    /// Get actor address
-    fn address<Address>(&mut self) -> Address where A: ActorAddress<A, Address>
-    {
-        <A as ActorAddress<A, Address>>::get(self)
-    }
-}
-
-/// Spawned future handle. Could be used for cancelling spawned future.
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct SpawnHandle(usize);
-
-impl SpawnHandle {
-    /// Get next handle
-    pub fn next(self) -> SpawnHandle {
-        SpawnHandle(self.0 + 1)
-    }
-}
-
-impl Default for SpawnHandle {
-    fn default() -> SpawnHandle {
-        SpawnHandle(0)
-    }
 }
 
 /// Asynchronous execution context
-pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
+pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=Self>
 {
+    /// Get actor address
+    fn address<Address>(&mut self) -> Address where A: ActorAddress<A, Address> {
+        <A as ActorAddress<A, Address>>::get(self)
+    }
+
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
@@ -434,5 +416,22 @@ pub trait AsyncContext<A>: ActorContext<A> where A: Actor<Context=Self>
         where F: FnOnce(&mut A, &mut A::Context) + 'static
     {
         self.spawn(TimerFunc::new(dur, f))
+    }
+}
+
+/// Spawned future handle. Could be used for cancelling spawned future.
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub struct SpawnHandle(usize);
+
+impl SpawnHandle {
+    /// Get next handle
+    pub fn next(self) -> SpawnHandle {
+        SpawnHandle(self.0 + 1)
+    }
+}
+
+impl Default for SpawnHandle {
+    fn default() -> SpawnHandle {
+        SpawnHandle(0)
     }
 }
