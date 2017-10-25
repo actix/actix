@@ -57,6 +57,7 @@ pub use actor::{Actor, ActorState, FramedActor, Supervised,
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::{Context, ContextFutureSpawner};
+pub use envelope::ToEnvelope;
 pub use framed::FramedContext;
 pub use message::{Request, Response};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};

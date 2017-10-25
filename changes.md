@@ -5,6 +5,8 @@
 
 * Simplify `ToEnvelope` trait, do not generalize over Message type.
 
+* `ActorContext` requires `ToEnvelope` trait.
+
 * Added `Subscriber::subscriber() -> Box<Subscriber>`
 
 ## 0.3.0 (2017-10-23)

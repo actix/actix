@@ -19,6 +19,7 @@ pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
 pub use context::{Context, ContextFutureSpawner};
 pub use framed::FramedContext;
+pub use envelope::ToEnvelope;
 pub use message::{Request, Response};
 pub use system::System;
 pub use supervisor::Supervisor;

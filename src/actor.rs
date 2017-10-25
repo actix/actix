@@ -8,6 +8,7 @@ use fut::ActorFuture;
 use message::Response;
 use arbiter::Arbiter;
 use address::ActorAddress;
+use envelope::ToEnvelope;
 use context::{Context, ActorFutureCell, ActorStreamCell};
 use framed::FramedContext;
 use utils::{TimerFunc, TimeoutWrapper};
@@ -291,7 +292,7 @@ pub enum ActorState {
 /// Each actor runs within specific execution context. `Actor::Context` defines
 /// context. Execution context defines type of execution, actor communition channels
 /// (message handling).
-pub trait ActorContext<A>: Sized where A: Actor<Context=Self> {
+pub trait ActorContext<A>: ToEnvelope<A> + Sized where A: Actor<Context=Self> {
 
     /// Gracefuly stop actor execution
     fn stop(&mut self);

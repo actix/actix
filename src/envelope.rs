@@ -12,7 +12,7 @@ use context::Context;
 /// Converter trait, packs message to suitable envelope
 pub trait ToEnvelope<A: Actor>
 {
-    /// Pack message into envelope
+    /// Pack message into suitable envelope
     fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
