@@ -11,6 +11,9 @@ test: build
 	cargo test $(CARGO_FLAGS)
 	cd examples/chat && cargo build
 
+skeptic:
+	USE_SKEPTIC=1 cargo test $(CARGO_FLAGS)
+
 # cd examples/word-count && python setup.py install && pytest -v tests
 
 clippy:
