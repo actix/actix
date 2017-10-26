@@ -181,7 +181,7 @@ impl<A, M> ActorFuture for EnvelopFuture<A, M>
             act: &mut A,
             ctx: &mut <Self::Actor as Actor>::Context) -> Poll<Self::Item, Self::Error>
     {
-        match self.fut.poll(act, ctx) {
+        match self.fut.poll_response(act, ctx) {
             Ok(Async::Ready(val)) => {
                 match self.tx.take() {
                     Some(EnvelopFutureItem::Local(tx)) => { let _ = tx.send(Ok(val)); },

@@ -420,7 +420,7 @@ impl<A> ActorFuture for ActorFramedCell<A>
             let mut not_ready = true;
 
             if let Some(mut fut) = self.response.take() {
-                match fut.poll(act, ctx) {
+                match fut.poll_response(act, ctx) {
                     Ok(Async::NotReady) => {
                         self.response = Some(fut);
                     },

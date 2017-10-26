@@ -489,7 +489,7 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
     {
         loop {
             if let Some(mut fut) = self.result.take() {
-                match fut.poll(act, ctx) {
+                match fut.poll_response(act, ctx) {
                     Ok(Async::NotReady) => {
                         self.result = Some(fut);
                         return Ok(Async::NotReady)
@@ -566,7 +566,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 
         loop {
             if let Some(mut fut) = self.fut.take() {
-                match fut.poll(act, ctx) {
+                match fut.poll_response(act, ctx) {
                     Ok(Async::NotReady) => {
                         self.fut = Some(fut);
                         return Ok(Async::NotReady)

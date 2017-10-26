@@ -313,6 +313,6 @@ impl<A, M> Future for ResponseFuture<A, M>
         let act = unsafe{ &mut *self.act };
         let ctx = unsafe{ &mut *self.ctx };
 
-        self.fut.poll(act, ctx)
+        self.fut.poll_response(act, ctx)
     }
 }

@@ -9,7 +9,7 @@ fn main() {
         skeptic::generate_doc_tests(&["README.md"]);
     } else {
         let f = env::var("OUT_DIR").unwrap() + "/skeptic-tests.rs";
-        fs::File::create(f);
+        let _ = fs::File::create(f);
     }
 }
 

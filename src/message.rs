@@ -139,7 +139,9 @@ impl<A, M> Response<A, M> where A: Actor, M: ResponseType
         }
     }
 
-    pub(crate) fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<M::Item, M::Error>
+    #[doc(hidden)]
+    pub fn poll_response(&mut self, act: &mut A, ctx: &mut A::Context)
+                         -> Poll<M::Item, M::Error>
     {
         if let Some(item) = self.inner.take() {
             match item {
