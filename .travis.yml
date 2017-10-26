@@ -2,6 +2,7 @@ language: rust
 rust:
   - 1.18.0
   - stable
+  - beta
   - nightly
 
 sudo: required
