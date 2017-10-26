@@ -7,6 +7,7 @@ readme = "README.md"
 keywords = ["actor", "asynchronous", "concurrency"]
 homepage = "https://github.com/actix/actix/"
 repository = "https://github.com/actix/actix.git"
+documentation = "https://docs.rs/actix/"
 categories = ["network-programming", "asynchronous"]
 license = "Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
