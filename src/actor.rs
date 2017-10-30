@@ -337,6 +337,10 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// Cancel future. idx is a value returned by `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
 
+    #[doc(hidden)]
+    /// Cancel future during actor stopping state.
+    fn cancel_future_on_stop(&mut self, handle: SpawnHandle);
+
     /// This method allow to handle Future in similar way as normal actor messages.
     ///
     /// ```rust
@@ -405,7 +409,8 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     }
 
     /// Send message `msg` to self after specified period of time. Returns spawn handle
-    /// which could be used for cancelation.
+    /// which could be used for cancelation. Notification get cancelled
+    /// if context's stop method get called.
     fn notify<M, E>(&mut self, msg: M, after: Duration) -> SpawnHandle
         where A: Handler<M, E>, M: ResponseType + 'static, E: 'static
     {
@@ -413,21 +418,25 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
             error!("Context::add_timeout called for stopped actor.");
             SpawnHandle::default()
         } else {
-            self.spawn(
-                ActorFutureCell::new(TimeoutWrapper::new(msg, after)))
+            let h = self.spawn(ActorFutureCell::new(TimeoutWrapper::new(msg, after)));
+            self.cancel_future_on_stop(h);
+            h
         }
     }
 
     /// Execute closure after specified period of time within same Actor and Context
+    /// Execution get cancelled if context's stop method get called.
     fn run_later<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
         where F: FnOnce(&mut A, &mut A::Context) + 'static
     {
-        self.spawn(TimerFunc::new(dur, f))
+        let h = self.spawn(TimerFunc::new(dur, f));
+        self.cancel_future_on_stop(h);
+        h
     }
 }
 
 /// Spawned future handle. Could be used for cancelling spawned future.
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct SpawnHandle(usize);
 
 impl SpawnHandle {

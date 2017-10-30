@@ -13,7 +13,9 @@ use actix::msgs::SystemExit;
 enum Op {
     Cancel,
     Timeout,
+    TimeoutStop,
     RunAfter,
+    RunAfterStop,
 }
 
 struct MyActor{op: Op}
@@ -30,12 +32,26 @@ impl Actor for MyActor {
             Op::Timeout => {
                 ctx.notify(TimeoutMessage, Duration::new(0, 100));
             },
+            Op::TimeoutStop => {
+                ctx.notify(TimeoutMessage, Duration::new(0, 100));
+                ctx.stop();
+            },
             Op::RunAfter => {
                 ctx.run_later(Duration::new(0, 100), |_, _| {
                     Arbiter::system().send(SystemExit(0));
                 });
             }
+            Op::RunAfterStop => {
+                ctx.run_later(Duration::new(1, 0), |_, _| {
+                    panic!("error");
+                });
+                ctx.stop();
+            }
         }
+    }
+
+    fn stopped(&mut self, _: &mut Context<MyActor>) {
+        Arbiter::system().send(SystemExit(0));
     }
 }
 
@@ -85,10 +101,28 @@ fn test_add_timeout_cancel() {
 }
 
 #[test]
+fn test_add_timeout_stop() {
+    let sys = System::new("test");
+
+    let _addr: Address<_> = MyActor{op: Op::TimeoutStop}.start();
+
+    sys.run();
+}
+
+#[test]
 fn test_run_after() {
     let sys = System::new("test");
 
     let _addr: Address<_> = MyActor{op: Op::RunAfter}.start();
+
+    sys.run();
+}
+
+#[test]
+fn test_run_after_stop() {
+    let sys = System::new("test");
+
+    let _addr: Address<_> = MyActor{op: Op::RunAfterStop}.start();
 
     sys.run();
 }

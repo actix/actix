@@ -49,7 +49,7 @@ impl<A> ToEnvelope<A> for FramedContext<A>
               A: FramedActor + Actor<Context=FramedContext<A>>,
               A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                                <<A as FramedActor>::Codec as Decoder>::Error>,
-            <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
+    <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
               M::Item: Send,
               M::Error: Send,
     {
@@ -112,6 +112,10 @@ impl<A> AsyncContext<A> for FramedContext<A>
         self.modified = true;
         self.items.cancel_future(handle)
     }
+
+    fn cancel_future_on_stop(&mut self, handle: SpawnHandle) {
+        self.items.cancel_future_on_stop(handle)
+    }
 }
 
 impl<A> AsyncContextApi<A> for FramedContext<A>
@@ -147,6 +151,7 @@ impl<A> FramedContext<A>
     /// will try to send all buffered items and then close.
     /// FramedContext::stop() could be used to force stop sending process.
     pub fn close(&mut self) {
+        self.items.stop();
         if let Some(ref mut framed) = self.framed.take() {
             framed.close();
         }
@@ -273,6 +278,7 @@ impl<A> Future for FramedContext<A>
             } else { false };
             if closed {
                 self.framed.take();
+                self.items.stop();
             }
 
             // check secondary streams

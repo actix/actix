@@ -1,5 +1,5 @@
 use std;
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashSet};
 
 use futures::{Async, Future, Poll, Stream};
 use futures::unsync::oneshot::Sender;
@@ -41,6 +41,7 @@ impl<A> ActorContext for Context<A> where A: Actor<Context=Self>
 {
     /// Stop actor execution
     fn stop(&mut self) {
+        self.items.stop();
         self.address.close();
         if self.state == ActorState::Running {
             self.state = ActorState::Stopping;
@@ -79,6 +80,10 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.modified = true;
         self.items.cancel_future(handle)
+    }
+
+    fn cancel_future_on_stop(&mut self, handle: SpawnHandle) {
+        self.items.cancel_future_on_stop(handle)
     }
 }
 
@@ -364,6 +369,7 @@ type Item<A> = (SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
 pub struct ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A> {
     index: SpawnHandle,
     items: Vec<Item<A>>,
+    on_stop: HashSet<SpawnHandle>,
 }
 
 impl<A> Default for ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A> {
@@ -372,6 +378,7 @@ impl<A> Default for ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A
         ActorItemsCell {
             index: SpawnHandle::default(),
             items: Vec::new(),
+            on_stop: HashSet::new(),
         }
     }
 }
@@ -384,6 +391,17 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
 
     pub fn close(&mut self) {
         self.items.clear()
+    }
+
+    pub fn stop(&mut self) {
+        if !self.on_stop.is_empty() {
+            for index in 0..self.items.len() {
+                if self.on_stop.contains(&self.items[index].0) {
+                    self.items.remove(index);
+                }
+            }
+            self.on_stop.clear();
+        }
     }
 
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
@@ -402,6 +420,10 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
             }
         }
         false
+    }
+
+    pub fn cancel_future_on_stop(&mut self, handle: SpawnHandle) {
+        self.on_stop.insert(handle);
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {

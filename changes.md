@@ -11,6 +11,8 @@
 
 * Simplify `ActorContext` trait, it does not need to know about `Actor`
 
+* Cancel `notify` and `run_later` futures on context stop
+
 
 ## 0.3.0 (2017-10-23)
 
