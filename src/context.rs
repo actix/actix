@@ -390,7 +390,8 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
     }
 
     pub fn close(&mut self) {
-        self.items.clear()
+        self.items.clear();
+        self.on_stop.clear();
     }
 
     pub fn stop(&mut self) {
@@ -419,6 +420,7 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
                 return true
             }
         }
+        self.on_stop.remove(&handle);
         false
     }
 
@@ -451,6 +453,7 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
                 // replace current item with last item
                 if drop {
                     len -= 1;
+                    self.on_stop.remove(&self.items[idx].0);
                     if idx >= len {
                         self.items.pop();
                         return
