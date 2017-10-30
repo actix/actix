@@ -108,6 +108,13 @@ pub trait Actor: Sized + 'static {
         addr
     }
 
+    /// Start new asynchronous actor, returns address of newly created actor.
+    fn start_default<Addr>() -> Addr
+        where Self: Default + Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
+    {
+        Self::default().start()
+    }
+
     /// Use `create` method, if you need `Context` object during actor initialization.
     ///
     /// # Examples
