@@ -1,7 +1,7 @@
 # CHANGES
 
 
-## 0.3.1 (2017-10-xx)
+## 0.3.1 (2017-10-30)
 
 * Simplify `ToEnvelope` trait, do not generalize over Message type.
 
