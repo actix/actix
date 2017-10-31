@@ -396,9 +396,12 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
 
     pub fn stop(&mut self) {
         if !self.on_stop.is_empty() {
-            for index in 0..self.items.len() {
+            let mut index = 0;
+            while index < self.items.len() {
                 if self.on_stop.contains(&self.items[index].0) {
                     self.items.remove(index);
+                } else {
+                    index += 1;
                 }
             }
             self.on_stop.clear();
