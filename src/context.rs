@@ -396,11 +396,14 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
 
     pub fn stop(&mut self) {
         if !self.on_stop.is_empty() {
-            // TODO: better algo
             let mut index = 0;
             while index < self.items.len() {
                 if self.on_stop.contains(&self.items[index].0) {
-                    self.items.remove(index);
+                    if index == self.items.len() - 1 {
+                        self.items.pop();
+                    } else {
+                        self.items[index] = self.items.pop().unwrap();
+                    }
                 } else {
                     index += 1;
                 }
