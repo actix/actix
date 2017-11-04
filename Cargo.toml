@@ -23,7 +23,7 @@ name = "actix"
 path = "src/lib.rs"
 
 [features]
-default = ["signal"]
+default = []
 
 # Include process signal support, on by default
 signal = ["tokio-signal", "libc"]
