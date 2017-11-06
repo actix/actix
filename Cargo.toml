@@ -1,10 +1,10 @@
 [package]
 name = "actix"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
-keywords = ["actor", "asynchronous", "concurrency"]
+keywords = ["actor", "asynchronous", "concurrency", "actix", "async", "tokio", "futures"]
 homepage = "https://github.com/actix/actix/"
 repository = "https://github.com/actix/actix.git"
 documentation = "https://docs.rs/actix/"

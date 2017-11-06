@@ -1,5 +1,9 @@
 # CHANGES
 
+## 0.3.2 (2017-111-xx)
+
+* Disable `signal` feature by default
+
 
 ## 0.3.1 (2017-10-30)
 

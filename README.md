@@ -16,7 +16,7 @@ Actix is licensed under the [Apache-2.0 license](http://opensource.org/licenses/
   * Async/Sync actors.
   * Actor communication in a local/thread context.
   * Using Futures for asynchronous message handling.
-  * Http1/Http2 support ([actix-web](https://github.com/actix/actix-web))
+  * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
   * Actor supervision.
 
 
