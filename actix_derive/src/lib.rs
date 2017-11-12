@@ -41,15 +41,21 @@ fn get_attribute_type(ast: &syn::DeriveInput, name: &str) -> Option<syn::Ty> {
 
     let attr = attr.unwrap();
 
-    if let syn::MetaItem::NameValue(_, ref a) = attr.value {
-        if let syn::Lit::Str(ref value, _) = *a {
-            let ty = syn::parse::ty(value);
-            match ty {
-                syn::parse::IResult::Done(_, ty) => return Some(ty),
-                _ => panic!(""),
+    if let syn::MetaItem::List(_, ref vec) = attr.value {
+        if vec.len() != 1 {
+            panic!();
+        }
+
+        if let syn::NestedMetaItem::MetaItem(ref i) = vec[0] {
+            if let syn::MetaItem::Word(ref i) = *i {
+                let ty = syn::parse::ty(i.as_ref());
+                match ty {
+                    syn::parse::IResult::Done(_, ty) => return Some(ty),
+                    _ => panic!(""),
+                }
             }
         }
     }
 
-    None
+    panic!();
 }
