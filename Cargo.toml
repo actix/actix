@@ -46,9 +46,6 @@ crossbeam = "0.3"
 libc = { version = "0.2", optional = true }
 uuid = { version = "0.5", features = ["v4"] }
 
-# derive
-actix_derive = { path = "actix_derive", version = "0.1.0" }
-
 [dependencies.tokio-signal]
 version = "0.1"
 optional = true
