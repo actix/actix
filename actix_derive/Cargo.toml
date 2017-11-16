@@ -9,3 +9,7 @@ proc-macro = true
 [dependencies]
 quote = "0.3.15"
 syn = { version = "0.11.11", features = ["full"] }
+
+[features]
+nightly = []
+handler = ["nightly"]

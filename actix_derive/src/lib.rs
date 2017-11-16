@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "nightly", feature(proc_macro))]
+
 extern crate proc_macro;
 extern crate syn;
 #[macro_use]
@@ -7,6 +9,26 @@ use proc_macro::TokenStream;
 
 mod actor;
 mod message;
+
+#[cfg(feature = "nightly")]
+macro_rules! create_attribute(
+    ($mod_: ident, $fn_name: ident) => {
+        #[proc_macro_attribute]
+        pub fn $fn_name(attribute: TokenStream, input: TokenStream) -> TokenStream {
+            let attribute = attribute.to_string();
+            let input = input.to_string();
+            let attribute = {
+                if attribute.len() != 0 {
+                    syn::parse_expr(&attribute).unwrap()
+                } else {
+                    syn::parse_expr("()").unwrap()
+                }
+            };
+            let input = syn::parse_item(&input).unwrap();
+            $mod_::$fn_name(&attribute, &input).parse().expect("Expanded output was no correct Rust code")
+        }
+    };
+);
 
 macro_rules! create_derive(
     ($mod_: ident, $trait_: ident, $fn_name: ident) => {
@@ -28,6 +50,9 @@ macro_rules! create_derive(
         }
     };
 );
+
+#[cfg(feature = "handler")]
+create_attribute!(actor, handler);
 
 create_derive!(actor, Actor, actor_derive);
 create_derive!(message, Message, message_derive, MessageResult, MessageError, Message);
@@ -82,4 +107,24 @@ fn meta_item_to_ty(meta_item: &syn::NestedMetaItem, name: &str) -> Option<syn::T
     } else {
         panic!("The correct syntax is #[{}(type)]", name);
     }
+}
+
+#[cfg(feature = "nightly")]
+fn remove_attr(input: &syn::Item, attr_name: &str) -> syn::Item {
+    let mut input = input.clone();
+
+    {
+        let impl_items = match input.node {
+            syn::ItemKind::Impl(_, _, _, _, _, ref mut impl_items) => impl_items,
+            _ => panic!(),
+        };
+
+        for item in impl_items.iter_mut() {
+            item.attrs = item.attrs.clone().into_iter()
+                .filter(|a| a.value.name() != attr_name)
+                .collect::<Vec<_>>();
+        }
+    }
+
+    input
 }
