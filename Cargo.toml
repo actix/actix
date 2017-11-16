@@ -32,7 +32,7 @@ signal = ["tokio-signal", "libc"]
 dns = ["libc"]
 
 [workspace]
-members = ["examples/chat"]
+members = ["examples/chat", "actix_derive"]
 
 [dependencies]
 # tokio
