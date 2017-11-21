@@ -146,19 +146,19 @@ impl SystemRegistry {
         if let Ok(hm) = self.registry.lock() {
             if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
                 match addr.downcast_ref::<SyncAddress<A>>() {
-                    Some(addr) =>
-                        return addr.clone(),
+                    Some(addr) =>{
+                        return addr.clone()},
                     None =>
                         error!("Got unknown value: {:?}", addr),
                 }
-            } else {
-                let addr = Supervisor::start_in(Arbiter::system_arbiter(), false, |ctx| {
-                    let mut act = A::default();
-                    act.service_started(ctx);
-                    act
-                });
-                return addr.expect("System is dead");
             }
+            let addr = Supervisor::start_in(Arbiter::system_arbiter(), false, |ctx| {
+                let mut act = A::default();
+                act.service_started(ctx);
+                act
+            });
+            hm.borrow_mut().insert(TypeId::of::<A>(), Box::new(addr.clone().unwrap()));
+            return addr.expect("System is dead")
         }
         panic!("System registry lock is poisoned");
     }
