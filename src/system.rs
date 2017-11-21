@@ -12,7 +12,7 @@ use message::Response;
 
 /// System is an actor which manages process.
 ///
-/// Before starting any actix's actors, `System` actor has to be create
+/// Before starting any actix's actors, `System` actor has to be created
 /// with `System::new()` call. This method creates new `Arbiter` in current thread
 /// and starts `System` actor.
 ///
