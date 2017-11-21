@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.3.3 (2017-11-21)
+
+* SystemRegistry does not store created actor #21
+
+
 ## 0.3.2 (2017-11-06)
 
 * Disable `signal` feature by default
