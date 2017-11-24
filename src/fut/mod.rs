@@ -189,6 +189,20 @@ impl<F: ActorFuture> IntoActorFuture for F {
     }
 }
 
+impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
+    type Item = F::Item;
+    type Error = F::Error;
+    type Actor = F::Actor;
+
+
+    fn poll(&mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
+            -> Poll<Self::Item, Self::Error> {
+        {
+            (**self).poll(srv, ctx)
+        }
+    }
+}
+
 /// Helper trait that allows conversion of normal future into `ActorFuture`
 pub trait WrapFuture<A> where A: Actor
 {
