@@ -1,8 +1,13 @@
 # CHANGES
+=======
 
 ## Master
 
 * Allow returning Box<ActorFuture> in ActorFutures for non tail recursive futures
+
+## 0.3.3 (2017-11-21)
+
+* SystemRegistry does not store created actor #21
 
 ## 0.3.2 (2017-11-06)
 

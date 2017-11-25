@@ -146,8 +146,9 @@ impl SystemRegistry {
         if let Ok(hm) = self.registry.lock() {
             if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
                 match addr.downcast_ref::<SyncAddress<A>>() {
-                    Some(addr) =>{
-                        return addr.clone()},
+                    Some(addr) => {
+                        return addr.clone()
+                    },
                     None =>
                         error!("Got unknown value: {:?}", addr),
                 }
@@ -156,9 +157,9 @@ impl SystemRegistry {
                 let mut act = A::default();
                 act.service_started(ctx);
                 act
-            });
-            hm.borrow_mut().insert(TypeId::of::<A>(), Box::new(addr.clone().unwrap()));
-            return addr.expect("System is dead")
+            }).expect("System is dead");
+            hm.borrow_mut().insert(TypeId::of::<A>(), Box::new(addr.clone()));
+            return addr
         }
         panic!("System registry lock is poisoned");
     }
