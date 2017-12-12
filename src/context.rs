@@ -13,6 +13,7 @@ use actor::{Actor, Supervised, Handler, StreamHandler, ResponseType,
 use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
 use message::Response;
+use constants::MAX_SYNC_POLLS;
 
 pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
     fn address_cell(&mut self) -> &mut ActorAddressCell<A>;
@@ -322,8 +323,10 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context)
     {
+        let mut n_polls: u32 = 0;
         loop {
             let mut not_ready = true;
+            n_polls += 1;
 
             // unsync messages
             match self.unsync_msgs.poll() {
@@ -357,7 +360,7 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
                 }
             }
 
-            if not_ready {
+            if not_ready || n_polls == MAX_SYNC_POLLS {
                 return
             }
         }
