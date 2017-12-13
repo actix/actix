@@ -49,6 +49,7 @@ pub mod actors;
 pub mod msgs;
 pub mod sync;
 pub mod dev;
+pub mod constants;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
