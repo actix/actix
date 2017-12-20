@@ -16,6 +16,7 @@ mod stream_then;
 mod stream_and_then;
 mod stream_finish;
 mod stream_fold;
+mod helpers;
 
 pub use self::either::Either;
 pub use self::and_then::AndThen;
@@ -29,9 +30,9 @@ pub use self::stream_then::StreamThen;
 pub use self::stream_and_then::StreamAndThen;
 pub use self::stream_finish::StreamFinish;
 pub use self::stream_fold::StreamFold;
+pub use self::helpers::{Finish, FinishStream};
 
 use actor::Actor;
-
 
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.

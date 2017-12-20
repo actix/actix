@@ -51,7 +51,7 @@ pub mod sync;
 pub mod dev;
 pub mod constants;
 
-pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
+pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 Handler, ResponseType, StreamHandler,
                 ActorContext, AsyncContext, SpawnHandle};
