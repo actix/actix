@@ -15,6 +15,7 @@ mod stream_map_err;
 mod stream_then;
 mod stream_and_then;
 mod stream_finish;
+mod stream_fold;
 
 pub use self::either::Either;
 pub use self::and_then::AndThen;
@@ -27,6 +28,7 @@ pub use self::stream_map_err::StreamMapErr;
 pub use self::stream_then::StreamThen;
 pub use self::stream_and_then::StreamAndThen;
 pub use self::stream_finish::StreamFinish;
+pub use self::stream_fold::StreamFold;
 
 use actor::Actor;
 
@@ -148,6 +150,17 @@ pub trait ActorStream {
               Self: Sized,
     {
         stream_and_then::new(self, f)
+    }
+
+    /// Execute an accumulating computation over a stream, collecting all the
+    /// values into one final result.
+    fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut, T>
+        where F: FnMut(T, Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> Fut,
+              Fut: IntoActorFuture<Actor=Self::Actor, Item=T>,
+              Self::Error: From<Fut::Error>,
+              Self: Sized
+    {
+        stream_fold::new(self, f, init)
     }
 
     /// Converts a stream to a future that resolves when stream completes.

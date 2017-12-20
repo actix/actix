@@ -6,6 +6,7 @@
 
 * Add convenience impl for boxed Subscriber objects. #27
 
+* Add `ActorStream::fold()` method.
 
 ## 0.3.3 (2017-11-21)
 
