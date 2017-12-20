@@ -50,13 +50,18 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
 }
 
 pub trait Subscriber<M: 'static> {
-
     /// Send buffered message
     fn send(&self, msg: M) -> Result<(), M>;
 
-    /// Clone subscriber
-    fn subscriber(&self) -> Box<Subscriber<M>>;
+    /// Clone the current subscriber
+    fn boxed_clone(&self) -> Box<Subscriber<M>>;
+}
 
+/// Convenience impl to allow boxed Subscriber objects to be cloned using `Clone.clone()`.
+impl<M: 'static> Clone for Box<Subscriber<M>> {
+    fn clone(&self) -> Box<Subscriber<M>> {
+        self.boxed_clone()
+    }
 }
 
 /// Address of the actor
@@ -151,7 +156,7 @@ impl<A, M> Subscriber<M> for Address<A>
         }
     }
 
-    fn subscriber(&self) -> Box<Subscriber<M>> {
+    fn boxed_clone(&self) -> Box<Subscriber<M>> {
         Box::new(self.clone())
     }
 }
@@ -261,7 +266,7 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
         }
     }
 
-    fn subscriber(&self) -> Box<Subscriber<M>> {
-        Box::new(Clone::clone(self))
+    fn boxed_clone(&self) -> Box<Subscriber<M>> {
+        Box::new(self.clone())
     }
 }
