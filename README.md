@@ -8,8 +8,6 @@ Actix is a rust actor system framework.
 
 ---
 
-Actix is licensed under the [Apache-2.0 license](http://opensource.org/licenses/APACHE-2.0).
-
 ## Features
 
   * Typed messages (No `Any` type). Generic messages are allowed.
@@ -257,3 +255,14 @@ with `actix` and shows how to create networking application with relatevly compl
 ## Contributing
 
 All contribution are welcome, if you have a feature request don't hesitate to open an issue!
+
+## License
+
+This project is licensed under either of
+
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+   http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+   http://opensource.org/licenses/MIT)
+
+at your option.
