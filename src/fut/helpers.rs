@@ -7,6 +7,8 @@ pub trait FinishStream: Sized {
 }
 
 impl <S: Stream> FinishStream for S {
+    /// A combinator used to convert stream into a future, future resolves
+    /// when stream completes.
     fn finish(self) -> Finish<S> {
         Finish::new(self)
     }

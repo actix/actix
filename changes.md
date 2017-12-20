@@ -1,5 +1,6 @@
 # CHANGES
 
+
 ## 0.3.4 (2017-12-20)
 
 * Fix memory leak when sending messages recursively to self #28
@@ -7,6 +8,9 @@
 * Add convenience impl for boxed Subscriber objects. #27
 
 * Add `ActorStream::fold()` method.
+
+* Add helper combinator `Stream::finish()` method.
+
 
 ## 0.3.3 (2017-11-21)
 
