@@ -19,7 +19,7 @@ struct TrackableItem;
 impl TrackableItem {
     fn new() -> TrackableItem {
         unsafe {
-            N_ITEMS = N_ITEMS + 1;
+            N_ITEMS += 1;
         }
         TrackableItem {}
     }
@@ -34,7 +34,7 @@ impl TrackableItem {
 impl Drop for TrackableItem {
     fn drop(&mut self) {
         unsafe {
-            N_ITEMS = N_ITEMS - 1;
+            N_ITEMS -= 1;
         }
     }
 }
