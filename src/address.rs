@@ -53,14 +53,14 @@ pub trait Subscriber<M: 'static> {
     /// Send buffered message
     fn send(&self, msg: M) -> Result<(), M>;
 
-    /// Clone the current subscriber
-    fn boxed_clone(&self) -> Box<Subscriber<M>>;
+    /// Create boxed clone of the current subscriber
+    fn boxed(&self) -> Box<Subscriber<M>>;
 }
 
 /// Convenience impl to allow boxed Subscriber objects to be cloned using `Clone.clone()`.
 impl<M: 'static> Clone for Box<Subscriber<M>> {
     fn clone(&self) -> Box<Subscriber<M>> {
-        self.boxed_clone()
+        self.boxed()
     }
 }
 
@@ -156,7 +156,7 @@ impl<A, M> Subscriber<M> for Address<A>
         }
     }
 
-    fn boxed_clone(&self) -> Box<Subscriber<M>> {
+    fn boxed(&self) -> Box<Subscriber<M>> {
         Box::new(self.clone())
     }
 }
@@ -266,7 +266,7 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
         }
     }
 
-    fn boxed_clone(&self) -> Box<Subscriber<M>> {
+    fn boxed(&self) -> Box<Subscriber<M>> {
         Box::new(self.clone())
     }
 }

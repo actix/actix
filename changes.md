@@ -1,5 +1,12 @@
 # CHANGES
 
+## 0.3.4 (2017-12-20)
+
+* Fix memory leak when sending messages recursively to self #28
+
+* Add convenience impl for boxed Subscriber objects. #27
+
+
 ## 0.3.3 (2017-11-21)
 
 * SystemRegistry does not store created actor #21
