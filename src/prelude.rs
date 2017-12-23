@@ -10,6 +10,9 @@
 
 pub use msgs;
 
+#[doc(hidden)]
+pub use actix_derive::*;
+
 pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
 
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
