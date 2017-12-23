@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.3.4"
+version = "0.3.5"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -35,6 +35,8 @@ dns = ["libc"]
 members = ["examples/chat"]
 
 [dependencies]
+actix_derive = { git = "https://github.com/actix/actix-derive" }
+
 # tokio
 futures = "0.1"
 tokio-io = "0.1"

@@ -2,6 +2,8 @@
 
 ## 0.3.5 (2017-12-xx)
 
+* Re-export `actix_derive` package
+
 * Added conversion implementation `From<Result<I, E>> for Response<A, M>`
 
 

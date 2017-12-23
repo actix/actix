@@ -30,6 +30,13 @@ extern crate tokio_signal;
 #[cfg(feature="signal")]
 extern crate libc;
 
+#[allow(unused_imports)]
+#[macro_use]
+extern crate actix_derive;
+
+#[doc(hidden)]
+pub use actix_derive::*;
+
 mod actor;
 mod arbiter;
 mod address;
@@ -61,6 +68,7 @@ pub use context::{Context, ContextFutureSpawner};
 pub use envelope::ToEnvelope;
 pub use framed::FramedContext;
 pub use message::{Request, Response};
+pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
 pub use utils::Condition;
