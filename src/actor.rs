@@ -2,7 +2,7 @@ use std;
 use std::time::Duration;
 use futures::{future, Future, Stream};
 use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_io::codec::{Encoder, Decoder};
+use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
 use message::Response;
@@ -193,7 +193,17 @@ pub trait FramedActor: Actor {
                                   <<Self as FramedActor>::Codec as Decoder>::Error>,
             <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
     {
-        let mut ctx = FramedContext::new(self, io, codec);
+        Self::from_framed(self, io.framed(codec))
+    }
+
+    /// Start new actor, returns address of this actor.
+    fn from_framed<Addr>(self, framed: Framed<Self::Io, Self::Codec>) -> Addr
+        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
+              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
+                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
+            <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
+    {
+        let mut ctx = FramedContext::framed(self, framed);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
         ctx.run(Arbiter::handle());
         addr
@@ -208,7 +218,19 @@ pub trait FramedActor: Actor {
             <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
               F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
     {
-        let mut ctx = FramedContext::new(unsafe{std::mem::uninitialized()}, io, codec);
+        Self::create_from_framed(io.framed(codec), f)
+    }
+
+    /// This function starts new actor, returns address of this actor.
+    /// Actor is created by factory function.
+    fn create_from_framed<Addr, F>(framed: Framed<Self::Io, Self::Codec>, f: F) -> Addr
+        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
+              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
+                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
+             <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
+              F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
+    {
+        let mut ctx = FramedContext::framed(unsafe{std::mem::uninitialized()}, framed);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
 
         Arbiter::handle().spawn_fn(move || {

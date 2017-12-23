@@ -1,10 +1,12 @@
 # CHANGES
 
-## 0.3.5 (2017-12-xx)
+## 0.3.5 (2017-12-23)
 
 * Re-export `actix_derive` package
 
 * Added conversion implementation `From<Result<I, E>> for Response<A, M>`
+
+* Expose the Framed underneath FramedContext #29
 
 
 ## 0.3.4 (2017-12-20)

@@ -156,6 +156,16 @@ impl<A> FramedContext<A>
             framed.close();
         }
     }
+
+    /// Get inner framed object
+    pub fn take_framed(&mut self)
+                       -> Option<Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>> {
+        if let Some(cell) = self.framed.take() {
+            Some(cell.into_framed())
+        } else {
+            None
+        }
+    }
 }
 
 impl<A> FramedContext<A>
@@ -198,6 +208,21 @@ impl<A> FramedContext<A>
             modified: false,
             address: ActorAddressCell::default(),
             framed: Some(ActorFramedCell::new(io.framed(codec))),
+            wait: ActorWaitCell::default(),
+            items: ActorItemsCell::default(),
+        }
+    }
+
+    pub(crate) fn framed(act: A,
+                         framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>)
+                         -> FramedContext<A>
+    {
+        FramedContext {
+            act: act,
+            state: ActorState::Started,
+            modified: false,
+            address: ActorAddressCell::default(),
+            framed: Some(ActorFramedCell::new(framed)),
             wait: ActorWaitCell::default(),
             items: ActorItemsCell::default(),
         }
@@ -399,6 +424,10 @@ impl<A> ActorFramedCell<A>
 
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item) {
         self.sink_items.push_back(msg);
+    }
+
+    pub fn into_framed(self) -> Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec> {
+        self.framed
     }
 }
 
