@@ -1,5 +1,9 @@
 # CHANGES
 
+## 0.3.5 (2017-12-xx)
+
+* Added conversion implementation `From<Result<I, E>> for Response<A, M>`
+
 
 ## 0.3.4 (2017-12-20)
 

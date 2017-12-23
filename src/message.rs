@@ -78,6 +78,26 @@ pub struct Response<A, M> where A: Actor, M: ResponseType,
     inner: Option<ResponseTypeItem<A, M>>,
 }
 
+
+pub trait IntoResponse<A, M>
+    where A: Actor + Handler<M>,
+          M: ResponseType
+{
+    fn into_response(self) -> Response<A, M>;
+}
+
+impl<A, M, I, E> IntoResponse<A, M> for Result<I, E>
+    where A: Handler<M>,
+          M: ResponseType<Item=I, Error=E>,
+{
+    fn into_response(self) -> Response<A, M> {
+        match self {
+            Ok(item) => Response {inner: Some(ResponseTypeItem::Item(item))},
+            Err(err) => Response {inner: Some(ResponseTypeItem::Error(err))},
+        }
+    }
+}
+
 enum ResponseTypeItem<A, M> where A: Actor, M: ResponseType
 {
     Item(M::Item),
@@ -93,6 +113,18 @@ impl<A, M, T> std::convert::From<T> for Response<A, M>
 {
     fn from(fut: T) -> Response<A, M> {
         Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
+    }
+}
+
+impl<A, M, I, E> std::convert::From<Result<I, E>> for Response<A, M>
+    where A: Handler<M>,
+          M: ResponseType<Item=I, Error=E>,
+{
+    fn from(res: Result<I, E>) -> Response<A, M> {
+        match res {
+            Ok(item) => Response {inner: Some(ResponseTypeItem::Item(item))},
+            Err(err) => Response {inner: Some(ResponseTypeItem::Error(err))},
+        }
     }
 }
 
