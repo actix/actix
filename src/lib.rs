@@ -1,25 +1,28 @@
-//! # Actix is a rust actor system framework.
+//! # Actix is a rust actor framework.
 //!
-//! [Actors](https://fafhrd91.github.io/actix/actix/trait.Actor.html) are objects
+//! [Actors](https://actix.github.io/actix/actix/trait.Actor.html) are objects
 //! which encapsulate state and behavior, they communicate exclusively
 //! by exchanging messages. Actix actors are implemented on top of [Tokio](https://tokio.rs).
 //! Mutiple actors could run in same thread. Actors could run in multiple threads
-//! with suppoprt of [`Arbiter`](https://fafhrd91.github.io/actix/actix/struct.Arbiter.html).
-//! Actors exchange typed messages. Actix does not use any unstable rust features and
-//! can be compiled with state rust compiler.
+//! with suppoprt of [`Arbiter`](https://actix.github.io/actix/actix/struct.Arbiter.html).
+//! Actors exchange typed messages.
 //!
 //! ## Features
 //!
-//! * Typed messages (No `Any` type). Generic messages are allowed.
+//! * Async/Sync actors.
 //! * Actor communication in a local/thread context.
-//! * Actor supervision.
 //! * Using Futures for asynchronous message handling.
-//! * Compiles with stable rust
+//! * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
+//! * Actor supervision.
+//! * Typed messages (No `Any` type). Generic messages are allowed.
+//! * Minimum supported Rust version: 1.20 or later
 
 #[macro_use]
 extern crate log;
 extern crate uuid;
 extern crate crossbeam;
+#[macro_use]
+extern crate bitflags;
 #[macro_use]
 extern crate futures;
 extern crate tokio_io;

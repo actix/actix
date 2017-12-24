@@ -45,6 +45,7 @@ tokio-core = "0.1"
 # other
 log = "0.3"
 crossbeam = "0.3"
+bitflags = "1.0"
 libc = { version = "0.2", optional = true }
 uuid = { version = "0.5", features = ["v4"] }
 

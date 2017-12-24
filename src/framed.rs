@@ -388,6 +388,16 @@ impl<A> std::fmt::Debug for FramedContext<A>
     }
 }
 
+bitflags! {
+    struct FramedFlags: u8 {
+        const STARTED = 0b0000_0001;
+        const CLOSING = 0b0000_0010;
+        const STREAM_CLOSED = 0b0000_0100;
+        const SINK_CLOSED = 0b0000_1000;
+        const SINK_FLUSHED = 0b0001_0000;
+    }
+}
+
 /// Framed object wrapper
 pub(crate)
 struct ActorFramedCell<A>
@@ -397,13 +407,9 @@ struct ActorFramedCell<A>
                            <<A as FramedActor>::Codec as Decoder>::Error>,
         <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
-    started: bool,
-    closing: bool,
+    flags: FramedFlags,
     response: Option<Response<A, <<A as FramedActor>::Codec as Decoder>::Item>>,
     framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>,
-    stream_closed: bool,
-    sink_closed: bool,
-    sink_flushed: bool,
     sink_items: VecDeque<<<A as FramedActor>::Codec as Encoder>::Item>,
     drain: Option<UnsyncSender<()>>,
 }
@@ -419,28 +425,25 @@ impl<A> ActorFramedCell<A>
                -> ActorFramedCell<A>
     {
         ActorFramedCell {
-            started: false,
-            closing: false,
+            flags: FramedFlags::SINK_FLUSHED,
             response: None,
             framed: framed,
-            stream_closed: false,
-            sink_closed: false,
-            sink_flushed: true,
             sink_items: VecDeque::new(),
             drain: None,
         }
     }
 
     pub fn alive(&self) -> bool {
-        self.sink_closed || self.stream_closed
+        !self.flags.contains(FramedFlags::SINK_CLOSED) &&
+            !self.flags.contains(FramedFlags::STREAM_CLOSED)
     }
 
     pub fn close(&mut self) {
-        self.closing = true;
+        self.flags.insert(FramedFlags::CLOSING);
     }
 
     pub fn closed(&mut self) -> bool {
-        self.stream_closed && self.sink_closed
+        self.flags.contains(FramedFlags::STREAM_CLOSED | FramedFlags::SINK_CLOSED)
     }
 
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item) {
@@ -463,8 +466,8 @@ impl<A> ActorFramedCell<A>
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool
     {
-        if !self.started {
-            self.started = true;
+        if !self.flags.contains(FramedFlags::STARTED) {
+            self.flags.insert(FramedFlags::STARTED);
             <A as StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                                 <<A as FramedActor>::Codec as Decoder>::Error>>
                 ::started(act, ctx);
@@ -478,18 +481,16 @@ impl<A> ActorFramedCell<A>
                 // it needs to resolves first
                 if let Some(mut fut) = self.response.take() {
                     match fut.poll_response(act, ctx) {
-                        Ok(Async::NotReady) => {
-                            self.response = Some(fut);
-                        },
+                        Ok(Async::NotReady) => self.response = Some(fut),
                         Ok(Async::Ready(_)) => (),
-                        Err(_) => {
-                            self.stream_closed = true;
-                        }
+                        Err(_) => self.flags.insert(FramedFlags::STREAM_CLOSED),
                     }
                 }
 
                 // framed stream
-                if !self.closing && !self.stream_closed && self.response.is_none() {
+                if !self.flags.contains(FramedFlags::CLOSING) &&
+                    !self.flags.contains(FramedFlags::STREAM_CLOSED) && self.response.is_none()
+                {
                     match self.framed.poll() {
                         Ok(Async::Ready(Some(msg))) => {
                             let fut =
@@ -503,13 +504,11 @@ impl<A> ActorFramedCell<A>
                             <A as StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                                                 <<A as FramedActor>::Codec as Decoder>::Error>>
                                 ::finished(act, ctx);
-                            self.sink_closed = true;
-                            self.stream_closed = true;
+                            self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
                         }
                         Ok(Async::NotReady) => (),
                         Err(err) => {
-                            self.sink_closed = true;
-                            self.stream_closed = true;
+                            self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
                             <A as Handler<<<A as FramedActor>::Codec as Decoder>::Item,
                                           <<A as FramedActor>::Codec as Decoder>::Error>>
                                 ::error(act, err, ctx);
@@ -518,7 +517,7 @@ impl<A> ActorFramedCell<A>
                 }
             }
 
-            if !self.sink_closed {
+            if !self.flags.contains(FramedFlags::SINK_CLOSED) {
                 // send sink items
                 loop {
                     if let Some(msg) = self.sink_items.pop_front() {
@@ -527,12 +526,12 @@ impl<A> ActorFramedCell<A>
                                 self.sink_items.push_front(msg);
                             }
                             Ok(AsyncSink::Ready) => {
-                                self.sink_flushed = false;
+                                self.flags |= FramedFlags::SINK_CLOSED;
                                 continue
                             }
                             Err(err) => {
-                                self.sink_closed = true;
-                                self.sink_flushed = true;
+                                self.flags |=
+                                    FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
                                 <A as FramedActor>::error(act, err, ctx);
                                 break
                             }
@@ -542,27 +541,27 @@ impl<A> ActorFramedCell<A>
                 }
 
                 // flush sink
-                if !self.sink_flushed {
+                if !self.flags.contains(FramedFlags::SINK_FLUSHED) {
                     match self.framed.poll_complete() {
                         Ok(Async::Ready(_)) => {
                             not_ready = false;
-                            self.sink_flushed = true;
+                            self.flags |= FramedFlags::SINK_FLUSHED;
                         }
                         Ok(Async::NotReady) =>
                             if self.drain.is_some() {
                                 return true
                             },
                         Err(err) => {
-                            self.sink_closed = true;
-                            self.sink_flushed = true;
+                            self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::SINK_FLUSHED;
                             <A as FramedActor>::error(act, err, ctx);
                         }
                     }
                 }
 
-                if self.closing && self.sink_flushed && self.sink_items.is_empty() {
-                    self.sink_closed = true;
-                }
+                if self.flags.contains(FramedFlags::CLOSING) &&
+                    self.flags.contains(FramedFlags::SINK_FLUSHED) && self.sink_items.is_empty() {
+                        self.flags |= FramedFlags::SINK_CLOSED;
+                    }
             }
             if let Some(tx) = self.drain.take() {
                 let _ = tx.send(());
