@@ -10,12 +10,12 @@ Actix is a rust actor system framework.
 
 ## Features
 
-  * Typed messages (No `Any` type). Generic messages are allowed.
   * Async/Sync actors.
   * Actor communication in a local/thread context.
   * Using Futures for asynchronous message handling.
   * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
   * Actor supervision.
+  * Typed messages (No `Any` type). Generic messages are allowed.
 
 
 ## Usage

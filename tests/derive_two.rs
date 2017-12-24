@@ -1,6 +1,5 @@
-extern crate actix;
-#[macro_use] extern crate actix_derive;
 extern crate futures;
+#[macro_use] extern crate actix;
 
 use std::io::Error;
 
