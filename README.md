@@ -166,21 +166,18 @@ store anything in an actor and mutate it whenever you need.
 Address object requires actor type, but if we just want to send specific message to 
 an actor that can handle message, we can use `Subscriber` interface. Let's create
 new actor that uses `Subscriber`, also this example will show how to use standard future objects.
+Also in this example we are going to use unstable `proc_macro` rust's feature for message
+and handler definitions
 
 ```rust
-extern crate actix;
-extern crate tokio_core;
+#![feature(proc_macro)]
 
+extern crate actix;
 use std::time::Duration;
 use actix::*;
-use actix::actors::signal;
 
-struct Ping;
-
-impl ResponseType for Ping {
-    type Item = ();
-    type Error = ();
-}
+#[msg]
+struct Ping { pub id: usize }
 
 // Actor definition
 struct Game {
@@ -188,35 +185,29 @@ struct Game {
     addr: Box<Subscriber<Ping>>
 }
 
-impl Actor for Game {
-    type Context = Context<Self>;
-}
+#[actor(Context<_>)]
+impl Game {
 
-// message handler for Ping message
-impl Handler<Ping> for Game {
-
-    fn handle(&mut self, msg: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
+    #[simple(Ping)]
+    // simple message handler for Ping message
+    fn ping(&mut self, id: usize, ctx: &mut Context<Self>) {
         self.counter += 1;
         
         if self.counter > 10 {
             Arbiter::system().send(msgs::SystemExit(0));
         } else {
-            println!("Ping received");
+            println!("Ping received {:?}", id);
             
             // wait 100 nanos
-            ctx.run_later(Duration::new(0, 100), |act: &mut Self, _: &mut Context<Self>| {
-                act.addr.send(Ping);
+            ctx.run_later(Duration::new(0, 100), move |act, _| {
+                act.addr.send(Ping{id: id + 1});
             });
         }
-        Self::empty()
     }
 }
 
 fn main() {
     let system = System::new("test");
-
-    // this is helper actor that manages unix signals, by default stops System
-    signal::DefaultSignalsHandler.start::<()>();
 
     // we need Subscriber object so we need to use different builder method
     // which will allow to postpone actor creation
@@ -226,7 +217,7 @@ fn main() {
         let addr2: Address<_> = Game{counter: 0, addr: addr.subscriber()}.start();
         
         // lets start pings
-        addr2.send(Ping);
+        addr2.send(Ping{id: 10});
         
         // now we can finally create first actor
         Game{counter: 0, addr: addr2.subscriber()}

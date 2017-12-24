@@ -32,8 +32,12 @@ before_script:
   - export PATH=$PATH:~/.cargo/bin
 
 script:
-  - USE_SKEPTIC=1 cargo build --features signal
-  - USE_SKEPTIC=1 cargo test --features signal
+  - |
+    if [[ "$TRAVIS_RUST_VERSION" == "nightly" ]]; then
+        USE_SKEPTIC=1 cargo test --features signal
+    else
+        cargo test --features signal
+    fi
   - |
     if [[ "$TRAVIS_RUST_VERSION" == "nightly" && $CLIPPY ]]; then
         cargo clippy
