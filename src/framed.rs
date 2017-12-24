@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 
 use futures::{Async, AsyncSink, Future, Poll, Sink, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
+use futures::unsync::oneshot::{channel, Sender as UnsyncSender, Receiver as UnsyncReceiver};
 use tokio_core::reactor::Handle;
 use tokio_io::AsyncRead;
 use tokio_io::codec::{Framed, Encoder, Decoder};
@@ -157,6 +158,20 @@ impl<A> FramedContext<A>
         }
     }
 
+    /// Initiate sink drain
+    ///
+    /// Returns oneshot future. It resolves when sink is drained.
+    /// All other actor activities are paused.
+    pub fn drain(&mut self) -> UnsyncReceiver<()> {
+        if let Some(ref mut framed) = self.framed {
+            framed.drain()
+        } else {
+            let (tx, rx) = channel();
+            let _ = tx.send(());
+            rx
+        }
+    }
+
     /// Get inner framed object
     pub fn take_framed(&mut self)
                        -> Option<Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>> {
@@ -288,23 +303,24 @@ impl<A> Future for FramedContext<A>
                 return Ok(Async::NotReady)
             }
 
-            // incoming messages
-            self.address.poll(&mut self.act, ctx);
-
             // framed
             let closed = if let Some(ref mut framed) = self.framed {
-                match framed.poll(&mut self.act, ctx) {
-                    Ok(Async::Ready(_)) | Err(_) => {
-                        self.modified = true;
-                        true
-                    },
-                    _ => false
+                // framed sink may need to drain
+                if framed.poll(&mut self.act, ctx) {
+                    return Ok(Async::NotReady)
                 }
-            } else { false };
+                framed.closed()
+            } else {
+                false
+            };
             if closed {
+                self.modified = true;
                 self.framed.take();
                 self.items.stop();
             }
+
+            // incoming messages
+            self.address.poll(&mut self.act, ctx);
 
             // check secondary streams
             self.items.poll(&mut self.act, ctx);
@@ -365,8 +381,7 @@ impl<A> std::fmt::Debug for FramedContext<A>
         <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f,
-               "FramedContext({:?}: actor:{:?}) {{ state: {:?}, connected: {}, items: {} }}",
+        write!(f, "FramedContext({:?}: actor:{:?}) {{ state: {:?}, connected: {}, items: {} }}",
                self as *const _,
                &self.act as *const _,
                self.state, "-", self.items.is_empty())
@@ -390,6 +405,7 @@ struct ActorFramedCell<A>
     sink_closed: bool,
     sink_flushed: bool,
     sink_items: VecDeque<<<A as FramedActor>::Codec as Encoder>::Item>,
+    drain: Option<UnsyncSender<()>>,
 }
 
 impl<A> ActorFramedCell<A>
@@ -411,6 +427,7 @@ impl<A> ActorFramedCell<A>
             sink_closed: false,
             sink_flushed: true,
             sink_items: VecDeque::new(),
+            drain: None,
         }
     }
 
@@ -422,27 +439,29 @@ impl<A> ActorFramedCell<A>
         self.closing = true;
     }
 
+    pub fn closed(&mut self) -> bool {
+        self.stream_closed && self.sink_closed
+    }
+
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item) {
         self.sink_items.push_back(msg);
+    }
+
+    pub fn drain(&mut self) -> UnsyncReceiver<()> {
+        if let Some(tx) = self.drain.take() {
+            let _ = tx.send(());
+            error!("drain method should be called once");
+        }
+        let (tx, rx) = channel();
+        self.drain = Some(tx);
+        rx
     }
 
     pub fn into_framed(self) -> Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec> {
         self.framed
     }
-}
 
-impl<A> ActorFuture for ActorFramedCell<A>
-    where A: Actor + FramedActor,
-          A::Context: AsyncContext<A>,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
-{
-    type Item = ();
-    type Error = ();
-    type Actor = A;
-
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool
     {
         if !self.started {
             self.started = true;
@@ -454,44 +473,47 @@ impl<A> ActorFuture for ActorFramedCell<A>
         loop {
             let mut not_ready = true;
 
-            if let Some(mut fut) = self.response.take() {
-                match fut.poll_response(act, ctx) {
-                    Ok(Async::NotReady) => {
-                        self.response = Some(fut);
-                    },
-                    Ok(Async::Ready(_)) => (),
-                    Err(_) => {
-                        self.stream_closed = true;
+            if self.drain.is_none() {
+                // handler for frame decoder item may return future
+                // it needs to resolves first
+                if let Some(mut fut) = self.response.take() {
+                    match fut.poll_response(act, ctx) {
+                        Ok(Async::NotReady) => {
+                            self.response = Some(fut);
+                        },
+                        Ok(Async::Ready(_)) => (),
+                        Err(_) => {
+                            self.stream_closed = true;
+                        }
                     }
                 }
-            }
 
-            // framed stream
-            if !self.closing && !self.stream_closed && self.response.is_none() {
-                match self.framed.poll() {
-                    Ok(Async::Ready(Some(msg))) => {
-                        let fut =
-                            <Self::Actor as
-                             Handler<<<A as FramedActor>::Codec as Decoder>::Item,
-                                     <<A as FramedActor>::Codec as Decoder>::Error>>
-                            ::handle(act, msg, ctx);
-                        self.response = Some(fut);
-                        not_ready = false;
-                    }
-                    Ok(Async::Ready(None)) => {
-                        <A as StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                                            <<A as FramedActor>::Codec as Decoder>::Error>>
-                            ::finished(act, ctx);
-                        self.sink_closed = true;
-                        self.stream_closed = true;
-                    }
-                    Ok(Async::NotReady) => (),
-                    Err(err) => {
-                        self.sink_closed = true;
-                        self.stream_closed = true;
-                        <Self::Actor as Handler<<<A as FramedActor>::Codec as Decoder>::Item,
+                // framed stream
+                if !self.closing && !self.stream_closed && self.response.is_none() {
+                    match self.framed.poll() {
+                        Ok(Async::Ready(Some(msg))) => {
+                            let fut =
+                                <A as Handler<<<A as FramedActor>::Codec as Decoder>::Item,
+                                              <<A as FramedActor>::Codec as Decoder>::Error>>
+                                ::handle(act, msg, ctx);
+                            self.response = Some(fut);
+                            not_ready = false;
+                        }
+                        Ok(Async::Ready(None)) => {
+                            <A as StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
                                                 <<A as FramedActor>::Codec as Decoder>::Error>>
-                            ::error(act, err, ctx);
+                                ::finished(act, ctx);
+                            self.sink_closed = true;
+                            self.stream_closed = true;
+                        }
+                        Ok(Async::NotReady) => (),
+                        Err(err) => {
+                            self.sink_closed = true;
+                            self.stream_closed = true;
+                            <A as Handler<<<A as FramedActor>::Codec as Decoder>::Item,
+                                          <<A as FramedActor>::Codec as Decoder>::Error>>
+                                ::error(act, err, ctx);
+                        }
                     }
                 }
             }
@@ -526,7 +548,10 @@ impl<A> ActorFuture for ActorFramedCell<A>
                             not_ready = false;
                             self.sink_flushed = true;
                         }
-                        Ok(Async::NotReady) => (),
+                        Ok(Async::NotReady) =>
+                            if self.drain.is_some() {
+                                return true
+                            },
                         Err(err) => {
                             self.sink_closed = true;
                             self.sink_flushed = true;
@@ -539,17 +564,16 @@ impl<A> ActorFuture for ActorFramedCell<A>
                     self.sink_closed = true;
                 }
             }
+            if let Some(tx) = self.drain.take() {
+                let _ = tx.send(());
+            }
 
             // are we done
             if !not_ready {
                 continue
             }
 
-            if self.stream_closed && self.sink_closed {
-                return Ok(Async::Ready(()))
-            } else {
-                return Ok(Async::NotReady)
-            }
+            return false
         }
     }
 }
