@@ -35,7 +35,7 @@ dns = ["libc"]
 members = ["examples/chat"]
 
 [dependencies]
-actix_derive = { git = "https://github.com/actix/actix-derive" }
+actix_derive = "0.1"
 
 # tokio
 futures = "0.1"
