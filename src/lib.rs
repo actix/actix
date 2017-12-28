@@ -37,6 +37,9 @@ extern crate libc;
 #[macro_use]
 extern crate actix_derive;
 
+#[cfg(test)]
+extern crate bytes;
+
 #[doc(hidden)]
 pub use actix_derive::*;
 

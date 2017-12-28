@@ -215,8 +215,7 @@ impl<A> FramedContext<A>
         <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     pub(crate) fn new(act: A, io: <A as FramedActor>::Io,
-                      codec: <A as FramedActor>::Codec) -> FramedContext<A>
-    {
+                      codec: <A as FramedActor>::Codec) -> FramedContext<A> {
         FramedContext {
             act: act,
             state: ActorState::Started,
@@ -228,10 +227,8 @@ impl<A> FramedContext<A>
         }
     }
 
-    pub(crate) fn framed(act: A,
-                         framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>)
-                         -> FramedContext<A>
-    {
+    pub(crate) fn framed(act: A, framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>)
+                         -> FramedContext<A> {
         FramedContext {
             act: act,
             state: ActorState::Started,
@@ -524,9 +521,10 @@ impl<A> ActorFramedCell<A>
                         match self.framed.start_send(msg) {
                             Ok(AsyncSink::NotReady(msg)) => {
                                 self.sink_items.push_front(msg);
+                                return self.drain.is_some();
                             }
                             Ok(AsyncSink::Ready) => {
-                                self.flags |= FramedFlags::SINK_CLOSED;
+                                self.flags.remove(FramedFlags::SINK_FLUSHED);
                                 continue
                             }
                             Err(err) => {
@@ -574,5 +572,172 @@ impl<A> ActorFramedCell<A>
 
             return false
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{cmp, io};
+    use bytes::{Bytes, BytesMut};
+    use tokio_io::AsyncWrite;
+    use tokio_io::codec::{Encoder, Decoder};
+
+    struct Buffer {
+        buf: Bytes,
+        write: BytesMut,
+        err: Option<io::Error>,
+        write_err: Option<io::Error>,
+        write_block: bool,
+    }
+
+    impl Buffer {
+        fn new(data: &'static str) -> Buffer {
+            Buffer {
+                buf: Bytes::from(data),
+                write: BytesMut::new(),
+                err: None,
+                write_err: None,
+                write_block: false,
+            }
+        }
+        fn feed_data(&mut self, data: &'static str) {
+            let mut b = BytesMut::from(self.buf.as_ref());
+            b.extend(data.as_bytes());
+            self.buf = b.take().freeze();
+        }
+    }
+
+    impl AsyncRead for Buffer {}
+    impl io::Read for Buffer {
+        fn read(&mut self, dst: &mut [u8]) -> Result<usize, io::Error> {
+            if self.buf.is_empty() {
+                if self.err.is_some() {
+                    Err(self.err.take().unwrap())
+                } else {
+                    Err(io::Error::new(io::ErrorKind::WouldBlock, ""))
+                }
+            } else {
+                let size = cmp::min(self.buf.len(), dst.len());
+                let b = self.buf.split_to(size);
+                dst[..size].copy_from_slice(&b);
+                Ok(size)
+            }
+        }
+    }
+
+    impl io::Write for Buffer {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            if self.write_block {
+                Err(io::Error::new(io::ErrorKind::WouldBlock, ""))
+            } else if let Some(err) = self.write_err.take() {
+                Err(err)
+            } else {
+                self.write.extend(buf);
+                Ok(buf.len())
+            }
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    impl AsyncWrite for Buffer {
+        fn shutdown(&mut self) -> Poll<(), io::Error> {
+            Ok(Async::Ready(()))
+        }
+    }
+
+    struct Item(Bytes);
+    impl ResponseType for Item {
+        type Item = ();
+        type Error = ();
+    }
+
+    struct TestCodec;
+
+    impl Decoder for TestCodec {
+        type Item = Item;
+        type Error = io::Error;
+
+        fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+            if src.len() >= 2 {
+                Ok(Some(Item(src.split_to(2).freeze())))
+            } else {
+                Ok(None)
+            }
+        }
+    }
+
+    impl Encoder for TestCodec {
+        type Item = Bytes;
+        type Error = io::Error;
+
+        fn encode(&mut self, msg: Bytes, dst: &mut BytesMut) -> Result<(), Self::Error> {
+            dst.extend(msg);
+            Ok(())
+        }
+    }
+
+    struct TestActor {
+        msgs: Vec<Bytes>,
+    }
+
+    impl Actor for TestActor {
+        type Context = FramedContext<Self>;
+    }
+
+    impl FramedActor for TestActor {
+        type Io = Buffer;
+        type Codec = TestCodec;
+    }
+
+    impl StreamHandler<Item, io::Error> for TestActor {}
+
+    impl Handler<Item, io::Error> for TestActor {
+        fn handle(&mut self, msg: Item, _ctx: &mut Self::Context) -> Response<Self, Item> {
+            self.msgs.push(msg.0);
+            Self::empty()
+        }
+    }
+
+    #[test]
+    fn test_basic() {
+        let mut ctx = FramedContext::new(
+            TestActor{msgs: Vec::new()}, Buffer::new(""), TestCodec);
+
+        let _ = ctx.poll();
+        ctx.framed.as_mut().unwrap().framed.get_mut().feed_data("data");
+
+        // messages recevied
+        let _ = ctx.poll();
+        assert_eq!(ctx.act.msgs[0], b"da"[..]);
+        assert_eq!(ctx.act.msgs[1], b"ta"[..]);
+
+        // block sink
+        ctx.framed.as_mut().unwrap().framed.get_mut().write_block = true;
+        ctx.send(Bytes::from_static(b"11")).ok().unwrap();
+        ctx.send(Bytes::from_static(b"22")).ok().unwrap();
+
+        // drain
+        let _ = ctx.drain();
+
+        // new data in framed, actor is paused
+        ctx.framed.as_mut().unwrap().framed.get_mut().feed_data("bb");
+        let _ = ctx.poll();
+        assert_eq!(ctx.act.msgs.len(), 2);
+
+        // sink unblocked
+        ctx.framed.as_mut().unwrap().framed.get_mut().write_block = false;
+        let _ = ctx.poll();
+        assert_eq!(ctx.act.msgs.len(), 3);
+        assert_eq!(ctx.act.msgs[2], b"bb"[..]);
+
+        // sink data
+        assert_eq!(ctx.framed.as_mut().unwrap().framed.get_mut().write, b"1122"[..]);
+
+        // println!("TEST: {:?}", ctx.act.msgs);
     }
 }

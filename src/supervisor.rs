@@ -125,7 +125,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
     /// actor could be started immidietly or on first incoming message.
-    pub fn start_in<F>(addr: SyncAddress<Arbiter>, lazy: bool, f: F) -> Option<SyncAddress<A>>
+    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, lazy: bool, f: F) -> Option<SyncAddress<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
