@@ -16,6 +16,7 @@
 //! * Actor supervision.
 //! * Typed messages (No `Any` type). Generic messages are allowed.
 //! * Minimum supported Rust version: 1.20 or later
+#![allow(unused_imports)]
 
 #[macro_use]
 extern crate log;
@@ -33,7 +34,6 @@ extern crate tokio_signal;
 #[cfg(feature="signal")]
 extern crate libc;
 
-#[allow(unused_imports)]
 #[macro_use]
 extern crate actix_derive;
 

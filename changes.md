@@ -1,5 +1,11 @@
 # CHANGES
 
+
+## 0.3.6 (unreleased)
+
+* Added framed `drain` method.
+
+
 ## 0.3.5 (2017-12-23)
 
 * Re-export `actix_derive` package
