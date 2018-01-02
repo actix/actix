@@ -171,7 +171,7 @@ impl SocketType {
 #[derive(Copy, Clone, Debug)]
 /// Socket Protocol
 pub enum Protocol {
-    /// Unspecificed.
+    /// Unspecified.
     Unspec,
     /// Local to host (pipes and file-domain).
     Local,

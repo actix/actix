@@ -23,7 +23,7 @@ use utils::{TimerFunc, TimeoutWrapper};
 /// execution context. Also execution context controls lifecycle of an actor.
 ///
 /// Actors communicate exclusively by exchanging messages. Sender actor can
-/// wait for response. Actors are not referenced dirrectly, but by
+/// wait for response. Actors are not referenced directly, but by
 /// non thread safe [Address<A>](https://fafhrd91.github.io/actix/actix/struct.Address.html)
 /// or thread safe address
 /// [`SyncAddress<A>`](https://fafhrd91.github.io/actix/actix/struct.SyncAddress.html)
@@ -31,8 +31,8 @@ use utils::{TimerFunc, TimeoutWrapper};
 /// [`Handler<M>`](
 /// file:///Users/nikki/personal/ctx/target/doc/actix/trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
-/// handled in asynchronous fasion. Actor can spawn other actors or add futures or
-/// streams to execution context. Actor trait provides several method that allows
+/// handled in asynchronous fashion. Actor can spawn other actors or add futures or
+/// streams to execution context. Actor trait provides several methods that allow
 /// to control actor lifecycle.
 ///
 /// # Actor lifecycle
@@ -43,7 +43,7 @@ use utils::{TimerFunc, TimeoutWrapper};
 ///
 /// ## Running
 ///
-/// Aftre Actor's method `started` get called, actor transitiones to `Running` state.
+/// After Actor's method `started` get called, actor transitions to `Running` state.
 /// Actor can stay in `running` state indefinitely long.
 ///
 /// ## Stopping
@@ -250,8 +250,8 @@ pub trait FramedActor: Actor {
 ///
 /// Supervised actors can be managed by
 /// [Supervisor](https://fafhrd91.github.io/actix/actix/struct.Supervisor.html)
-/// Livecycle events are extended with `restarting` state for supervised actors.
-/// If actor failes supervisor create new execution context and restart actor.
+/// Lifecycle events are extended with `restarting` state for supervised actors.
+/// If actor fails supervisor creates new execution context and restarts actor.
 /// `restarting` method is called during restart. After call to this method
 /// Actor execute state changes to `Started` and normal lifecycle process starts.
 pub trait Supervised: Actor {
@@ -319,11 +319,11 @@ pub enum ActorState {
 /// Actor execution context
 ///
 /// Each actor runs within specific execution context. `Actor::Context` defines
-/// context. Execution context defines type of execution, actor communition channels
+/// context. Execution context defines type of execution, actor communication channels
 /// (message handling).
 pub trait ActorContext: Sized {
 
-    /// Gracefuly stop actor execution
+    /// Gracefully stop actor execution
     fn stop(&mut self);
 
     /// Terminate actor execution
