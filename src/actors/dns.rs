@@ -21,7 +21,7 @@
 //!            dns::Family::Inet.to_int(), 0, dns::SocketType::Stream))
 //!            .then(|res| {
 //!                println!("RESULT: {:?}", res);
-//!                Arbiter::system().send(msgs::SystemExit(0));
+//! #              Arbiter::system().send(msgs::SystemExit(0));
 //!                future::result(Ok(()))
 //!            }));
 //!

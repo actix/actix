@@ -47,7 +47,7 @@ use supervisor::Supervisor;
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
 ///       println!("ping");
-///       Arbiter::system().send(msgs::SystemExit(0));
+/// #     Arbiter::system().send(msgs::SystemExit(0));
 ///       Self::empty()
 ///    }
 /// }
@@ -76,7 +76,7 @@ use supervisor::Supervisor;
 ///
 ///    // Run system, this function blocks current thread
 ///    let code = sys.run();
-///    std::process::exit(code);
+/// #  std::process::exit(code);
 /// }
 /// ```
 pub struct Registry {

@@ -62,7 +62,7 @@
 //!     }
 //!
 //!     Arbiter::handle().spawn_fn(|| {
-//!         Arbiter::system().send(msgs::SystemExit(0));
+//! #        Arbiter::system().send(msgs::SystemExit(0));
 //!         futures::future::result(Ok(()))
 //!     });
 //!
