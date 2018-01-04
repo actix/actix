@@ -25,11 +25,8 @@ path = "src/lib.rs"
 [features]
 default = []
 
-# Include process signal support, on by default
-signal = ["tokio-signal", "libc"]
-
 # Include dns resolver actor
-dns = ["libc"]
+dns = []
 
 [workspace]
 members = ["examples/chat"]
@@ -42,17 +39,14 @@ bytes = "0.4"
 futures = "0.1"
 tokio-io = "0.1"
 tokio-core = "0.1"
+tokio-signal = "0.1"
 
 # other
 log = "0.3"
 crossbeam = "0.3"
 bitflags = "1.0"
-libc = { version = "0.2", optional = true }
+libc = { version = "0.2" }
 uuid = { version = "0.5", features = ["v4"] }
-
-[dependencies.tokio-signal]
-version = "0.1"
-optional = true
 
 [dev-dependencies]
 skeptic = "0.13"

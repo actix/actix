@@ -5,6 +5,8 @@
 
 * Added framed `drain` method.
 
+* Enable signal actor by default, make it compatible with windows.
+
 
 ## 0.3.5 (2017-12-23)
 

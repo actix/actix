@@ -36,7 +36,6 @@ pub struct Arbiter {
     sys: bool,
 }
 
-
 impl Actor for Arbiter {
     type Context = Context<Self>;
 
@@ -51,7 +50,7 @@ impl Arbiter {
 
     /// Spawn new thread and run event loop in spawned thread.
     /// Returns address of newly created arbiter.
-    pub fn new<T: ToString>(name: T) -> SyncAddress<Arbiter> {
+    pub fn new<T: Into<String>>(name: T) -> SyncAddress<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
 
         let id = Uuid::new_v4();
@@ -60,7 +59,7 @@ impl Arbiter {
         let sys_arbiter = Arbiter::system_arbiter();
         let sys_registry = Arbiter::system_registry().clone();
         let name =
-            format!("arbiter:{:?}:{:?}", id.hyphenated().to_string(), name.to_string());
+            format!("arbiter:{:?}:{:?}", id.hyphenated().to_string(), name.into());
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move|| {
             let mut core = Core::new().unwrap();
@@ -217,7 +216,7 @@ impl Handler<StopArbiter> for Arbiter {
     {
         if self.sys {
             warn!("System arbiter received `StopArbiter` message.
-                  To shutdown system `SystemExit` message should be send to `Address<System>`");
+                  To shutdown system, `SystemExit` message should be send to `Address<System>`");
         } else {
             STOP.with(|cell| {
                 if let Some(stop) = cell.borrow_mut().take() {

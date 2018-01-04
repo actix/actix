@@ -20,6 +20,7 @@
 
 #[macro_use]
 extern crate log;
+extern crate libc;
 extern crate uuid;
 extern crate crossbeam;
 #[macro_use]
@@ -28,11 +29,7 @@ extern crate bitflags;
 extern crate futures;
 extern crate tokio_io;
 extern crate tokio_core;
-
-#[cfg(feature="signal")]
 extern crate tokio_signal;
-#[cfg(feature="signal")]
-extern crate libc;
 
 #[macro_use]
 extern crate actix_derive;
