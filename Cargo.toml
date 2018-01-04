@@ -25,9 +25,6 @@ path = "src/lib.rs"
 [features]
 default = []
 
-# Include dns resolver actor
-dns = []
-
 [workspace]
 members = ["examples/chat"]
 

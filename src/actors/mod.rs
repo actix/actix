@@ -1,7 +1,6 @@
 //! Helper actors
 
-#[cfg(feature="signal")]
 pub mod signal;
 
-#[cfg(feature="dns")]
+#[cfg(unix)]
 pub mod dns;

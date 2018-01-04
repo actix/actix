@@ -75,7 +75,7 @@ use tokio_signal::unix;
 use prelude::*;
 
 /// Different types of process signals
-#[derive(PartialEq, Clone, Copy, Debug, Message)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum SignalType {
     /// SIGHUP
     Hup,
@@ -89,9 +89,18 @@ pub enum SignalType {
     Child,
 }
 
+impl ResponseType for SignalType {
+    type Item = ();
+    type Error = ();
+}
+
 /// Process signal message
-#[derive(Message)]
 pub struct Signal(pub SignalType);
+
+impl ResponseType for Signal {
+    type Item = ();
+    type Error = ();
+}
 
 /// An actor implementation of Unix signal handling
 pub struct ProcessSignals {
@@ -178,8 +187,12 @@ impl Handler<SignalType, io::Error> for ProcessSignals {
 }
 
 /// Subscribe to process signals.
-#[derive(Message)]
 pub struct Subscribe(pub Box<Subscriber<Signal> + Send>);
+
+impl ResponseType for Subscribe {
+    type Item = ();
+    type Error = ();
+}
 
 /// Add subscriber for signals
 impl Handler<Subscribe> for ProcessSignals {

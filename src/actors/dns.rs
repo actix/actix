@@ -52,6 +52,11 @@ pub struct GetAddressInfo {
     socktype: SocketType,
 }
 
+impl ResponseType for GetAddressInfo {
+    type Item = Vec<AddrInfo>;
+    type Error = LookupError;
+}
+
 impl Actor for DnsResolver {
     type Context = SyncContext<Self>;
 }
@@ -66,11 +71,6 @@ impl GetAddressInfo {
             flags: flags,
             socktype: socktype}
     }
-}
-
-impl ResponseType<GetAddressInfo> for DnsResolver {
-    type Item = Vec<AddrInfo>;
-    type Error = LookupError;
 }
 
 impl Handler<GetAddressInfo> for DnsResolver {
