@@ -1,7 +1,7 @@
 # CHANGES
 
 
-## 0.4.0 (unreleased)
+## 0.4.0 (2018-01-05)
 
 * Simplify `Handler` trait (E type removed).
 
@@ -13,7 +13,7 @@
 
 * Enable signal actor by default, make it compatible with windows.
 
-* Allow to restart sync actors.
+* Added `SyncContext::restart()` method, which allow to restart sync actor.
 
 * Changed behaviour of `Address::call`, if request get drop message cancels.
 
