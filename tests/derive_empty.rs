@@ -24,7 +24,7 @@ impl Handler<Empty> for EmptyActor {
 fn response_derive_empty() {
     let system = System::new("test");
     let addr: Address<_> = EmptyActor.start();
-    let res = addr.call_fut(Empty, false);
+    let res = addr.call_fut(Empty);
     
     system.handle().spawn(res.then(|res| {
         match res {

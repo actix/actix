@@ -15,7 +15,7 @@
 
 * Allow to restart sync actors.
 
-* Added `cancel on drop` flag to send message process.
+* Changed behaviour of `Address::call`, if request get drop message cancels.
 
 
 ## 0.3.5 (2017-12-23)

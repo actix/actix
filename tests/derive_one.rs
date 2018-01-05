@@ -27,7 +27,7 @@ impl Handler<Sum> for SumActor {
 pub fn response_derive_one() {
     let system = System::new("test");
     let addr: Address<_> = SumActor.start();
-    let res = addr.call_fut(Sum(10, 5), false);
+    let res = addr.call_fut(Sum(10, 5));
     
     system.handle().spawn(res.then(|res| {
         match res {
