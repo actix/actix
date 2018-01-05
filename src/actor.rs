@@ -10,8 +10,8 @@ use arbiter::Arbiter;
 use address::ActorAddress;
 use envelope::ToEnvelope;
 use handler::{Handler, StreamHandler, ResponseType};
-use cells::{ActorMessageCell, ActorDelayedMessageCell};
-use context::{Context, ActorFutureCell, ActorStreamCell};
+use cells::{ActorMessageCell, ActorDelayedMessageCell, ActorStreamCell, ActorMessageStreamCell};
+use context::{Context, ActorFutureCell};
 use framed::FramedContext;
 use utils::{TimerFunc, TimeoutWrapper};
 
@@ -364,12 +364,25 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               S::Item: ResponseType,
-              A: Handler<Result<S::Item, S::Error>> + StreamHandler<Result<S::Item, S::Error>>
+              A: StreamHandler<Result<S::Item, S::Error>>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
         } else {
             self.spawn(ActorStreamCell::new(fut));
+        }
+    }
+
+    /// This method is similar to `add_stream` but it skips errors.
+    fn add_message_stream<S>(&mut self, fut: S)
+        where S: Stream<Error=()> + 'static,
+              S::Item: ResponseType,
+              A: StreamHandler<S::Item>
+    {
+        if self.state() == ActorState::Stopped {
+            error!("Context::add_message_stream called for stopped actor.");
+        } else {
+            self.spawn(ActorMessageStreamCell::new(fut));
         }
     }
 
