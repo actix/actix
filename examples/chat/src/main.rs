@@ -9,9 +9,9 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 
-extern crate actix;
+#[macro_use] extern crate actix;
 
-use std::{io, net};
+use std::net;
 use std::str::FromStr;
 use futures::Stream;
 use tokio_core::net::{TcpListener, TcpStream};
@@ -38,32 +38,23 @@ impl Actor for Server {
     type Context = Context<Self>;
 }
 
+#[derive(Message)]
 struct TcpConnect(pub TcpStream, pub net::SocketAddr);
 
-impl ResponseType for TcpConnect {
-    type Item = ();
-    type Error = ();
-}
-
-
 /// Handle stream of TcpStream's
-impl StreamHandler<TcpConnect, io::Error> for Server {}
+impl Handler<TcpConnect> for Server {
+    /// this is response for message, which is defined by `ResponseType` trait
+    /// in this case we just return unit.
+    type Result = ();
 
-impl Handler<TcpConnect, io::Error> for Server {
-
-    fn handle(&mut self, msg: TcpConnect, _: &mut Context<Self>)
-              -> Response<Self, TcpConnect>
-    {
+    fn handle(&mut self, msg: TcpConnect, _: &mut Context<Self>) {
         // For each incoming connection we create `ChatSession` actor
         // with out chat server address.
         let server = self.chat.clone();
         let _: () = ChatSession::new(server).framed(msg.0, ChatCodec);
-
-        // this is response for message, which is defined by `ResponseType` trait
-        // in this case we just return unit.
-        Self::empty()
     }
 }
+impl StreamHandler<TcpConnect> for Server {}
 
 
 fn main() {
@@ -82,7 +73,8 @@ fn main() {
     // So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
     let _: () = Server::create(|ctx| {
-        ctx.add_stream(listener.incoming().map(|(st, addr)| TcpConnect(st, addr)));
+        ctx.add_message_stream(listener.incoming()
+                               .map_err(|_| ()).map(|(st, addr)| TcpConnect(st, addr)));
         Server{chat: server}
     });
 

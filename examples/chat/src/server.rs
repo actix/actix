@@ -26,16 +26,13 @@ impl ResponseType for Connect {
 
 
 /// Session is disconnected
+#[derive(Message)]
 pub struct Disconnect {
     pub id: usize,
 }
 
-impl ResponseType for Disconnect {
-    type Item = ();
-    type Error = ();
-}
-
 /// Send message to specific room
+#[derive(Message)]
 pub struct Message {
     /// Id of the client session
     pub id: usize,
@@ -43,11 +40,6 @@ pub struct Message {
     pub msg: String,
     /// Room name
     pub room: String,
-}
-
-impl ResponseType for Message {
-    type Item = ();
-    type Error = ();
 }
 
 /// List of available rooms
@@ -59,16 +51,12 @@ impl ResponseType for ListRooms {
 }
 
 /// Join room, if room does not exists create new one.
+#[derive(Message)]
 pub struct Join {
     /// Client id
     pub id: usize,
     /// Room name
     pub name: String,
-}
-
-impl ResponseType for Join {
-    type Item = ();
-    type Error = ();
 }
 
 /// `ChatServer` manages chat rooms and responsible for coordinating chat session.
@@ -119,8 +107,9 @@ impl Actor for ChatServer {
 ///
 /// Register new session and assign unique id to this session
 impl Handler<Connect> for ChatServer {
+    type Result = ResponseResult<Connect>;
 
-    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Response<Self, Connect> {
+    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         println!("Someone joined");
 
         // notify all users in same room
@@ -134,14 +123,15 @@ impl Handler<Connect> for ChatServer {
         self.rooms.get_mut(&"Main".to_owned()).unwrap().insert(id);
 
         // send id back
-        Self::reply(id)
+        Ok(id)
     }
 }
 
 /// Handler for Disconnect message.
 impl Handler<Disconnect> for ChatServer {
+    type Result = ();
 
-    fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) -> Response<Self, Disconnect> {
+    fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
         println!("Someone disconnected");
 
         let mut rooms: Vec<String> = Vec::new();
@@ -159,40 +149,39 @@ impl Handler<Disconnect> for ChatServer {
         for room in rooms {
             self.send_message(&room, "Someone disconnected", 0);
         }
-
-        Self::empty()
     }
 }
 
 /// Handler for Message message.
 impl Handler<Message> for ChatServer {
+    type Result = ();
 
-    fn handle(&mut self, msg: Message, _: &mut Context<Self>) -> Response<Self, Message> {
+    fn handle(&mut self, msg: Message, _: &mut Context<Self>) {
         self.send_message(&msg.room, msg.msg.as_str(), msg.id);
-
-        Self::empty()
     }
 }
 
 /// Handler for `ListRooms` message.
 impl Handler<ListRooms> for ChatServer {
+    type Result = ResponseResult<ListRooms>;
 
-    fn handle(&mut self, _: ListRooms, _: &mut Context<Self>) -> Response<Self, ListRooms> {
+    fn handle(&mut self, _: ListRooms, _: &mut Context<Self>) -> Self::Result {
         let mut rooms = Vec::new();
 
         for key in self.rooms.keys() {
             rooms.push(key.to_owned())
         }
 
-        Self::reply(rooms)
+        Ok(rooms)
     }
 }
 
 /// Join room, send disconnect message to old room
 /// send join message to new room
 impl Handler<Join> for ChatServer {
+    type Result = ();
 
-    fn handle(&mut self, msg: Join, _: &mut Context<Self>) -> Response<Self, Join> {
+    fn handle(&mut self, msg: Join, _: &mut Context<Self>) {
         let Join {id, name} = msg;
         let mut rooms = Vec::new();
 
@@ -212,7 +201,5 @@ impl Handler<Join> for ChatServer {
         }
         self.send_message(&name, "Someone connected", id);
         self.rooms.get_mut(&name).unwrap().insert(id);
-
-        Self::empty()
     }
 }

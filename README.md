@@ -24,7 +24,7 @@ To use `actix`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-actix = "0.3"
+actix = { git = "https://github.com/actix/actix" }
 ```
 
 You may consider to check 
