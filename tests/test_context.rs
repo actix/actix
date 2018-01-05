@@ -26,14 +26,14 @@ impl Actor for MyActor {
     fn started(&mut self, ctx: &mut Context<MyActor>) {
         match self.op {
             Op::Cancel => {
-                let handle = ctx.notify(TimeoutMessage, Duration::new(0, 100));
+                let handle = ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
                 ctx.cancel_future(handle);
             },
             Op::Timeout => {
-                ctx.notify(TimeoutMessage, Duration::new(0, 100));
+                ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
             },
             Op::TimeoutStop => {
-                ctx.notify(TimeoutMessage, Duration::new(0, 100));
+                ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
                 ctx.stop();
             },
             Op::RunAfter => {

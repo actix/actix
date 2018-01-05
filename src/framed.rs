@@ -25,9 +25,6 @@ use message::Response;
 /// [Framed](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html) object
 pub struct FramedContext<A>
     where A: FramedActor + Actor<Context=FramedContext<A>>,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     act: A,
     state: ActorState,
@@ -40,17 +37,11 @@ pub struct FramedContext<A>
 
 impl<A> ToEnvelope<A> for FramedContext<A>
     where A: FramedActor + Actor<Context=FramedContext<A>>,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
         where M: ResponseType + Send + 'static,
               A: Handler<M>,
               A: FramedActor + Actor<Context=FramedContext<A>>,
-              A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                               <<A as FramedActor>::Codec as Decoder>::Error>,
-    <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
               M::Item: Send,
               M::Error: Send,
     {
@@ -60,9 +51,6 @@ impl<A> ToEnvelope<A> for FramedContext<A>
 
 impl<A> ActorContext for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     /// Stop actor execution
     ///
@@ -91,9 +79,6 @@ impl<A> ActorContext for FramedContext<A>
 
 impl<A> AsyncContext<A> for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
@@ -121,9 +106,6 @@ impl<A> AsyncContext<A> for FramedContext<A>
 
 impl<A> AsyncContextApi<A> for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
         &mut self.address
@@ -132,9 +114,6 @@ impl<A> AsyncContextApi<A> for FramedContext<A>
 
 impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     /// Send item to sink. If sink is closed item returned as an error.
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item)
@@ -185,9 +164,6 @@ impl<A> FramedContext<A>
 
 impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     #[doc(hidden)]
     pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
@@ -210,9 +186,6 @@ impl<A> FramedContext<A>
 
 impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     pub(crate) fn new(act: A, io: <A as FramedActor>::Io,
                       codec: <A as FramedActor>::Codec) -> FramedContext<A> {
@@ -267,9 +240,6 @@ impl<A> FramedContext<A>
 #[doc(hidden)]
 impl<A> Future for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     type Item = ();
     type Error = ();
@@ -373,9 +343,6 @@ impl<A> Future for FramedContext<A>
 
 impl<A> std::fmt::Debug for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "FramedContext({:?}: actor:{:?}) {{ state: {:?}, connected: {}, items: {} }}",
@@ -400,12 +367,8 @@ pub(crate)
 struct ActorFramedCell<A>
     where A: Actor + FramedActor,
           A::Context: AsyncContext<A>,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     flags: FramedFlags,
-    response: Option<Response<A, <<A as FramedActor>::Codec as Decoder>::Item>>,
     framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>,
     sink_items: VecDeque<<<A as FramedActor>::Codec as Encoder>::Item>,
     drain: Option<UnsyncSender<()>>,
@@ -414,16 +377,12 @@ struct ActorFramedCell<A>
 impl<A> ActorFramedCell<A>
     where A: Actor + FramedActor,
           A::Context: AsyncContext<A>,
-          A: StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                           <<A as FramedActor>::Codec as Decoder>::Error>,
-        <<A as FramedActor>::Codec as Decoder>::Item: ResponseType,
 {
     pub fn new(framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>)
                -> ActorFramedCell<A>
     {
         ActorFramedCell {
             flags: FramedFlags::SINK_FLUSHED,
-            response: None,
             framed: framed,
             sink_items: VecDeque::new(),
             drain: None,
@@ -461,55 +420,26 @@ impl<A> ActorFramedCell<A>
         self.framed
     }
 
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool
-    {
-        if !self.flags.contains(FramedFlags::STARTED) {
-            self.flags.insert(FramedFlags::STARTED);
-            <A as StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                                <<A as FramedActor>::Codec as Decoder>::Error>>
-                ::started(act, ctx);
-        }
-
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool {
         loop {
             let mut not_ready = true;
 
-            if self.drain.is_none() {
-                // handler for frame decoder item may return future
-                // it needs to resolves first
-                if let Some(mut fut) = self.response.take() {
-                    match fut.poll_response(act, ctx) {
-                        Ok(Async::NotReady) => self.response = Some(fut),
-                        Ok(Async::Ready(_)) => (),
-                        Err(_) => self.flags.insert(FramedFlags::STREAM_CLOSED),
+            // framed stream
+            if self.drain.is_none() && !self.flags.contains(FramedFlags::CLOSING) &&
+                !self.flags.contains(FramedFlags::STREAM_CLOSED)
+            {
+                match self.framed.poll() {
+                    Ok(Async::Ready(Some(msg))) => {
+                        not_ready = false;
+                        <A as FramedActor>::handle(act, Ok(msg), ctx);
                     }
-                }
-
-                // framed stream
-                if !self.flags.contains(FramedFlags::CLOSING) &&
-                    !self.flags.contains(FramedFlags::STREAM_CLOSED) && self.response.is_none()
-                {
-                    match self.framed.poll() {
-                        Ok(Async::Ready(Some(msg))) => {
-                            let fut =
-                                <A as Handler<<<A as FramedActor>::Codec as Decoder>::Item,
-                                              <<A as FramedActor>::Codec as Decoder>::Error>>
-                                ::handle(act, msg, ctx);
-                            self.response = Some(fut);
-                            not_ready = false;
-                        }
-                        Ok(Async::Ready(None)) => {
-                            <A as StreamHandler<<<A as FramedActor>::Codec as Decoder>::Item,
-                                                <<A as FramedActor>::Codec as Decoder>::Error>>
-                                ::finished(act, ctx);
-                            self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                        }
-                        Ok(Async::NotReady) => (),
-                        Err(err) => {
-                            self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                            <A as Handler<<<A as FramedActor>::Codec as Decoder>::Item,
-                                          <<A as FramedActor>::Codec as Decoder>::Error>>
-                                ::error(act, err, ctx);
-                        }
+                    Ok(Async::Ready(None)) => {
+                        self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                    }
+                    Ok(Async::NotReady) => (),
+                    Err(err) => {
+                        self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                        <A as FramedActor>::handle(act, Err(err), ctx);
                     }
                 }
             }
@@ -692,14 +622,11 @@ mod tests {
     impl FramedActor for TestActor {
         type Io = Buffer;
         type Codec = TestCodec;
-    }
 
-    impl StreamHandler<Item, io::Error> for TestActor {}
-
-    impl Handler<Item, io::Error> for TestActor {
-        fn handle(&mut self, msg: Item, _ctx: &mut Self::Context) -> Response<Self, Item> {
-            self.msgs.push(msg.0);
-            Self::empty()
+        fn handle(&mut self, msg: Result<Item, io::Error>, _ctx: &mut Self::Context) {
+            if let Ok(item) = msg {
+                self.msgs.push(item.0);
+            }
         }
     }
 

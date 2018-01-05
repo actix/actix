@@ -43,6 +43,7 @@ pub use actix_derive::*;
 mod actor;
 mod arbiter;
 mod address;
+mod cells;
 mod context;
 mod envelope;
 mod framed;

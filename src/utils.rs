@@ -35,27 +35,25 @@ impl<T> Default for Condition<T> where T: Clone {
     }
 }
 
-pub(crate) struct TimeoutWrapper<M, E> {
+pub(crate) struct TimeoutWrapper<M> {
     msg: Option<M>,
-    err: PhantomData<E>,
     timeout: Timeout,
 }
 
-impl<M, E> TimeoutWrapper<M, E> {
-    pub fn new(msg: M, timeout: Duration) -> TimeoutWrapper<M, E> {
+impl<M> TimeoutWrapper<M> {
+    pub fn new(msg: M, timeout: Duration) -> TimeoutWrapper<M> {
         TimeoutWrapper{
             msg: Some(msg),
-            err: PhantomData,
             timeout: Timeout::new(timeout, Arbiter::handle()).unwrap()}
     }
 }
 
 
 #[doc(hidden)]
-impl<M, E> Future for TimeoutWrapper<M, E>
+impl<M> Future for TimeoutWrapper<M>
 {
     type Item = M;
-    type Error = E;
+    type Error = ();
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         match self.timeout.poll() {

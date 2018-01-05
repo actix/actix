@@ -19,20 +19,21 @@ impl Actor for MyActor {
     type Context = Context<Self>;
 }
 
-impl StreamHandler<Num> for MyActor {
+impl StreamHandler<Result<Num, ()>> for MyActor {
     fn finished(&mut self, _: &mut Self::Context) {
         Arbiter::system().send(msgs::SystemExit(0));
     }
 }
 
-impl Handler<Num> for MyActor {
+impl Handler<Result<Num, ()>> for MyActor {
 
-    fn error(&mut self, _: (), _: &mut Self::Context) {
-        self.1.store(true, Ordering::Relaxed);
-    }
-
-    fn handle(&mut self, msg: Num, _: &mut Context<MyActor>) -> Response<Self, Num> {
-        self.0.store(self.0.load(Ordering::Relaxed) + msg.0, Ordering::Relaxed);
+    fn handle(&mut self, msg: Result<Num, ()>, _: &mut Context<MyActor>)
+              -> Response<Self, Result<Num, ()>> {
+        if let Ok(msg) = msg {
+            self.0.store(self.0.load(Ordering::Relaxed) + msg.0, Ordering::Relaxed);
+        } else {
+            self.1.store(true, Ordering::Relaxed);
+        }
         Self::empty()
     }
 }

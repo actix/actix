@@ -165,24 +165,28 @@ impl SystemService for ProcessSignals {
 }
 
 #[doc(hidden)]
-impl StreamHandler<SignalType, io::Error> for ProcessSignals {}
+impl StreamHandler<io::Result<SignalType>> for ProcessSignals {}
 
 #[doc(hidden)]
-impl Handler<SignalType, io::Error> for ProcessSignals {
+impl Handler<io::Result<SignalType>> for ProcessSignals {
 
-    fn handle(&mut self, msg: SignalType, _: &mut Context<Self>) -> Response<Self, SignalType>
+    fn handle(&mut self, msg: io::Result<SignalType>, _: &mut Context<Self>)
+              -> Response<Self, io::Result<SignalType>>
     {
-        let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
-        for subscr in subscribers {
-            if subscr.send(Signal(msg)).is_ok() {
-                self.subscribers.push(subscr);
+        match msg {
+            Ok(sig) => {
+                let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
+                for subscr in subscribers {
+                    if subscr.send(Signal(sig)).is_ok() {
+                        self.subscribers.push(subscr);
+                    }
+                }
+            },
+            Err(err) => {
+                error!("Error during signal handling: {}", err);
             }
         }
         Self::empty()
-    }
-
-    fn error(&mut self, err: io::Error, _: &mut Context<ProcessSignals>) {
-        error!("Error during signal handling: {}", err);
     }
 }
 

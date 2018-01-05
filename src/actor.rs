@@ -9,6 +9,7 @@ use message::Response;
 use arbiter::Arbiter;
 use address::ActorAddress;
 use envelope::ToEnvelope;
+use cells::{ActorMessageCell, ActorDelayedMessageCell};
 use context::{Context, ActorFutureCell, ActorStreamCell};
 use framed::FramedContext;
 use utils::{TimerFunc, TimeoutWrapper};
@@ -183,25 +184,24 @@ pub trait FramedActor: Actor {
     /// Codec type
     type Codec: Encoder + Decoder;
 
+    fn handle(&mut self,
+              msg: Result<<<Self as FramedActor>::Codec as Decoder>::Item,
+                          <<Self as FramedActor>::Codec as Decoder>::Error>,
+              ctx: &mut Self::Context);
+
     /// Method is called on sink error. By default it does nothing.
     fn error(&mut self, err: <Self::Codec as Encoder>::Error, ctx: &mut Self::Context) {}
 
     /// Start new actor, returns address of this actor.
     fn framed<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
-        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
-                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
-            <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
+        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>
     {
         Self::from_framed(self, io.framed(codec))
     }
 
     /// Start new actor, returns address of this actor.
     fn from_framed<Addr>(self, framed: Framed<Self::Io, Self::Codec>) -> Addr
-        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
-                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
-            <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
+        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>
     {
         let mut ctx = FramedContext::framed(self, framed);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
@@ -213,9 +213,6 @@ pub trait FramedActor: Actor {
     /// Actor is created by factory function.
     fn create_framed<Addr, F>(io: Self::Io, codec: Self::Codec, f: F) -> Addr
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
-                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
-            <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
               F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
     {
         Self::create_from_framed(io.framed(codec), f)
@@ -225,9 +222,6 @@ pub trait FramedActor: Actor {
     /// Actor is created by factory function.
     fn create_from_framed<Addr, F>(framed: Framed<Self::Io, Self::Codec>, f: F) -> Addr
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              Self: StreamHandler<<<Self as FramedActor>::Codec as Decoder>::Item,
-                                  <<Self as FramedActor>::Codec as Decoder>::Error>,
-             <<Self as FramedActor>::Codec as Decoder>::Item: ResponseType,
               F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
     {
         let mut ctx = FramedContext::framed(unsafe{std::mem::uninitialized()}, framed);
@@ -266,16 +260,11 @@ pub trait Supervised: Actor {
 /// incoming messages, streams, futures.
 ///
 /// `M` is a message which can be handled by the actor.
-/// `E` is an optional error type, if message handler is used for handling
-/// Future or Stream results, then `E` type has to be set to correspondent `Error` type.
 #[allow(unused_variables)]
-pub trait Handler<M, E=()> where Self: Actor, M: ResponseType
+pub trait Handler<M> where Self: Actor, M: ResponseType
 {
     /// Method is called for every message received by this Actor
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Response<Self, M>;
-
-    /// Method is called on error. By default it does nothing.
-    fn error(&mut self, err: E, ctx: &mut Self::Context) {}
 }
 
 /// Message response type
@@ -288,11 +277,16 @@ pub trait ResponseType {
     type Error;
 }
 
+impl<I, E> ResponseType for Result<I, E> where I: ResponseType {
+    type Item = <I as ResponseType>::Item;
+    type Error = ();
+}
+
 /// Stream handler
 ///
 /// `StreamHandler` is an extension of a `Handler` with stream specific methods.
 #[allow(unused_variables)]
-pub trait StreamHandler<M, E=()>: Handler<M, E>
+pub trait StreamHandler<M>: Handler<M>
     where Self: Actor,
           M: ResponseType,
 {
@@ -366,25 +360,15 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// This method allow to handle Future in similar way as normal actor messages.
     ///
     /// ```rust
-    /// extern crate actix;
-    ///
-    /// use std::time::Duration;
+    /// # extern crate actix;
     /// use actix::prelude::*;
     ///
-    /// // Message
+    /// #[derive(Message)]
     /// struct Ping;
-    ///
-    /// impl ResponseType for Ping {
-    ///     type Item = ();
-    ///     type Error = ();
-    /// }
     ///
     /// struct MyActor;
     ///
-    /// impl Handler<Ping, std::io::Error> for MyActor {
-    ///     fn error(&mut self, err: std::io::Error, ctx: &mut Context<MyActor>) {
-    ///         println!("Error: {}", err);
-    ///     }
+    /// impl Handler<Ping> for MyActor {
     ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) -> Response<Self, Ping> {
     ///         println!("PING");
     ///         Self::empty()
@@ -396,15 +380,15 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     ///
     ///    fn started(&mut self, ctx: &mut Context<Self>) {
     ///        // send `Ping` to self.
-    ///        ctx.notify(Ping, Duration::new(0, 1000));
+    ///        ctx.notify(Ping);
     ///    }
     /// }
-    /// fn main() {}
+    /// # fn main() {}
     /// ```
     fn add_future<F>(&mut self, fut: F)
         where F: Future + 'static,
               F::Item: ResponseType,
-              A: Handler<F::Item, F::Error>
+              A: Handler<Result<F::Item, F::Error>>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_future called for stopped actor.");
@@ -421,7 +405,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               S::Item: ResponseType,
-              A: Handler<S::Item, S::Error> + StreamHandler<S::Item, S::Error>
+              A: Handler<Result<S::Item, S::Error>> + StreamHandler<Result<S::Item, S::Error>>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
@@ -430,17 +414,29 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         }
     }
 
+    /// Send message `msg` to self.
+    fn notify<M>(&mut self, msg: M)
+        where A: Handler<M>, M: ResponseType + 'static
+    {
+        if self.state() == ActorState::Stopped {
+            error!("Context::add_timeout called for stopped actor.");
+        } else {
+            let h = self.spawn(ActorMessageCell::new(msg));
+            self.cancel_future_on_stop(h);
+        }
+    }
+
     /// Send message `msg` to self after specified period of time. Returns spawn handle
     /// which could be used for cancelation. Notification get cancelled
     /// if context's stop method get called.
-    fn notify<M, E>(&mut self, msg: M, after: Duration) -> SpawnHandle
-        where A: Handler<M, E>, M: ResponseType + 'static, E: 'static
+    fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
+        where A: Handler<M>, M: ResponseType + 'static
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");
             SpawnHandle::default()
         } else {
-            let h = self.spawn(ActorFutureCell::new(TimeoutWrapper::new(msg, after)));
+            let h = self.spawn(ActorDelayedMessageCell::new(TimeoutWrapper::new(msg, after)));
             self.cancel_future_on_stop(h);
             h
         }

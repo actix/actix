@@ -485,18 +485,18 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
 
 pub(crate)
 struct ActorFutureCell<A, M, F, E>
-    where A: Actor + Handler<M, E>,
+    where A: Actor + Handler<Result<M, E>>,
           A::Context: AsyncContext<A>,
           M: ResponseType,
           F: Future<Item=M, Error=E>,
 {
     act: std::marker::PhantomData<A>,
     fut: F,
-    result: Option<Response<A, M>>,
+    result: Option<Response<A, Result<M, E>>>,
 }
 
 impl<A, M, F, E> ActorFutureCell<A, M, F, E>
-    where A: Actor + Handler<M, E>,
+    where A: Actor + Handler<Result<M, E>>,
           A::Context: AsyncContext<A>,
           M: ResponseType,
           F: Future<Item=M, Error=E>,
@@ -506,12 +506,13 @@ impl<A, M, F, E> ActorFutureCell<A, M, F, E>
         ActorFutureCell {
             act: std::marker::PhantomData,
             fut: fut,
-            result: None }
+            result: None,
+        }
     }
 }
 
 impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
-    where A: Actor + Handler<M, E>,
+    where A: Actor + Handler<Result<M, E>>,
           A::Context: AsyncContext<A>,
           M: ResponseType,
           F: Future<Item=M, Error=E>,
@@ -538,14 +539,14 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
 
             match self.fut.poll() {
                 Ok(Async::Ready(msg)) => {
-                    let fut = <Self::Actor as Handler<M, E>>::handle(act, msg, ctx);
+                    let fut = <Self::Actor as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
                     self.result = Some(fut);
                     continue
                 }
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
                 Err(err) => {
-                    <Self::Actor as Handler<M, E>>::error(act, err, ctx);
+                    <Self::Actor as Handler<Result<M, E>>>::handle(act, Err(err), ctx);
                     return Err(())
                 }
             }
@@ -556,19 +557,19 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
 pub(crate)
 struct ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + Handler<M, E> + StreamHandler<M, E>,
+          A: Actor + StreamHandler<Result<M, E>>,
           A::Context: AsyncContext<A>,
           M: ResponseType,
 {
     act: std::marker::PhantomData<A>,
     started: bool,
-    fut: Option<Response<A, M>>,
+    fut: Option<Response<A, Result<M, E>>>,
     stream: S,
 }
 
 impl<A, M, E, S> ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
-          A: Actor + Handler<M, E> + StreamHandler<M, E>,
+          A: Actor + StreamHandler<Result<M, E>>,
           A::Context: AsyncContext<A>,
           M: ResponseType
 {
@@ -584,7 +585,7 @@ impl<A, M, E, S> ActorStreamCell<A, M, E, S>
 
 impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + Handler<M, E> + StreamHandler<M, E>,
+          A: Actor + Handler<Result<M, E>> + StreamHandler<Result<M, E>>,
           A::Context: AsyncContext<A>,
           M: ResponseType
 {
@@ -596,7 +597,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
     {
         if !self.started {
             self.started = true;
-            <A as StreamHandler<M, E>>::started(act, ctx);
+            <A as StreamHandler<Result<M, E>>>::started(act, ctx);
         }
 
         loop {
@@ -613,18 +614,18 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = <Self::Actor as Handler<M, E>>::handle(act, msg, ctx);
+                    let fut = <Self::Actor as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
                     self.fut = Some(fut);
                     continue
                 }
                 Ok(Async::Ready(None)) => {
-                    <A as StreamHandler<M, E>>::finished(act, ctx);
+                    <A as StreamHandler<Result<M, E>>>::finished(act, ctx);
                     return Ok(Async::Ready(()))
                 }
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
                 Err(err) => {
-                    <Self::Actor as Handler<M, E>>::error(act, err, ctx);
+                    <Self::Actor as Handler<Result<M, E>>>::handle(act, Err(err), ctx);
                     continue
                 }
             }
