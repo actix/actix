@@ -132,7 +132,7 @@ impl<A> FramedContext<A>
     /// FramedContext::stop() could be used to force stop sending process.
     pub fn close(&mut self) {
         self.items.stop();
-        if let Some(ref mut framed) = self.framed.take() {
+        if let Some(ref mut framed) = self.framed {
             framed.close();
         }
     }
@@ -199,8 +199,7 @@ impl<A> FramedContext<A>
 impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
-    pub(crate) fn new(act: A, io: <A as FramedActor>::Io,
-                      codec: <A as FramedActor>::Codec) -> FramedContext<A> {
+    pub(crate) fn new(act: A, io: A::Io, codec: A::Codec) -> FramedContext<A> {
         FramedContext {
             act: act,
             state: ActorState::Started,
@@ -212,8 +211,7 @@ impl<A> FramedContext<A>
         }
     }
 
-    pub(crate) fn framed(act: A, framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>)
-                         -> FramedContext<A> {
+    pub(crate) fn framed(act: A, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
         FramedContext {
             act: act,
             state: ActorState::Started,
