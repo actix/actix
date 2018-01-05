@@ -16,7 +16,7 @@ fn test_execute() {
     Arbiter::handle().spawn(
         addr.call_fut(Execute::new(|| {
             Ok(Arbiter::name())
-        })).then(|res: Result<Result<_, ()>, _>| {
+        }), false).then(|res: Result<Result<_, ()>, _>| {
             Arbiter::system().send(SystemExit(0));
 
             match res {

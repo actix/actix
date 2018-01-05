@@ -14,7 +14,8 @@ use context::Context;
 pub trait ToEnvelope<A: Actor>
 {
     /// Pack message into suitable envelope
-    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+               cancel_on_drop: bool) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               M::Item: Send,
@@ -24,13 +25,18 @@ pub trait ToEnvelope<A: Actor>
 impl<A> ToEnvelope<A> for Context<A>
     where A: Actor<Context=Context<A>>
 {
-    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+               cancel_on_drop: bool) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + 'static,
               M::Item: Send,
               M::Error: Send,
     {
-        Envelope(Box::new(RemoteEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
+        Envelope(Box::new(
+            RemoteEnvelope{msg: Some(msg),
+                           tx: tx,
+                           act: PhantomData,
+                           cancel_on_drop: cancel_on_drop}))
     }
 }
 
@@ -44,12 +50,18 @@ impl<A> Envelope<A> where A: Actor {
         Envelope(Box::new(envelop))
     }
 
-    pub(crate) fn local<M>(msg: M, tx: Option<Sender<Result<M::Item, M::Error>>>) -> Self
+    pub(crate) fn local<M>(msg: M,
+                           tx: Option<Sender<Result<M::Item, M::Error>>>,
+                           cancel_on_drop: bool) -> Self
         where M: ResponseType + 'static,
               A: Actor + Handler<M>,
               A::Context: AsyncContext<A>
     {
-        Envelope(Box::new(LocalEnvelope{msg: Some(msg), tx: tx, act: PhantomData}))
+        Envelope(Box::new(
+            LocalEnvelope{msg: Some(msg),
+                          tx: tx,
+                          act: PhantomData,
+                          cancel_on_drop: cancel_on_drop}))
     }
 
     pub(crate) fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
@@ -76,6 +88,7 @@ struct LocalEnvelope<A, M>
     msg: Option<M>,
     act: PhantomData<A>,
     tx: Option<Sender<Result<M::Item, M::Error>>>,
+    cancel_on_drop: bool,
 }
 
 impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
@@ -87,9 +100,14 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
 
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
     {
+        let tx = self.tx.take();
+        if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
+            return
+        }
+
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
-            let tx = if let Some(tx) = self.tx.take() {
+            let tx = if let Some(tx) = tx {
                 Some(EnvelopFutureItem::Local(tx))
             } else {
                 None
@@ -109,6 +127,7 @@ pub struct RemoteEnvelope<A, M>
     act: PhantomData<A>,
     msg: Option<M>,
     tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+    cancel_on_drop: bool,
 }
 
 impl<A, M> RemoteEnvelope<A, M>
@@ -116,12 +135,17 @@ impl<A, M> RemoteEnvelope<A, M>
           A::Context: AsyncContext<A>,
           M: ResponseType,
 {
-    pub fn new(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> RemoteEnvelope<A, M>
+    pub fn new(msg: M,
+               tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+               cancel_on_drop: bool) -> RemoteEnvelope<A, M>
         where A: Handler<M>,
               M: Send + 'static,
               M::Item: Send, M::Item: Send
     {
-        RemoteEnvelope{msg: Some(msg), tx: tx, act: PhantomData}
+        RemoteEnvelope{msg: Some(msg),
+                       tx: tx,
+                       act: PhantomData,
+                       cancel_on_drop: cancel_on_drop}
     }
 }
 
@@ -134,9 +158,14 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
 
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
     {
+        let tx = self.tx.take();
+        if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
+            return
+        }
+
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
-            let tx = if let Some(tx) = self.tx.take() {
+            let tx = if let Some(tx) = tx {
                 Some(EnvelopFutureItem::Remote(tx))
             } else {
                 None

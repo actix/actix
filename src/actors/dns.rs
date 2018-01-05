@@ -18,7 +18,7 @@
 //!     Arbiter::handle().spawn(
 //!        addr.call_fut(dns::GetAddressInfo::new(
 //!            Some("127.0.0.1".to_owned()), None,
-//!            dns::Family::Inet.to_int(), 0, dns::SocketType::Stream))
+//!            dns::Family::Inet.to_int(), 0, dns::SocketType::Stream), false)
 //!            .then(|res| {
 //!                println!("RESULT: {:?}", res);
 //! #              Arbiter::system().send(msgs::SystemExit(0));

@@ -38,14 +38,16 @@ pub struct FramedContext<A>
 impl<A> ToEnvelope<A> for FramedContext<A>
     where A: FramedActor + Actor<Context=FramedContext<A>>,
 {
-    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+    fn pack<M>(msg: M,
+               tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+               cancel_on_drop: bool) -> Envelope<A>
         where M: ResponseType + Send + 'static,
               A: Handler<M>,
               A: FramedActor + Actor<Context=FramedContext<A>>,
               M::Item: Send,
               M::Error: Send,
     {
-        Envelope::new(RemoteEnvelope::new(msg, tx))
+        Envelope::new(RemoteEnvelope::new(msg, tx, cancel_on_drop))
     }
 }
 

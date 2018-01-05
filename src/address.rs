@@ -89,38 +89,45 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
         self.tx.connected()
     }
 
-    /// Send message `M` to actor `A`. Communication channel to the actor is
-    /// unbuonded.
+    /// Send message `M` to actor `A`. Communication channel to the actor is unbuonded.
     pub fn send<M>(&self, msg: M)
         where A: Handler<M>,
               M: ResponseType + 'static
     {
         let _ = self.tx.unbounded_send(
-            ContextProtocol::Envelope(Envelope::local(msg, None)));
+            ContextProtocol::Envelope(Envelope::local(msg, None, false)));
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
+    ///
     /// Communication channel to the actor is unbuonded.
-    pub fn call<B, M>(&self, _: &B, msg: M) -> Request<B, M>
+    ///
+    /// if `cancel_on_drop` is `true` and sender drops, message get canceled.
+    pub fn call<B, M>(&self, _: &B, msg: M, cancel_on_drop: bool) -> Request<B, M>
         where A: Handler<M>,
               B: Actor,
               M: ResponseType + 'static
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            ContextProtocol::Envelope(Envelope::local(msg, Some(tx))));
+            ContextProtocol::Envelope(Envelope::local(msg, Some(tx), cancel_on_drop)));
 
         Request::local(rx)
     }
 
     /// Send message to the actor `A` and asyncronously wait for response.
-    pub fn call_fut<M>(&self, msg: M) -> Receiver<Result<M::Item, M::Error>>
+    ///
+    /// Communication channel to the actor is unbuonded.
+    ///
+    /// if `cancel_on_drop` is `true` and sender drops, message get canceled.
+    pub fn call_fut<M>(&self, msg: M, cancel_on_drop: bool)
+                       -> Receiver<Result<M::Item, M::Error>>
         where A: Handler<M>,
               M: ResponseType + 'static
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
-            ContextProtocol::Envelope(Envelope::local(msg, Some(tx))));
+            ContextProtocol::Envelope(Envelope::local(msg, Some(tx), cancel_on_drop)));
 
         rx
     }
@@ -197,14 +204,16 @@ impl<A> SyncAddress<A> where A: Actor {
               M::Error: Send,
     {
         if self.tx.unbounded_send(
-            <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, None)).is_err()
+            <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, None, false)).is_err()
         {
             self.closed.set(true)
         }
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
-    pub fn call<B: Actor, M>(&self, _: &B, msg: M) -> Request<B, M>
+    ///
+    /// if `cancel_on_drop` is `true` and sender drops, message get canceled.
+    pub fn call<B: Actor, M>(&self, _: &B, msg: M, cancel_on_drop: bool) -> Request<B, M>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               M::Item: Send,
@@ -213,7 +222,7 @@ impl<A> SyncAddress<A> where A: Actor {
     {
         let (tx, rx) = sync_channel();
         if self.tx.unbounded_send(
-            <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, Some(tx))).is_err()
+            <A::Context as ToEnvelope<A>>::pack(msg, Some(tx), cancel_on_drop)).is_err()
         {
             self.closed.set(true)
         }
@@ -222,7 +231,10 @@ impl<A> SyncAddress<A> where A: Actor {
     }
 
     /// Send message to actor `A` and asyncronously wait for response.
-    pub fn call_fut<M>(&self, msg: M) -> SyncReceiver<Result<M::Item, M::Error>>
+    ///
+    /// if `cancel_on_drop` is `true` and sender drops, message get canceled.
+    pub fn call_fut<M>(&self, msg: M, cancel_on_drop: bool)
+                       -> SyncReceiver<Result<M::Item, M::Error>>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               M::Item: Send,
@@ -231,7 +243,7 @@ impl<A> SyncAddress<A> where A: Actor {
     {
         let (tx, rx) = sync_channel();
         if self.tx.unbounded_send(
-            <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, Some(tx))).is_err()
+            <A::Context as ToEnvelope<A>>::pack(msg, Some(tx), cancel_on_drop)).is_err()
         {
             self.closed.set(true)
         }

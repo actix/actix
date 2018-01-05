@@ -156,13 +156,15 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
 impl<A> ToEnvelope<A> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>>,
 {
-    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+    fn pack<M>(msg: M,
+               tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+               cancel_on_drop: bool) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               <M as ResponseType>::Item: Send,
               <M as ResponseType>::Error: Send
     {
-        Envelope::new(SyncEnvelope::new(msg, tx))
+        Envelope::new(SyncEnvelope::new(msg, tx, cancel_on_drop))
     }
 }
 
@@ -277,14 +279,19 @@ pub(crate) struct SyncEnvelope<A, M>
     msg: Option<M>,
     tx: Option<SyncSender<Result<M::Item, M::Error>>>,
     actor: PhantomData<A>,
+    cancel_on_drop: bool,
 }
 
 impl<A, M>  SyncEnvelope<A, M>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
           M: ResponseType,
 {
-    pub fn new(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Self {
-        SyncEnvelope{msg: Some(msg), tx: tx, actor: PhantomData}
+    pub fn new(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+               cancel_on_drop: bool) -> Self {
+        SyncEnvelope{msg: Some(msg),
+                     tx: tx,
+                     actor: PhantomData,
+                     cancel_on_drop: cancel_on_drop}
     }
 }
 
@@ -294,10 +301,15 @@ impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
 {
     type Actor = A;
 
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
+    fn handle(&mut self, act: &mut A, ctx: &mut A::Context)
     {
+        let tx = self.tx.take();
+        if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
+            return
+        }
+
         if let Some(msg) = self.msg.take() {
-            let mut response = <Self::Actor as Handler<M>>::handle(act, msg, ctx).into_response();
+            let mut response = <A as Handler<M>>::handle(act, msg, ctx).into_response();
 
             let result = if response.is_async() {
                 response.result().unwrap()

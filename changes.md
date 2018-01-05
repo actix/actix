@@ -15,6 +15,8 @@
 
 * Allow to restart sync actors.
 
+* Added `cancel on drop` flag to send message process.
+
 
 ## 0.3.5 (2017-12-23)
 

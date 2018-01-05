@@ -154,7 +154,7 @@ fn test_error_result() {
     let addr: Address<_> = MyActor3.start();
 
     Arbiter::handle().spawn_fn(move || {
-        addr.call_fut(Ping(0)).then(|res| {
+        addr.call_fut(Ping(0), false).then(|res| {
             match res {
                 Ok(Err(_)) => (),
                 _ => panic!("Should not happen"),
