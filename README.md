@@ -15,7 +15,7 @@ Actix is a rust actor framework.
   * Using Futures for asynchronous message handling.
   * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
   * Actor supervision.
-  * Typed messages (No `Any` type). Generic messages are allowed.
+  * Typed messages (No `Any` type).
 
 
 ## Usage
@@ -24,7 +24,7 @@ To use `actix`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-actix = { git = "https://github.com/actix/actix" }
+actix = "0.4"
 ```
 
 You may consider to check 
