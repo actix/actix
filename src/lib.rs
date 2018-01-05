@@ -67,7 +67,7 @@ pub mod constants;
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, FutureResponse};
+pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::{Context, ContextFutureSpawner};
@@ -99,7 +99,7 @@ pub use actor::{Actor, ActorContext, AsyncContext, FramedActor};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress};
 pub use framed::FramedContext;
-pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, FutureResponse};
+pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, ResponseFuture};
 pub use context::{Context, ContextFutureSpawner};
 pub use system::System;
 pub use sync::{SyncContext, SyncArbiter};
@@ -109,7 +109,7 @@ pub mod actix {
     pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, FramedActor, Supervised,
                     ActorContext, AsyncContext, SpawnHandle};
-    pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, FutureResponse};
+    pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, ResponseFuture};
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
     pub use context::{Context, ContextFutureSpawner};

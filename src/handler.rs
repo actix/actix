@@ -58,7 +58,7 @@ impl<A, M, B> IntoResponse<A, M> for SyncAddress<B>
     }
 }
 
-pub type FutureResponse<A: Actor, M: ResponseType> =
+pub type ResponseFuture<A: Actor, M: ResponseType> =
     Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>;
 
 impl<A, M> IntoResponse<A, M> for Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>
