@@ -3,7 +3,7 @@ extern crate futures;
 
 use std::io::Error;
 
-use actix::{msgs, Actor, Address, Arbiter, Context, Handler, Response, System};
+use actix::prelude::*;
 use futures::{future, Future};
 
 #[derive(Message)]
@@ -17,8 +17,10 @@ impl Actor for SumActor {
 }
 
 impl Handler<Sum> for SumActor {
-    fn handle(&mut self, message: Sum, _context: &mut Context<Self>) -> Response<Self, Sum> {
-        Self::reply(message.0 + message.1)
+    type Result = ResponseResult<Sum>;
+
+    fn handle(&mut self, message: Sum, _context: &mut Context<Self>) -> Self::Result {
+        Ok(message.0 + message.1)
     }
 }
 

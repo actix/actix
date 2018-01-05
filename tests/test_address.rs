@@ -24,11 +24,11 @@ impl Actor for MyActor {
 }
 
 impl Handler<Ping> for MyActor {
+    type Result = ();
 
-    fn handle(&mut self, msg: Ping, _: &mut Context<MyActor>) -> Response<Self, Ping> {
+    fn handle(&mut self, msg: Ping, _: &mut Context<MyActor>) {
         println!("PING: {:?}", msg);
         self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
-        Self::empty()
     }
 }
 
@@ -57,10 +57,11 @@ impl Actor for MyActor3 {
 }
 
 impl Handler<Ping> for MyActor3 {
+    type Result = ResponseResult<Ping>;
 
-    fn handle(&mut self, _: Ping, _: &mut Context<MyActor3>) -> Response<Self, Ping> {
+    fn handle(&mut self, _: Ping, _: &mut Context<MyActor3>) -> Self::Result {
         Arbiter::system().send(msgs::SystemExit(0));
-        Self::reply_error(())
+        Err(())
     }
 }
 

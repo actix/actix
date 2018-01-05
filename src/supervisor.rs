@@ -25,17 +25,11 @@ use queue::{sync, unsync};
 /// ## Example
 ///
 /// ```rust
-/// extern crate actix;
-///
+/// # #[macro_use] extern crate actix;
 /// use actix::prelude::*;
 ///
-/// // message
+/// #[derive(Message)]
 /// struct Die;
-///
-/// impl ResponseType for Die {
-///     type Item = ();
-///     type Error = ();
-/// }
 ///
 /// struct MyActor;
 ///
@@ -51,11 +45,11 @@ use queue::{sync, unsync};
 /// }
 ///
 /// impl Handler<Die> for MyActor {
+///     type Result = ();
 ///
-///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> Response<Self, Die> {
+///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
 ///         ctx.stop();
 /// #       Arbiter::system().send(msgs::SystemExit(0));
-///         Self::empty()
 ///     }
 /// }
 ///

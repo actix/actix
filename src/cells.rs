@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 use futures::{Async, Future, Poll};
 
 use fut::ActorFuture;
-use actor::{Actor, AsyncContext, Handler, ResponseType};
+use actor::{Actor, AsyncContext};
+use handler::{Handler, ResponseType, IntoResponse};
 use message::Response;
-
 
 pub(crate)
 struct ActorDelayedMessageCell<A, M, F>
@@ -63,7 +63,7 @@ impl<A, M, F> ActorFuture for ActorDelayedMessageCell<A, M, F>
             match self.fut.poll() {
                 Ok(Async::Ready(msg)) => {
                     let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
-                    self.result = Some(fut);
+                    self.result = Some(fut.into_response());
                     continue
                 }
                 Ok(Async::NotReady) =>
@@ -129,7 +129,7 @@ impl<A, M> ActorFuture for ActorMessageCell<A, M>
             }
 
             let fut = <Self::Actor as Handler<M>>::handle(act, self.msg.take().unwrap(), ctx);
-            self.result = Some(fut);
+            self.result = Some(fut.into_response());
             continue
         }
     }

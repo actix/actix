@@ -4,7 +4,8 @@ use futures::unsync::oneshot::Sender;
 use futures::sync::oneshot::Sender as SyncSender;
 
 use fut::ActorFuture;
-use actor::{Actor, AsyncContext, Handler, ResponseType};
+use actor::{Actor, AsyncContext};
+use handler::{Handler, ResponseType, IntoResponse};
 use message::Response;
 use context::Context;
 
@@ -94,7 +95,7 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
                 None
             };
             let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
-                msg: PhantomData, fut: fut, tx: tx};
+                msg: PhantomData, fut: fut.into_response(), tx: tx};
             ctx.spawn(f);
         }
     }
@@ -141,7 +142,7 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
                 None
             };
             let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
-                msg: PhantomData, fut: fut, tx: tx};
+                msg: PhantomData, fut: fut.into_response(), tx: tx};
             ctx.spawn(f);
         }
     }

@@ -49,12 +49,9 @@ impl Actor for CounterActor {
 }
 
 impl Handler<Count> for CounterActor {
-    fn handle(
-        &mut self,
-        msg: Count,
-        ctx: &mut Self::Context,
-    ) -> Response<Self, Count> {
+    type Result = ResponseResult<Count>;
 
+    fn handle(&mut self, msg: Count, ctx: &mut Self::Context,) -> Self::Result {
         assert!(TrackableItem::count() <= MAX_ITEMS);
 
         // send a message to self,
@@ -67,7 +64,7 @@ impl Handler<Count> for CounterActor {
             Arbiter::system().send(msgs::SystemExit(0));
         }
 
-        Self::reply(TrackableItem::new())
+        Ok(TrackableItem::new())
     }
 }
 

@@ -119,9 +119,10 @@ impl Actor for Summator {
 
 // now we need to define `MessageHandler` for `Sum` message.
 impl Handler<Sum> for Summator {
+    type Result = Result<usize, ()>;   // <- Message response type
 
-    fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Response<Self, Sum> {
-        Self::reply(msg.0 + msg.1)
+    fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Self::Result {
+        Ok(msg.0 + msg.1)
     }
 }
 
@@ -169,7 +170,7 @@ new actor that uses `Subscriber`, also this example will show how to use standar
 Also in this example we are going to use unstable `proc_macro` rust's feature for message
 and handler definitions
 
-```rust
+```rust,ignore
 #![feature(proc_macro)]
 
 extern crate actix;

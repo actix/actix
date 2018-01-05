@@ -10,9 +10,8 @@
 //! ## Example
 //!
 //! ```rust
-//! extern crate actix;
-//! extern crate futures;
-//!
+//! # extern crate actix;
+//! # extern crate futures;
 //! use actix::prelude::*;
 //!
 //! struct Fibonacci(pub u32);
@@ -29,11 +28,13 @@
 //! }
 //!
 //! impl Handler<Fibonacci> for SyncActor {
-//!     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Response<Self, Fibonacci> {
+//!     type Result = ResponseResult<Fibonacci>;
+//!
+//!     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
 //!         if msg.0 == 0 {
-//!             Self::reply_error(())
+//!             Err(())
 //!         } else if msg.0 == 1 {
-//!             Self::reply(1)
+//!             Ok(1)
 //!         } else {
 //!             let mut i = 0;
 //!             let mut sum = 0;
@@ -45,7 +46,7 @@
 //!                 curr = sum;
 //!                 i += 1;
 //!             }
-//!             Self::reply(sum)
+//!             Ok(sum)
 //!         }
 //!    }
 //! }
@@ -79,10 +80,11 @@ use futures::{Async, Future, Poll, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
 use tokio_core::reactor::Core;
 
-use actor::{Actor, ActorContext, ActorState, Handler, ResponseType};
+use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
 use address::SyncAddress;
 use context::Context;
+use handler::{Handler, ResponseType, IntoResponse};
 use envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 use message::Response;
 use queue::sync;
@@ -269,7 +271,7 @@ impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
     {
         if let Some(msg) = self.msg.take() {
-            let mut response = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
+            let mut response = <Self::Actor as Handler<M>>::handle(act, msg, ctx).into_response();
 
             let result = if response.is_async() {
                 response.result().unwrap()

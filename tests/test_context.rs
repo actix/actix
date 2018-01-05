@@ -63,13 +63,13 @@ impl ResponseType for TimeoutMessage {
 }
 
 impl Handler<TimeoutMessage> for MyActor {
-    fn handle(&mut self, _: TimeoutMessage, _: &mut Context<Self>)
-              -> Response<Self, TimeoutMessage> {
+    type Result = ();
+
+    fn handle(&mut self, _: TimeoutMessage, _: &mut Context<Self>) {
         if self.op != Op::Timeout {
             assert!(false, "should not happen");
         }
         Arbiter::system().send(SystemExit(0));
-        Self::empty()
     }
 }
 

@@ -5,11 +5,12 @@ use uuid::Uuid;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
-use actor::{Actor, Handler, AsyncContext};
+use actor::{Actor, AsyncContext};
 use address::{Address, SyncAddress};
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};
 use message::Response;
+use handler::Handler;
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};
 use queue::sync;
@@ -211,8 +212,9 @@ impl Arbiter {
 }
 
 impl Handler<StopArbiter> for Arbiter {
+    type Result = ();
 
-    fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>) -> Response<Self, StopArbiter>
+    fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>)
     {
         if self.sys {
             warn!("System arbiter received `StopArbiter` message.
@@ -224,27 +226,22 @@ impl Handler<StopArbiter> for Arbiter {
                 }
             });
         }
-        Self::empty()
     }
 }
 
 impl<A> Handler<StartActor<A>> for Arbiter where A: Actor<Context=Context<A>> {
+    type Result = SyncAddress<A>;
 
-    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Response<Self, StartActor<A>>
-    {
-        Self::reply(msg.call())
+    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> SyncAddress<A> {
+        msg.call()
     }
 }
 
 /// Execute function in arbiter's thread
 impl<I: Send, E: Send> Handler<Execute<I, E>> for Arbiter {
+    type Result = Result<I, E>;
 
-    fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>)
-              -> Response<Self, Execute<I, E>>
-    {
-        match msg.exec() {
-            Ok(i) => Self::reply(i),
-            Err(e) => Self::reply_error(e),
-        }
+    fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>) -> Result<I, E> {
+        msg.exec()
     }
 }

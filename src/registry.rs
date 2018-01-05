@@ -19,15 +19,11 @@ use supervisor::Supervisor;
 /// # Example
 ///
 /// ```rust
-/// extern crate actix;
+/// # #[macro_use] extern crate actix;
 /// use actix::prelude::*;
 ///
+/// #[derive(Message)]
 /// struct Ping;
-///
-/// impl ResponseType for Ping {
-///    type Item = ();
-///    type Error = ();
-/// }
 ///
 /// #[derive(Default)]
 /// struct MyActor1;
@@ -44,11 +40,11 @@ use supervisor::Supervisor;
 /// }
 ///
 /// impl Handler<Ping> for MyActor1 {
+///    type Result = ();
 ///
-///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) -> Response<Self, Ping> {
+///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
 ///       println!("ping");
 /// #     Arbiter::system().send(msgs::SystemExit(0));
-///       Self::empty()
 ///    }
 /// }
 ///

@@ -1,16 +1,11 @@
-extern crate actix;
+#[macro_use]extern crate actix;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use actix::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Message)]
 struct Ping(usize);
-
-impl ResponseType for Ping {
-    type Item = ();
-    type Error = ();
-}
 
 struct MyActor(Arc<AtomicUsize>);
 
@@ -19,11 +14,11 @@ impl Actor for MyActor {
 }
 
 impl Handler<Ping> for MyActor {
+    type Result = ();
 
-    fn handle(&mut self, _: Ping, _: &mut Context<MyActor>) -> Response<Self, Ping> {
+    fn handle(&mut self, _: Ping, _: &mut Context<MyActor>) {
         self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
         Arbiter::system().send(msgs::SystemExit(0));
-        Self::empty()
     }
 }
 

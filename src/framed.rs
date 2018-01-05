@@ -12,10 +12,10 @@ use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
 
-use actor::{Actor, Supervised,
-            Handler, ResponseType, StreamHandler, SpawnHandle,
+use actor::{Actor, Supervised, SpawnHandle,
             FramedActor, ActorState, ActorContext, AsyncContext};
 use address::{Subscriber};
+use handler::{Handler, ResponseType, StreamHandler};
 use context::{ActorAddressCell, ActorItemsCell, ActorWaitCell, AsyncContextApi};
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 use message::Response;

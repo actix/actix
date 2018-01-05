@@ -7,8 +7,7 @@
 //! # Examples
 //!
 //! ```rust
-//! extern crate actix;
-//!
+//! # extern crate actix;
 //! use actix::prelude::*;
 //! use actix::actors::signal;
 //!
@@ -20,10 +19,9 @@
 //!
 //! // Shutdown system on and of `SIGINT`, `SIGTERM`, `SIGQUIT` signals
 //! impl Handler<signal::Signal> for Signals {
+//!     type Result = ();
 //!
-//!     fn handle(&mut self, msg: signal::Signal, _: &mut Context<Self>)
-//!               -> Response<Self, signal::Signal>
-//!     {
+//!     fn handle(&mut self, msg: signal::Signal, _: &mut Context<Self>) {
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
@@ -41,8 +39,7 @@
 //!                 Arbiter::system().send(msgs::SystemExit(0));
 //!             }
 //!             _ => (),
-//!         };
-//!         Self::empty()
+//!         }
 //!     }
 //! }
 //!
@@ -169,10 +166,9 @@ impl StreamHandler<io::Result<SignalType>> for ProcessSignals {}
 
 #[doc(hidden)]
 impl Handler<io::Result<SignalType>> for ProcessSignals {
+    type Result = ();
 
-    fn handle(&mut self, msg: io::Result<SignalType>, _: &mut Context<Self>)
-              -> Response<Self, io::Result<SignalType>>
-    {
+    fn handle(&mut self, msg: io::Result<SignalType>, _: &mut Context<Self>) {
         match msg {
             Ok(sig) => {
                 let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
@@ -186,7 +182,6 @@ impl Handler<io::Result<SignalType>> for ProcessSignals {
                 error!("Error during signal handling: {}", err);
             }
         }
-        Self::empty()
     }
 }
 
@@ -200,12 +195,10 @@ impl ResponseType for Subscribe {
 
 /// Add subscriber for signals
 impl Handler<Subscribe> for ProcessSignals {
+    type Result = ();
 
-    fn handle(&mut self, msg: Subscribe,
-              _: &mut Context<ProcessSignals>) -> Response<Self, Subscribe>
-    {
+    fn handle(&mut self, msg: Subscribe, _: &mut Context<ProcessSignals>) {
         self.subscribers.push(msg.0);
-        Self::empty()
     }
 }
 
@@ -232,9 +225,9 @@ impl Actor for DefaultSignalsHandler {
 /// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send `SystemExit(0)`
 /// message to `System` actor.
 impl Handler<Signal> for DefaultSignalsHandler {
+    type Result = ();
 
-    fn handle(&mut self, msg: Signal, _: &mut Context<Self>) -> Response<Self, Signal>
-    {
+    fn handle(&mut self, msg: Signal, _: &mut Context<Self>) {
         match msg.0 {
             SignalType::Int => {
                 info!("SIGINT received, exiting");
@@ -252,7 +245,6 @@ impl Handler<Signal> for DefaultSignalsHandler {
                 Arbiter::system().send(msgs::SystemExit(0));
             }
             _ => (),
-        };
-        Self::empty()
+        }
     }
 }

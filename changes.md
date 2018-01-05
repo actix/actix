@@ -1,7 +1,11 @@
 # CHANGES
 
 
-## 0.3.6 (unreleased)
+## 0.4.0 (unreleased)
+
+* Simplify `Handler` trait (E type removed).
+
+* Use assosiated type for handler response for `Handler` trait.
 
 * Added framed `drain` method.
 

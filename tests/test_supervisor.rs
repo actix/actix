@@ -35,10 +35,10 @@ impl Supervised for MyActor {
 }
 
 impl Handler<Die> for MyActor {
+    type Result = ();
 
-    fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) -> Response<Self, Die> {
+    fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
         ctx.stop();
-        Self::empty()
     }
 }
 

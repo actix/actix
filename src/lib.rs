@@ -47,6 +47,7 @@ mod cells;
 mod context;
 mod envelope;
 mod framed;
+mod handler;
 mod queue;
 mod message;
 mod registry;
@@ -64,8 +65,8 @@ pub mod constants;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
-                Handler, ResponseType, StreamHandler,
                 ActorContext, AsyncContext, SpawnHandle};
+pub use handler::{Handler, ResponseType, StreamHandler, ResponseResult, FutureResponse};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::{Context, ContextFutureSpawner};

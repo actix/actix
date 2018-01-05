@@ -9,6 +9,7 @@ use message::Response;
 use arbiter::Arbiter;
 use address::ActorAddress;
 use envelope::ToEnvelope;
+use handler::{Handler, StreamHandler, ResponseType};
 use cells::{ActorMessageCell, ActorDelayedMessageCell};
 use context::{Context, ActorFutureCell, ActorStreamCell};
 use framed::FramedContext;
@@ -254,49 +255,6 @@ pub trait Supervised: Actor {
     fn restarting(&mut self, ctx: &mut <Self as Actor>::Context) {}
 }
 
-/// Message handler
-///
-/// `Handler` implementation is a general way how to handle
-/// incoming messages, streams, futures.
-///
-/// `M` is a message which can be handled by the actor.
-#[allow(unused_variables)]
-pub trait Handler<M> where Self: Actor, M: ResponseType
-{
-    /// Method is called for every message received by this Actor
-    fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Response<Self, M>;
-}
-
-/// Message response type
-pub trait ResponseType {
-
-    /// The type of value that this message will resolved with if it is successful.
-    type Item;
-
-    /// The type of error that this message will resolve with if it fails in a normal fashion.
-    type Error;
-}
-
-impl<I, E> ResponseType for Result<I, E> where I: ResponseType {
-    type Item = <I as ResponseType>::Item;
-    type Error = ();
-}
-
-/// Stream handler
-///
-/// `StreamHandler` is an extension of a `Handler` with stream specific methods.
-#[allow(unused_variables)]
-pub trait StreamHandler<M>: Handler<M>
-    where Self: Actor,
-          M: ResponseType,
-{
-    /// Method is called when stream get polled first time.
-    fn started(&mut self, ctx: &mut Self::Context) {}
-
-    /// Method is called when stream finishes, even if stream finishes with error.
-    fn finished(&mut self, ctx: &mut Self::Context) {}
-}
-
 /// Actor execution state
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum ActorState {
@@ -369,9 +327,10 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// struct MyActor;
     ///
     /// impl Handler<Ping> for MyActor {
-    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) -> Response<Self, Ping> {
+    ///     type Result = ();
+    ///
+    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    ///         Self::empty()
     ///     }
     /// }
     ///

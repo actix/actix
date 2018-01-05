@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
-use actor::{Actor, Handler, ResponseType};
+use actor::Actor;
+use handler::{Handler, ResponseType};
 use address::SyncAddress;
 use arbiter::Arbiter;
 use context::Context;
@@ -108,8 +109,9 @@ impl SystemRunner {
 }
 
 impl Handler<SystemExit> for System {
+    type Result = ();
 
-    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>) -> Response<Self, SystemExit>
+    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
     {
         // stop rbiters
         for addr in self.arbiters.values() {
@@ -119,7 +121,6 @@ impl Handler<SystemExit> for System {
         if let Some(stop) = self.stop.take() {
             let _ = stop.send(msg.0);
         }
-        Self::empty()
     }
 }
 
@@ -134,12 +135,10 @@ impl ResponseType for RegisterArbiter {
 
 #[doc(hidden)]
 impl Handler<RegisterArbiter> for System {
+    type Result = ();
 
-    fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>)
-              -> Response<Self, RegisterArbiter>
-    {
+    fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>) {
         self.arbiters.insert(msg.0, msg.1);
-        Self::empty()
     }
 }
 
@@ -154,11 +153,10 @@ impl ResponseType for UnregisterArbiter {
 
 #[doc(hidden)]
 impl Handler<UnregisterArbiter> for System {
+    type Result = ();
 
     fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>)
-              -> Response<Self, UnregisterArbiter>
     {
         self.arbiters.remove(&msg.0);
-        Self::empty()
     }
 }

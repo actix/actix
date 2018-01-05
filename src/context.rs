@@ -8,12 +8,13 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
-use actor::{Actor, Supervised, Handler, StreamHandler, ResponseType,
+use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
 use message::Response;
 use constants::MAX_SYNC_POLLS;
+use handler::{Handler, StreamHandler, ResponseType, IntoResponse};
 
 pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
     fn address_cell(&mut self) -> &mut ActorAddressCell<A>;
@@ -540,7 +541,7 @@ impl<A, M, F, E> ActorFuture for ActorFutureCell<A, M, F, E>
             match self.fut.poll() {
                 Ok(Async::Ready(msg)) => {
                     let fut = <Self::Actor as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
-                    self.result = Some(fut);
+                    self.result = Some(fut.into_response());
                     continue
                 }
                 Ok(Async::NotReady) =>
@@ -615,7 +616,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
                     let fut = <Self::Actor as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
-                    self.fut = Some(fut);
+                    self.fut = Some(fut.into_response());
                     continue
                 }
                 Ok(Async::Ready(None)) => {

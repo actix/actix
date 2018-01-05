@@ -1,7 +1,7 @@
 extern crate futures;
 #[macro_use] extern crate actix;
 
-use actix::{msgs, Actor, Address, Arbiter, Context, Handler, Response, System};
+use actix::{msgs, Actor, Address, Arbiter, Context, Handler, System};
 use futures::{future, Future};
 
 #[derive(Message)]
@@ -14,9 +14,9 @@ impl Actor for EmptyActor {
 }
 
 impl Handler<Empty> for EmptyActor {
-    fn handle(&mut self, _message: Empty, _context: &mut Context<Self>) -> Response<Self, Empty> {
-        Self::empty()
-    }
+    type Result = ();
+
+    fn handle(&mut self, _message: Empty, _context: &mut Context<Self>) {}
 }
 
 #[test]

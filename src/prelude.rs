@@ -16,7 +16,6 @@ pub use actix_derive::*;
 pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
 
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
-                Handler, ResponseType, StreamHandler,
                 ActorContext, AsyncContext, SpawnHandle};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber};
@@ -25,6 +24,7 @@ pub use framed::FramedContext;
 pub use envelope::ToEnvelope;
 pub use message::{Request, Response};
 pub use system::System;
+pub use handler::{Handler, ResponseType, ResponseResult, StreamHandler, FutureResponse};
 pub use supervisor::Supervisor;
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{ArbiterService, SystemService};

@@ -26,15 +26,14 @@ impl StreamHandler<Result<Num, ()>> for MyActor {
 }
 
 impl Handler<Result<Num, ()>> for MyActor {
+    type Result = ();
 
-    fn handle(&mut self, msg: Result<Num, ()>, _: &mut Context<MyActor>)
-              -> Response<Self, Result<Num, ()>> {
+    fn handle(&mut self, msg: Result<Num, ()>, _: &mut Context<MyActor>) {
         if let Ok(msg) = msg {
             self.0.store(self.0.load(Ordering::Relaxed) + msg.0, Ordering::Relaxed);
         } else {
             self.1.store(true, Ordering::Relaxed);
         }
-        Self::empty()
     }
 }
 

@@ -1,8 +1,9 @@
 //! Actix system messages
 
-use actor::{Actor, ResponseType};
+use actor::Actor;
 use address::SyncAddress;
 use context::Context;
+use handler::ResponseType;
 
 /// Stop system execution
 pub struct SystemExit(pub i32);

@@ -2,7 +2,8 @@ use std::cell::Cell;
 use futures::unsync::oneshot::{channel, Receiver};
 use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
-use actor::{Actor, Handler, ResponseType, AsyncContext};
+use actor::{Actor, AsyncContext};
+use handler::{Handler, ResponseType};
 use context::{ContextProtocol, AsyncContextApi};
 use envelope::{Envelope, ToEnvelope};
 use message::Request;

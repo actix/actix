@@ -36,16 +36,18 @@ impl Actor for SyncActor {
 }
 
 impl Handler<Fibonacci> for SyncActor {
-    fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Response<Self, Fibonacci> {
+    type Result = ResponseResult<Fibonacci>;
+
+    fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
         let old = self.messages.fetch_add(1, Ordering::Relaxed);
         if old == 4 {
             self.addr.send(msgs::SystemExit(0));
         }
 
         if msg.0 == 0 {
-            Self::reply_error(())
+            Err(())
         } else if msg.0 == 1 {
-            Self::reply(1)
+            Ok(1)
         } else {
             let mut i = 0;
             let mut sum = 0;
@@ -57,7 +59,7 @@ impl Handler<Fibonacci> for SyncActor {
                 curr = sum;
                 i += 1;
 	        }
-	        Self::reply(sum)
+	        Ok(sum)
         }
     }
 }

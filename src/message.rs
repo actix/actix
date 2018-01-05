@@ -6,7 +6,8 @@ use futures::unsync::oneshot::{Canceled, Receiver};
 use futures::sync::oneshot::{Receiver as SyncReceiver};
 
 use fut::ActorFuture;
-use actor::{Actor, Handler, ResponseType};
+use actor::Actor;
+use handler::{Handler, ResponseType};
 
 enum RequestIo<M: ResponseType> {
     Local(Receiver<Result<M::Item, M::Error>>),
@@ -125,6 +126,16 @@ impl<A, M, I, E> std::convert::From<Result<I, E>> for Response<A, M>
             Ok(item) => Response {inner: Some(ResponseTypeItem::Item(item))},
             Err(err) => Response {inner: Some(ResponseTypeItem::Error(err))},
         }
+    }
+}
+
+impl<A, M> std::convert::From<Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>>
+    for Response<A, M>
+    where A: Handler<M>,
+          M: ResponseType,
+{
+    fn from(f: Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>) -> Response<A, M> {
+        Response {inner: Some(ResponseTypeItem::Fut(f))}
     }
 }
 

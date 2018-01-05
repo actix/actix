@@ -74,16 +74,11 @@ impl GetAddressInfo {
 }
 
 impl Handler<GetAddressInfo> for DnsResolver {
+    type Result = Result<Vec<AddrInfo>, LookupError>;
 
-    fn handle(&mut self, msg: GetAddressInfo, _: &mut SyncContext<Self>)
-              -> Response<Self, GetAddressInfo>
-    {
-        match get_addrinfo(msg.host, msg.port, msg.family, msg.flags, msg.socktype) {
-            Err(err) =>
-                Self::reply_error(err),
-            Ok(addrs) =>
-                Self::reply(addrs.collect()),
-        }
+    fn handle(&mut self, msg: GetAddressInfo, _: &mut SyncContext<Self>) -> Self::Result {
+        get_addrinfo(msg.host, msg.port, msg.family, msg.flags, msg.socktype)
+            .map(|addrs| addrs.collect())
     }
 }
 
