@@ -100,18 +100,18 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of started actor.
-    pub fn start<F>(threads: usize, f: F) -> SyncAddress<A>
-        where F: Fn() -> A + 'static
+    pub fn start<F>(threads: usize, factory: F) -> SyncAddress<A>
+        where F: Sync + Send + Fn() -> A + 'static
     {
+        let factory = Arc::new(factory);
         let queue = Arc::new(MsQueue::new());
 
         for _ in 0..threads {
-            let actor = f();
+            let f = Arc::clone(&factory);
             let actor_queue = Arc::clone(&queue);
 
             thread::spawn(move || {
-                SyncContext::new(actor, actor_queue)
-                    .run()
+                SyncContext::new(f, actor_queue).run()
             });
         }
 
@@ -178,17 +178,22 @@ pub struct SyncContext<A> where A: Actor<Context=SyncContext<A>> {
     queue: Arc<MsQueue<SyncContextProtocol<A>>>,
     stopping: bool,
     state: ActorState,
+    factory: Arc<Fn() -> A + Send + Sync>,
+    restart: bool,
 }
 
 impl<A> SyncContext<A> where A: Actor<Context=Self> {
     /// Create new SyncContext
-    fn new(act: A, queue: Arc<MsQueue<SyncContextProtocol<A>>>) -> Self {
+    fn new(factory: Arc<Fn() -> A + Send + Sync>,
+           queue: Arc<MsQueue<SyncContextProtocol<A>>>) -> Self {
         SyncContext {
-            act: act,
+            act: factory(),
             core: None,
             queue: queue,
             stopping: false,
             state: ActorState::Started,
+            factory: factory,
+            restart: false,
         }
     }
 
@@ -211,7 +216,23 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
                     return
                 },
                 SyncContextProtocol::Envelope(mut env) => {
-                    env.handle(&mut self.act, ctx)
+                    env.handle(&mut self.act, ctx);
+
+                    if self.restart {
+                        self.restart = false;
+                        self.stopping = false;
+
+                        // stop old actor
+                        A::stopping(&mut self.act, ctx);
+                        self.state = ActorState::Stopped;
+                        A::stopped(&mut self.act, ctx);
+
+                        // start new actor
+                        self.state = ActorState::Started;
+                        self.act = (*self.factory)();
+                        A::started(&mut self.act, ctx);
+                        self.state = ActorState::Running;
+                    }
                 },
             }
 
@@ -222,6 +243,11 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
                 return
             }
         }
+    }
+
+    /// Initiate actor restart process.
+    pub fn restart(&mut self) {
+        self.restart = true;
     }
 }
 

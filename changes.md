@@ -13,6 +13,8 @@
 
 * Enable signal actor by default, make it compatible with windows.
 
+* Allow to restart sync actors.
+
 
 ## 0.3.5 (2017-12-23)
 
