@@ -16,9 +16,9 @@ impl Actor for MyActor {
 impl Handler<Ping> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, _: Ping, _: &mut Context<MyActor>) {
+    fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor>) {
         self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
-        Arbiter::system().send(msgs::SystemExit(0));
+        Arbiter::system().send(actix::msgs::SystemExit(0));
     }
 }
 

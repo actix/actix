@@ -12,7 +12,7 @@ use actix::prelude::*;
 #[derive(Debug)]
 struct Ping(usize);
 
-impl ResponseType for Ping {
+impl actix::ResponseType for Ping {
     type Item = ();
     type Error = ();
 }
@@ -20,13 +20,13 @@ impl ResponseType for Ping {
 struct MyActor(Arc<AtomicUsize>);
 
 impl Actor for MyActor {
-    type Context = Context<Self>;
+    type Context = actix::Context<Self>;
 }
 
-impl Handler<Ping> for MyActor {
+impl actix::Handler<Ping> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, msg: Ping, _: &mut Context<MyActor>) {
+    fn handle(&mut self, msg: Ping, _: &mut Self::Context) {
         println!("PING: {:?}", msg);
         self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
     }
@@ -35,17 +35,17 @@ impl Handler<Ping> for MyActor {
 struct MyActor2(Option<Address<MyActor>>, Option<SyncAddress<MyActor>>);
 
 impl Actor for MyActor2 {
-    type Context = Context<Self>;
+    type Context = actix::Context<Self>;
 
-    fn started(&mut self, ctx: &mut Context<Self>) {
+    fn started(&mut self, ctx: &mut actix::Context<Self>) {
         self.0.take().unwrap().upgrade()
             .actfuture()
             .then(move |addr, act: &mut Self, _: &mut _| {
                 let addr = addr.unwrap();
                 addr.send(Ping(10));
                 act.1 = Some(addr);
-                Arbiter::system().send(msgs::SystemExit(0));
-                fut::ok(())
+                Arbiter::system().send(actix::msgs::SystemExit(0));
+                actix::fut::ok(())
             }).spawn(ctx);
     }
 }
@@ -56,11 +56,11 @@ impl Actor for MyActor3 {
     type Context = Context<Self>;
 }
 
-impl Handler<Ping> for MyActor3 {
-    type Result = ResponseResult<Ping>;
+impl actix::Handler<Ping> for MyActor3 {
+    type Result = MessageResult<Ping>;
 
-    fn handle(&mut self, _: Ping, _: &mut Context<MyActor3>) -> Self::Result {
-        Arbiter::system().send(msgs::SystemExit(0));
+    fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor3>) -> Self::Result {
+        Arbiter::system().send(actix::msgs::SystemExit(0));
         Err(())
     }
 }
@@ -80,7 +80,7 @@ fn test_address() {
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
                 addr2.send(Ping(2));
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::system().send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     });
@@ -100,9 +100,9 @@ fn test_sync_address() {
     let addr3 = addr.clone();
     addr.send(Ping(1));
 
-    arbiter.send(msgs::Execute::new(move || -> Result<(), ()> {
+    arbiter.send(actix::msgs::Execute::new(move || -> Result<(), ()> {
         addr3.send(Ping(2));
-        Arbiter::system().send(msgs::SystemExit(0));
+        Arbiter::system().send(actix::msgs::SystemExit(0));
         Ok(())
     }));
     
@@ -136,7 +136,7 @@ fn test_address_upgrade() {
             .then(move |_| {
                 addr.send(Ping(3));
                 Arbiter::handle().spawn_fn(move || {
-                    Arbiter::system().send(msgs::SystemExit(0));
+                    Arbiter::system().send(actix::msgs::SystemExit(0));
                     future::result(Ok(()))
                 });
                 future::result(Ok(()))

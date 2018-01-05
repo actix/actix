@@ -71,7 +71,7 @@ impl Actor for ChatClient {
         println!("Disconnected");
 
         // Stop application on disconnect
-        Arbiter::system().send(msgs::SystemExit(0));
+        Arbiter::system().send(actix::msgs::SystemExit(0));
     }
 }
 

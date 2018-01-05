@@ -60,8 +60,7 @@ impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
 /// # Example
 ///
 /// ```rust
-/// extern crate actix;
-///
+/// # extern crate actix;
 /// use actix::prelude::*;
 ///
 /// struct MyActor{addr: SyncAddress<Arbiter>}
@@ -70,7 +69,7 @@ impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
 ///    type Context = Context<Self>;
 ///
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
-///        self.addr.send(msgs::Execute::new(|| -> Result<(), ()> {
+///        self.addr.send(actix::msgs::Execute::new(|| -> Result<(), ()> {
 ///            // do something
 ///            // ...
 ///            Ok(())

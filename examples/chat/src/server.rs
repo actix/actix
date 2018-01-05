@@ -107,7 +107,7 @@ impl Actor for ChatServer {
 ///
 /// Register new session and assign unique id to this session
 impl Handler<Connect> for ChatServer {
-    type Result = ResponseResult<Connect>;
+    type Result = MessageResult<Connect>;
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         println!("Someone joined");
@@ -163,7 +163,7 @@ impl Handler<Message> for ChatServer {
 
 /// Handler for `ListRooms` message.
 impl Handler<ListRooms> for ChatServer {
-    type Result = ResponseResult<ListRooms>;
+    type Result = MessageResult<ListRooms>;
 
     fn handle(&mut self, _: ListRooms, _: &mut Context<Self>) -> Self::Result {
         let mut rooms = Vec::new();

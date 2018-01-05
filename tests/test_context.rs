@@ -21,7 +21,7 @@ enum Op {
 struct MyActor{op: Op}
 
 impl Actor for MyActor {
-    type Context = Context<Self>;
+    type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Context<MyActor>) {
         match self.op {
@@ -57,15 +57,15 @@ impl Actor for MyActor {
 
 struct TimeoutMessage;
 
-impl ResponseType for TimeoutMessage {
+impl actix::ResponseType for TimeoutMessage {
     type Item = ();
     type Error = ();
 }
 
-impl Handler<TimeoutMessage> for MyActor {
+impl actix::Handler<TimeoutMessage> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, _: TimeoutMessage, _: &mut Context<Self>) {
+    fn handle(&mut self, _: TimeoutMessage, _: &mut Self::Context) {
         if self.op != Op::Timeout {
             assert!(false, "should not happen");
         }

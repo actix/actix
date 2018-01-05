@@ -32,9 +32,9 @@ pub struct ChatSession {
 impl Actor for ChatSession {
     /// For tcp communication we are going to use `FramedContext`.
     /// It is convinient wrapper around `Framed` object from `tokio_io`
-    type Context = FramedContext<Self>;
+    type Context = actix::FramedContext<Self>;
 
-    fn started(&mut self, ctx: &mut FramedContext<Self>) {
+    fn started(&mut self, ctx: &mut Self::Context) {
         // we'll start heartbeat process on session start.
         self.hb(ctx);
 
@@ -47,11 +47,11 @@ impl Actor for ChatSession {
                 // something is wrong with chat server
                 _ => ctx.stop(),
             }
-            fut::ok(())
+            actix::fut::ok(())
         }).wait(ctx);
     }
 
-    fn stopping(&mut self, ctx: &mut FramedContext<Self>) {
+    fn stopping(&mut self, ctx: &mut Self::Context) {
         // notify chat server
         self.addr.send(server::Disconnect{id: self.id});
         ctx.stop()
@@ -59,18 +59,18 @@ impl Actor for ChatSession {
 }
 
 /// To use `FramedContext` we have to define Io type and Codec
-impl FramedActor for ChatSession {
+impl actix::FramedActor for ChatSession {
     type Io = TcpStream;
     type Codec= ChatCodec;
 
     /// We'll stop chat session actor on any error, high likely it is just
     /// termination of the tcp stream.
-    fn error(&mut self, _: io::Error, ctx: &mut FramedContext<Self>) {
+    fn error(&mut self, _: io::Error, ctx: &mut Self::Context) {
         ctx.stop()
     }
 
     /// This is main event loop for client requests
-    fn handle(&mut self, msg: io::Result<ChatRequest>, ctx: &mut FramedContext<Self>) {
+    fn handle(&mut self, msg: io::Result<ChatRequest>, ctx: &mut Self::Context) {
         match msg {
             Err(_) => ctx.stop(),
             Ok(msg) => match msg {
@@ -84,7 +84,7 @@ impl FramedActor for ChatSession {
                             },
                             _ => println!("Something is wrong"),
                         }
-                        fut::ok(())
+                        actix::fut::ok(())
                     }).wait(ctx)
                     // .wait(ctx) pauses all events in context,
                     // so actor wont receive any new messages until it get list of rooms back
@@ -115,7 +115,7 @@ impl FramedActor for ChatSession {
 impl Handler<Message> for ChatSession {
     type Result = ();
 
-    fn handle(&mut self, msg: Message, ctx: &mut FramedContext<Self>) {
+    fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
         // send message to peer
         let _ = ctx.send(ChatResponse::Message(msg.0));
     }
@@ -131,7 +131,7 @@ impl ChatSession {
     /// helper method that sends ping to client every second.
     ///
     /// also this method check heartbeats from client
-    fn hb(&self, ctx: &mut FramedContext<Self>) {
+    fn hb(&self, ctx: &mut actix::FramedContext<Self>) {
         ctx.run_later(Duration::new(1, 0), |act, ctx| {
             // check client heartbeats
             if Instant::now().duration_since(act.hb) > Duration::new(10, 0) {

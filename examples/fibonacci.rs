@@ -22,7 +22,7 @@ impl Actor for SyncActor {
 }
 
 impl Handler<Fibonacci> for SyncActor {
-    type Result = ResponseResult<Fibonacci>;
+    type Result = MessageResult<Fibonacci>;
 
     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
         if msg.0 == 0 {
@@ -57,7 +57,7 @@ fn main() {
     }
 
     Arbiter::handle().spawn_fn(|| {
-        Arbiter::system().send(msgs::SystemExit(0));
+        Arbiter::system().send(actix::msgs::SystemExit(0));
         futures::future::result(Ok(()))
     });
 

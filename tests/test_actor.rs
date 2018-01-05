@@ -16,19 +16,19 @@ impl ResponseType for Num {
 struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>);
 
 impl Actor for MyActor {
-    type Context = Context<Self>;
+    type Context = actix::Context<Self>;
 }
 
-impl StreamHandler<Result<Num, ()>> for MyActor {
+impl actix::StreamHandler<Result<Num, ()>> for MyActor {
     fn finished(&mut self, _: &mut Self::Context) {
-        Arbiter::system().send(msgs::SystemExit(0));
+        Arbiter::system().send(actix::msgs::SystemExit(0));
     }
 }
 
-impl Handler<Result<Num, ()>> for MyActor {
+impl actix::Handler<Result<Num, ()>> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, msg: Result<Num, ()>, _: &mut Context<MyActor>) {
+    fn handle(&mut self, msg: Result<Num, ()>, _: &mut actix::Context<MyActor>) {
         if let Ok(msg) = msg {
             self.0.store(self.0.load(Ordering::Relaxed) + msg.0, Ordering::Relaxed);
         } else {

@@ -23,23 +23,23 @@ struct MyActor{
 }
 
 impl Actor for MyActor {
-    type Context = Context<Self>;
+    type Context = actix::Context<Self>;
 
-    fn started(&mut self, _: &mut Context<MyActor>) {
+    fn started(&mut self, _: &mut Self::Context) {
         self.started.store(true, Ordering::Relaxed);
     }
-    fn stopping(&mut self, ctx: &mut Context<MyActor>) {
+    fn stopping(&mut self, ctx: &mut Self::Context) {
         self.stopping.store(true, Ordering::Relaxed);
 
         if self.restore_after_stop {
             let (tx, rx) = channel();
             self.temp = Some(tx);
             rx.actfuture().then(|_, _: &mut MyActor, _: &mut _| {
-                fut::result(Ok(()))
+                actix::fut::result(Ok(()))
             }).spawn(ctx);
         }
     }
-    fn stopped(&mut self, _: &mut Context<MyActor>) {
+    fn stopped(&mut self, _: &mut Self::Context) {
         self.stopped.store(true, Ordering::Relaxed);
     }
 }

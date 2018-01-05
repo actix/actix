@@ -31,9 +31,9 @@ use supervisor::Supervisor;
 /// impl Actor for MyActor1 {
 ///     type Context = Context<Self>;
 /// }
-/// impl Supervised for MyActor1 {}
+/// impl actix::Supervised for MyActor1 {}
 ///
-/// impl ArbiterService for MyActor1 {
+/// impl actix::ArbiterService for MyActor1 {
 ///    fn service_started(&mut self, ctx: &mut Context<Self>) {
 ///       println!("Service started");
 ///    }
@@ -44,7 +44,7 @@ use supervisor::Supervisor;
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
 ///       println!("ping");
-/// #     Arbiter::system().send(msgs::SystemExit(0));
+/// #     Arbiter::system().send(actix::msgs::SystemExit(0));
 ///    }
 /// }
 ///

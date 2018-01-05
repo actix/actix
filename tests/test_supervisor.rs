@@ -27,17 +27,17 @@ impl Actor for MyActor {
         self.0.store(n+1, Ordering::Relaxed);
     }
 }
-impl Supervised for MyActor {
-    fn restarting(&mut self, _: &mut Context<MyActor>) {
+impl actix::Supervised for MyActor {
+    fn restarting(&mut self, _: &mut actix::Context<MyActor>) {
         let n = self.1.load(Ordering::Relaxed);
         self.1.store(n+1, Ordering::Relaxed);
     }
 }
 
-impl Handler<Die> for MyActor {
+impl actix::Handler<Die> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
+    fn handle(&mut self, _: Die, ctx: &mut actix::Context<MyActor>) {
         ctx.stop();
     }
 }
@@ -52,14 +52,14 @@ fn test_supervisor() {
     let starts2 = Arc::clone(&starts);
     let restarts2 = Arc::clone(&restarts);
 
-    let (addr, _) = Supervisor::start(false, move|_| MyActor(starts2, restarts2));
+    let (addr, _) = actix::Supervisor::start(false, move|_| MyActor(starts2, restarts2));
 
     addr.send(Die);
 
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::system().send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -78,7 +78,7 @@ fn test_supervisor_lazy() {
     let starts2 = Arc::clone(&starts);
     let restarts2 = Arc::clone(&restarts);
 
-    let (addr, _) = Supervisor::start(true, move|_| MyActor(starts2, restarts2));
+    let (addr, _) = actix::Supervisor::start(true, move|_| MyActor(starts2, restarts2));
 
     // ref to supervisor, otherwise it would exit
     let _super_addr = addr.clone();
@@ -90,7 +90,7 @@ fn test_supervisor_lazy() {
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::system().send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     });
@@ -110,7 +110,7 @@ fn test_supervisor_upgrade_address() {
     let restarts2 = Arc::clone(&restarts);
 
     // lazy supervisor
-    let (addr, _) = Supervisor::start(true, move|_| MyActor(starts2, restarts2));
+    let (addr, _) = actix::Supervisor::start(true, move|_| MyActor(starts2, restarts2));
 
     Arbiter::handle().spawn_fn(move || {
         // upgrade address to SyncAddress
@@ -121,7 +121,7 @@ fn test_supervisor_upgrade_address() {
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::system().send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     });

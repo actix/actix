@@ -38,7 +38,7 @@ use queue::{sync, unsync};
 /// }
 ///
 /// // To use actor with supervisor actor has to implement `Supervised` trait
-/// impl Supervised for MyActor {
+/// impl actix::Supervised for MyActor {
 ///     fn restarting(&mut self, ctx: &mut Context<MyActor>) {
 ///         println!("restarting");
 ///     }
@@ -49,14 +49,14 @@ use queue::{sync, unsync};
 ///
 ///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
 ///         ctx.stop();
-/// #       Arbiter::system().send(msgs::SystemExit(0));
+/// #       Arbiter::system().send(actix::msgs::SystemExit(0));
 ///     }
 /// }
 ///
 /// fn main() {
 ///     let sys = System::new("test");
 ///
-///     let (addr, _) = Supervisor::start(false, |_| MyActor);
+///     let (addr, _) = actix::Supervisor::start(false, |_| MyActor);
 ///
 ///     addr.send(Die);
 ///     sys.run();

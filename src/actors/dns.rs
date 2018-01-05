@@ -21,7 +21,7 @@
 //!            dns::Family::Inet.to_int(), 0, dns::SocketType::Stream))
 //!            .then(|res| {
 //!                println!("RESULT: {:?}", res);
-//! #              Arbiter::system().send(msgs::SystemExit(0));
+//! #              Arbiter::system().send(actix::msgs::SystemExit(0));
 //!                future::result(Ok(()))
 //!            }));
 //!
@@ -73,10 +73,10 @@ impl GetAddressInfo {
     }
 }
 
-impl Handler<GetAddressInfo> for DnsResolver {
+impl actix::Handler<GetAddressInfo> for DnsResolver {
     type Result = Result<Vec<AddrInfo>, LookupError>;
 
-    fn handle(&mut self, msg: GetAddressInfo, _: &mut SyncContext<Self>) -> Self::Result {
+    fn handle(&mut self, msg: GetAddressInfo, _: &mut Self::Context) -> Self::Result {
         get_addrinfo(msg.host, msg.port, msg.family, msg.flags, msg.socktype)
             .map(|addrs| addrs.collect())
     }

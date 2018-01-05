@@ -56,17 +56,18 @@ mod supervisor;
 mod utils;
 
 pub mod fut;
-pub mod prelude;
 pub mod actors;
 pub mod msgs;
 pub mod sync;
 pub mod dev;
+
+#[doc(hidden)]
 pub mod constants;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler, ResponseType, StreamHandler, ResponseResult, FutureResponse};
+pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, FutureResponse};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::{Context, ContextFutureSpawner};
@@ -78,3 +79,44 @@ pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
 pub use utils::Condition;
 pub use supervisor::Supervisor;
+
+pub mod prelude {
+//! The `actix` prelude
+//!
+//! The purpose of this module is to alleviate imports of many common actix traits
+//! by adding a glob import to the top of actix heavy modules:
+//!
+//! ```
+//! # #![allow(unused_imports)]
+//! use actix::prelude::*;
+//! ```
+
+#[doc(hidden)]
+pub use actix_derive::*;
+
+pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
+pub use actor::{Actor, ActorContext, AsyncContext, FramedActor};
+pub use arbiter::Arbiter;
+pub use address::{Address, SyncAddress};
+pub use framed::FramedContext;
+pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, FutureResponse};
+pub use context::{Context, ContextFutureSpawner};
+pub use system::System;
+pub use sync::{SyncContext, SyncArbiter};
+
+pub mod actix {
+    pub use msgs;
+    pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
+    pub use actor::{Actor, ActorState, FramedActor, Supervised,
+                    ActorContext, AsyncContext, SpawnHandle};
+    pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, FutureResponse};
+    pub use arbiter::Arbiter;
+    pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
+    pub use context::{Context, ContextFutureSpawner};
+    pub use framed::FramedContext;
+    pub use message::{Request, Response};
+    pub use system::System;
+    pub use sync::{SyncContext, SyncArbiter};
+    pub use registry::{ArbiterService, SystemService};
+    pub use utils::Condition;
+}}

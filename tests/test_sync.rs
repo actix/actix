@@ -36,12 +36,12 @@ impl Actor for SyncActor {
 }
 
 impl Handler<Fibonacci> for SyncActor {
-    type Result = ResponseResult<Fibonacci>;
+    type Result = MessageResult<Fibonacci>;
 
     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
         let old = self.messages.fetch_add(1, Ordering::Relaxed);
         if old == 4 {
-            self.addr.send(msgs::SystemExit(0));
+            self.addr.send(actix::msgs::SystemExit(0));
         }
 
         if msg.0 == 0 {

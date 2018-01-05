@@ -34,7 +34,7 @@ use message::Response;
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
 ///        ctx.run_later(self.dur, |act, ctx| {
 ///            // send `SystemExit` to `System` actor.
-///            Arbiter::system().send(msgs::SystemExit(0));
+///            Arbiter::system().send(actix::msgs::SystemExit(0));
 ///        });
 ///    }
 /// }

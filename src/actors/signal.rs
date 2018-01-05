@@ -25,18 +25,18 @@
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
-//!                 Arbiter::system().send(msgs::SystemExit(0));
+//!                 Arbiter::system().send(actix::msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
 //!             },
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
-//!                 Arbiter::system().send(msgs::SystemExit(0));
+//!                 Arbiter::system().send(actix::msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
-//!                 Arbiter::system().send(msgs::SystemExit(0));
+//!                 Arbiter::system().send(actix::msgs::SystemExit(0));
 //!             }
 //!             _ => (),
 //!         }
@@ -101,7 +101,7 @@ impl ResponseType for Signal {
 
 /// An actor implementation of Unix signal handling
 pub struct ProcessSignals {
-    subscribers: Vec<Box<Subscriber<Signal>>>,
+    subscribers: Vec<Box<actix::Subscriber<Signal>>>,
 }
 
 impl Default for ProcessSignals {
@@ -114,17 +114,17 @@ impl Actor for ProcessSignals {
     type Context = Context<Self>;
 }
 
-impl Supervised for ProcessSignals {}
+impl actix::Supervised for ProcessSignals {}
 
-impl SystemService for ProcessSignals {
+impl actix::SystemService for ProcessSignals {
 
-    fn service_started(&mut self, ctx: &mut Context<Self>) {
-        let handle = Arbiter::handle();
+    fn service_started(&mut self, ctx: &mut Self::Context) {
+        let handle = actix::Arbiter::handle();
 
         // SIGINT
         tokio_signal::ctrl_c(handle).map_err(|_| ())
             .actfuture()
-            .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
+            .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
                  ctx.add_stream(sig.map(|_| SignalType::Int)))
             .spawn(ctx);
 
@@ -133,28 +133,28 @@ impl SystemService for ProcessSignals {
             // SIGHUP
             unix::Signal::new(libc::SIGHUP, handle).map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
                      ctx.add_stream(sig.map(|_| SignalType::Hup)))
                 .spawn(ctx);
 
             // SIGTERM
             unix::Signal::new(libc::SIGTERM, handle).map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut Self, ctx: &mut Context<Self>|
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
                      ctx.add_stream(sig.map(|_| SignalType::Term)))
                 .spawn(ctx);
 
             // SIGQUIT
             unix::Signal::new(libc::SIGQUIT, handle).map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
                      ctx.add_stream(sig.map(|_| SignalType::Quit)))
                 .spawn(ctx);
 
             // SIGCHLD
             unix::Signal::new(libc::SIGCHLD, handle).map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut ProcessSignals, ctx: &mut Context<Self>|
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
                      ctx.add_stream(sig.map(|_| SignalType::Child)))
                 .spawn(ctx);
         }
@@ -168,7 +168,7 @@ impl StreamHandler<io::Result<SignalType>> for ProcessSignals {}
 impl Handler<io::Result<SignalType>> for ProcessSignals {
     type Result = ();
 
-    fn handle(&mut self, msg: io::Result<SignalType>, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: io::Result<SignalType>, _: &mut Self::Context) {
         match msg {
             Ok(sig) => {
                 let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
@@ -186,18 +186,18 @@ impl Handler<io::Result<SignalType>> for ProcessSignals {
 }
 
 /// Subscribe to process signals.
-pub struct Subscribe(pub Box<Subscriber<Signal> + Send>);
+pub struct Subscribe(pub Box<actix::Subscriber<Signal> + Send>);
 
-impl ResponseType for Subscribe {
+impl actix::ResponseType for Subscribe {
     type Item = ();
     type Error = ();
 }
 
 /// Add subscriber for signals
-impl Handler<Subscribe> for ProcessSignals {
+impl actix::Handler<Subscribe> for ProcessSignals {
     type Result = ();
 
-    fn handle(&mut self, msg: Subscribe, _: &mut Context<ProcessSignals>) {
+    fn handle(&mut self, msg: Subscribe, _: &mut Self::Context) {
         self.subscribers.push(msg.0);
     }
 }
@@ -213,9 +213,9 @@ impl Default for DefaultSignalsHandler {
 }
 
 impl Actor for DefaultSignalsHandler {
-    type Context = Context<Self>;
+    type Context = actix::Context<Self>;
 
-    fn started(&mut self, ctx: &mut Context<Self>) {
+    fn started(&mut self, ctx: &mut Self::Context) {
         let addr = Arbiter::system_registry().get::<ProcessSignals>();
         let slf: SyncAddress<_> = ctx.address();
         addr.send(Subscribe(slf.subscriber()))
@@ -224,25 +224,25 @@ impl Actor for DefaultSignalsHandler {
 
 /// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send `SystemExit(0)`
 /// message to `System` actor.
-impl Handler<Signal> for DefaultSignalsHandler {
+impl actix::Handler<Signal> for DefaultSignalsHandler {
     type Result = ();
 
-    fn handle(&mut self, msg: Signal, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: Signal, _: &mut Self::Context) {
         match msg.0 {
             SignalType::Int => {
                 info!("SIGINT received, exiting");
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::system().send(actix::msgs::SystemExit(0));
             }
             SignalType::Hup => {
                 info!("SIGHUP received, reloading");
             }
             SignalType::Term => {
                 info!("SIGTERM received, stopping");
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::system().send(actix::msgs::SystemExit(0));
             }
             SignalType::Quit => {
                 info!("SIGQUIT received, exiting");
-                Arbiter::system().send(msgs::SystemExit(0));
+                Arbiter::system().send(actix::msgs::SystemExit(0));
             }
             _ => (),
         }

@@ -1,8 +1,7 @@
 extern crate futures;
 #[macro_use] extern crate actix;
 
-use actix::{msgs, Actor, Address, Arbiter, Context, Handler, System};
-use actix::prelude::ResponseResult;
+use actix::prelude::*;
 use futures::{future, Future};
 
 #[derive(Message)]
@@ -16,7 +15,7 @@ impl Actor for SumActor {
 }
 
 impl Handler<Sum> for SumActor {
-    type Result = ResponseResult<Sum>;
+    type Result = MessageResult<Sum>;
 
     fn handle(&mut self, message: Sum, _context: &mut Context<Self>) -> Self::Result {
         Ok(message.0 + message.1)
@@ -35,7 +34,7 @@ pub fn response_derive_one() {
             _ => panic!("Something went wrong"),
         }
         
-        Arbiter::system().send(msgs::SystemExit(0));
+        Arbiter::system().send(actix::msgs::SystemExit(0));
         future::result(Ok(()))
     }));
 
