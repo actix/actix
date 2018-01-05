@@ -73,7 +73,7 @@ impl GetAddressInfo {
     }
 }
 
-impl actix::Handler<GetAddressInfo> for DnsResolver {
+impl Handler<GetAddressInfo> for DnsResolver {
     type Result = Result<Vec<AddrInfo>, LookupError>;
 
     fn handle(&mut self, msg: GetAddressInfo, _: &mut Self::Context) -> Self::Result {
@@ -415,5 +415,32 @@ impl fmt::Display for LookupError {
 impl fmt::Debug for LookupError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.description())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use futures::{Future, future};
+
+    #[test]
+    fn test_info() {
+        let sys = System::new("test");
+        let addr = SyncArbiter::start(1, || DnsResolver);
+
+        Arbiter::handle().spawn(
+            addr.call_fut(GetAddressInfo::new(Some("127.0.0.1".to_owned()),
+                                              None,
+                                              Family::Inet.to_int(),
+                                              0,
+                                              SocketType::Stream))
+                .then(|res| {
+                    let res = res.ok().unwrap();
+                    // get resolved addresses
+                    let _addrs = res.ok().unwrap();
+                    Arbiter::system().send(actix::msgs::SystemExit(0));
+                    future::result(Ok(()))
+                }));
+        sys.run();
     }
 }

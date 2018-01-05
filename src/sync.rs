@@ -311,7 +311,7 @@ impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
         if let Some(msg) = self.msg.take() {
             let mut response = <A as Handler<M>>::handle(act, msg, ctx).into_response();
 
-            let result = if response.is_async() {
+            let result = if !response.is_async() {
                 response.result().unwrap()
             } else {
                 if ctx.core.is_none() {
@@ -326,7 +326,7 @@ impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
                     ctx: ctx_ptr})
             };
 
-            if let Some(tx) = self.tx.take() {
+            if let Some(tx) = tx {
                 let _ = tx.send(result);
             }
         }
