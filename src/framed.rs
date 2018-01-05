@@ -116,8 +116,8 @@ impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
     /// Send item to sink. If sink is closed item returned as an error.
-    pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item)
-                -> Result<(), <<A as FramedActor>::Codec as Encoder>::Item>
+    pub fn send(&mut self, msg: <A::Codec as Encoder>::Item)
+                -> Result<(), <A::Codec as Encoder>::Item>
     {
         if let Some(ref mut framed) = self.framed {
             framed.send(msg);
@@ -152,12 +152,24 @@ impl<A> FramedContext<A>
     }
 
     /// Get inner framed object
-    pub fn take_framed(&mut self)
-                       -> Option<Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>> {
+    pub fn take(&mut self) -> Option<Framed<A::Io, A::Codec>> {
         if let Some(cell) = self.framed.take() {
             Some(cell.into_framed())
         } else {
             None
+        }
+    }
+
+    /// Replace existing framed object with new object.
+    ///
+    /// Consider to use `drain()` before replace framed object,
+    /// because Sink buffer get dropped as well.
+    pub fn replace(&mut self, framed: Framed<A::Io, A::Codec>) {
+        self.modified = true;
+        if let Some(ref mut cell) = self.framed {
+            cell.replace(framed);
+        } else {
+            self.framed = Some(ActorFramedCell::new(framed));
         }
     }
 }
@@ -283,7 +295,9 @@ impl<A> Future for FramedContext<A>
             if closed {
                 self.modified = true;
                 self.framed.take();
-                self.items.stop();
+                if self.act.closed() {
+                    self.items.stop();
+                }
             }
 
             // incoming messages
@@ -369,8 +383,8 @@ struct ActorFramedCell<A>
           A::Context: AsyncContext<A>,
 {
     flags: FramedFlags,
-    framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>,
-    sink_items: VecDeque<<<A as FramedActor>::Codec as Encoder>::Item>,
+    framed: Framed<A::Io, A::Codec>,
+    sink_items: VecDeque<<A::Codec as Encoder>::Item>,
     drain: Option<UnsyncSender<()>>,
 }
 
@@ -378,8 +392,7 @@ impl<A> ActorFramedCell<A>
     where A: Actor + FramedActor,
           A::Context: AsyncContext<A>,
 {
-    pub fn new(framed: Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec>)
-               -> ActorFramedCell<A>
+    pub fn new(framed: Framed<A::Io, A::Codec>) -> ActorFramedCell<A>
     {
         ActorFramedCell {
             flags: FramedFlags::SINK_FLUSHED,
@@ -387,6 +400,13 @@ impl<A> ActorFramedCell<A>
             sink_items: VecDeque::new(),
             drain: None,
         }
+    }
+
+    pub fn replace(&mut self, framed: Framed<A::Io, A::Codec>) {
+        self.framed = framed;
+        self.flags = FramedFlags::SINK_FLUSHED;
+        self.sink_items.clear();
+        self.drain.take();
     }
 
     pub fn alive(&self) -> bool {
@@ -416,7 +436,7 @@ impl<A> ActorFramedCell<A>
         rx
     }
 
-    pub fn into_framed(self) -> Framed<<A as FramedActor>::Io, <A as FramedActor>::Codec> {
+    pub fn into_framed(self) -> Framed<A::Io, A::Codec> {
         self.framed
     }
 

@@ -9,6 +9,8 @@
 
 * Added framed `drain` method.
 
+* Allow to replace framed object in framed context.
+
 * Enable signal actor by default, make it compatible with windows.
 
 

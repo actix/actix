@@ -185,10 +185,16 @@ pub trait FramedActor: Actor {
     /// Codec type
     type Codec: Encoder + Decoder;
 
+    /// This message is called for every decoded message from framed object.
     fn handle(&mut self,
-              msg: Result<<<Self as FramedActor>::Codec as Decoder>::Item,
-                          <<Self as FramedActor>::Codec as Decoder>::Error>,
+              msg: Result<<Self::Codec as Decoder>::Item, <Self::Codec as Decoder>::Error>,
               ctx: &mut Self::Context);
+
+    /// This method is called when framed object get closed.
+    ///
+    /// Return value indicates continuation status. `true` means stop actor,
+    /// `false` conitnue to run actor
+    fn closed(&mut self) -> bool { true }
 
     /// Method is called on sink error. By default it does nothing.
     fn error(&mut self, err: <Self::Codec as Encoder>::Error, ctx: &mut Self::Context) {}
