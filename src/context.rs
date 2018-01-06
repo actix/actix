@@ -462,17 +462,19 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
 
                 // item finishes, we need to remove it,
                 // replace current item with last item
-                if drop {
-                    len -= 1;
-                    self.on_stop.remove(&self.items[idx].0);
-                    if idx >= len {
-                        self.items.pop();
-                        return
+                if len > 0 {
+                    if drop {
+                        len -= 1;
+                        self.on_stop.remove(&self.items[idx].0);
+                        if idx >= len {
+                            self.items.pop();
+                            return
+                        } else {
+                            self.items[idx] = self.items.pop().unwrap();
+                        }
                     } else {
-                        self.items[idx] = self.items.pop().unwrap();
+                        idx += 1;
                     }
-                } else {
-                    idx += 1;
                 }
             }
 

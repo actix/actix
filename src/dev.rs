@@ -8,6 +8,7 @@
 //! use actix::dev::*;
 //! ```
 pub use prelude::*;
+pub use prelude::actix::*;
 
 pub use address::{ActorAddress};
 pub use context::{AsyncContextApi, ActorAddressCell, ActorItemsCell, ActorWaitCell};

@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.4.1 (2018-01-06)
+
+* Remove StreamHandler requirements from add_message_stream()
+
+* Fix items length check
 
 ## 0.4.0 (2018-01-05)
 
