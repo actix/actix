@@ -217,19 +217,18 @@ impl<A, M, E, S> ActorFuture for ActorStreamCell<A, M, E, S>
 pub(crate)
 struct ActorMessageStreamCell<A, M, S>
     where S: Stream<Item=M, Error=()>,
-          A: Actor + StreamHandler<M>,
+          A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
           M: ResponseType,
 {
     act: PhantomData<A>,
     fut: Option<Response<A, M>>,
     stream: S,
-    started: bool,
 }
 
 impl<A, M, S> ActorMessageStreamCell<A, M, S>
     where S: Stream<Item=M, Error=()> + 'static,
-          A: Actor + StreamHandler<M>,
+          A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
           M: ResponseType
 {
@@ -237,7 +236,6 @@ impl<A, M, S> ActorMessageStreamCell<A, M, S>
     {
         ActorMessageStreamCell {
             act: PhantomData,
-            started: false,
             fut: None,
             stream: fut,
         }
@@ -246,7 +244,7 @@ impl<A, M, S> ActorMessageStreamCell<A, M, S>
 
 impl<A, M, S> ActorFuture for ActorMessageStreamCell<A, M, S>
     where S: Stream<Item=M, Error=()>,
-          A: Actor + StreamHandler<M>,
+          A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
           M: ResponseType
 {
@@ -256,11 +254,6 @@ impl<A, M, S> ActorFuture for ActorMessageStreamCell<A, M, S>
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
     {
-        if !self.started {
-            self.started = true;
-            <A as StreamHandler<M>>::started(act, ctx);
-        }
-
         loop {
             if let Some(mut fut) = self.fut.take() {
                 match fut.poll_response(act, ctx) {
@@ -279,15 +272,12 @@ impl<A, M, S> ActorFuture for ActorMessageStreamCell<A, M, S>
                     self.fut = Some(fut.into_response());
                     continue
                 }
-                Ok(Async::Ready(None)) => {
-                    <A as StreamHandler<M>>::finished(act, ctx);
-                    return Ok(Async::Ready(()))
-                }
+                Ok(Async::Ready(None)) =>
+                    return Ok(Async::Ready(())),
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
-                Err(_) => {
-                    continue
-                }
+                Err(_) =>
+                    continue,
             }
         }
     }

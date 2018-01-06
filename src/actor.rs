@@ -383,7 +383,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn add_message_stream<S>(&mut self, fut: S)
         where S: Stream<Error=()> + 'static,
               S::Item: ResponseType,
-              A: StreamHandler<S::Item>
+              A: Handler<S::Item>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_message_stream called for stopped actor.");
