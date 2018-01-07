@@ -54,7 +54,6 @@ impl Handler<TcpConnect> for Server {
         let _: () = ChatSession::new(server).framed(msg.0, ChatCodec);
     }
 }
-impl StreamHandler<TcpConnect> for Server {}
 
 
 fn main() {
