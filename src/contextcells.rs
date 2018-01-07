@@ -4,6 +4,7 @@ use std::collections::{VecDeque, HashSet};
 use futures::{Async, Future, Poll, Stream};
 use futures::unsync::oneshot::Sender;
 use tokio_core::reactor::Handle;
+use smallvec::SmallVec;
 
 use fut::ActorFuture;
 use queue::{sync, unsync};
@@ -151,11 +152,11 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
     }
 }
 
-type Item<A> = (SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
+type Item<A> = (SpawnHandle, Option<Box<ActorFuture<Item=(), Error=(), Actor=A>>>);
 
 pub struct ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A> {
     index: SpawnHandle,
-    items: Vec<Item<A>>,
+    items: SmallVec<[Item<A>; 2]>,
 }
 
 impl<A> Default for ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A> {
@@ -164,7 +165,7 @@ impl<A> Default for ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A
     fn default() -> Self {
         ActorItemsCell {
             index: SpawnHandle::default(),
-            items: Vec::new(),
+            items: SmallVec::new(),
         }
     }
 }
@@ -180,14 +181,14 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.index = self.index.next();
-        self.items.push((self.index, Box::new(fut)));
+        self.items.push((self.index, Some(Box::new(fut))));
         self.index
     }
 
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        for index in 0..self.items.len() {
-            if self.items[index].0 == handle {
-                self.items.remove(index);
+        for item in &mut self.items {
+            if item.0 == handle {
+                item.1.take();
                 return true
             }
         }
@@ -201,16 +202,18 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
             let mut not_ready = true;
 
             while idx < len {
-                let drop = match self.items[idx].1.poll(act, ctx) {
-                    Ok(val) => match val {
-                        Async::Ready(_) => {
-                            not_ready = false;
-                            true
-                        }
-                        Async::NotReady => false,
-                    },
-                    Err(_) => true,
-                };
+                let drop = if let Some(ref mut item) = self.items[idx].1 {
+                    match item.poll(act, ctx) {
+                        Ok(val) => match val {
+                            Async::Ready(_) => {
+                                not_ready = false;
+                                true
+                            }
+                            Async::NotReady => false,
+                        },
+                        Err(_) => true,
+                    }
+                } else { true };
 
                 // number of items could be different, context can add more items
                 len = self.items.len();

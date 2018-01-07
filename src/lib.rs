@@ -22,6 +22,7 @@
 extern crate log;
 extern crate libc;
 extern crate uuid;
+extern crate smallvec;
 extern crate crossbeam;
 #[macro_use]
 extern crate bitflags;
