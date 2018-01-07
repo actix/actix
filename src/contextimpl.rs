@@ -193,6 +193,11 @@ impl<A, C> ContextImpl<A, C>
         self.act
     }
 
+    #[inline]
+    pub fn started(&mut self) -> bool {
+        self.flags.contains(ContextFlags::STARTED)
+    }
+
     pub fn poll(&mut self, ctx: &mut A::Context) -> Poll<(), ()> {
         if self.act.is_none() {
             return Ok(Async::Ready(()))

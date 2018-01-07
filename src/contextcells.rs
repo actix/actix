@@ -177,14 +177,17 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
         self.items.is_empty()
     }
 
+    #[inline]
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
+        let fut: Box<ActorFuture<Item=(), Error=(), Actor=A>> = Box::new(fut);
         self.index = self.index.next();
-        self.items.push((self.index, Some(Box::new(fut))));
+        self.items.push((self.index, Some(fut)));
         self.index
     }
 
+    #[inline]
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         for item in &mut self.items {
             if item.0 == handle {
