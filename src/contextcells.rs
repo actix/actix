@@ -193,6 +193,10 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
         }
         false
     }
+    
+    fn find_index_by_handle(&self, handle:SpawnHandle)-> Option<usize> {
+        self.items.iter().position(|ref x| x.0 == handle)
+    }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context, stop: bool) -> ContextCellResult {
         loop {
@@ -201,6 +205,7 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
             let mut not_ready = true;
 
             while idx < len {
+                let handle = self.items[idx].0;
                 let drop = match self.items[idx].1.poll(act, ctx) {
                     Ok(val) => match val {
                         Async::Ready(_) => {
@@ -219,12 +224,14 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
                 // replace current item with last item
                 if drop {
                     len -= 1;
-                    if idx >= len {
-                        self.items.pop();
-                        not_ready = true;
-                        break
-                    } else {
-                        self.items[idx] = self.items.pop().unwrap();
+                    if let Some(idx) = self.find_index_by_handle(handle) {
+                        if idx >= len {
+                            self.items.pop();
+                            not_ready = true;
+                            break
+                        } else {
+                            self.items[idx] = self.items.pop().unwrap();
+                        }
                     }
                 } else {
                     idx += 1;
