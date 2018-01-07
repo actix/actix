@@ -198,11 +198,9 @@ impl Arbiter {
         // create actor
         addr.send::<Execute>(
             Execute::new(move || {
-                let mut ctx = Context::with_receiver(
-                    unsafe{std::mem::uninitialized()}, srx);
+                let mut ctx = Context::with_receiver(None, srx);
                 let act = f(&mut ctx);
-                let old = ctx.replace_actor(act);
-                std::mem::forget(old);
+                ctx.set_actor(act);
                 ctx.run(Arbiter::handle());
                 Ok(())
             }));

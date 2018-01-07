@@ -92,17 +92,12 @@ impl<A, M, I, E> IntoResponse<A, M> for Result<I, E>
           M: ResponseType<Item=I, Error=E>,
 {
     fn into_response(self) -> Response<A, M> {
-        match self {
-            Ok(item) => Response {inner: Some(ResponseTypeItem::Item(item))},
-            Err(err) => Response {inner: Some(ResponseTypeItem::Error(err))},
-        }
+        Response {inner: Some(ResponseTypeItem::Result(self))}
     }
 }
 
-enum ResponseTypeItem<A, M> where A: Actor, M: ResponseType
-{
-    Item(M::Item),
-    Error(M::Error),
+enum ResponseTypeItem<A, M> where A: Actor, M: ResponseType {
+    Result(Result<M::Item, M::Error>),
     Fut(Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>)
 }
 
@@ -122,10 +117,7 @@ impl<A, M, I, E> std::convert::From<Result<I, E>> for Response<A, M>
           M: ResponseType<Item=I, Error=E>,
 {
     fn from(res: Result<I, E>) -> Response<A, M> {
-        match res {
-            Ok(item) => Response {inner: Some(ResponseTypeItem::Item(item))},
-            Err(err) => Response {inner: Some(ResponseTypeItem::Error(err))},
-        }
+        Response {inner: Some(ResponseTypeItem::Result(res))}
     }
 }
 
@@ -142,8 +134,8 @@ impl<A, M> std::convert::From<Box<ActorFuture<Item=M::Item, Error=M::Error, Acto
 impl<A, M> Response<A, M> where A: Actor, M: ResponseType
 {
     /// Create response
-    pub fn reply(val: M::Item) -> Self {
-        Response {inner: Some(ResponseTypeItem::Item(val))}
+    pub fn reply(val: Result<M::Item, M::Error>) -> Self {
+        Response {inner: Some(ResponseTypeItem::Result(val))}
     }
 
     /// Create async response
@@ -153,21 +145,10 @@ impl<A, M> Response<A, M> where A: Actor, M: ResponseType
         Response {inner: Some(ResponseTypeItem::Fut(Box::new(fut)))}
     }
 
-    /// Create unit response
-    pub fn empty() -> Self where M: ResponseType<Item=()> {
-        Response {inner: Some(ResponseTypeItem::Item(()))}
-    }
-
-    /// Create error response
-    pub fn error(err: M::Error) -> Self {
-        Response {inner: Some(ResponseTypeItem::Error(err))}
-    }
-
     pub(crate) fn result(&mut self) -> Option<Result<M::Item, M::Error>> {
         if let Some(item) = self.inner.take() {
             match item {
-                ResponseTypeItem::Item(item) => Some(Ok(item)),
-                ResponseTypeItem::Error(err) => Some(Err(err)),
+                ResponseTypeItem::Result(item) => Some(item),
                 _ => None,
             }
         } else {
@@ -196,9 +177,11 @@ impl<A, M> Response<A, M> where A: Actor, M: ResponseType
                         }
                         result => return result
                     }
-                }
-                ResponseTypeItem::Item(item) => return Ok(Async::Ready(item)),
-                ResponseTypeItem::Error(err) => return Err(err)
+                },
+                ResponseTypeItem::Result(result) => match result {
+                    Ok(item) => return Ok(Async::Ready(item)),
+                    Err(err) => return Err(err),
+                },
             }
         }
         Ok(Async::NotReady)

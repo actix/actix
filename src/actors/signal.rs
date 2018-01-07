@@ -162,9 +162,6 @@ impl actix::SystemService for ProcessSignals {
 }
 
 #[doc(hidden)]
-impl StreamHandler<io::Result<SignalType>> for ProcessSignals {}
-
-#[doc(hidden)]
 impl Handler<io::Result<SignalType>> for ProcessSignals {
     type Result = ();
 

@@ -7,7 +7,7 @@ use futures::{Async, AsyncSink, Future, Poll, Sink, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::unsync::oneshot::{channel, Sender as UnsyncSender, Receiver as UnsyncReceiver};
 use tokio_core::reactor::Handle;
-use tokio_io::AsyncRead;
+use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
@@ -15,10 +15,13 @@ use fut::ActorFuture;
 use actor::{Actor, Supervised, SpawnHandle,
             FramedActor, ActorState, ActorContext, AsyncContext};
 use address::{Subscriber};
-use handler::{Handler, ResponseType, StreamHandler};
-use context::{ActorAddressCell, ActorItemsCell, ActorWaitCell, AsyncContextApi};
+use handler::{Handler, ResponseType};
+use context::AsyncContextApi;
+use contextcells::{ContextCell, ContextCellResult,
+                   ActorAddressCell, ActorItemsCell, ActorWaitCell};
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 use message::Response;
+use contextimpl::ContextImpl;
 
 
 /// Actor execution context for
@@ -26,13 +29,7 @@ use message::Response;
 pub struct FramedContext<A>
     where A: FramedActor + Actor<Context=FramedContext<A>>,
 {
-    act: A,
-    state: ActorState,
-    modified: bool,
-    address: ActorAddressCell<A>,
-    framed: Option<ActorFramedCell<A>>,
-    wait: ActorWaitCell<A>,
-    items: ActorItemsCell<A>,
+    inner: ContextImpl<A, ActorFramedCell<A>>,
 }
 
 impl<A> ToEnvelope<A> for FramedContext<A>
@@ -42,11 +39,8 @@ impl<A> ToEnvelope<A> for FramedContext<A>
                tx: Option<SyncSender<Result<M::Item, M::Error>>>,
                cancel_on_drop: bool) -> Envelope<A>
         where M: ResponseType + Send + 'static,
-              A: Handler<M>,
-              A: FramedActor + Actor<Context=FramedContext<A>>,
-              M::Item: Send,
-              M::Error: Send,
-    {
+              A: Handler<M> + FramedActor + Actor<Context=FramedContext<A>>,
+              M::Item: Send, M::Error: Send {
         Envelope::new(RemoteEnvelope::new(msg, tx, cancel_on_drop))
     }
 }
@@ -58,24 +52,17 @@ impl<A> ActorContext for FramedContext<A>
     ///
     /// This method closes actor address and framed object.
     fn stop(&mut self) {
-        self.close();
-        self.address.close();
-        if self.state == ActorState::Running {
-            self.state = ActorState::Stopping;
-        }
+        self.inner.stop()
     }
 
     /// Terminate actor execution
     fn terminate(&mut self) {
-        self.close();
-        self.address.close();
-        self.items.close();
-        self.state = ActorState::Stopped;
+        self.inner.terminate()
     }
 
     /// Actor execution state
     fn state(&self) -> ActorState {
-        self.state
+        self.inner.state()
     }
 }
 
@@ -85,24 +72,17 @@ impl<A> AsyncContext<A> for FramedContext<A>
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        self.modified = true;
-        self.items.spawn(fut)
+        self.inner.spawn(fut)
     }
 
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        self.modified = true;
-        self.wait.add(fut)
+        self.inner.wait(fut)
     }
 
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        self.modified = true;
-        self.items.cancel_future(handle)
-    }
-
-    fn cancel_future_on_stop(&mut self, handle: SpawnHandle) {
-        self.items.cancel_future_on_stop(handle)
+        self.inner.cancel_future(handle)
     }
 }
 
@@ -110,7 +90,7 @@ impl<A> AsyncContextApi<A> for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
     fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
-        &mut self.address
+        self.inner.address_cell()
     }
 }
 
@@ -121,7 +101,7 @@ impl<A> FramedContext<A>
     pub fn send(&mut self, msg: <A::Codec as Encoder>::Item)
                 -> Result<(), <A::Codec as Encoder>::Item>
     {
-        if let Some(ref mut framed) = self.framed {
+        if let Some(ref mut framed) = *self.inner.cell() {
             framed.send(msg);
             Ok(())
         } else {
@@ -133,8 +113,7 @@ impl<A> FramedContext<A>
     /// will try to send all buffered items and then close.
     /// FramedContext::stop() could be used to force stop sending process.
     pub fn close(&mut self) {
-        self.items.stop();
-        if let Some(ref mut framed) = self.framed {
+        if let Some(ref mut framed) = *self.inner.cell() {
             framed.close();
         }
     }
@@ -144,7 +123,7 @@ impl<A> FramedContext<A>
     /// Returns oneshot future. It resolves when sink is drained.
     /// All other actor activities are paused.
     pub fn drain(&mut self) -> UnsyncReceiver<()> {
-        if let Some(ref mut framed) = self.framed {
+        if let Some(ref mut framed) = *self.inner.cell() {
             framed.drain()
         } else {
             let (tx, rx) = channel();
@@ -155,7 +134,7 @@ impl<A> FramedContext<A>
 
     /// Get inner framed object
     pub fn take(&mut self) -> Option<Framed<A::Io, A::Codec>> {
-        if let Some(cell) = self.framed.take() {
+        if let Some(cell) = self.inner.cell().take() {
             Some(cell.into_framed())
         } else {
             None
@@ -167,12 +146,12 @@ impl<A> FramedContext<A>
     /// Consider to use `drain()` before replace framed object,
     /// because Sink buffer get dropped as well.
     pub fn replace(&mut self, framed: Framed<A::Io, A::Codec>) {
-        self.modified = true;
-        if let Some(ref mut cell) = self.framed {
+        self.inner.modify();
+        if let Some(ref mut cell) = *self.inner.cell() {
             cell.replace(framed);
-        } else {
-            self.framed = Some(ActorFramedCell::new(framed));
+            return
         }
+        *self.inner.cell() = Some(ActorFramedCell::new(framed));
     }
 }
 
@@ -181,47 +160,34 @@ impl<A> FramedContext<A>
 {
     #[doc(hidden)]
     pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>,
-              M: ResponseType + 'static,
+        where A: Handler<M>, M: ResponseType + 'static,
     {
-        Box::new(self.address.unsync_address())
+        self.inner.subscriber()
     }
 
     #[doc(hidden)]
     pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
-              M::Item: Send,
-              M::Error: Send,
+              M::Item: Send, M::Error: Send,
     {
-        Box::new(self.address.sync_address())
+        self.inner.sync_subscriber()
     }
 }
 
 impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
-    pub(crate) fn new(act: A, io: A::Io, codec: A::Codec) -> FramedContext<A> {
+    pub(crate) fn new(act: Option<A>, io: A::Io, codec: A::Codec) -> FramedContext<A> {
         FramedContext {
-            act: act,
-            state: ActorState::Started,
-            modified: false,
-            address: ActorAddressCell::default(),
-            framed: Some(ActorFramedCell::new(io.framed(codec))),
-            wait: ActorWaitCell::default(),
-            items: ActorItemsCell::default(),
+            inner: ContextImpl::with_cell(
+                act, ActorFramedCell::new(io.framed(codec)))
         }
     }
 
-    pub(crate) fn framed(act: A, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
+    pub(crate) fn framed(act: Option<A>, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
         FramedContext {
-            act: act,
-            state: ActorState::Started,
-            modified: false,
-            address: ActorAddressCell::default(),
-            framed: Some(ActorFramedCell::new(framed)),
-            wait: ActorWaitCell::default(),
-            items: ActorItemsCell::default(),
+            inner: ContextImpl::with_cell(act, ActorFramedCell::new(framed))
         }
     }
 
@@ -233,19 +199,19 @@ impl<A> FramedContext<A>
         let ctx: &mut FramedContext<A> = unsafe {
             std::mem::transmute(self as &mut FramedContext<A>)
         };
-        self.act.restarting(ctx);
+        self.inner.actor().restarting(ctx);
     }
 
-    pub(crate) fn replace_actor(&mut self, srv: A) -> A {
-        std::mem::replace(&mut self.act, srv)
+    pub(crate) fn set_actor(&mut self, act: A) {
+        self.inner.set_actor(act)
     }
 
     pub(crate) fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
-        &mut self.address
+        self.inner.address_cell()
     }
 
     pub(crate) fn into_inner(self) -> A {
-        self.act
+        self.inner.into_inner().unwrap()
     }
 }
 
@@ -260,98 +226,7 @@ impl<A> Future for FramedContext<A>
         let ctx: &mut FramedContext<A> = unsafe {
             std::mem::transmute(self as &mut FramedContext<A>)
         };
-
-        // update state
-        match self.state {
-            ActorState::Started => {
-                Actor::started(&mut self.act, ctx);
-                self.state = ActorState::Running;
-            },
-            ActorState::Stopping => {
-                Actor::stopping(&mut self.act, ctx);
-            }
-            _ => ()
-        }
-
-        let mut prep_stop = false;
-        loop {
-            self.modified = false;
-
-            // check wait futures
-            if self.wait.poll(&mut self.act, ctx) {
-                return Ok(Async::NotReady)
-            }
-
-            // framed
-            let closed = if let Some(ref mut framed) = self.framed {
-                // framed sink may need to drain
-                if framed.poll(&mut self.act, ctx) {
-                    return Ok(Async::NotReady)
-                }
-                framed.closed()
-            } else {
-                false
-            };
-            if closed {
-                self.modified = true;
-                self.framed.take();
-                if self.act.closed() {
-                    self.items.stop();
-                }
-            }
-
-            // incoming messages
-            self.address.poll(&mut self.act, ctx);
-
-            // check secondary streams
-            self.items.poll(&mut self.act, ctx);
-
-            // are we done
-            if self.modified {
-                continue
-            }
-
-            // check state
-            match self.state {
-                ActorState::Stopped => {
-                    self.state = ActorState::Stopped;
-                    Actor::stopped(&mut self.act, ctx);
-                    return Ok(Async::Ready(()))
-                },
-                ActorState::Stopping => {
-                    if prep_stop {
-                        if self.framed.is_some() ||
-                            self.address.connected() ||
-                            !self.items.is_empty()
-                        {
-                            self.state = ActorState::Running;
-                            continue
-                        } else {
-                            self.state = ActorState::Stopped;
-                            Actor::stopped(&mut self.act, ctx);
-                            return Ok(Async::Ready(()))
-                        }
-                    } else {
-                        Actor::stopping(&mut self.act, ctx);
-                        prep_stop = true;
-                        continue
-                    }
-                },
-                ActorState::Running => {
-                    if !self.framed.is_some() && !self.address.connected() &&
-                        self.items.is_empty()
-                    {
-                        self.state = ActorState::Stopping;
-                        Actor::stopping(&mut self.act, ctx);
-                        prep_stop = true;
-                        continue
-                    }
-                },
-                _ => (),
-            }
-
-            return Ok(Async::NotReady)
-        }
+        self.inner.poll(ctx)
     }
 }
 
@@ -359,10 +234,7 @@ impl<A> std::fmt::Debug for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "FramedContext({:?}: actor:{:?}) {{ state: {:?}, connected: {}, items: {} }}",
-               self as *const _,
-               &self.act as *const _,
-               self.state, "-", self.items.is_empty())
+        write!(f, "FramedContext({:?})", self as *const _)
     }
 }
 
@@ -389,8 +261,7 @@ struct ActorFramedCell<A>
 }
 
 impl<A> ActorFramedCell<A>
-    where A: Actor + FramedActor,
-          A::Context: AsyncContext<A>,
+    where A: Actor + FramedActor, A::Context: AsyncContext<A>,
 {
     pub fn new(framed: Framed<A::Io, A::Codec>) -> ActorFramedCell<A>
     {
@@ -407,11 +278,6 @@ impl<A> ActorFramedCell<A>
         self.flags = FramedFlags::SINK_FLUSHED;
         self.sink_items.clear();
         self.drain.take();
-    }
-
-    pub fn alive(&self) -> bool {
-        !self.flags.contains(FramedFlags::SINK_CLOSED) &&
-            !self.flags.contains(FramedFlags::STREAM_CLOSED)
     }
 
     pub fn close(&mut self) {
@@ -439,8 +305,17 @@ impl<A> ActorFramedCell<A>
     pub fn into_framed(self) -> Framed<A::Io, A::Codec> {
         self.framed
     }
+}
 
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> bool {
+impl<A> ContextCell<A> for ActorFramedCell<A>
+    where A: Actor + FramedActor, A::Context: AsyncContext<A>,
+{
+    fn alive(&self) -> bool {
+        !self.flags.contains(FramedFlags::SINK_CLOSED) &&
+            !self.flags.contains(FramedFlags::STREAM_CLOSED)
+    }
+
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context, stop: bool) -> ContextCellResult {
         loop {
             let mut not_ready = true;
 
@@ -471,7 +346,11 @@ impl<A> ActorFramedCell<A>
                         match self.framed.start_send(msg) {
                             Ok(AsyncSink::NotReady(msg)) => {
                                 self.sink_items.push_front(msg);
-                                return self.drain.is_some();
+                                return if self.drain.is_some() {
+                                    ContextCellResult::NotReady
+                                } else {
+                                    ContextCellResult::Ready
+                                };
                             }
                             Ok(AsyncSink::Ready) => {
                                 self.flags.remove(FramedFlags::SINK_FLUSHED);
@@ -497,7 +376,7 @@ impl<A> ActorFramedCell<A>
                         }
                         Ok(Async::NotReady) =>
                             if self.drain.is_some() {
-                                return true
+                                return ContextCellResult::NotReady;
                             },
                         Err(err) => {
                             self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::SINK_FLUSHED;
@@ -520,11 +399,17 @@ impl<A> ActorFramedCell<A>
                 continue
             }
 
-            return false
+            if !self.alive() {
+                return ContextCellResult::Stop
+            } else if stop {
+                if let Ok(Async::NotReady) = self.framed.get_mut().shutdown() {
+                    return ContextCellResult::NotReady
+                }
+            }
+            return ContextCellResult::Ready
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -653,18 +538,18 @@ mod tests {
     #[test]
     fn test_basic() {
         let mut ctx = FramedContext::new(
-            TestActor{msgs: Vec::new()}, Buffer::new(""), TestCodec);
+            Some(TestActor{msgs: Vec::new()}), Buffer::new(""), TestCodec);
 
         let _ = ctx.poll();
-        ctx.framed.as_mut().unwrap().framed.get_mut().feed_data("data");
+        ctx.inner.cell().as_mut().unwrap().framed.get_mut().feed_data("data");
 
         // messages recevied
         let _ = ctx.poll();
-        assert_eq!(ctx.act.msgs[0], b"da"[..]);
-        assert_eq!(ctx.act.msgs[1], b"ta"[..]);
+        assert_eq!(ctx.inner.actor().msgs[0], b"da"[..]);
+        assert_eq!(ctx.inner.actor().msgs[1], b"ta"[..]);
 
         // block sink
-        ctx.framed.as_mut().unwrap().framed.get_mut().write_block = true;
+        ctx.inner.cell().as_mut().unwrap().framed.get_mut().write_block = true;
         ctx.send(Bytes::from_static(b"11")).ok().unwrap();
         ctx.send(Bytes::from_static(b"22")).ok().unwrap();
 
@@ -672,18 +557,18 @@ mod tests {
         let _ = ctx.drain();
 
         // new data in framed, actor is paused
-        ctx.framed.as_mut().unwrap().framed.get_mut().feed_data("bb");
+        ctx.inner.cell().as_mut().unwrap().framed.get_mut().feed_data("bb");
         let _ = ctx.poll();
-        assert_eq!(ctx.act.msgs.len(), 2);
+        assert_eq!(ctx.inner.actor().msgs.len(), 2);
 
         // sink unblocked
-        ctx.framed.as_mut().unwrap().framed.get_mut().write_block = false;
+        ctx.inner.cell().as_mut().unwrap().framed.get_mut().write_block = false;
         let _ = ctx.poll();
-        assert_eq!(ctx.act.msgs.len(), 3);
-        assert_eq!(ctx.act.msgs[2], b"bb"[..]);
+        assert_eq!(ctx.inner.actor().msgs.len(), 3);
+        assert_eq!(ctx.inner.actor().msgs[2], b"bb"[..]);
 
         // sink data
-        assert_eq!(ctx.framed.as_mut().unwrap().framed.get_mut().write, b"1122"[..]);
+        assert_eq!(ctx.inner.cell().as_mut().unwrap().framed.get_mut().write, b"1122"[..]);
 
         // println!("TEST: {:?}", ctx.act.msgs);
     }

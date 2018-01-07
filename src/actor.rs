@@ -9,9 +9,10 @@ use message::Response;
 use arbiter::Arbiter;
 use address::ActorAddress;
 use envelope::ToEnvelope;
-use handler::{Handler, StreamHandler, ResponseType};
-use cells::{ActorMessageCell, ActorDelayedMessageCell, ActorStreamCell, ActorMessageStreamCell};
-use context::{Context, ActorFutureCell};
+use handler::{Handler, ResponseType};
+use context::{Context, };
+use contextitems::{ActorFutureItem, ActorMessageItem,
+                   ActorDelayedMessageItem, ActorStreamItem, ActorMessageStreamItem};
 use framed::FramedContext;
 use utils::{TimerFunc, TimeoutWrapper};
 
@@ -75,9 +76,12 @@ pub trait Actor: Sized + 'static {
     /// Method is called after an actor is in `Actor::Stopping` state. There could be several
     /// reasons for stopping. `Context::stop` get called by the actor itself.
     /// All addresses to current actor get dropped and no more evented objects
-    /// left in the context. Actor could restore from stopping state to running state
-    /// by creating new address or adding future or stream to current content.
-    fn stopping(&mut self, ctx: &mut Self::Context) {}
+    /// left in the context.
+    ///
+    /// Actor could restore from stopping state by returning `false` value.
+    fn stopping(&mut self, ctx: &mut Self::Context) -> bool {
+        true
+    }
 
     /// Method is called after an actor is stopped, it can be used to perform
     /// any needed cleanup work or spawning more actors. This is final state,
@@ -104,7 +108,7 @@ pub trait Actor: Sized + 'static {
     fn start<Addr>(self) -> Addr
         where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
     {
-        let mut ctx = Context::new(self);
+        let mut ctx = Context::new(Some(self));
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
         ctx.run(Arbiter::handle());
         addr
@@ -140,13 +144,12 @@ pub trait Actor: Sized + 'static {
         where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>,
               F: FnOnce(&mut Context<Self>) -> Self + 'static
     {
-        let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
+        let mut ctx = Context::new(None);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
 
         Arbiter::handle().spawn_fn(move || {
             let act = f(&mut ctx);
-            let old = ctx.replace_actor(act);
-            std::mem::forget(old);
+            ctx.set_actor(act);
             ctx.run(Arbiter::handle());
             future::ok(())
         });
@@ -154,26 +157,15 @@ pub trait Actor: Sized + 'static {
     }
 
     /// Create static response.
-    fn reply<M>(val: M::Item) -> Response<Self, M> where M: ResponseType {
+    fn reply<M>(val: Result<M::Item, M::Error>) -> Response<Self, M> where M: ResponseType {
         Response::reply(val)
     }
 
     /// Create async response process.
     fn async_reply<T, M>(fut: T) -> Response<Self, M>
         where M: ResponseType,
-              T: ActorFuture<Item=M::Item, Error=M::Error, Actor=Self> + Sized + 'static
-    {
+              T: ActorFuture<Item=M::Item, Error=M::Error, Actor=Self> + Sized + 'static {
         Response::async_reply(fut)
-    }
-
-    /// Create unit response, for case when `ResponseType::Item = ()`
-    fn empty<M>() -> Response<Self, M> where M: ResponseType<Item=()> {
-        Response::empty()
-    }
-
-    /// Create error response
-    fn reply_error<M>(err: M::Error) -> Response<Self, M> where M: ResponseType {
-        Response::error(err)
     }
 }
 
@@ -210,7 +202,7 @@ pub trait FramedActor: Actor {
     fn from_framed<Addr>(self, framed: Framed<Self::Io, Self::Codec>) -> Addr
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>
     {
-        let mut ctx = FramedContext::framed(self, framed);
+        let mut ctx = FramedContext::framed(Some(self), framed);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
         ctx.run(Arbiter::handle());
         addr
@@ -231,13 +223,12 @@ pub trait FramedActor: Actor {
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
               F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
     {
-        let mut ctx = FramedContext::framed(unsafe{std::mem::uninitialized()}, framed);
+        let mut ctx = FramedContext::framed(None, framed);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
 
         Arbiter::handle().spawn_fn(move || {
             let act = f(&mut ctx);
-            let old = ctx.replace_actor(act);
-            std::mem::forget(old);
+            ctx.set_actor(act);
             ctx.run(Arbiter::handle());
             future::ok(())
         });
@@ -306,6 +297,8 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
 
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
+    ///
+    /// All futures cancel during actor stopping stage.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
 
@@ -316,10 +309,6 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
 
     /// Cancel future. idx is a value returned by `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
-
-    #[doc(hidden)]
-    /// Cancel future during actor stopping state.
-    fn cancel_future_on_stop(&mut self, handle: SpawnHandle);
 
     /// This method allow to handle Future in similar way as normal actor messages.
     ///
@@ -358,7 +347,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         if self.state() == ActorState::Stopped {
             error!("Context::add_future called for stopped actor.");
         } else {
-            self.spawn(ActorFutureCell::new(fut));
+            self.spawn(ActorFutureItem::new(fut));
         }
     }
 
@@ -370,12 +359,12 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               S::Item: ResponseType,
-              A: StreamHandler<Result<S::Item, S::Error>>
+              A: Handler<Result<S::Item, S::Error>>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
         } else {
-            self.spawn(ActorStreamCell::new(fut));
+            self.spawn(ActorStreamItem::new(fut));
         }
     }
 
@@ -388,7 +377,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         if self.state() == ActorState::Stopped {
             error!("Context::add_message_stream called for stopped actor.");
         } else {
-            self.spawn(ActorMessageStreamCell::new(fut));
+            self.spawn(ActorMessageStreamItem::new(fut));
         }
     }
 
@@ -399,8 +388,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");
         } else {
-            let h = self.spawn(ActorMessageCell::new(msg));
-            self.cancel_future_on_stop(h);
+            self.spawn(ActorMessageItem::new(msg));
         }
     }
 
@@ -414,9 +402,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
             error!("Context::add_timeout called for stopped actor.");
             SpawnHandle::default()
         } else {
-            let h = self.spawn(ActorDelayedMessageCell::new(TimeoutWrapper::new(msg, after)));
-            self.cancel_future_on_stop(h);
-            h
+            self.spawn(ActorDelayedMessageItem::new(TimeoutWrapper::new(msg, after)))
         }
     }
 
@@ -425,9 +411,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn run_later<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
         where F: FnOnce(&mut A, &mut A::Context) + 'static
     {
-        let h = self.spawn(TimerFunc::new(dur, f));
-        self.cancel_future_on_stop(h);
-        h
+        self.spawn(TimerFunc::new(dur, f))
     }
 }
 

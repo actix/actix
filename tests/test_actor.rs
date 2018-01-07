@@ -17,11 +17,10 @@ struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>);
 
 impl Actor for MyActor {
     type Context = actix::Context<Self>;
-}
 
-impl actix::StreamHandler<Result<Num, ()>> for MyActor {
-    fn finished(&mut self, _: &mut Self::Context) {
+    fn stopping(&mut self, _: &mut Self::Context) -> bool {
         Arbiter::system().send(actix::msgs::SystemExit(0));
+        true
     }
 }
 

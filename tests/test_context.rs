@@ -9,7 +9,7 @@ use tokio_core::reactor::Timeout;
 use actix::prelude::*;
 use actix::msgs::SystemExit;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum Op {
     Cancel,
     Timeout,
@@ -30,10 +30,10 @@ impl Actor for MyActor {
                 ctx.cancel_future(handle);
             },
             Op::Timeout => {
-                ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
+                ctx.notify_later(TimeoutMessage, Duration::new(0, 1000));
             },
             Op::TimeoutStop => {
-                ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
+                ctx.notify_later(TimeoutMessage, Duration::new(0, 100000));
                 ctx.stop();
             },
             Op::RunAfter => {
@@ -57,17 +57,17 @@ impl Actor for MyActor {
 
 struct TimeoutMessage;
 
-impl actix::ResponseType for TimeoutMessage {
+impl ResponseType for TimeoutMessage {
     type Item = ();
     type Error = ();
 }
 
-impl actix::Handler<TimeoutMessage> for MyActor {
+impl Handler<TimeoutMessage> for MyActor {
     type Result = ();
 
     fn handle(&mut self, _: TimeoutMessage, _: &mut Self::Context) {
         if self.op != Op::Timeout {
-            assert!(false, "should not happen");
+            assert!(false, "should not happen {:?}", self.op);
         }
         Arbiter::system().send(SystemExit(0));
     }

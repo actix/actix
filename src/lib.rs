@@ -43,8 +43,10 @@ pub use actix_derive::*;
 mod actor;
 mod arbiter;
 mod address;
-mod cells;
 mod context;
+mod contextimpl;
+mod contextcells;
+mod contextitems;
 mod envelope;
 mod framed;
 mod handler;
@@ -59,7 +61,6 @@ pub mod fut;
 pub mod actors;
 pub mod msgs;
 pub mod sync;
-pub mod dev;
 
 #[doc(hidden)]
 pub mod constants;
@@ -67,7 +68,7 @@ pub mod constants;
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, ResponseFuture};
+pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::{Context, ContextFutureSpawner};
@@ -99,7 +100,7 @@ pub use actor::{Actor, ActorContext, AsyncContext, FramedActor};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress};
 pub use framed::FramedContext;
-pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, ResponseFuture};
+pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
 pub use context::{Context, ContextFutureSpawner};
 pub use system::System;
 pub use sync::{SyncContext, SyncArbiter};
@@ -109,7 +110,7 @@ pub mod actix {
     pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, FramedActor, Supervised,
                     ActorContext, AsyncContext, SpawnHandle};
-    pub use handler::{Handler, ResponseType, StreamHandler, MessageResult, ResponseFuture};
+    pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
     pub use context::{Context, ContextFutureSpawner};
@@ -120,3 +121,25 @@ pub mod actix {
     pub use registry::{ArbiterService, SystemService};
     pub use utils::Condition;
 }}
+
+
+pub mod dev {
+//! The `actix` prelude for library developers
+//!
+//! The purpose of this module is to alleviate imports of many common actix traits
+//! by adding a glob import to the top of actix heavy modules:
+//!
+//! ```
+//! # #![allow(unused_imports)]
+//! use actix::dev::*;
+//! ```
+
+    pub use prelude::*;
+    pub use prelude::actix::*;
+
+    pub use address::{ActorAddress};
+    pub use context::AsyncContextApi;
+    pub use contextimpl::ContextImpl;
+    pub use contextcells::{ActorAddressCell, ActorItemsCell, ActorWaitCell};
+    pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
+}

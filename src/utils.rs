@@ -48,7 +48,6 @@ impl<M> TimeoutWrapper<M> {
     }
 }
 
-
 #[doc(hidden)]
 impl<M> Future for TimeoutWrapper<M>
 {

@@ -28,7 +28,7 @@ impl Actor for MyActor {
     fn started(&mut self, _: &mut Self::Context) {
         self.started.store(true, Ordering::Relaxed);
     }
-    fn stopping(&mut self, ctx: &mut Self::Context) {
+    fn stopping(&mut self, ctx: &mut Self::Context) -> bool {
         self.stopping.store(true, Ordering::Relaxed);
 
         if self.restore_after_stop {
@@ -37,6 +37,9 @@ impl Actor for MyActor {
             rx.actfuture().then(|_, _: &mut MyActor, _: &mut _| {
                 actix::fut::result(Ok(()))
             }).spawn(ctx);
+            false
+        } else {
+            true
         }
     }
     fn stopped(&mut self, _: &mut Self::Context) {

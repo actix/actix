@@ -87,11 +87,10 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     {
         // create actor
         let (cell, factory) = if !lazy {
-            let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
+            let mut ctx = Context::new(None);
             let addr = ctx.address_cell().unsync_sender();
             let act = f(&mut ctx);
-            let old = ctx.replace_actor(act);
-            std::mem::forget(old);
+            ctx.set_actor(act);
             (Some(ActorCell{ctx: ctx, addr: addr}), None)
         } else {
             let f: Box<FnFactory<A>> = Box::new(f);
@@ -129,11 +128,10 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             addr.send(Execute::new(move || -> Result<(), ()> {
                 // create actor
                 let (cell, factory) = if lazy {
-                    let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
+                    let mut ctx = Context::new(None);
                     let addr = ctx.address_cell().unsync_sender();
                     let act = f(&mut ctx);
-                    let old = ctx.replace_actor(act);
-                    std::mem::forget(old);
+                    ctx.set_actor(act);
                     (Some(ActorCell{ctx: ctx, addr: addr}), None)
                 } else {
                     let f: Box<FnFactory<A>> = Box::new(f);
@@ -167,13 +165,11 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     fn get_cell(&mut self) -> &mut ActorCell<A> {
         if self.cell.is_none() {
             let f = self.factory.take().expect("Should be available");
-            let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
+            let mut ctx = Context::new(None);
 
             let addr = ctx.address_cell().unsync_sender();
             let act = f.call(&mut ctx);
-            let old = ctx.replace_actor(act);
-            std::mem::forget(old);
-
+            ctx.set_actor(act);
             self.cell = Some(ActorCell {ctx: ctx, addr: addr});
         }
         self.cell.as_mut().unwrap()
@@ -181,13 +177,11 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     fn restart(&mut self) {
         let cell = self.cell.take().unwrap();
-        let mut ctx = Context::new(unsafe{std::mem::uninitialized()});
+        let mut ctx = Context::new(None);
 
         let addr = ctx.address_cell().unsync_sender();
-        let old = ctx.replace_actor(cell.ctx.into_inner());
-        std::mem::forget(old);
+        ctx.set_actor(cell.ctx.into_inner());
         ctx.restarting();
-
         self.cell = Some(ActorCell {ctx: ctx, addr: addr});
     }
 }
