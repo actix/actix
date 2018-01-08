@@ -286,6 +286,7 @@ struct ActorFramedCell<A>
     framed: Framed<A::Io, A::Codec>,
     sink_items: VecDeque<<A::Codec as Encoder>::Item>,
     drain: Option<UnsyncSender<()>>,
+    error: Option<<A::Codec as Encoder>::Error>,
 }
 
 impl<A> ActorFramedCell<A>
@@ -298,6 +299,7 @@ impl<A> ActorFramedCell<A>
             framed: framed,
             sink_items: VecDeque::new(),
             drain: None,
+            error: None,
         }
     }
 
@@ -317,7 +319,18 @@ impl<A> ActorFramedCell<A>
     }
 
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item) {
-        self.sink_items.push_back(msg);
+        // write to sink immediately
+        if self.sink_items.is_empty() && self.error.is_none() {
+            self.flags.remove(FramedFlags::SINK_FLUSHED);
+            match self.framed.start_send(msg) {
+                Ok(AsyncSink::NotReady(msg)) =>
+                    self.sink_items.push_front(msg),
+                Ok(AsyncSink::Ready) => (),
+                Err(err) => self.error = Some(err),
+            }
+        } else {
+            self.sink_items.push_back(msg);
+        }
     }
 
     pub fn drain(&mut self) -> UnsyncReceiver<()> {
@@ -344,6 +357,11 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
     }
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context, stop: bool) -> ContextCellResult {
+        if let Some(err) = self.error.take() {
+            self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+            <A as FramedActor>::closed(act, Some(err), ctx);
+        }
+
         loop {
             let mut not_ready = true;
 
@@ -358,6 +376,7 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                     }
                     Ok(Async::Ready(None)) => {
                         self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                        <A as FramedActor>::closed(act, None, ctx);
                     }
                     Ok(Async::NotReady) => (),
                     Err(err) => {
@@ -387,7 +406,7 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                             Err(err) => {
                                 self.flags |=
                                     FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                                <A as FramedActor>::error(act, err, ctx);
+                                <A as FramedActor>::closed(act, Some(err), ctx);
                                 break
                             }
                         }
@@ -408,7 +427,7 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                             },
                         Err(err) => {
                             self.flags |= FramedFlags::SINK_CLOSED | FramedFlags::SINK_FLUSHED;
-                            <A as FramedActor>::error(act, err, ctx);
+                            <A as FramedActor>::closed(act, Some(err), ctx);
                         }
                     }
                 }
@@ -449,6 +468,7 @@ mod tests {
 
     struct Buffer {
         buf: Bytes,
+        eof: bool,
         write: BytesMut,
         err: Option<io::Error>,
         write_err: Option<io::Error>,
@@ -459,6 +479,7 @@ mod tests {
         fn new(data: &'static str) -> Buffer {
             Buffer {
                 buf: Bytes::from(data),
+                eof: false,
                 write: BytesMut::new(),
                 err: None,
                 write_err: None,
@@ -478,6 +499,8 @@ mod tests {
             if self.buf.is_empty() {
                 if self.err.is_some() {
                     Err(self.err.take().unwrap())
+                } else if self.eof {
+                    Ok(0)
                 } else {
                     Err(io::Error::new(io::ErrorKind::WouldBlock, ""))
                 }
@@ -546,6 +569,14 @@ mod tests {
 
     struct TestActor {
         msgs: Vec<Bytes>,
+        closed: bool,
+        error: Option<io::Error>,
+    }
+
+    impl TestActor {
+        fn new() -> TestActor {
+            TestActor{msgs: Vec::new(), closed: false, error: None}
+        }
     }
 
     impl Actor for TestActor {
@@ -556,17 +587,22 @@ mod tests {
         type Io = Buffer;
         type Codec = TestCodec;
 
-        fn handle(&mut self, msg: Result<Item, io::Error>, _ctx: &mut Self::Context) {
+        fn handle(&mut self, msg: Result<Item, io::Error>, _: &mut Self::Context) {
             if let Ok(item) = msg {
                 self.msgs.push(item.0);
             }
+        }
+
+        fn closed(&mut self, err: Option<io::Error>, _: &mut Self::Context) {
+            self.error = err;
+            self.closed = true;
         }
     }
 
     #[test]
     fn test_basic() {
         let mut ctx = FramedContext::new(
-            Some(TestActor{msgs: Vec::new()}), Buffer::new(""), TestCodec);
+            Some(TestActor::new()), Buffer::new(""), TestCodec);
 
         let _ = ctx.poll();
         ctx.inner.cell().as_mut().unwrap().framed.get_mut().feed_data("data");
@@ -602,7 +638,7 @@ mod tests {
     #[test]
     fn test_multiple_message() {
         let mut ctx = FramedContext::new(
-            Some(TestActor{msgs: Vec::new()}), Buffer::new(""), TestCodec);
+            Some(TestActor::new()), Buffer::new(""), TestCodec);
 
         let _ = ctx.poll();
         ctx.inner.cell().as_mut().unwrap().framed.get_mut().feed_data("11223344");
@@ -612,5 +648,31 @@ mod tests {
         assert_eq!(ctx.inner.actor().msgs,
                    vec![Bytes::from_static(b"11"), Bytes::from_static(b"22"),
                         Bytes::from_static(b"33"), Bytes::from_static(b"44")]);
+    }
+
+    #[test]
+    fn test_error_during_poll() {
+        let mut ctx = FramedContext::new(
+            Some(TestActor::new()), Buffer::new(""), TestCodec);
+
+        let _ = ctx.poll();
+        ctx.inner.cell().as_mut().unwrap().framed.get_mut().write_err =
+            Some(io::Error::new(io::ErrorKind::Other, "error"));
+
+        ctx.inner.cell().as_mut().unwrap().sink_items.push_back(Bytes::from_static(b"11"));
+        let _ = ctx.poll();
+        assert!(ctx.inner.actor().error.is_some());
+        assert!(ctx.inner.actor().closed);
+    }
+
+    #[test]
+    fn test_close() {
+        let mut buf = Buffer::new("");
+        buf.eof = true;
+        let mut ctx = FramedContext::new(Some(TestActor::new()), buf, TestCodec);
+
+        let _ = ctx.poll();
+        assert!(ctx.inner.actor().error.is_none());
+        assert!(ctx.inner.actor().closed);
     }
 }

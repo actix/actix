@@ -2,6 +2,8 @@
 
 ## 0.4.3 (2018-01-xx)
 
+* Cleanup `FramedActor` error and close state handling.
+
 * Do not exit early from framed polling
 
 

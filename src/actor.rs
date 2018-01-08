@@ -184,12 +184,10 @@ pub trait FramedActor: Actor {
 
     /// This method is called when framed object get closed.
     ///
-    /// Return value indicates continuation status. `true` means stop actor,
-    /// `false` conitnue to run actor
-    fn closed(&mut self) -> bool { true }
-
-    /// Method is called on sink error. By default it does nothing.
-    fn error(&mut self, err: <Self::Codec as Encoder>::Error, ctx: &mut Self::Context) {}
+    /// `error` indicates if framed get closed because of error.
+    fn closed(&mut self,
+              error: Option<<Self::Codec as Encoder>::Error>,
+              ctx: &mut Self::Context) {}
 
     /// Start new actor, returns address of this actor.
     fn framed<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
