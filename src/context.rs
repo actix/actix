@@ -16,18 +16,16 @@ use message::Response;
 use constants::MAX_SYNC_POLLS;
 use handler::{Handler, ResponseType, IntoResponse};
 use contextimpl::ContextImpl;
-use contextcells::{ActorAddressCell, ActorItemsCell, ActorWaitCell, ContextCellResult};
+use contextcells::{ActorAddressCell, ActorItemsCell, ActorWaitCell,
+                   ContextProtocol, ContextCellResult};
+
 
 pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
-    fn address_cell(&mut self) -> &mut ActorAddressCell<A>;
-}
+    fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>>;
 
-/// context protocol
-pub enum ContextProtocol<A: Actor> {
-    /// message envelope
-    Envelope(Envelope<A>),
-    /// Request sync address
-    Upgrade(Sender<SyncAddress<A>>),
+    fn unsync_address(&mut self) -> Address<A>;
+
+    fn sync_address(&mut self) -> SyncAddress<A>;
 }
 
 /// Actor execution context
@@ -38,16 +36,19 @@ pub struct Context<A> where A: Actor, A::Context: AsyncContext<A> {
 impl<A> ActorContext for Context<A> where A: Actor<Context=Self>
 {
     /// Stop actor execution
+    #[inline]
     fn stop(&mut self) {
         self.inner.stop()
     }
 
     /// Terminate actor execution
+    #[inline]
     fn terminate(&mut self) {
         self.inner.terminate()
     }
 
     /// Actor execution state
+    #[inline]
     fn state(&self) -> ActorState {
         self.inner.state()
     }
@@ -55,32 +56,48 @@ impl<A> ActorContext for Context<A> where A: Actor<Context=Self>
 
 impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self>
 {
+    #[inline]
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.inner.spawn(fut)
     }
 
+    #[inline]
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.inner.wait(fut)
     }
 
+    #[inline]
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.inner.cancel_future(handle)
     }
 }
 
 impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
-    fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
-        self.inner.address_cell()
+
+    #[inline]
+    fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
+        self.inner.unsync_sender()
+    }
+
+    #[inline]
+    fn unsync_address(&mut self) -> Address<A> {
+        self.inner.unsync_address()
+    }
+
+    #[inline]
+    fn sync_address(&mut self) -> SyncAddress<A> {
+        self.inner.sync_address()
     }
 }
 
 impl<A> Context<A> where A: Actor<Context=Self>
 {
     #[doc(hidden)]
+    #[inline]
     pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
         where A: Handler<M>,
               M: ResponseType + 'static {
@@ -88,6 +105,7 @@ impl<A> Context<A> where A: Actor<Context=Self>
     }
 
     #[doc(hidden)]
+    #[inline]
     pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
@@ -100,23 +118,28 @@ impl<A> Context<A> where A: Actor<Context=Self>
 
 impl<A> Context<A> where A: Actor<Context=Self>
 {
+    #[inline]
     pub(crate) fn new(act: Option<A>) -> Context<A> {
         Context { inner: ContextImpl::<_, ()>::new(act) }
     }
 
+    #[inline]
     pub(crate) fn with_receiver(act: Option<A>,
                                 rx: sync::UnboundedReceiver<Envelope<A>>) -> Context<A> {
         Context { inner: ContextImpl::<_, ()>::with_receiver(act, rx) }
     }
 
+    #[inline]
     pub(crate) fn run(self, handle: &Handle) {
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
     }
 
+    #[inline]
     pub(crate) fn alive(&mut self) -> bool {
         self.inner.alive()
     }
 
+    #[inline]
     pub(crate) fn restarting(&mut self) where A: Supervised {
         let ctx: &mut Context<A> = unsafe {
             std::mem::transmute(self as &mut Context<A>)
@@ -124,10 +147,12 @@ impl<A> Context<A> where A: Actor<Context=Self>
         self.inner.actor().restarting(ctx);
     }
 
+    #[inline]
     pub(crate) fn set_actor(&mut self, act: A) {
         self.inner.set_actor(act)
     }
 
+    #[inline]
     pub(crate) fn into_inner(self) -> A {
         self.inner.into_inner().unwrap()
     }
@@ -139,6 +164,7 @@ impl<A> Future for Context<A> where A: Actor<Context=Self>
     type Item = ();
     type Error = ();
 
+    #[inline]
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         let ctx: &mut Context<A> = unsafe {
             std::mem::transmute(self as &mut Context<A>)
@@ -170,10 +196,12 @@ impl<A, T> ContextFutureSpawner<A> for T
           A::Context: AsyncContext<A>,
           T: ActorFuture<Item=(), Error=(), Actor=A> + 'static
 {
+    #[inline]
     fn spawn(self, ctx: &mut A::Context) {
         let _ = ctx.spawn(self);
     }
 
+    #[inline]
     fn wait(self, ctx: &mut A::Context) {
         ctx.wait(self);
     }

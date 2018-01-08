@@ -11,13 +11,14 @@ use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
+use queue::{sync, unsync};
 
 use actor::{Actor, Supervised, SpawnHandle,
             FramedActor, ActorState, ActorContext, AsyncContext};
-use address::{Subscriber};
+use address::{Address, SyncAddress, Subscriber};
 use handler::{Handler, ResponseType};
 use context::AsyncContextApi;
-use contextcells::{ContextCell, ContextCellResult,
+use contextcells::{ContextCell, ContextCellResult, ContextProtocol,
                    ActorAddressCell, ActorItemsCell, ActorWaitCell};
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 use message::Response;
@@ -35,6 +36,7 @@ pub struct FramedContext<A>
 impl<A> ToEnvelope<A> for FramedContext<A>
     where A: FramedActor + Actor<Context=FramedContext<A>>,
 {
+    #[inline]
     fn pack<M>(msg: M,
                tx: Option<SyncSender<Result<M::Item, M::Error>>>,
                cancel_on_drop: bool) -> Envelope<A>
@@ -51,16 +53,19 @@ impl<A> ActorContext for FramedContext<A>
     /// Stop actor execution
     ///
     /// This method closes actor address and framed object.
+    #[inline]
     fn stop(&mut self) {
         self.inner.stop()
     }
 
     /// Terminate actor execution
+    #[inline]
     fn terminate(&mut self) {
         self.inner.terminate()
     }
 
     /// Actor execution state
+    #[inline]
     fn state(&self) -> ActorState {
         self.inner.state()
     }
@@ -69,18 +74,21 @@ impl<A> ActorContext for FramedContext<A>
 impl<A> AsyncContext<A> for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
+    #[inline]
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.inner.spawn(fut)
     }
 
+    #[inline]
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.inner.wait(fut)
     }
 
+    #[inline]
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.inner.cancel_future(handle)
     }
@@ -89,8 +97,19 @@ impl<A> AsyncContext<A> for FramedContext<A>
 impl<A> AsyncContextApi<A> for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
-    fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
-        self.inner.address_cell()
+    #[inline]
+    fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
+        self.inner.unsync_sender()
+    }
+
+    #[inline]
+    fn unsync_address(&mut self) -> Address<A> {
+        self.inner.unsync_address()
+    }
+
+    #[inline]
+    fn sync_address(&mut self) -> SyncAddress<A> {
+        self.inner.sync_address()
     }
 }
 
@@ -98,6 +117,7 @@ impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
     /// Send item to sink. If sink is closed item returned as an error.
+    #[inline]
     pub fn send(&mut self, msg: <A::Codec as Encoder>::Item)
                 -> Result<(), <A::Codec as Encoder>::Item>
     {
@@ -112,6 +132,7 @@ impl<A> FramedContext<A>
     /// Gracefully close Framed object. FramedContext
     /// will try to send all buffered items and then close.
     /// FramedContext::stop() could be used to force stop sending process.
+    #[inline]
     pub fn close(&mut self) {
         if let Some(ref mut framed) = *self.inner.cell() {
             framed.close();
@@ -122,6 +143,7 @@ impl<A> FramedContext<A>
     ///
     /// Returns oneshot future. It resolves when sink is drained.
     /// All other actor activities are paused.
+    #[inline]
     pub fn drain(&mut self) -> UnsyncReceiver<()> {
         if let Some(ref mut framed) = *self.inner.cell() {
             framed.drain()
@@ -133,6 +155,7 @@ impl<A> FramedContext<A>
     }
 
     /// Get inner framed object
+    #[inline]
     pub fn take(&mut self) -> Option<Framed<A::Io, A::Codec>> {
         if let Some(cell) = self.inner.cell().take() {
             Some(cell.into_framed())
@@ -158,6 +181,7 @@ impl<A> FramedContext<A>
 impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
+    #[inline]
     #[doc(hidden)]
     pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
         where A: Handler<M>, M: ResponseType + 'static,
@@ -165,6 +189,7 @@ impl<A> FramedContext<A>
         self.inner.subscriber()
     }
 
+    #[inline]
     #[doc(hidden)]
     pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
@@ -178,6 +203,7 @@ impl<A> FramedContext<A>
 impl<A> FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
+    #[inline]
     pub(crate) fn new(act: Option<A>, io: A::Io, codec: A::Codec) -> FramedContext<A> {
         FramedContext {
             inner: ContextImpl::with_cell(
@@ -185,16 +211,19 @@ impl<A> FramedContext<A>
         }
     }
 
+    #[inline]
     pub(crate) fn framed(act: Option<A>, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
         FramedContext {
             inner: ContextImpl::with_cell(act, ActorFramedCell::new(framed))
         }
     }
 
+    #[inline]
     pub(crate) fn run(self, handle: &Handle) {
         handle.spawn(self.map(|_| ()).map_err(|_| ()));
     }
 
+    #[inline]
     pub(crate) fn restarting(&mut self) where A: Supervised {
         let ctx: &mut FramedContext<A> = unsafe {
             std::mem::transmute(self as &mut FramedContext<A>)
@@ -202,14 +231,12 @@ impl<A> FramedContext<A>
         self.inner.actor().restarting(ctx);
     }
 
+    #[inline]
     pub(crate) fn set_actor(&mut self, act: A) {
         self.inner.set_actor(act)
     }
 
-    pub(crate) fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
-        self.inner.address_cell()
-    }
-
+    #[inline]
     pub(crate) fn into_inner(self) -> A {
         self.inner.into_inner().unwrap()
     }
@@ -222,6 +249,7 @@ impl<A> Future for FramedContext<A>
     type Item = ();
     type Error = ();
 
+    #[inline]
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         let ctx: &mut FramedContext<A> = unsafe {
             std::mem::transmute(self as &mut FramedContext<A>)

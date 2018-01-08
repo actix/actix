@@ -4,7 +4,8 @@ use futures::{Future, Async, Poll, Stream};
 use actor::{Actor, Supervised, AsyncContext};
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
-use context::{Context, ContextProtocol, AsyncContextApi};
+use context::{Context, AsyncContextApi};
+use contextcells::ContextProtocol;
 use envelope::Envelope;
 use msgs::Execute;
 use queue::{sync, unsync};
@@ -88,7 +89,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         // create actor
         let (cell, factory) = if !lazy {
             let mut ctx = Context::new(None);
-            let addr = ctx.address_cell().unsync_sender();
+            let addr = ctx.unsync_sender();
             let act = f(&mut ctx);
             ctx.set_actor(act);
             (Some(ActorCell{ctx: ctx, addr: addr}), None)
@@ -129,7 +130,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
                 // create actor
                 let (cell, factory) = if lazy {
                     let mut ctx = Context::new(None);
-                    let addr = ctx.address_cell().unsync_sender();
+                    let addr = ctx.unsync_sender();
                     let act = f(&mut ctx);
                     ctx.set_actor(act);
                     (Some(ActorCell{ctx: ctx, addr: addr}), None)
@@ -167,7 +168,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             let f = self.factory.take().expect("Should be available");
             let mut ctx = Context::new(None);
 
-            let addr = ctx.address_cell().unsync_sender();
+            let addr = ctx.unsync_sender();
             let act = f.call(&mut ctx);
             ctx.set_actor(act);
             self.cell = Some(ActorCell {ctx: ctx, addr: addr});
@@ -179,7 +180,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         let cell = self.cell.take().unwrap();
         let mut ctx = Context::new(None);
 
-        let addr = ctx.address_cell().unsync_sender();
+        let addr = ctx.unsync_sender();
         ctx.set_actor(cell.ctx.into_inner());
         ctx.restarting();
         self.cell = Some(ActorCell {ctx: ctx, addr: addr});

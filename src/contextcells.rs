@@ -12,7 +12,6 @@ use queue::{sync, unsync};
 use actor::{Actor, AsyncContext, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
 use envelope::Envelope;
-use context::ContextProtocol;
 use constants::MAX_SYNC_POLLS;
 
 
@@ -21,6 +20,14 @@ pub enum ContextCellResult {
     NotReady,
     Ready,
     Stop,
+}
+
+/// context protocol
+pub enum ContextProtocol<A: Actor> {
+    /// message envelope
+    Envelope(Envelope<A>),
+    /// Request sync address
+    Upgrade(Sender<SyncAddress<A>>),
 }
 
 pub trait ContextCell<A> where Self: 'static, A: Actor {

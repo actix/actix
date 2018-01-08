@@ -51,7 +51,7 @@ mod contextitems;
 mod envelope;
 mod framed;
 mod handler;
-mod queue;
+pub mod queue;
 mod message;
 mod registry;
 mod system;
@@ -138,9 +138,11 @@ pub mod dev {
     pub use prelude::*;
     pub use prelude::actix::*;
 
+    pub use queue;
     pub use address::{ActorAddress};
     pub use context::AsyncContextApi;
     pub use contextimpl::ContextImpl;
-    pub use contextcells::{ActorAddressCell, ActorItemsCell, ActorWaitCell};
+    pub use contextcells::{ContextProtocol, ContextCellResult,
+                           ActorAddressCell, ActorItemsCell, ActorWaitCell};
     pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 }

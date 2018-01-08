@@ -8,7 +8,7 @@ use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
 use constants::MAX_SYNC_POLLS;
 use envelope::Envelope;
-use contextcells::{ContextCell, ContextCellResult,
+use contextcells::{ContextCell, ContextCellResult, ContextProtocol,
                    ActorAddressCell, ActorItemsCell, ActorWaitCell};
 use handler::{Handler, ResponseType, IntoResponse};
 
@@ -154,14 +154,28 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
-    pub fn address_cell(&mut self) -> &mut ActorAddressCell<A> {
-        &mut self.address
+    pub fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
+        self.modify();
+        self.address.unsync_sender()
+    }
+
+    #[inline]
+    pub fn unsync_address(&mut self) -> Address<A> {
+        self.modify();
+        self.address.unsync_address()
+    }
+
+    #[inline]
+    pub fn sync_address(&mut self) -> SyncAddress<A> {
+        self.modify();
+        self.address.sync_address()
     }
 
     #[inline]
     pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
         where A: Handler<M>,
               M: ResponseType + 'static {
+        self.modify();
         Box::new(self.address.unsync_address())
     }
 
@@ -169,6 +183,7 @@ impl<A, C> ContextImpl<A, C>
     pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
               M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send {
+        self.modify();
         Box::new(self.address.sync_address())
     }
 
