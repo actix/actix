@@ -1,6 +1,6 @@
 # CHANGES
 
-## 0.4.1 (2018-01-07)
+## 0.4.2 (2018-01-07)
 
 * Cleanup actor stopping process
 
