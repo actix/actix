@@ -101,6 +101,7 @@ pub use actor::{Actor, ActorContext, AsyncContext, FramedActor};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress};
 pub use framed::FramedContext;
+pub use message::Response;
 pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
 pub use context::{Context, ContextFutureSpawner};
 pub use system::System;
