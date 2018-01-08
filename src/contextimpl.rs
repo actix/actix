@@ -106,8 +106,8 @@ impl<A, C> ContextImpl<A, C>
     /// Stop actor execution
     pub fn stop(&mut self) {
         if self.flags.contains(ContextFlags::RUNNING) {
-            self.flags.toggle(ContextFlags::RUNNING | ContextFlags::STOPPING);
-            self.flags.insert(ContextFlags::MODIFIED);
+            self.flags.remove(ContextFlags::RUNNING);
+            self.flags.insert(ContextFlags::STOPPING | ContextFlags::MODIFIED);
         }
     }
 
@@ -223,7 +223,7 @@ impl<A, C> ContextImpl<A, C>
 
         if !self.flags.contains(ContextFlags::STARTED) {
             Actor::started(act, ctx);
-            self.flags.toggle(ContextFlags::STARTED);
+            self.flags.insert(ContextFlags::STARTED);
         }
 
         loop {
@@ -260,14 +260,16 @@ impl<A, C> ContextImpl<A, C>
             // check state
             if self.flags.contains(ContextFlags::RUNNING) {
                 if !self.alive() && Actor::stopping(act, ctx) {
-                    self.flags.toggle(ContextFlags::RUNNING | ContextFlags::PREPSTOP);
+                    self.flags.remove(ContextFlags::RUNNING);
+                    self.flags.insert(ContextFlags::PREPSTOP);
                     continue
                 }
             } else if self.flags.contains(ContextFlags::STOPPING) {
+                self.flags.remove(ContextFlags::STOPPING);
                 if Actor::stopping(act, ctx) {
-                    self.flags.toggle(ContextFlags::STOPPING | ContextFlags::PREPSTOP);
+                    self.flags.insert(ContextFlags::PREPSTOP);
                 } else {
-                    self.flags.toggle(ContextFlags::STOPPING | ContextFlags::RUNNING);
+                    self.flags.insert(ContextFlags::RUNNING);
                 }
                 continue
             } else if self.flags.contains(ContextFlags::PREPSTOP) {
