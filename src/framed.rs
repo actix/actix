@@ -371,17 +371,17 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                 // send sink items
                 loop {
                     if let Some(msg) = self.sink_items.pop_front() {
+                        self.flags.remove(FramedFlags::SINK_FLUSHED);
                         match self.framed.start_send(msg) {
                             Ok(AsyncSink::NotReady(msg)) => {
                                 self.sink_items.push_front(msg);
-                                return if self.drain.is_some() {
-                                    ContextCellResult::NotReady
+                                if self.drain.is_some() {
+                                    return ContextCellResult::NotReady
                                 } else {
-                                    ContextCellResult::Ready
-                                };
+                                    break
+                                }
                             }
                             Ok(AsyncSink::Ready) => {
-                                self.flags.remove(FramedFlags::SINK_FLUSHED);
                                 continue
                             }
                             Err(err) => {
@@ -597,7 +597,20 @@ mod tests {
 
         // sink data
         assert_eq!(ctx.inner.cell().as_mut().unwrap().framed.get_mut().write, b"1122"[..]);
+    }
 
-        // println!("TEST: {:?}", ctx.act.msgs);
+    #[test]
+    fn test_multiple_message() {
+        let mut ctx = FramedContext::new(
+            Some(TestActor{msgs: Vec::new()}), Buffer::new(""), TestCodec);
+
+        let _ = ctx.poll();
+        ctx.inner.cell().as_mut().unwrap().framed.get_mut().feed_data("11223344");
+
+        // messages recevied
+        let _ = ctx.poll();
+        assert_eq!(ctx.inner.actor().msgs,
+                   vec![Bytes::from_static(b"11"), Bytes::from_static(b"22"),
+                        Bytes::from_static(b"33"), Bytes::from_static(b"44")]);
     }
 }

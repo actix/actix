@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.4.3 (2018-01-xx)
+
+* Do not exit early from framed polling
+
+
 ## 0.4.2 (2018-01-07)
 
 * Cleanup actor stopping process
