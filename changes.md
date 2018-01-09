@@ -1,6 +1,6 @@
 # CHANGES
 
-## 0.4.3 (2018-01-xx)
+## 0.4.3 (2018-01-09)
 
 * Cleanup `FramedActor` error and close state handling.
 
