@@ -37,6 +37,9 @@ macro_rules! cell_ready {
 
 
 /// Actor execution context impl
+///
+/// This is base Context implementation. It supports one extra cell
+/// impl with type `ContextCell<A>` (i.e. `ActorFramedCell`)
 pub struct ContextImpl<A, C=()> where A: Actor, A::Context: AsyncContext<A> {
     act: Option<A>,
     flags: ContextFlags,
@@ -87,22 +90,29 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
+    /// Mutable referece to an actor.
+    ///
+    /// It panics if actor is not set
     pub fn actor(&mut self) -> &mut A {
         self.act.as_mut().unwrap()
     }
 
     #[inline]
+    /// Mutable reference to cell
     pub fn cell(&mut self) -> &mut Option<C> {
         &mut self.cell
     }
 
     #[inline]
+    /// Mark context as modified, this cause extra poll loop over all cells
     pub fn modify(&mut self) {
         self.flags.insert(ContextFlags::MODIFIED);
     }
 
     #[inline]
-    /// Stop actor execution
+    /// Initiate stop process for actor execution
+    ///
+    /// Actor could prevent stopping by returning `false` from `Actor::stopping()` method.
     pub fn stop(&mut self) {
         if self.flags.contains(ContextFlags::RUNNING) {
             self.flags.remove(ContextFlags::RUNNING);
@@ -131,6 +141,7 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
+    /// Spawn new future to this context.
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
@@ -139,6 +150,9 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
+    /// Spawn new future to this context and wait future completion.
+    ///
+    /// During wait period actor does notreceive any messages.
     pub fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
@@ -147,6 +161,7 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
+    /// Cancel previouslt scheduled future.
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.flags.insert(ContextFlags::MODIFIED);
         self.items.cancel_future(handle)

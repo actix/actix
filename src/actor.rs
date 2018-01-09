@@ -351,8 +351,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// This method is similar to `add_future` but works with streams.
     ///
     /// Information to consider. Actor wont receive next item from a stream
-    /// until `Response` future resolves to result. `Self::reply` and
-    /// `Self::reply_error` resolves immediately.
+    /// until `Response` future resolves to a result. `Self::reply` resolves immediately.
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               S::Item: ResponseType,
@@ -403,7 +402,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         }
     }
 
-    /// Execute closure after specified period of time within same Actor and Context
+    /// Execute closure after specified period of time within same Actor and Context.
     /// Execution get cancelled if context's stop method get called.
     fn run_later<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
         where F: FnOnce(&mut A, &mut A::Context) + 'static

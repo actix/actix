@@ -33,7 +33,7 @@ impl Actor for MyActor {
                 ctx.notify_later(TimeoutMessage, Duration::new(0, 1000));
             },
             Op::TimeoutStop => {
-                ctx.notify_later(TimeoutMessage, Duration::new(0, 100000));
+                ctx.notify_later(TimeoutMessage, Duration::new(0, 100_000));
                 ctx.stop();
             },
             Op::RunAfter => {
