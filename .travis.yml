@@ -37,6 +37,7 @@ script:
         USE_SKEPTIC=1 cargo test
     else
         cargo test
+        cd examples/chat && cargo check && cd ../..
     fi
   - |
     if [[ "$TRAVIS_RUST_VERSION" == "nightly" && $CLIPPY ]]; then

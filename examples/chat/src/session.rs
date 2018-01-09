@@ -63,12 +63,6 @@ impl actix::FramedActor for ChatSession {
     type Io = TcpStream;
     type Codec= ChatCodec;
 
-    /// We'll stop chat session actor on any error, high likely it is just
-    /// termination of the tcp stream.
-    fn error(&mut self, _: io::Error, ctx: &mut Self::Context) {
-        ctx.stop()
-    }
-
     /// This is main event loop for client requests
     fn handle(&mut self, msg: io::Result<ChatRequest>, ctx: &mut Self::Context) {
         match msg {
