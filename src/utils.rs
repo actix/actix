@@ -34,34 +34,6 @@ impl<T> Default for Condition<T> where T: Clone {
     }
 }
 
-pub(crate) struct TimeoutWrapper<M> {
-    msg: Option<M>,
-    timeout: Timeout,
-}
-
-impl<M> TimeoutWrapper<M> {
-    pub fn new(msg: M, timeout: Duration) -> TimeoutWrapper<M> {
-        TimeoutWrapper{
-            msg: Some(msg),
-            timeout: Timeout::new(timeout, Arbiter::handle()).unwrap()}
-    }
-}
-
-#[doc(hidden)]
-impl<M> Future for TimeoutWrapper<M>
-{
-    type Item = M;
-    type Error = ();
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match self.timeout.poll() {
-            Ok(Async::Ready(_)) => Ok(Async::Ready(self.msg.take().unwrap())),
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Err(_) => unreachable!(),
-        }
-    }
-}
-
 pub(crate)
 struct TimerFunc<A> where A: Actor {
     f: Option<Box<TimerFuncBox<A>>>,

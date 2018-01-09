@@ -1,7 +1,10 @@
 use std::marker::PhantomData;
+use std::time::Duration;
 use futures::{Async, Future, Poll, Stream};
+use tokio_core::reactor::Timeout;
 
 use fut::ActorFuture;
+use arbiter::Arbiter;
 use actor::{Actor, AsyncContext};
 use handler::{Handler, ResponseType, IntoResponse};
 use message::Response;
@@ -75,36 +78,30 @@ impl<A, M, F, E> ActorFuture for ActorFutureItem<A, M, F, E>
 }
 
 pub(crate)
-struct ActorDelayedMessageItem<A, M, F>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
-          F: Future<Item=M, Error=()> {
+struct ActorDelayedMessageItem<A, M>
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType
+{
     act: PhantomData<A>,
-    fut: F,
+    msg: Option<M>,
+    timeout: Timeout,
     result: Option<Response<A, M>>,
 }
 
-impl<A, M, F> ActorDelayedMessageItem<A, M, F>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
-          F: Future<Item=M, Error=()>,
+impl<A, M> ActorDelayedMessageItem<A, M>
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType
 {
-    pub fn new(fut: F) -> ActorDelayedMessageItem<A, M, F> {
+    pub fn new(msg: M, timeout: Duration) -> ActorDelayedMessageItem<A, M> {
         ActorDelayedMessageItem {
             act: PhantomData,
-            fut: fut,
+            msg: Some(msg),
+            timeout: Timeout::new(timeout, Arbiter::handle()).unwrap(),
             result: None,
         }
     }
 }
 
-impl<A, M, F> ActorFuture for ActorDelayedMessageItem<A, M, F>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
-          F: Future<Item=M, Error=()>,
+impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType,
 {
     type Item = ();
     type Error = ();
@@ -123,17 +120,13 @@ impl<A, M, F> ActorFuture for ActorDelayedMessageItem<A, M, F>
                 }
             }
 
-            match self.fut.poll() {
-                Ok(Async::Ready(msg)) => {
-                    let fut = <A as Handler<M>>::handle(act, msg, ctx);
+            match self.timeout.poll() {
+                Ok(Async::Ready(_)) => {
+                    let fut = <A as Handler<M>>::handle(act, self.msg.take().unwrap(), ctx);
                     self.result = Some(fut.into_response());
-                }
-                Ok(Async::NotReady) =>
-                    return Ok(Async::NotReady),
-                Err(_) => {
-                    error!("Delayed message got error");
-                    return Err(())
                 },
+                Ok(Async::NotReady) => return Ok(Async::NotReady),
+                Err(_) => unreachable!(),
             }
         }
     }

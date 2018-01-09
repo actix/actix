@@ -9,11 +9,11 @@ use arbiter::Arbiter;
 use address::ActorAddress;
 use envelope::ToEnvelope;
 use handler::{Handler, ResponseType};
-use context::{Context, };
+use context::Context;
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorStreamItem, ActorMessageStreamItem};
 use framed::FramedContext;
-use utils::{TimerFunc, TimeoutWrapper};
+use utils::TimerFunc;
 
 
 #[allow(unused_variables)]
@@ -398,7 +398,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
             error!("Context::add_timeout called for stopped actor.");
             SpawnHandle::default()
         } else {
-            self.spawn(ActorDelayedMessageItem::new(TimeoutWrapper::new(msg, after)))
+            self.spawn(ActorDelayedMessageItem::new(msg, after))
         }
     }
 
