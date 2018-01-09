@@ -1,16 +1,15 @@
 use std::marker::PhantomData;
-use std::collections::{VecDeque, HashSet};
+use std::collections::VecDeque;
 
-use futures::{Async, Future, Poll, Stream};
+use futures::{Async, Stream};
 use futures::unsync::oneshot::Sender;
-use tokio_core::reactor::Handle;
 use smallvec::SmallVec;
 
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
 use actor::{Actor, AsyncContext, SpawnHandle};
-use address::{Address, SyncAddress, Subscriber};
+use address::{Address, SyncAddress};
 use envelope::Envelope;
 use constants::MAX_SYNC_POLLS;
 

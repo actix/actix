@@ -2,7 +2,7 @@ use actor::Actor;
 use fut::ActorFuture;
 use message::Response;
 use context::Context;
-use address::{Address, SyncAddress};
+use address::SyncAddress;
 
 /// Message response type
 pub trait ResponseType {

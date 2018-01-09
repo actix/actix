@@ -8,20 +8,18 @@ use futures::sync::oneshot::Sender as SyncSender;
 use futures::unsync::oneshot::{channel, Sender as UnsyncSender, Receiver as UnsyncReceiver};
 use tokio_core::reactor::Handle;
 use tokio_io::{AsyncRead, AsyncWrite};
-use tokio_io::codec::{Framed, Encoder, Decoder};
+use tokio_io::codec::{Framed, Encoder};
 
 use fut::ActorFuture;
-use queue::{sync, unsync};
+use queue::unsync;
 
 use actor::{Actor, Supervised, SpawnHandle,
             FramedActor, ActorState, ActorContext, AsyncContext};
 use address::{Address, SyncAddress, Subscriber};
 use handler::{Handler, ResponseType};
 use context::AsyncContextApi;
-use contextcells::{ContextCell, ContextCellResult, ContextProtocol,
-                   ActorAddressCell, ActorItemsCell, ActorWaitCell};
+use contextcells::{ContextCell, ContextCellResult, ContextProtocol};
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
-use message::Response;
 use contextimpl::ContextImpl;
 
 
@@ -50,21 +48,14 @@ impl<A> ToEnvelope<A> for FramedContext<A>
 impl<A> ActorContext for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {
-    /// Stop actor execution
-    ///
-    /// This method closes actor address and framed object.
     #[inline]
     fn stop(&mut self) {
         self.inner.stop()
     }
-
-    /// Terminate actor execution
     #[inline]
     fn terminate(&mut self) {
         self.inner.terminate()
     }
-
-    /// Actor execution state
     #[inline]
     fn state(&self) -> ActorState {
         self.inner.state()
@@ -113,8 +104,7 @@ impl<A> AsyncContextApi<A> for FramedContext<A>
     }
 }
 
-impl<A> FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
+impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 {
     /// Send item to sink. If sink is closed item returned as an error.
     #[inline]
@@ -178,30 +168,26 @@ impl<A> FramedContext<A>
     }
 }
 
-impl<A> FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
+#[doc(hidden)]
+impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 {
     #[inline]
-    #[doc(hidden)]
     pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>, M: ResponseType + 'static,
+        where A: Handler<M>, M: ResponseType + 'static
     {
         self.inner.subscriber()
     }
 
     #[inline]
-    #[doc(hidden)]
     pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
-              M::Item: Send, M::Error: Send,
-    {
+              M::Item: Send, M::Error: Send {
         self.inner.sync_subscriber()
     }
 }
 
-impl<A> FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
+impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 {
     #[inline]
     pub(crate) fn new(act: Option<A>, io: A::Io, codec: A::Codec) -> FramedContext<A> {
@@ -243,8 +229,7 @@ impl<A> FramedContext<A>
 }
 
 #[doc(hidden)]
-impl<A> Future for FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
+impl<A> Future for FramedContext<A> where A: Actor<Context=Self> + FramedActor
 {
     type Item = ();
     type Error = ();
@@ -290,10 +275,9 @@ struct ActorFramedCell<A>
 }
 
 impl<A> ActorFramedCell<A>
-    where A: Actor + FramedActor, A::Context: AsyncContext<A>,
+    where A: Actor + FramedActor, A::Context: AsyncContext<A>
 {
-    pub fn new(framed: Framed<A::Io, A::Codec>) -> ActorFramedCell<A>
-    {
+    pub fn new(framed: Framed<A::Io, A::Codec>) -> ActorFramedCell<A> {
         ActorFramedCell {
             flags: FramedFlags::SINK_FLUSHED,
             framed: framed,
@@ -319,7 +303,7 @@ impl<A> ActorFramedCell<A>
     }
 
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item) {
-        // write to sink immediately
+        // try to write to sink immediately
         if self.sink_items.is_empty() && self.error.is_none() {
             self.flags.remove(FramedFlags::SINK_FLUSHED);
             match self.framed.start_send(msg) {
@@ -365,7 +349,7 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
         loop {
             let mut not_ready = true;
 
-            // framed stream
+            // check framed stream
             if self.drain.is_none() && !self.flags.contains(FramedFlags::CLOSING) &&
                 !self.flags.contains(FramedFlags::STREAM_CLOSED)
             {
@@ -396,9 +380,8 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                                 self.sink_items.push_front(msg);
                                 if self.drain.is_some() {
                                     return ContextCellResult::NotReady
-                                } else {
-                                    break
                                 }
+                                break
                             }
                             Ok(AsyncSink::Ready) => {
                                 continue
@@ -433,7 +416,8 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                 }
 
                 if self.flags.contains(FramedFlags::CLOSING) &&
-                    self.flags.contains(FramedFlags::SINK_FLUSHED) && self.sink_items.is_empty() {
+                    self.flags.contains(FramedFlags::SINK_FLUSHED) &&
+                    self.sink_items.is_empty() {
                         self.flags |= FramedFlags::SINK_CLOSED;
                     }
             }
@@ -442,18 +426,16 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
             }
 
             // are we done
-            if !not_ready {
-                continue
-            }
-
-            if !self.alive() {
-                return ContextCellResult::Stop
-            } else if stop {
-                if let Ok(Async::NotReady) = self.framed.get_mut().shutdown() {
-                    return ContextCellResult::NotReady
+            if not_ready {
+                if !self.alive() {
+                    return ContextCellResult::Stop
+                } else if stop {
+                    if let Ok(Async::NotReady) = self.framed.get_mut().shutdown() {
+                        return ContextCellResult::NotReady
+                    }
                 }
+                return ContextCellResult::Ready
             }
-            return ContextCellResult::Ready
         }
     }
 }

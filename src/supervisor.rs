@@ -1,4 +1,3 @@
-use std;
 use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised, AsyncContext};

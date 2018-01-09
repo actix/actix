@@ -1,4 +1,3 @@
-use std::string::ToString;
 use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
@@ -9,7 +8,6 @@ use address::SyncAddress;
 use arbiter::Arbiter;
 use context::Context;
 use msgs::{SystemExit, StopArbiter};
-use message::Response;
 
 /// System is an actor which manages process.
 ///

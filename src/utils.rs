@@ -1,5 +1,4 @@
 use std::time::Duration;
-use std::marker::PhantomData;
 use futures::{Async, Future, Poll};
 use futures::unsync::oneshot;
 use tokio_core::reactor::Timeout;

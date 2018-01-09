@@ -9,7 +9,6 @@ use actor::{Actor, AsyncContext};
 use address::{Address, SyncAddress};
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};
-use message::Response;
 use handler::Handler;
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};

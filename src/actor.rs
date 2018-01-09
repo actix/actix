@@ -1,4 +1,3 @@
-use std;
 use std::time::Duration;
 use futures::{future, Future, Stream};
 use tokio_io::{AsyncRead, AsyncWrite};

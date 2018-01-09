@@ -1,16 +1,15 @@
 use std::mem;
-use futures::{Async, Future, Poll, Stream};
+use futures::{Async, Poll};
 
 use fut::ActorFuture;
 use queue::{sync, unsync};
 
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
-use constants::MAX_SYNC_POLLS;
-use envelope::Envelope;
 use contextcells::{ContextCell, ContextCellResult, ContextProtocol,
                    ActorAddressCell, ActorItemsCell, ActorWaitCell};
-use handler::{Handler, ResponseType, IntoResponse};
+use handler::{Handler, ResponseType};
+use envelope::Envelope;
 
 
 bitflags! {
