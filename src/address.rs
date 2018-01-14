@@ -90,7 +90,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
         self.tx.connected()
     }
 
-    /// Send message `M` to actor `A`. Communication channel to the actor is unbuonded.
+    /// Send message `M` to actor `A`. Communication channel to the actor is unbounded.
     pub fn send<M>(&self, msg: M)
         where A: Handler<M>,
               M: ResponseType + 'static
@@ -99,9 +99,9 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
             ContextProtocol::Envelope(Envelope::local(msg, None, false)));
     }
 
-    /// Send message to actor `A` and asyncronously wait for response.
+    /// Send message to actor `A` and asynchronously wait for response.
     ///
-    /// Communication channel to the actor is unbuonded.
+    /// Communication channel to the actor is unbounded.
     ///
     /// if returned `Request` object get dropped, message cancels.
     pub fn call<B, M>(&self, _: &B, msg: M) -> Request<B, M>
@@ -116,9 +116,9 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
         Request::local(rx)
     }
 
-    /// Send message to the actor `A` and asyncronously wait for response.
+    /// Send message to the actor `A` and asynchronously wait for response.
     ///
-    /// Communication channel to the actor is unbuonded.
+    /// Communication channel to the actor is unbounded.
     ///
     /// if returned `Receiver` object get dropped, message cancels.
     pub fn call_fut<M>(&self, msg: M) -> Receiver<Result<M::Item, M::Error>>
@@ -169,7 +169,7 @@ impl<A, M> Subscriber<M> for Address<A>
     }
 }
 
-/// `Send` address of the actor. Actor can run in differend thread
+/// `Send` address of the actor. Actor can run in different thread
 pub struct SyncAddress<A> where A: Actor {
     tx: sync::UnboundedSender<Envelope<A>>,
     closed: Cell<bool>,
@@ -210,7 +210,7 @@ impl<A> SyncAddress<A> where A: Actor {
         }
     }
 
-    /// Send message to actor `A` and asyncronously wait for response.
+    /// Send message to actor `A` and asynchronously wait for response.
     ///
     /// if returned `Request` object get dropped, message cancels.
     pub fn call<B: Actor, M>(&self, _: &B, msg: M) -> Request<B, M>
@@ -229,7 +229,7 @@ impl<A> SyncAddress<A> where A: Actor {
         Request::remote(rx)
     }
 
-    /// Send message to actor `A` and asyncronously wait for response.
+    /// Send message to actor `A` and asynchronously wait for response.
     ///
     /// if returned `Receiver` object get dropped, message cancels.
     pub fn call_fut<M>(&self, msg: M) -> SyncReceiver<Result<M::Item, M::Error>>
