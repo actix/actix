@@ -98,7 +98,7 @@ pub enum Family {
     Inet,
     /// Ipv6
     Inet6,
-    /// Unix domain soxket
+    /// Unix domain socket
     Unix,
     /// Some other
     Other(c_int),

@@ -90,7 +90,7 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
-    /// Mutable referece to an actor.
+    /// Mutable reference to an actor.
     ///
     /// It panics if actor is not set
     pub fn actor(&mut self) -> &mut A {
@@ -152,7 +152,7 @@ impl<A, C> ContextImpl<A, C>
     #[inline]
     /// Spawn new future to this context and wait future completion.
     ///
-    /// During wait period actor does notreceive any messages.
+    /// During wait period actor does not receive any messages.
     pub fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
@@ -161,7 +161,7 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
-    /// Cancel previouslt scheduled future.
+    /// Cancel previously scheduled future.
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.flags.insert(ContextFlags::MODIFIED);
         self.items.cancel_future(handle)
