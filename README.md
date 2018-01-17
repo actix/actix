@@ -242,7 +242,7 @@ It provides basic example of networking client/server service.
 ### fectl
 
 You may consider to check [fectl](https://github.com/fafhrd91/fectl) utility. It is written
-with `actix` and shows how to create networking application with relatevly complex interactions.
+with `actix` and shows how to create networking application with relatively complex interactions.
 
 ## Contributing
 

@@ -111,7 +111,7 @@ impl Handler<SystemExit> for System {
 
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
     {
-        // stop rbiters
+        // stop arbiters
         for addr in self.arbiters.values() {
             addr.send(StopArbiter(msg.0));
         }

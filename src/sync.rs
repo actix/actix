@@ -3,7 +3,7 @@
 //! Sync actors could be used for cpu bound behavior. Only one sync actor
 //! runs within arbiter's thread. Sync actor process one message at a time.
 //! Sync arbiter can start mutiple threads with separate instance of actor in each.
-//! Multi consummer queue is used as a communication channel queue.
+//! Multi consumer queue is used as a communication channel queue.
 //! To be able to start sync actor via `SyncArbiter`
 //! Actor has to use `SyncContext` as an execution context.
 //!

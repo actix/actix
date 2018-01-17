@@ -589,7 +589,7 @@ mod tests {
         let _ = ctx.poll();
         ctx.inner.cell().as_mut().unwrap().framed.get_mut().feed_data("data");
 
-        // messages recevied
+        // messages received
         let _ = ctx.poll();
         assert_eq!(ctx.inner.actor().msgs[0], b"da"[..]);
         assert_eq!(ctx.inner.actor().msgs[1], b"ta"[..]);
@@ -625,7 +625,7 @@ mod tests {
         let _ = ctx.poll();
         ctx.inner.cell().as_mut().unwrap().framed.get_mut().feed_data("11223344");
 
-        // messages recevied
+        // messages received
         let _ = ctx.poll();
         assert_eq!(ctx.inner.actor().msgs,
                    vec![Bytes::from_static(b"11"), Bytes::from_static(b"22"),
