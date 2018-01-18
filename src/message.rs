@@ -14,7 +14,7 @@ enum RequestIo<M: ResponseType> {
     Remote(SyncReceiver<Result<M::Item, M::Error>>),
 }
 
-/// `Request` is a `Future` which represents asyncronous message sending process.
+/// `Request` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
 pub struct Request<A, M>
     where A: Actor,
@@ -73,7 +73,7 @@ impl<A, M> ActorFuture for Request<A, M>
     }
 }
 
-/// `Response` represents asyncronous message handling process.
+/// `Response` represents asynchronous message handling process.
 pub struct Response<A, M> where A: Actor, M: ResponseType,
 {
     inner: Option<ResponseTypeItem<A, M>>,

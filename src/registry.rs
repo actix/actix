@@ -136,7 +136,7 @@ impl SystemRegistry {
         SystemRegistry{registry: Arc::new(Mutex::new(RefCell::new(HashMap::new())))}
     }
 
-    /// Return addres of the service. If service actor is not running
+    /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
     pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> SyncAddress<A> {
         if let Ok(hm) = self.registry.lock() {

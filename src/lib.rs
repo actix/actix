@@ -4,7 +4,7 @@
 //! which encapsulate state and behavior, they communicate exclusively
 //! by exchanging messages. Actix actors are implemented on top of [Tokio](https://tokio.rs).
 //! Mutiple actors could run in same thread. Actors could run in multiple threads
-//! with suppoprt of [`Arbiter`](https://actix.github.io/actix/actix/struct.Arbiter.html).
+//! with support of [`Arbiter`](https://actix.github.io/actix/actix/struct.Arbiter.html).
 //! Actors exchange typed messages.
 //!
 //! ## Features

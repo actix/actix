@@ -389,7 +389,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     }
 
     /// Send message `msg` to self after specified period of time. Returns spawn handle
-    /// which could be used for cancelation. Notification get cancelled
+    /// which could be used for cancellation. Notification get cancelled
     /// if context's stop method get called.
     fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
         where A: Handler<M>, M: ResponseType + 'static

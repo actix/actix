@@ -11,14 +11,14 @@ use queue::{sync, unsync};
 
 /// Actor supervisor
 ///
-/// Supervisor manages incomimng message for actor. In case of actor failure, supervisor
+/// Supervisor manages incoming message for actor. In case of actor failure, supervisor
 /// creates new execution context and restarts actor lifecycle. Actor can be
 /// constructed lazily.
 ///
 /// Supervisor has same livecycle as actor. In situation when all addresses to supervisor
 /// get dropped and actor does not execution anything supervisor terminates.
 ///
-/// `Supervisor` can not garantee that actor successfully process incoming message.
+/// `Supervisor` can not guarantee that actor successfully process incoming message.
 /// If actor fails during message processing, this message can not be recovered. Sender
 /// would receive `Err(Cancelled)` error in this situation.
 ///
@@ -80,7 +80,7 @@ struct ActorCell<A: Supervised> {
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor. Depends on `lazy` argument actor could be started
-    /// immidietly or on first incoming message.
+    /// immediately or on first incoming message.
     pub fn start<F>(lazy: bool, f: F) -> (Address<A>, SyncAddress<A>)
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + 'static
@@ -117,7 +117,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     }
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
-    /// actor could be started immidietly or on first incoming message.
+    /// actor could be started immediately or on first incoming message.
     pub fn start_in<F>(addr: &SyncAddress<Arbiter>, lazy: bool, f: F) -> Option<SyncAddress<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static

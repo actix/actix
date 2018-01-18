@@ -20,7 +20,7 @@ pub struct FutureResult<T, E, A> {
 
 /// Creates a new "leaf future" which will resolve with the given result.
 ///
-/// The returned future represents a computation which is finshed immediately.
+/// The returned future represents a computation which is finished immediately.
 /// This can be useful with the `finished` and `failed` base future types to
 /// convert an immediate value to a future to interoperate elsewhere.
 ///

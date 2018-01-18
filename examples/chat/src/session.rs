@@ -17,7 +17,7 @@ impl ResponseType for Message {
     type Error = ();
 }
 
-/// `ChatSession` actor is responsible for tcp peer communitions.
+/// `ChatSession` actor is responsible for tcp peer communications.
 pub struct ChatSession {
     /// unique session id
     id: usize,
@@ -31,7 +31,7 @@ pub struct ChatSession {
 
 impl Actor for ChatSession {
     /// For tcp communication we are going to use `FramedContext`.
-    /// It is convinient wrapper around `Framed` object from `tokio_io`
+    /// It is convenient wrapper around `Framed` object from `tokio_io`
     type Context = actix::FramedContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
