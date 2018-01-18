@@ -58,8 +58,8 @@ impl Arbiter {
         let sys_name = Arbiter::system_name();
         let sys_arbiter = Arbiter::system_arbiter();
         let sys_registry = Arbiter::system_registry().clone();
-        let name =
-            format!("arbiter:{:?}:{:?}", id.hyphenated().to_string(), name.into());
+        let name = format!("arbiter:{:?}:{:?}",
+                           id.hyphenated().to_string(), name.into());
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move|| {
             let mut core = Core::new().unwrap();
@@ -76,8 +76,7 @@ impl Arbiter {
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
 
             // start arbiter
-            let (addr, saddr) = Actor::start(
-                Arbiter {sys: false, id: id});
+            let (addr, saddr) = Actor::start(Arbiter {sys: false, id: id});
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
             if tx.send(saddr).is_err() {

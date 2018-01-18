@@ -1,3 +1,4 @@
+use std::mem;
 use std::cell::Cell;
 use futures::unsync::oneshot::{channel, Receiver};
 use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
@@ -55,6 +56,7 @@ pub trait Subscriber<M: 'static> {
     /// Send buffered message
     fn send(&self, msg: M) -> Result<(), M>;
 
+    #[doc(hidden)]
     /// Create boxed clone of the current subscriber
     fn boxed(&self) -> Box<Subscriber<M>>;
 }
@@ -63,6 +65,14 @@ pub trait Subscriber<M: 'static> {
 impl<M: 'static> Clone for Box<Subscriber<M>> {
     fn clone(&self) -> Box<Subscriber<M>> {
         self.boxed()
+    }
+}
+
+impl<M: 'static> Clone for Box<Subscriber<M> + Send> {
+    fn clone(&self) -> Box<Subscriber<M> + Send> {
+        // simplify ergonomics of `+Send` subscriber, otherwise
+        // it would require new trait with custom `.boxed()` method.
+        unsafe { mem::transmute(self.boxed()) }
     }
 }
 
