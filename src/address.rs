@@ -52,6 +52,12 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
     }
 }
 
+/// Subscriber trait describes ability of actor to receive one specific message
+///
+/// You can get subscriber with `Address::subscriber()` or
+/// `SyncAddress::subscriber()` methods. Both methods returns boxed trait object.
+///
+/// It is possible to use `Clone::clone()` method to get cloned subscriber.
 pub trait Subscriber<M: 'static> {
     /// Send buffered message
     fn send(&self, msg: M) -> Result<(), M>;
@@ -174,6 +180,7 @@ impl<A, M> Subscriber<M> for Address<A>
         }
     }
 
+    #[doc(hidden)]
     fn boxed(&self) -> Box<Subscriber<M>> {
         Box::new(self.clone())
     }
@@ -287,6 +294,7 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
         }
     }
 
+    #[doc(hidden)]
     fn boxed(&self) -> Box<Subscriber<M>> {
         Box::new(self.clone())
     }
