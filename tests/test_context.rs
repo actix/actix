@@ -35,7 +35,7 @@ impl Actor for MyActor {
                 ctx.notify_later(TimeoutMessage, Duration::new(0, 1000));
             },
             Op::TimeoutStop => {
-                ctx.notify_later(TimeoutMessage, Duration::new(0, 100_000));
+                ctx.notify_later(TimeoutMessage, Duration::new(0, 1_000_000));
                 ctx.stop();
             },
             Op::RunAfter => {
@@ -99,6 +99,7 @@ fn test_add_timeout_cancel() {
 }
 
 #[test]
+// delayed notification should be dropped after context stop
 fn test_add_timeout_stop() {
     let sys = System::new("test");
 
