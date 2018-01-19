@@ -1,4 +1,4 @@
-extern crate actix;
+#[macro_use] extern crate actix;
 extern crate futures;
 extern crate tokio_core;
 
@@ -9,13 +9,8 @@ use futures::{future, Future};
 use tokio_core::reactor::Timeout;
 use actix::prelude::*;
 
-#[derive(Debug)]
+#[derive(Message)]
 struct Ping(usize);
-
-impl actix::ResponseType for Ping {
-    type Item = ();
-    type Error = ();
-}
 
 struct MyActor(Arc<AtomicUsize>);
 
@@ -26,8 +21,7 @@ impl Actor for MyActor {
 impl actix::Handler<Ping> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, msg: Ping, _: &mut Self::Context) {
-        println!("PING: {:?}", msg);
+    fn handle(&mut self, _: Ping, _: &mut Self::Context) {
         self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
     }
 }
@@ -142,6 +136,35 @@ fn test_address_upgrade() {
                 future::result(Ok(()))
             })
     });
+
+    sys.run();
+    assert_eq!(count.load(Ordering::Relaxed), 3);
+}
+
+#[test]
+fn test_address_upgrade_with_drop() {
+    let sys = System::new("test");
+    let count = Arc::new(AtomicUsize::new(0));
+
+    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
+    addr.send(Ping(0));
+
+    Arbiter::handle().spawn(
+        addr.upgrade()
+            .map_err(|_| ())
+            .and_then(move |saddr| {
+                saddr.send(Ping(1));
+                drop(saddr);
+
+                addr.upgrade()
+                    .map_err(|_| ())
+                    .and_then(move |saddr| {
+                        saddr.send(Ping(1));
+
+                        Arbiter::system().send(actix::msgs::SystemExit(0));
+                        future::result(Ok(()))
+                    })
+            }));
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 3);

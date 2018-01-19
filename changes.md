@@ -6,6 +6,8 @@
 
 * Stop stream polling if context is wating for future completion
 
+* Upgraded address stops working after all references are dropped #38
+
 
 ## 0.4.3 (2018-01-09)
 

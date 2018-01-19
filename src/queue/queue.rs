@@ -114,7 +114,7 @@ impl<T> Queue<T> {
     /// return `Option<T>`. It is possible for this queue to be in an
     /// inconsistent state where many pushes have succeeded and completely
     /// finished, but pops cannot return `Some(t)`. This inconsistent state
-    /// happens when a pusher is pre-empted at an inopportune moment.
+    /// happens when a pusher is preempted at an inopportune moment.
     ///
     /// This inconsistent state means that this queue does indeed have data, but
     /// it does not currently have access to it at this time.

@@ -3,7 +3,7 @@ extern crate futures;
 extern crate tokio_core;
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering};
 use std::time::Duration;
 use futures::{future, Future};
 use tokio_core::reactor::Timeout;
@@ -109,13 +109,16 @@ fn test_supervisor_upgrade_address() {
     let starts2 = Arc::clone(&starts);
     let restarts2 = Arc::clone(&restarts);
 
+    let upgrade = Arc::new(AtomicBool::new(false));
+    let upgrade2 = Arc::clone(&upgrade);
+
     // lazy supervisor
     let (addr, _) = actix::Supervisor::start(true, move|_| MyActor(starts2, restarts2));
 
     Arbiter::handle().spawn_fn(move || {
         // upgrade address to SyncAddress
-        Arbiter::handle().spawn(addr.upgrade().then(|res| {
-            res.unwrap().send(Die);
+        Arbiter::handle().spawn(addr.upgrade().then(move |_| {
+            upgrade2.store(true, Ordering::Relaxed);
             future::result(Ok(()))
         }));
 
@@ -127,6 +130,7 @@ fn test_supervisor_upgrade_address() {
     });
 
     sys.run();
+    assert!(upgrade.load(Ordering::Relaxed));
     assert_eq!(starts.load(Ordering::Relaxed), 1);
     assert_eq!(restarts.load(Ordering::Relaxed), 0);
 }

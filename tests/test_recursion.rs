@@ -58,12 +58,7 @@ impl Handler<Count> for CounterActor {
         // creating sorta async recursion
         let my_address: Address<CounterActor> = ctx.address();
 
-        if msg.0 < MAX_ITEMS * 2 {
-            my_address.send(Count(msg.0 + 1));
-        } else {
-            Arbiter::system().send(actix::msgs::SystemExit(0));
-        }
-
+        my_address.send(Count(msg.0 + 1));
         Ok(TrackableItem::new())
     }
 }
@@ -71,6 +66,7 @@ impl Handler<Count> for CounterActor {
 // When actor sends messages to itself recursively,
 // results of the Handler should not stack up indefinitely
 #[test]
+#[should_panic]
 fn test_recursion() {
     let system = actix::System::new("test");
     let addr: Address<_> = CounterActor.start();

@@ -772,13 +772,32 @@ impl<T> Drop for Sender<T> {
  */
 
 impl<T> Receiver<T> {
-    fn connected(&self) -> bool {
-        let curr = self.inner.num_senders.load(Relaxed);
-        curr > 0
+    pub fn connected(&self) -> bool {
+        let curr = self.inner.state.load(Relaxed);
+        let state = decode_state(curr);
+
+        state.is_open || state.num_messages != 0
     }
 
     fn sender(&mut self) -> Sender<T> {
-        // this code same as clone
+        // change state to open
+        let mut curr_state = self.inner.state.load(SeqCst);
+        loop {
+            let mut state = decode_state(curr_state);
+
+            if state.is_open {
+                break
+            }
+            state.is_open = true;
+
+            let next = encode_state(&state);
+            match self.inner.state.compare_exchange(curr_state, next, SeqCst, SeqCst) {
+                Ok(_) => break,
+                Err(actual) => curr_state = actual,
+            }
+        }
+
+        // this code same as Sender::clone
         let mut curr = self.inner.num_senders.load(SeqCst);
 
         loop {
