@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -39,7 +39,7 @@ tokio-core = "0.1"
 tokio-signal = "0.1"
 
 # other
-log = "0.3"
+log = "0.4"
 crossbeam = "=0.3.0"
 bitflags = "1.0"
 smallvec = "0.6"
