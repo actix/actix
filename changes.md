@@ -1,8 +1,10 @@
 # CHANGES
 
-## 0.4.4 (2018-01-xx)
+## 0.4.4 (2018-01-19)
 
 * Add `Clone` implementation for `Box<Subscriber<M> + Send>`
+
+* Stop stream polling if context is wating for future completion
 
 
 ## 0.4.3 (2018-01-09)

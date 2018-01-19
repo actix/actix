@@ -23,7 +23,7 @@ pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
 }
 
 /// Actor execution context
-pub struct Context<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct Context<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A> {
     inner: ContextImpl<A, ()>,
 }
 
@@ -55,6 +55,12 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.inner.wait(fut)
+    }
+
+    #[doc(hidden)]
+    #[inline]
+    fn waiting(&self) -> bool {
+        self.inner.wating()
     }
 
     #[inline]

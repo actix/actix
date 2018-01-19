@@ -214,7 +214,11 @@ pub trait WrapFuture<A> where A: Actor
     /// The error that the future may resolve with.
     type Error;
 
+    #[doc(hidden)]
     fn actfuture(self) -> Self::Future;
+
+    /// Convert normal future to a ActorFuture
+    fn into_actor(self, a: &A) -> Self::Future;
 }
 
 impl<F: Future, A: Actor> WrapFuture<A> for F {
@@ -222,7 +226,12 @@ impl<F: Future, A: Actor> WrapFuture<A> for F {
     type Item = F::Item;
     type Error = F::Error;
 
+    #[doc(hidden)]
     fn actfuture(self) -> Self::Future {
+        wrap_future(self)
+    }
+
+    fn into_actor(self, _: &A) -> Self::Future {
         wrap_future(self)
     }
 }

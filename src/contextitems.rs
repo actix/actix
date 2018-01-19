@@ -13,7 +13,6 @@ use message::Response;
 pub(crate)
 struct ActorFutureItem<A, M, F, E>
     where A: Actor + Handler<Result<M, E>>,
-          A::Context: AsyncContext<A>,
           M: ResponseType,
           F: Future<Item=M, Error=E>,
 {
@@ -24,7 +23,6 @@ struct ActorFutureItem<A, M, F, E>
 
 impl<A, M, F, E> ActorFutureItem<A, M, F, E>
     where A: Actor + Handler<Result<M, E>>,
-          A::Context: AsyncContext<A>,
           M: ResponseType,
           F: Future<Item=M, Error=E>,
 {
@@ -47,8 +45,7 @@ impl<A, M, F, E> ActorFuture for ActorFutureItem<A, M, F, E>
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error>
-    {
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
         loop {
             if let Some(mut fut) = self.result.take() {
                 match fut.poll_response(act, ctx) {
@@ -134,9 +131,7 @@ impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
 
 pub(crate)
 struct ActorMessageItem<A, M>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
+    where A: Actor + Handler<M>, M: ResponseType,
 {
     act: PhantomData<A>,
     msg: Option<M>,
@@ -144,9 +139,7 @@ struct ActorMessageItem<A, M>
 }
 
 impl<A, M> ActorMessageItem<A, M>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
+    where A: Actor + Handler<M>, M: ResponseType,
 {
     pub fn new(msg: M) -> ActorMessageItem<A, M> {
         ActorMessageItem {
@@ -191,7 +184,6 @@ pub(crate)
 struct ActorStreamItem<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
           A: Actor + Handler<Result<M, E>>,
-          A::Context: AsyncContext<A>,
           M: ResponseType,
 {
     act: PhantomData<A>,
@@ -202,7 +194,6 @@ struct ActorStreamItem<A, M, E, S>
 impl<A, M, E, S> ActorStreamItem<A, M, E, S>
     where S: Stream<Item=M, Error=E> + 'static,
           A: Actor + Handler<Result<M, E>>,
-          A::Context: AsyncContext<A>,
           M: ResponseType
 {
     pub fn new(fut: S) -> ActorStreamItem<A, M, E, S> {
@@ -250,6 +241,11 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
             }
+
+            // stop immediately if context is waiting for future completion
+            if ctx.waiting() {
+                return Ok(Async::NotReady)
+            }
         }
     }
 }
@@ -258,7 +254,6 @@ pub(crate)
 struct ActorMessageStreamItem<A, M, S>
     where S: Stream<Item=M, Error=()>,
           A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
           M: ResponseType,
 {
     act: PhantomData<A>,
@@ -269,7 +264,6 @@ struct ActorMessageStreamItem<A, M, S>
 impl<A, M, S> ActorMessageStreamItem<A, M, S>
     where S: Stream<Item=M, Error=()> + 'static,
           A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
           M: ResponseType
 {
     pub fn new(fut: S) -> ActorMessageStreamItem<A, M, S> {
@@ -314,6 +308,11 @@ impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, M, S>
                 Ok(Async::NotReady) =>
                     return Ok(Async::NotReady),
                 Err(_) => (),
+            }
+
+            // stop immediately if context is waiting for future completion
+            if ctx.waiting() {
+                return Ok(Async::NotReady)
             }
         }
     }

@@ -1,10 +1,12 @@
 #![cfg_attr(feature="cargo-clippy", allow(let_unit_value))]
-extern crate actix;
+#[macro_use] extern crate actix;
 extern crate futures;
 extern crate tokio_core;
 
 use std::time::Duration;
+use std::sync::{Arc, Mutex};
 use futures::{future, Future};
+use futures::unsync::mpsc::unbounded;
 use tokio_core::reactor::Timeout;
 use actix::prelude::*;
 use actix::msgs::SystemExit;
@@ -55,12 +57,8 @@ impl Actor for MyActor {
     }
 }
 
+#[derive(Message)]
 struct TimeoutMessage;
-
-impl ResponseType for TimeoutMessage {
-    type Item = ();
-    type Error = ();
-}
 
 impl Handler<TimeoutMessage> for MyActor {
     type Result = ();
@@ -125,4 +123,183 @@ fn test_run_after_stop() {
     let _addr: Address<_> = MyActor{op: Op::RunAfterStop}.start();
 
     sys.run();
+}
+
+
+struct ContextWait {cnt: Arc<Mutex<usize>>}
+
+impl Actor for ContextWait {
+    type Context = actix::Context<Self>;
+}
+
+#[derive(Message)]
+struct Ping;
+
+impl Handler<Ping> for ContextWait {
+    type Result = ();
+
+    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
+        let mut cnt = self.cnt.lock().unwrap();
+        *cnt += 1;
+
+        let fut = Timeout::new(Duration::from_secs(10), Arbiter::handle()).unwrap();
+        fut.map_err(|_| ()).map(|_| ())
+            .into_actor(self)
+            .wait(ctx);
+
+        Arbiter::system().send(SystemExit(0));
+    }
+}
+
+impl Handler<Result<Ping, ()>> for ContextWait {
+    type Result = ();
+
+    fn handle(&mut self, _: Result<Ping, ()>, ctx: &mut Self::Context) {
+        let mut cnt = self.cnt.lock().unwrap();
+        *cnt += 1;
+
+        let fut = Timeout::new(Duration::from_secs(10), Arbiter::handle()).unwrap();
+        fut.map_err(|_| ()).map(|_| ())
+            .into_actor(self)
+            .wait(ctx);
+
+        Arbiter::system().send(SystemExit(0));
+    }
+}
+
+#[test]
+fn test_wait_context() {
+    let sys = System::new("test");
+
+    let m = Arc::new(Mutex::new(0));
+    let addr: Address<_> = ContextWait{cnt: Arc::clone(&m)}.start();
+    addr.send(Ping);
+    addr.send(Ping);
+    addr.send(Ping);
+
+    sys.run();
+
+    assert_eq!(*m.lock().unwrap(), 1);
+}
+
+#[test]
+fn test_message_stream_wait_context() {
+    let sys = System::new("test");
+
+    let m = Arc::new(Mutex::new(0));
+    let m2 = Arc::clone(&m);
+    let _addr: Address<_> = ContextWait::create(move |ctx| {
+        let (tx, rx) = unbounded();
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let actor = ContextWait{cnt: m2};
+        ctx.add_message_stream(rx);
+        actor
+    });
+    sys.run();
+
+    assert_eq!(*m.lock().unwrap(), 1);
+}
+
+#[test]
+fn test_stream_wait_context() {
+    let sys = System::new("test");
+
+    let m = Arc::new(Mutex::new(0));
+    let m2 = Arc::clone(&m);
+    let _addr: Address<_> = ContextWait::create(move |ctx| {
+        let (tx, rx) = unbounded();
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let actor = ContextWait{cnt: m2};
+        ctx.add_stream(rx);
+        actor
+    });
+    sys.run();
+
+    assert_eq!(*m.lock().unwrap(), 1);
+}
+
+struct ContextNoWait {cnt: Arc<Mutex<usize>>}
+
+impl Actor for ContextNoWait {
+    type Context = actix::Context<Self>;
+}
+
+impl Handler<Ping> for ContextNoWait {
+    type Result = ();
+
+    fn handle(&mut self, _: Ping, _: &mut Self::Context) {
+        let mut cnt = self.cnt.lock().unwrap();
+        *cnt += 1;
+
+        Arbiter::system().send(SystemExit(0));
+    }
+}
+
+impl Handler<Result<Ping, ()>> for ContextNoWait {
+    type Result = ();
+
+    fn handle(&mut self, _: Result<Ping, ()>, _: &mut Self::Context) {
+        let mut cnt = self.cnt.lock().unwrap();
+        *cnt += 1;
+
+        Arbiter::system().send(SystemExit(0));
+    }
+}
+
+#[test]
+fn test_nowait_context() {
+    let sys = System::new("test");
+
+    let m = Arc::new(Mutex::new(0));
+    let addr: Address<_> = ContextNoWait{cnt: Arc::clone(&m)}.start();
+    addr.send(Ping);
+    addr.send(Ping);
+    addr.send(Ping);
+    sys.run();
+
+    assert_eq!(*m.lock().unwrap(), 3);
+}
+
+#[test]
+fn test_message_stream_nowait_context() {
+    let sys = System::new("test");
+
+    let m = Arc::new(Mutex::new(0));
+    let m2 = Arc::clone(&m);
+    let _addr: Address<_> = ContextNoWait::create(move |ctx| {
+        let (tx, rx) = unbounded();
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let actor = ContextNoWait{cnt: m2};
+        ctx.add_message_stream(rx);
+        actor
+    });
+    sys.run();
+
+    assert_eq!(*m.lock().unwrap(), 3);
+}
+
+#[test]
+fn test_stream_nowait_context() {
+    let sys = System::new("test");
+
+    let m = Arc::new(Mutex::new(0));
+    let m2 = Arc::clone(&m);
+    let _addr: Address<_> = ContextNoWait::create(move |ctx| {
+        let (tx, rx) = unbounded();
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let _ = tx.unbounded_send(Ping);
+        let actor = ContextNoWait{cnt: m2};
+        ctx.add_stream(rx);
+        actor
+    });
+    sys.run();
+
+    assert_eq!(*m.lock().unwrap(), 3);
 }

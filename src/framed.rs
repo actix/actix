@@ -79,6 +79,12 @@ impl<A> AsyncContext<A> for FramedContext<A>
         self.inner.wait(fut)
     }
 
+    #[doc(hidden)]
+    #[inline]
+    fn waiting(&self) -> bool {
+        self.inner.wating()
+    }
+
     #[inline]
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.inner.cancel_future(handle)
@@ -263,9 +269,7 @@ bitflags! {
 
 /// Framed object wrapper
 pub(crate)
-struct ActorFramedCell<A>
-    where A: Actor + FramedActor,
-          A::Context: AsyncContext<A>,
+struct ActorFramedCell<A> where A: Actor + FramedActor
 {
     flags: FramedFlags,
     framed: Framed<A::Io, A::Codec>,
@@ -274,8 +278,7 @@ struct ActorFramedCell<A>
     error: Option<<A::Codec as Encoder>::Error>,
 }
 
-impl<A> ActorFramedCell<A>
-    where A: Actor + FramedActor, A::Context: AsyncContext<A>
+impl<A> ActorFramedCell<A> where A: Actor + FramedActor
 {
     pub fn new(framed: Framed<A::Io, A::Codec>) -> ActorFramedCell<A> {
         ActorFramedCell {
@@ -333,7 +336,7 @@ impl<A> ActorFramedCell<A>
 }
 
 impl<A> ContextCell<A> for ActorFramedCell<A>
-    where A: Actor + FramedActor, A::Context: AsyncContext<A>,
+    where A: Actor + FramedActor, A::Context: AsyncContext<A> + AsyncContextApi<A>,
 {
     fn alive(&self) -> bool {
         !self.flags.contains(FramedFlags::SINK_CLOSED) &&
@@ -347,6 +350,10 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
         }
 
         loop {
+            // stop immediately if context is waiting for future completion
+            if ctx.waiting() {
+                return ContextCellResult::Ready;
+            }
             let mut not_ready = true;
 
             // check framed stream

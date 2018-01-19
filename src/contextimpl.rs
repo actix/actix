@@ -6,6 +6,7 @@ use queue::{sync, unsync};
 
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
+use context::AsyncContextApi;
 use contextcells::{ContextCell, ContextCellResult, ContextProtocol,
                    ActorAddressCell, ActorItemsCell, ActorWaitCell};
 use handler::{Handler, ResponseType};
@@ -20,6 +21,7 @@ bitflags! {
         const PREPSTOP = 0b0000_1000;
         const STOPPED =  0b0001_0000;
         const MODIFIED = 0b0010_0000;
+        const WAITING =  0b0100_0000;
     }
 }
 
@@ -40,7 +42,9 @@ macro_rules! cell_ready {
 ///
 /// This is base Context implementation. It supports one extra cell
 /// impl with type `ContextCell<A>` (i.e. `ActorFramedCell`)
-pub struct ContextImpl<A, C=()> where A: Actor, A::Context: AsyncContext<A> {
+pub struct ContextImpl<A, C=()>
+    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
+{
     act: Option<A>,
     flags: ContextFlags,
     wait: ActorWaitCell<A>,
@@ -50,7 +54,7 @@ pub struct ContextImpl<A, C=()> where A: Actor, A::Context: AsyncContext<A> {
 }
 
 impl<A, C> ContextImpl<A, C>
-    where A: Actor, A::Context: AsyncContext<A>, C: ContextCell<A>
+    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>, C: ContextCell<A>
 {
     #[inline]
     pub fn new(act: Option<A>) -> ContextImpl<A, C> {
@@ -110,6 +114,12 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
+    /// Is context waiting for future completion
+    pub fn wating(&self) -> bool {
+        self.flags.contains(ContextFlags::WAITING)
+    }
+
+    #[inline]
     /// Initiate stop process for actor execution
     ///
     /// Actor could prevent stopping by returning `false` from `Actor::stopping()` method.
@@ -157,6 +167,7 @@ impl<A, C> ContextImpl<A, C>
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.flags.insert(ContextFlags::MODIFIED);
+        self.flags.insert(ContextFlags::WAITING);
         self.wait.add(fut)
     }
 
@@ -259,6 +270,7 @@ impl<A, C> ContextImpl<A, C>
             if stop {
                 self.stop();
             }
+            self.flags.remove(ContextFlags::WAITING);
 
             // check for incoming messages
             cell_ready!{ self, self.address.poll(act, ctx, prepstop) };

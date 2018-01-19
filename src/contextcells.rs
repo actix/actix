@@ -32,6 +32,7 @@ pub enum ContextProtocol<A: Actor> {
 pub trait ContextCell<A> where Self: 'static, A: Actor {
     fn alive(&self) -> bool;
 
+    /// Poll cell
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context, stop: bool) -> ContextCellResult;
 }
 
@@ -44,13 +45,13 @@ impl<A: Actor> ContextCell<A> for () {
     }
 }
 
-pub struct ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct ActorAddressCell<A> where A: Actor {
     sync_alive: bool,
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
     unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
 
-impl<A> Default for ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Default for ActorAddressCell<A> where A: Actor {
 
     #[inline]
     fn default() -> Self {
@@ -154,18 +155,23 @@ impl<A> ActorAddressCell<A> where A: Actor, A::Context: AsyncContext<A>
                 }
                 return ContextCellResult::Ready;
             }
+
+            // stop immediately if context is waiting for future completion
+            if ctx.waiting() {
+                return ContextCellResult::Ready;
+            }
         }
     }
 }
 
 type Item<A> = (SpawnHandle, Option<Box<ActorFuture<Item=(), Error=(), Actor=A>>>);
 
-pub struct ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct ActorItemsCell<A> where A: Actor {
     index: SpawnHandle,
     items: SmallVec<[Item<A>; 2]>,
 }
 
-impl<A> Default for ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Default for ActorItemsCell<A> where A: Actor {
 
     #[inline]
     fn default() -> Self {
@@ -241,6 +247,11 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
                 } else {
                     idx += 1;
                 }
+
+                // stop immediately if context is waiting for future completion
+                if ctx.waiting() {
+                    return ContextCellResult::Ready;
+                }
             }
 
             // are we done
@@ -249,6 +260,11 @@ impl<A> ActorItemsCell<A> where A: Actor, A::Context: AsyncContext<A>
                     self.items.clear();
                 }
                 return ContextCellResult::Ready
+            }
+
+            // stop immediately if context is waiting for future completion
+            if ctx.waiting() {
+                return ContextCellResult::Ready;
             }
         }
     }

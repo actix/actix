@@ -31,6 +31,7 @@ extern crate tokio_io;
 extern crate tokio_core;
 extern crate tokio_signal;
 
+#[cfg_attr(feature="cargo-clippy", allow(useless_attribute))]
 #[allow(unused_imports)]
 #[macro_use]
 extern crate actix_derive;
