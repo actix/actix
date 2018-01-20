@@ -8,9 +8,9 @@ use queue::{sync, unsync};
 
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
-use context::AsyncContextApi;
-use contextcells::{ContextCell, ContextCellResult, ContextProtocol,
-                   ActorAddressCell, ActorWaitCell};
+use context::{AsyncContextApi, ContextProtocol};
+use contextitems::ActorWaitItem;
+use contextaddress::ContextAddress;
 use handler::{Handler, ResponseType};
 use envelope::Envelope;
 
@@ -26,10 +26,7 @@ bitflags! {
     }
 }
 
-enum Item<A: Actor> {
-    Cell((SpawnHandle, Box<ContextCell<A>>)),
-    Future((SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>)),
-}
+type Item<A> = (SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
 
 /// Actor execution context impl
 ///
@@ -37,9 +34,9 @@ enum Item<A: Actor> {
 pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     act: Option<A>,
     flags: ContextFlags,
-    address: ActorAddressCell<A>,
-    wait: SmallVec<[ActorWaitCell<A>; 2]>,
-    cells: SmallVec<[Item<A>; 3]>,
+    address: ContextAddress<A>,
+    wait: SmallVec<[ActorWaitItem<A>; 2]>,
+    items: SmallVec<[Item<A>; 3]>,
     handle: SpawnHandle,
 }
 
@@ -50,23 +47,22 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
         ContextImpl {
             act: act,
             wait: SmallVec::new(),
-            cells: SmallVec::new(),
+            items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
             handle: SpawnHandle::default(),
-            address: ActorAddressCell::default(),
+            address: ContextAddress::default(),
         }
     }
 
     #[inline]
-    pub fn with_receiver(act: Option<A>,
-                         rx: sync::UnboundedReceiver<Envelope<A>>) -> ContextImpl<A> {
+    pub fn with_receiver(act: Option<A>, rx: sync::UnboundedReceiver<Envelope<A>>) -> Self {
         ContextImpl {
             act: act,
-            cells: SmallVec::new(),
             wait: SmallVec::new(),
+            items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
             handle: SpawnHandle::default(),
-            address: ActorAddressCell::new(rx),
+            address: ContextAddress::new(rx),
         }
     }
 
@@ -79,7 +75,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    /// Mark context as modified, this cause extra poll loop over all cells
+    /// Mark context as modified, this cause extra poll loop over all items
     pub fn modify(&mut self) {
         self.flags.insert(ContextFlags::MODIFIED);
     }
@@ -112,7 +108,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     pub fn state(&self) -> ActorState {
         if self.flags.contains(ContextFlags::RUNNING) {
             ActorState::Running
-        } else if self.flags.contains(ContextFlags::STOPPING | ContextFlags::PREPSTOP) {
+        } else if self.flags.intersects(ContextFlags::STOPPING | ContextFlags::PREPSTOP) {
             ActorState::Stopping
         } else if self.flags.contains(ContextFlags::STOPPED) {
             ActorState::Stopped
@@ -122,21 +118,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn spawn_cell<T: ContextCell<A>>(&mut self, cell: T) -> SpawnHandle {
-        self.flags.insert(ContextFlags::MODIFIED);
-        self.handle = self.handle.next();
-        self.cells.push(Item::Cell((self.handle, Box::new(cell))));
-        self.handle
-    }
-
-    #[inline]
     /// Spawn new future to this context.
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.flags.insert(ContextFlags::MODIFIED);
         self.handle = self.handle.next();
-        self.cells.push(Item::Future((self.handle, Box::new(fut))));
+        self.items.push((self.handle, Box::new(fut)));
         self.handle
     }
 
@@ -144,24 +132,18 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     /// Spawn new future to this context and wait future completion.
     ///
     /// During wait period actor does not receive any messages.
-    pub fn wait<F>(&mut self, fut: F)
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
-    {
-        self.wait.push(ActorWaitCell::new(fut));
+    pub fn wait<F>(&mut self, f: F) where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static {
+        self.wait.push(ActorWaitItem::new(f));
         self.flags.insert(ContextFlags::MODIFIED);
     }
 
     #[inline]
     /// Cancel previously scheduled future.
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        for idx in 0..self.cells.len() {
-            let found = match self.cells[idx] {
-                Item::Cell((h, _)) | Item::Future((h, _)) =>
-                    handle == h,
-            };
-            if found {
+        for idx in 0..self.items.len() {
+            if self.items[idx].0 == handle {
                 self.flags.insert(ContextFlags::MODIFIED);
-                self.cells.swap_remove(idx);
+                self.items.swap_remove(idx);
                 return true
             }
         }
@@ -207,7 +189,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
         if self.flags.contains(ContextFlags::STOPPED) {
             false
         } else {
-            self.address.connected() || !self.cells.is_empty()
+            self.address.connected() || !self.items.is_empty()
         }
     }
 
@@ -228,11 +210,10 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     pub fn poll(&mut self, ctx: &mut A::Context) -> Poll<(), ()> {
-        if self.act.is_none() {
+        let act: &mut A = if let Some(ref mut act) = self.act {
+            unsafe { mem::transmute(act) }
+        } else {
             return Ok(Async::Ready(()))
-        }
-        let act: &mut A = unsafe {
-            mem::transmute(self.act.as_mut().unwrap() as &mut A)
         };
 
         if !self.flags.contains(ContextFlags::STARTED) {
@@ -247,51 +228,48 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
             // check wait futures
             while !self.wait.is_empty() {
                 match self.wait[0].poll(act, ctx, prepstop) {
-                    ContextCellResult::Ready | ContextCellResult::Completed => {
-                        self.wait.swap_remove(0);
-                        continue
-                    },
-                    ContextCellResult::NotReady => return Ok(Async::NotReady),
-                    ContextCellResult::Stop => self.stop(),
+                    Async::Ready(_) => { self.wait.swap_remove(0); },
+                    Async::NotReady => return Ok(Async::NotReady),
                 }
             }
 
             // process address
             self.address.poll(act, ctx, prepstop);
             if !self.wait.is_empty() {
-                continue 'outer
+                continue
             }
 
             // process items
             let mut idx = 0;
-            while idx < self.cells.len() {
-                let result = match self.cells[idx] {
-                    Item::Cell((_, ref mut cell)) =>
-                        cell.poll(act, ctx, prepstop),
-                    Item::Future((_, ref mut fut)) =>
-                        match fut.poll(act, ctx) {
-                            Ok(Async::NotReady) => ContextCellResult::Ready,
-                            Ok(Async::Ready(_)) | Err(_) => ContextCellResult::Completed,
-                        },
-                };
-                match result {
-                    ContextCellResult::Ready => idx += 1,
-                    ContextCellResult::NotReady => return Ok(Async::NotReady),
-                    ContextCellResult::Stop => {
-                        idx += 1;
-                        self.stop()
+            while idx < self.items.len() {
+                match self.items[idx].1.poll(act, ctx) {
+                    Ok(Async::NotReady) => {
+                        // item scheduled wait future
+                        if !self.wait.is_empty() {
+                            // move current item to end of poll queue
+                            // otherwise it is possible that same item generate wait future
+                            // and prevents polling of other items
+                            let next = self.items.len()-1;
+                            if idx != next {
+                                self.items.swap(idx, next);
+                            }
+                            continue 'outer
+                        } else {
+                            idx += 1;
+                        }
                     },
-                    ContextCellResult::Completed => {
-                        self.cells.swap_remove(idx);
+                    Ok(Async::Ready(())) | Err(_) => {
+                        self.items.swap_remove(idx);
+                        // one of the items scheduled wait future
+                        if !self.wait.is_empty() {
+                            continue 'outer
+                        }
                     },
-                }
-                // one of the cells scheduled wait future
-                if !self.wait.is_empty() {
-                    continue 'outer
                 }
             }
 
-            // modified indicates that new IO item has been added during poll process
+            // ContextFlags::MODIFIED indicates that new IO item has
+            // been added during poll process
             if self.flags.contains(ContextFlags::MODIFIED) {
                 continue
             }

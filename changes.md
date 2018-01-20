@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.4.5 (2018-01-xx)
+
+* Refactor context implementation
+
+
 ## 0.4.4 (2018-01-19)
 
 * Add `Clone` implementation for `Box<Subscriber<M> + Send>`

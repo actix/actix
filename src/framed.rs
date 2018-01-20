@@ -1,9 +1,8 @@
 #![allow(dead_code)]
 
-use std;
+use std::{mem, fmt};
 use std::rc::Rc;
 use std::cell::UnsafeCell;
-use std::marker::PhantomData;
 use std::collections::VecDeque;
 
 use futures::{Async, AsyncSink, Future, Poll, Sink, Stream};
@@ -20,10 +19,9 @@ use actor::{Actor, Supervised, SpawnHandle,
             FramedActor, ActorState, ActorContext, AsyncContext};
 use address::{Address, SyncAddress, Subscriber};
 use handler::{Handler, ResponseType};
-use context::AsyncContextApi;
-use contextcells::{ContextCell, ContextCellResult, ContextProtocol};
-use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
+use context::{AsyncContextApi, ContextProtocol};
 use contextimpl::ContextImpl;
+use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 
 
 /// Actor execution context for
@@ -75,20 +73,17 @@ impl<A> AsyncContext<A> for FramedContext<A>
     {
         self.inner.spawn(fut)
     }
-
     #[inline]
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.inner.wait(fut)
     }
-
     #[doc(hidden)]
     #[inline]
     fn waiting(&self) -> bool {
         self.inner.waiting()
     }
-
     #[inline]
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.inner.cancel_future(handle)
@@ -103,12 +98,10 @@ impl<A> AsyncContextApi<A> for FramedContext<A>
     fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
         self.inner.unsync_sender()
     }
-
     #[inline]
     fn unsync_address(&mut self) -> Address<A> {
         self.inner.unsync_address()
     }
-
     #[inline]
     fn sync_address(&mut self) -> SyncAddress<A> {
         self.inner.sync_address()
@@ -163,11 +156,9 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 {
     #[inline]
     pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>, M: ResponseType + 'static
-    {
+        where A: Handler<M>, M: ResponseType + 'static {
         self.inner.subscriber()
     }
-
     #[inline]
     pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
@@ -188,7 +179,7 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
     pub(crate) fn framed(act: Option<A>, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
         let cell = ActorFramedCell::new(framed);
         let mut imp = ContextImpl::new(act);
-        imp.spawn_cell(cell.clone());
+        imp.spawn(cell.clone());
 
         FramedContext {inner: imp, framed: cell}
     }
@@ -201,7 +192,7 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
     #[inline]
     pub(crate) fn restarting(&mut self) where A: Supervised {
         let ctx: &mut FramedContext<A> = unsafe {
-            std::mem::transmute(self as &mut FramedContext<A>)
+            mem::transmute(self as &mut FramedContext<A>)
         };
         self.inner.actor().restarting(ctx);
     }
@@ -218,24 +209,21 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 }
 
 #[doc(hidden)]
-impl<A> Future for FramedContext<A> where A: Actor<Context=Self> + FramedActor
-{
+impl<A> Future for FramedContext<A> where A: Actor<Context=Self> + FramedActor {
     type Item = ();
     type Error = ();
 
     #[inline]
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         let ctx: &mut FramedContext<A> = unsafe {
-            std::mem::transmute(self as &mut FramedContext<A>)
+            mem::transmute(self as &mut FramedContext<A>)
         };
         self.inner.poll(ctx)
     }
 }
 
-impl<A> std::fmt::Debug for FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl<A> fmt::Debug for FramedContext<A> where A: Actor<Context=Self> + FramedActor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "FramedContext({:?})", self as *const _)
     }
 }
@@ -262,7 +250,6 @@ struct InnerActorFramedCell<A> where A: Actor + FramedActor {
     sink_items: VecDeque<<A::Codec as Encoder>::Item>,
     drain: Option<UnsyncSender<()>>,
     error: Option<<A::Codec as Encoder>::Error>,
-    marker: PhantomData<A>,
 }
 
 impl<A> Clone for ActorFramedCell<A> where A: Actor + FramedActor {
@@ -282,7 +269,6 @@ impl<A> ActorFramedCell<A> where A: Actor + FramedActor {
                     sink_items: VecDeque::new(),
                     drain: None,
                     error: None,
-                    marker: PhantomData,
                 })),
         }
     }
@@ -308,12 +294,6 @@ impl<A> ActorFramedCell<A> where A: Actor + FramedActor {
         inner.flags = FramedFlags::SINK_FLUSHED;
         inner.sink_items.clear();
         inner.drain.take();
-    }
-
-    fn alive(&self) -> bool {
-        let inner = self.as_ref();
-        !inner.flags.contains(FramedFlags::SINK_CLOSED) &&
-            !inner.flags.contains(FramedFlags::STREAM_CLOSED)
     }
 
     pub fn close(&mut self) {
@@ -357,10 +337,14 @@ impl<A> ActorFramedCell<A> where A: Actor + FramedActor {
     }
 }
 
-impl<A> ContextCell<A> for ActorFramedCell<A>
+impl<A> ActorFuture for ActorFramedCell<A>
     where A: Actor + FramedActor, A::Context: AsyncContext<A> + AsyncContextApi<A>,
 {
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context, stop: bool) -> ContextCellResult {
+    type Item = ();
+    type Error = ();
+    type Actor = A;
+
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
         let inner = unsafe{ &mut *self.inner.get() };
 
         if let Some(err) = inner.error.take() {
@@ -368,19 +352,18 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
             <A as FramedActor>::closed(act, Some(err), ctx);
         }
 
-        if inner.framed.is_none() {
-            return ContextCellResult::Stop
-        }
-        let framed: &mut Framed<A::Io, A::Codec> = unsafe {
-            std::mem::transmute(inner.framed.as_mut().unwrap())
+        let framed: &mut Framed<A::Io, A::Codec> = if let Some(ref mut framed) = inner.framed {
+            unsafe { mem::transmute(framed) }
+        } else {
+            return Ok(Async::Ready(()));
         };
 
         loop {
             let mut not_ready = true;
 
             // check framed stream
-            if inner.drain.is_none() && !inner.flags.contains(FramedFlags::CLOSING) &&
-                !inner.flags.contains(FramedFlags::STREAM_CLOSED)
+            if inner.drain.is_none() && !inner.flags.intersects(
+                FramedFlags::CLOSING | FramedFlags::STREAM_CLOSED)
             {
                 match framed.poll() {
                     Ok(Async::Ready(Some(msg))) => {
@@ -408,7 +391,7 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                             Ok(AsyncSink::NotReady(msg)) => {
                                 inner.sink_items.push_front(msg);
                                 if inner.drain.is_some() {
-                                    return ContextCellResult::NotReady
+                                    return Ok(Async::NotReady)
                                 }
                                 break
                             }
@@ -434,7 +417,7 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                         }
                         Ok(Async::NotReady) =>
                             if inner.drain.is_some() {
-                                return ContextCellResult::NotReady;
+                                return Ok(Async::NotReady);
                             },
                         Err(err) => {
                             inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::SINK_FLUSHED;
@@ -443,8 +426,8 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
                     }
                 }
 
-                if inner.flags.contains(FramedFlags::CLOSING) &&
-                    inner.flags.contains(FramedFlags::SINK_FLUSHED) &&
+                // close framed object, if closing and we dont need to flush any data
+                if inner.flags.contains(FramedFlags::CLOSING | FramedFlags::SINK_FLUSHED) &&
                     inner.sink_items.is_empty() {
                         inner.flags |= FramedFlags::SINK_CLOSED;
                     }
@@ -455,17 +438,16 @@ impl<A> ContextCell<A> for ActorFramedCell<A>
 
             // are we done
             if not_ready {
-                if !self.alive() {
-                    return ContextCellResult::Stop
-                } else if stop {
-                    if let Ok(Async::NotReady) = framed.get_mut().shutdown() {
-                        return ContextCellResult::NotReady
-                    }
+                if self.closed() {
+                    ctx.stop();
+                    return Ok(Async::Ready(()))
+                } else if ctx.state() == ActorState::Stopping {
+                    let _ = framed.get_mut().shutdown();
                 }
-                return ContextCellResult::Ready
+                return Ok(Async::NotReady)
             }
             if ctx.waiting() {
-                return ContextCellResult::Ready;
+                return Ok(Async::NotReady)
             }
         }
     }
@@ -627,8 +609,8 @@ mod tests {
 
         // block sink
         ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().write_block = true;
-        ctx.send(Bytes::from_static(b"11"));
-        ctx.send(Bytes::from_static(b"22"));
+        let _ = ctx.send(Bytes::from_static(b"11"));
+        let _ = ctx.send(Bytes::from_static(b"22"));
 
         // drain
         let _ = ctx.drain();
@@ -687,5 +669,6 @@ mod tests {
         let _ = ctx.poll();
         assert!(ctx.inner.actor().error.is_none());
         assert!(ctx.inner.actor().closed);
+        assert!(ctx.framed.closed());
     }
 }

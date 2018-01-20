@@ -5,8 +5,7 @@ use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, ResponseType};
-use context::AsyncContextApi;
-use contextcells::ContextProtocol;
+use context::{AsyncContextApi, ContextProtocol};
 use envelope::{Envelope, ToEnvelope};
 use message::Request;
 use queue::{sync, unsync};

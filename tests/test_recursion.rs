@@ -1,14 +1,13 @@
 extern crate actix;
 
 use actix::prelude::*;
-use actix::constants::MAX_SYNC_POLLS;
 
 struct CounterActor;
 
 struct Count(u32);
 
 // Maximum number of items to keep alive
-const MAX_ITEMS: u32 = MAX_SYNC_POLLS;
+const MAX_ITEMS: u32 = 256;
 
 // Number of items to keep alive
 static mut N_ITEMS: u32 = 0;

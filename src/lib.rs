@@ -47,8 +47,8 @@ mod arbiter;
 mod address;
 mod context;
 mod contextimpl;
-mod contextcells;
 mod contextitems;
+mod contextaddress;
 mod envelope;
 mod framed;
 mod handler;
@@ -65,9 +65,6 @@ pub mod sync;
 
 #[doc(hidden)]
 pub mod queue;
-
-#[doc(hidden)]
-pub mod constants;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
@@ -148,8 +145,7 @@ pub mod dev {
     #[doc(hidden)]
     pub use queue;
     pub use address::ActorAddress;
-    pub use context::AsyncContextApi;
+    pub use context::{AsyncContextApi, ContextProtocol};
     pub use contextimpl::ContextImpl;
-    pub use contextcells::{ContextProtocol, ContextCell, ContextCellResult};
     pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 }
