@@ -24,7 +24,7 @@ pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
 
 /// Actor execution context
 pub struct Context<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A> {
-    inner: ContextImpl<A, ()>,
+    inner: ContextImpl<A>,
 }
 
 impl<A> ActorContext for Context<A> where A: Actor<Context=Self> {
@@ -60,7 +60,7 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
     #[doc(hidden)]
     #[inline]
     fn waiting(&self) -> bool {
-        self.inner.wating()
+        self.inner.waiting()
     }
 
     #[inline]
@@ -109,13 +109,13 @@ impl<A> Context<A> where A: Actor<Context=Self> {
 
     #[inline]
     pub(crate) fn new(act: Option<A>) -> Context<A> {
-        Context { inner: ContextImpl::<_, ()>::new(act) }
+        Context { inner: ContextImpl::new(act) }
     }
 
     #[inline]
     pub(crate) fn with_receiver(act: Option<A>,
                                 rx: sync::UnboundedReceiver<Envelope<A>>) -> Context<A> {
-        Context { inner: ContextImpl::<_, ()>::with_receiver(act, rx) }
+        Context { inner: ContextImpl::with_receiver(act, rx) }
     }
 
     #[inline]

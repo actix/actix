@@ -1,5 +1,7 @@
 use std::mem;
+
 use futures::{Async, Poll};
+use smallvec::SmallVec;
 
 use fut::ActorFuture;
 use queue::{sync, unsync};
@@ -8,7 +10,7 @@ use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
 use address::{Address, SyncAddress, Subscriber};
 use context::AsyncContextApi;
 use contextcells::{ContextCell, ContextCellResult, ContextProtocol,
-                   ActorAddressCell, ActorItemsCell, ActorWaitCell};
+                   ActorAddressCell, ActorWaitCell};
 use handler::{Handler, ResponseType};
 use envelope::Envelope;
 
@@ -21,75 +23,50 @@ bitflags! {
         const PREPSTOP = 0b0000_1000;
         const STOPPED =  0b0001_0000;
         const MODIFIED = 0b0010_0000;
-        const WAITING =  0b0100_0000;
     }
 }
 
-/// A macro for processing `ContextCellResult`.
-///
-/// This macro bakes propagation of both errors and `NotReady` signals by
-/// returning early.
-macro_rules! cell_ready {
-    ($slf:ident, $e:expr) => (match $e {
-        ContextCellResult::Ready => (),
-        ContextCellResult::NotReady => return Ok(Async::NotReady),
-        ContextCellResult::Stop => $slf.stop(),
-    })
+enum Item<A: Actor> {
+    Cell((SpawnHandle, Box<ContextCell<A>>)),
+    Future((SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>)),
 }
-
 
 /// Actor execution context impl
 ///
-/// This is base Context implementation. It supports one extra cell
-/// impl with type `ContextCell<A>` (i.e. `ActorFramedCell`)
-pub struct ContextImpl<A, C=()>
-    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
-{
+/// This is base Context implementation. Multiple cell's could be added.
+pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     act: Option<A>,
     flags: ContextFlags,
-    wait: ActorWaitCell<A>,
-    items: ActorItemsCell<A>,
     address: ActorAddressCell<A>,
-    cell: Option<C>,
+    wait: SmallVec<[ActorWaitCell<A>; 2]>,
+    cells: SmallVec<[Item<A>; 3]>,
+    handle: SpawnHandle,
 }
 
-impl<A, C> ContextImpl<A, C>
-    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>, C: ContextCell<A>
+impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
     #[inline]
-    pub fn new(act: Option<A>) -> ContextImpl<A, C> {
+    pub fn new(act: Option<A>) -> ContextImpl<A> {
         ContextImpl {
             act: act,
+            wait: SmallVec::new(),
+            cells: SmallVec::new(),
             flags: ContextFlags::RUNNING,
-            wait: ActorWaitCell::default(),
-            items: ActorItemsCell::default(),
+            handle: SpawnHandle::default(),
             address: ActorAddressCell::default(),
-            cell: None,
-        }
-    }
-
-    #[inline]
-    pub fn with_cell(act: Option<A>, cell: C) -> ContextImpl<A, C> {
-        ContextImpl {
-            act: act,
-            flags: ContextFlags::RUNNING,
-            wait: ActorWaitCell::default(),
-            items: ActorItemsCell::default(),
-            address: ActorAddressCell::default(),
-            cell: Some(cell),
         }
     }
 
     #[inline]
     pub fn with_receiver(act: Option<A>,
-                         rx: sync::UnboundedReceiver<Envelope<A>>) -> ContextImpl<A, C> {
+                         rx: sync::UnboundedReceiver<Envelope<A>>) -> ContextImpl<A> {
         ContextImpl {
             act: act,
+            cells: SmallVec::new(),
+            wait: SmallVec::new(),
             flags: ContextFlags::RUNNING,
-            wait: ActorWaitCell::default(),
-            items: ActorItemsCell::default(),
+            handle: SpawnHandle::default(),
             address: ActorAddressCell::new(rx),
-            cell: None,
         }
     }
 
@@ -102,12 +79,6 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
-    /// Mutable reference to cell
-    pub fn cell(&mut self) -> &mut Option<C> {
-        &mut self.cell
-    }
-
-    #[inline]
     /// Mark context as modified, this cause extra poll loop over all cells
     pub fn modify(&mut self) {
         self.flags.insert(ContextFlags::MODIFIED);
@@ -115,8 +86,8 @@ impl<A, C> ContextImpl<A, C>
 
     #[inline]
     /// Is context waiting for future completion
-    pub fn wating(&self) -> bool {
-        self.flags.contains(ContextFlags::WAITING)
+    pub fn waiting(&self) -> bool {
+        !self.wait.is_empty()
     }
 
     #[inline]
@@ -151,12 +122,22 @@ impl<A, C> ContextImpl<A, C>
     }
 
     #[inline]
+    pub fn spawn_cell<T: ContextCell<A>>(&mut self, cell: T) -> SpawnHandle {
+        self.flags.insert(ContextFlags::MODIFIED);
+        self.handle = self.handle.next();
+        self.cells.push(Item::Cell((self.handle, Box::new(cell))));
+        self.handle
+    }
+
+    #[inline]
     /// Spawn new future to this context.
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.flags.insert(ContextFlags::MODIFIED);
-        self.items.spawn(fut)
+        self.handle = self.handle.next();
+        self.cells.push(Item::Future((self.handle, Box::new(fut))));
+        self.handle
     }
 
     #[inline]
@@ -166,16 +147,25 @@ impl<A, C> ContextImpl<A, C>
     pub fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
+        self.wait.push(ActorWaitCell::new(fut));
         self.flags.insert(ContextFlags::MODIFIED);
-        self.flags.insert(ContextFlags::WAITING);
-        self.wait.add(fut)
     }
 
     #[inline]
     /// Cancel previously scheduled future.
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        self.flags.insert(ContextFlags::MODIFIED);
-        self.items.cancel_future(handle)
+        for idx in 0..self.cells.len() {
+            let found = match self.cells[idx] {
+                Item::Cell((h, _)) | Item::Future((h, _)) =>
+                    handle == h,
+            };
+            if found {
+                self.flags.insert(ContextFlags::MODIFIED);
+                self.cells.swap_remove(idx);
+                return true
+            }
+        }
+        false
     }
 
     #[inline]
@@ -217,8 +207,7 @@ impl<A, C> ContextImpl<A, C>
         if self.flags.contains(ContextFlags::STOPPED) {
             false
         } else {
-            self.address.connected() || !self.items.is_empty() || !self.wait.is_empty() ||
-                self.cell.as_ref().map(|c| c.alive()).unwrap_or(false)
+            self.address.connected() || !self.cells.is_empty()
         }
     }
 
@@ -251,32 +240,56 @@ impl<A, C> ContextImpl<A, C>
             self.flags.insert(ContextFlags::STARTED);
         }
 
-        loop {
+        'outer: loop {
             self.flags.remove(ContextFlags::MODIFIED);
             let prepstop = self.flags.contains(ContextFlags::PREPSTOP);
 
             // check wait futures
-            cell_ready!{ self, self.wait.poll(act, ctx, prepstop) };
-
-            // check cell
-            let stop = match self.cell {
-                Some(ref mut cell) => match cell.poll(act, ctx, prepstop) {
-                    ContextCellResult::Ready => false,
+            while !self.wait.is_empty() {
+                match self.wait[0].poll(act, ctx, prepstop) {
+                    ContextCellResult::Ready | ContextCellResult::Completed => {
+                        self.wait.swap_remove(0);
+                        continue
+                    },
                     ContextCellResult::NotReady => return Ok(Async::NotReady),
-                    ContextCellResult::Stop => true,
-                },
-                None => false,
-            };
-            if stop {
-                self.stop();
+                    ContextCellResult::Stop => self.stop(),
+                }
             }
-            self.flags.remove(ContextFlags::WAITING);
 
-            // check for incoming messages
-            cell_ready!{ self, self.address.poll(act, ctx, prepstop) };
+            // process address
+            self.address.poll(act, ctx, prepstop);
+            if !self.wait.is_empty() {
+                continue 'outer
+            }
 
-            // process futures
-            cell_ready!{ self, self.items.poll(act, ctx, prepstop) };
+            // process items
+            let mut idx = 0;
+            while idx < self.cells.len() {
+                let result = match self.cells[idx] {
+                    Item::Cell((_, ref mut cell)) =>
+                        cell.poll(act, ctx, prepstop),
+                    Item::Future((_, ref mut fut)) =>
+                        match fut.poll(act, ctx) {
+                            Ok(Async::NotReady) => ContextCellResult::Ready,
+                            Ok(Async::Ready(_)) | Err(_) => ContextCellResult::Completed,
+                        },
+                };
+                match result {
+                    ContextCellResult::Ready => idx += 1,
+                    ContextCellResult::NotReady => return Ok(Async::NotReady),
+                    ContextCellResult::Stop => {
+                        idx += 1;
+                        self.stop()
+                    },
+                    ContextCellResult::Completed => {
+                        self.cells.swap_remove(idx);
+                    },
+                }
+                // one of the cells scheduled wait future
+                if !self.wait.is_empty() {
+                    continue 'outer
+                }
+            }
 
             // modified indicates that new IO item has been added during poll process
             if self.flags.contains(ContextFlags::MODIFIED) {
@@ -285,6 +298,7 @@ impl<A, C> ContextImpl<A, C>
 
             // check state
             if self.flags.contains(ContextFlags::RUNNING) {
+                // possible stop condition
                 if !self.alive() && Actor::stopping(act, ctx) {
                     self.flags.remove(ContextFlags::RUNNING);
                     self.flags.insert(ContextFlags::PREPSTOP);

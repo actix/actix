@@ -144,7 +144,6 @@ pub mod dev {
     pub use address::{ActorAddress};
     pub use context::AsyncContextApi;
     pub use contextimpl::ContextImpl;
-    pub use contextcells::{ContextProtocol, ContextCellResult,
-                           ActorAddressCell, ActorItemsCell, ActorWaitCell};
+    pub use contextcells::{ContextProtocol, ContextCellResult, ActorAddressCell, ActorWaitCell};
     pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 }
