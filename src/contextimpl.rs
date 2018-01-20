@@ -124,7 +124,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     {
         self.flags.insert(ContextFlags::MODIFIED);
         self.handle = self.handle.next();
-        self.items.push((self.handle, Box::new(fut)));
+        let fut: Box<ActorFuture<Item=(), Error=(), Actor=A>> = Box::new(fut);
+        self.items.push((self.handle, fut));
         self.handle
     }
 
