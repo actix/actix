@@ -4,7 +4,8 @@ extern crate futures;
 extern crate tokio_core;
 
 use std::time::Duration;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use futures::{future, Future};
 use futures::unsync::mpsc::unbounded;
 use tokio_core::reactor::Timeout;
@@ -127,7 +128,7 @@ fn test_run_after_stop() {
 }
 
 
-struct ContextWait {cnt: Arc<Mutex<usize>>}
+struct ContextWait {cnt: Arc<AtomicUsize>}
 
 impl Actor for ContextWait {
     type Context = actix::Context<Self>;
@@ -140,8 +141,8 @@ impl Handler<Ping> for ContextWait {
     type Result = ();
 
     fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
-        let mut cnt = self.cnt.lock().unwrap();
-        *cnt += 1;
+        let cnt = self.cnt.load(Ordering::Relaxed);
+        self.cnt.store(cnt+1, Ordering::Relaxed);
 
         let fut = Timeout::new(Duration::from_secs(10), Arbiter::handle()).unwrap();
         fut.map_err(|_| ()).map(|_| ())
@@ -156,8 +157,8 @@ impl Handler<Result<Ping, ()>> for ContextWait {
     type Result = ();
 
     fn handle(&mut self, _: Result<Ping, ()>, ctx: &mut Self::Context) {
-        let mut cnt = self.cnt.lock().unwrap();
-        *cnt += 1;
+        let cnt = self.cnt.load(Ordering::Relaxed);
+        self.cnt.store(cnt+1, Ordering::Relaxed);
 
         let fut = Timeout::new(Duration::from_secs(10), Arbiter::handle()).unwrap();
         fut.map_err(|_| ()).map(|_| ())
@@ -172,7 +173,7 @@ impl Handler<Result<Ping, ()>> for ContextWait {
 fn test_wait_context() {
     let sys = System::new("test");
 
-    let m = Arc::new(Mutex::new(0));
+    let m = Arc::new(AtomicUsize::new(0));
     let addr: Address<_> = ContextWait{cnt: Arc::clone(&m)}.start();
     addr.send(Ping);
     addr.send(Ping);
@@ -180,14 +181,14 @@ fn test_wait_context() {
 
     sys.run();
 
-    assert_eq!(*m.lock().unwrap(), 1);
+    assert_eq!(m.load(Ordering::Relaxed), 1);
 }
 
 #[test]
 fn test_message_stream_wait_context() {
     let sys = System::new("test");
 
-    let m = Arc::new(Mutex::new(0));
+    let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
     let _addr: Address<_> = ContextWait::create(move |ctx| {
         let (tx, rx) = unbounded();
@@ -200,14 +201,14 @@ fn test_message_stream_wait_context() {
     });
     sys.run();
 
-    assert_eq!(*m.lock().unwrap(), 1);
+    assert_eq!(m.load(Ordering::Relaxed), 1);
 }
 
 #[test]
 fn test_stream_wait_context() {
     let sys = System::new("test");
 
-    let m = Arc::new(Mutex::new(0));
+    let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
     let _addr: Address<_> = ContextWait::create(move |ctx| {
         let (tx, rx) = unbounded();
@@ -220,10 +221,10 @@ fn test_stream_wait_context() {
     });
     sys.run();
 
-    assert_eq!(*m.lock().unwrap(), 1);
+    assert_eq!(m.load(Ordering::Relaxed), 1);
 }
 
-struct ContextNoWait {cnt: Arc<Mutex<usize>>}
+struct ContextNoWait {cnt: Arc<AtomicUsize>}
 
 impl Actor for ContextNoWait {
     type Context = actix::Context<Self>;
@@ -233,8 +234,8 @@ impl Handler<Ping> for ContextNoWait {
     type Result = ();
 
     fn handle(&mut self, _: Ping, _: &mut Self::Context) {
-        let mut cnt = self.cnt.lock().unwrap();
-        *cnt += 1;
+        let cnt = self.cnt.load(Ordering::Relaxed);
+        self.cnt.store(cnt+1, Ordering::Relaxed);
 
         Arbiter::system().send(SystemExit(0));
     }
@@ -244,8 +245,8 @@ impl Handler<Result<Ping, ()>> for ContextNoWait {
     type Result = ();
 
     fn handle(&mut self, _: Result<Ping, ()>, _: &mut Self::Context) {
-        let mut cnt = self.cnt.lock().unwrap();
-        *cnt += 1;
+        let cnt = self.cnt.load(Ordering::Relaxed);
+        self.cnt.store(cnt+1, Ordering::Relaxed);
 
         Arbiter::system().send(SystemExit(0));
     }
@@ -255,21 +256,21 @@ impl Handler<Result<Ping, ()>> for ContextNoWait {
 fn test_nowait_context() {
     let sys = System::new("test");
 
-    let m = Arc::new(Mutex::new(0));
+    let m = Arc::new(AtomicUsize::new(0));
     let addr: Address<_> = ContextNoWait{cnt: Arc::clone(&m)}.start();
     addr.send(Ping);
     addr.send(Ping);
     addr.send(Ping);
     sys.run();
 
-    assert_eq!(*m.lock().unwrap(), 3);
+    assert_eq!(m.load(Ordering::Relaxed), 3);
 }
 
 #[test]
 fn test_message_stream_nowait_context() {
     let sys = System::new("test");
 
-    let m = Arc::new(Mutex::new(0));
+    let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
     let _addr: Address<_> = ContextNoWait::create(move |ctx| {
         let (tx, rx) = unbounded();
@@ -282,14 +283,14 @@ fn test_message_stream_nowait_context() {
     });
     sys.run();
 
-    assert_eq!(*m.lock().unwrap(), 3);
+    assert_eq!(m.load(Ordering::Relaxed), 3);
 }
 
 #[test]
 fn test_stream_nowait_context() {
     let sys = System::new("test");
 
-    let m = Arc::new(Mutex::new(0));
+    let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
     let _addr: Address<_> = ContextNoWait::create(move |ctx| {
         let (tx, rx) = unbounded();
@@ -302,5 +303,5 @@ fn test_stream_nowait_context() {
     });
     sys.run();
 
-    assert_eq!(*m.lock().unwrap(), 3);
+    assert_eq!(m.load(Ordering::Relaxed), 3);
 }
