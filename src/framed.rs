@@ -118,8 +118,10 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 {
     /// Send item to sink. If sink is closed item returned as an error.
     #[inline]
-    pub fn send(&mut self, msg: <A::Codec as Encoder>::Item) {
-        self.framed.send(msg)
+    pub fn send(&mut self, msg: <A::Codec as Encoder>::Item)
+                -> Result<(), <A::Codec as Encoder>::Item> {
+        self.framed.send(msg);
+        Ok(())
     }
 
     /// Gracefully close Framed object. FramedContext
