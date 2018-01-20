@@ -52,7 +52,6 @@ mod contextitems;
 mod envelope;
 mod framed;
 mod handler;
-pub mod queue;
 mod message;
 mod registry;
 mod system;
@@ -65,6 +64,9 @@ pub mod msgs;
 pub mod sync;
 
 #[doc(hidden)]
+pub mod queue;
+
+#[doc(hidden)]
 pub mod constants;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
@@ -73,7 +75,7 @@ pub use actor::{Actor, ActorState, FramedActor, Supervised,
 pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
-pub use context::{Context, ContextFutureSpawner};
+pub use context::Context;
 pub use envelope::ToEnvelope;
 pub use framed::FramedContext;
 pub use message::{Request, Response};
@@ -82,6 +84,9 @@ pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
 pub use utils::Condition;
 pub use supervisor::Supervisor;
+
+#[doc(hidden)]
+pub use context::ContextFutureSpawner;
 
 pub mod prelude {
 //! The `actix` prelude
@@ -94,37 +99,37 @@ pub mod prelude {
 //! use actix::prelude::*;
 //! ```
 
-#[doc(hidden)]
-pub use actix_derive::*;
+    #[doc(hidden)]
+    pub use actix_derive::*;
 
-pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
-pub use actor::{Actor, ActorContext, AsyncContext, FramedActor};
-pub use arbiter::Arbiter;
-pub use address::{Address, SyncAddress};
-pub use framed::FramedContext;
-pub use message::Response;
-pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
-pub use context::{Context, ContextFutureSpawner};
-pub use system::System;
-pub use sync::{SyncContext, SyncArbiter};
-
-pub mod actix {
-    pub use msgs;
-    pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
-    pub use actor::{Actor, ActorState, FramedActor, Supervised,
-                    ActorContext, AsyncContext, SpawnHandle};
-    pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
+    pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
+    pub use actor::{Actor, ActorContext, AsyncContext, FramedActor};
     pub use arbiter::Arbiter;
-    pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
+    pub use address::{Address, SyncAddress};
     pub use context::{Context, ContextFutureSpawner};
     pub use framed::FramedContext;
-    pub use message::{Request, Response};
+    pub use message::Response;
+    pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;
     pub use sync::{SyncContext, SyncArbiter};
-    pub use registry::{ArbiterService, SystemService};
-    pub use utils::Condition;
-}}
 
+    pub mod actix {
+        pub use msgs;
+        pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
+        pub use actor::{Actor, ActorState, FramedActor, Supervised,
+                        ActorContext, AsyncContext, SpawnHandle};
+        pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
+        pub use arbiter::Arbiter;
+        pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
+        pub use context::Context;
+        pub use framed::FramedContext;
+        pub use message::{Request, Response};
+        pub use system::System;
+        pub use sync::{SyncContext, SyncArbiter};
+        pub use registry::{ArbiterService, SystemService};
+        pub use utils::Condition;
+    }
+}
 
 pub mod dev {
 //! The `actix` prelude for library developers
@@ -140,10 +145,11 @@ pub mod dev {
     pub use prelude::*;
     pub use prelude::actix::*;
 
+    #[doc(hidden)]
     pub use queue;
-    pub use address::{ActorAddress};
+    pub use address::ActorAddress;
     pub use context::AsyncContextApi;
     pub use contextimpl::ContextImpl;
-    pub use contextcells::{ContextProtocol, ContextCellResult, ActorAddressCell, ActorWaitCell};
+    pub use contextcells::{ContextProtocol, ContextCell, ContextCellResult};
     pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
 }

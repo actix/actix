@@ -69,6 +69,7 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
     }
 }
 
+#[doc(hidden)]
 impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
 
     #[inline]

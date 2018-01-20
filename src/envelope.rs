@@ -18,8 +18,7 @@ pub trait ToEnvelope<A: Actor>
                cancel_on_drop: bool) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
-              M::Item: Send,
-              M::Error: Send;
+              M::Item: Send, M::Error: Send;
 }
 
 impl<A> ToEnvelope<A> for Context<A>
@@ -29,8 +28,7 @@ impl<A> ToEnvelope<A> for Context<A>
                cancel_on_drop: bool) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + 'static,
-              M::Item: Send,
-              M::Error: Send,
+              M::Item: Send, M::Error: Send,
     {
         Envelope(Box::new(
             RemoteEnvelope{msg: Some(msg),
@@ -54,8 +52,7 @@ impl<A> Envelope<A> where A: Actor {
                            tx: Option<Sender<Result<M::Item, M::Error>>>,
                            cancel_on_drop: bool) -> Self
         where M: ResponseType + 'static,
-              A: Actor + Handler<M>,
-              A::Context: AsyncContext<A>
+              A: Actor + Handler<M>, A::Context: AsyncContext<A>
     {
         Envelope(Box::new(
             LocalEnvelope{msg: Some(msg),
@@ -80,11 +77,7 @@ pub trait EnvelopeProxy {
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
 }
 
-struct LocalEnvelope<A, M>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
-{
+struct LocalEnvelope<A, M> where M: ResponseType {
     msg: Option<M>,
     act: PhantomData<A>,
     tx: Option<Sender<Result<M::Item, M::Error>>>,
@@ -93,8 +86,7 @@ struct LocalEnvelope<A, M>
 
 impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
     where M: ResponseType + 'static,
-          A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>
+          A: Actor + Handler<M>, A::Context: AsyncContext<A>
 {
     type Actor = A;
 
@@ -119,28 +111,20 @@ impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
     }
 }
 
-pub struct RemoteEnvelope<A, M>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
-{
+pub struct RemoteEnvelope<A, M> where M: ResponseType {
     act: PhantomData<A>,
     msg: Option<M>,
     tx: Option<SyncSender<Result<M::Item, M::Error>>>,
     cancel_on_drop: bool,
 }
 
-impl<A, M> RemoteEnvelope<A, M>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
-{
+impl<A, M> RemoteEnvelope<A, M> where A: Actor, M: ResponseType {
+
     pub fn new(msg: M,
                tx: Option<SyncSender<Result<M::Item, M::Error>>>,
                cancel_on_drop: bool) -> RemoteEnvelope<A, M>
         where A: Handler<M>,
-              M: Send + 'static,
-              M::Item: Send, M::Item: Send
+              M: Send + 'static, M::Item: Send, M::Item: Send
     {
         RemoteEnvelope{msg: Some(msg),
                        tx: tx,
@@ -151,13 +135,11 @@ impl<A, M> RemoteEnvelope<A, M>
 
 impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
     where M: ResponseType + 'static,
-          A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>
+          A: Actor + Handler<M>, A::Context: AsyncContext<A>
 {
     type Actor = A;
 
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
-    {
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context) {
         let tx = self.tx.take();
         if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
             return
@@ -192,8 +174,7 @@ enum EnvelopFutureItem<M> where M: ResponseType {
     Remote(SyncSender<Result<M::Item, M::Error>>),
 }
 
-pub(crate) struct EnvelopFuture<A, M> where A: Actor + Handler<M>, M: ResponseType
-{
+pub(crate) struct EnvelopFuture<A, M> where A: Actor, M: ResponseType {
     msg: PhantomData<M>,
     fut: Response<A, M>,
     tx: Option<EnvelopFutureItem<M>>,

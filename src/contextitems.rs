@@ -10,22 +10,13 @@ use handler::{Handler, ResponseType, IntoResponse};
 use message::Response;
 
 
-pub(crate)
-struct ActorFutureItem<A, M, F, E>
-    where A: Actor + Handler<Result<M, E>>,
-          M: ResponseType,
-          F: Future<Item=M, Error=E>,
-{
+pub(crate) struct ActorFutureItem<A, M, F, E> where A: Actor, M: ResponseType {
     act: PhantomData<A>,
     fut: F,
     result: Option<Response<A, Result<M, E>>>,
 }
 
-impl<A, M, F, E> ActorFutureItem<A, M, F, E>
-    where A: Actor + Handler<Result<M, E>>,
-          M: ResponseType,
-          F: Future<Item=M, Error=E>,
-{
+impl<A, M, F, E> ActorFutureItem<A, M, F, E> where A: Actor, M: ResponseType {
     pub fn new(fut: F) -> ActorFutureItem<A, M, F, E> {
         ActorFutureItem {
             act: PhantomData,
@@ -36,8 +27,7 @@ impl<A, M, F, E> ActorFutureItem<A, M, F, E>
 }
 
 impl<A, M, F, E> ActorFuture for ActorFutureItem<A, M, F, E>
-    where A: Actor + Handler<Result<M, E>>,
-          A::Context: AsyncContext<A>,
+    where A: Actor + Handler<Result<M, E>>, A::Context: AsyncContext<A>,
           M: ResponseType,
           F: Future<Item=M, Error=E>,
 {
@@ -46,18 +36,7 @@ impl<A, M, F, E> ActorFuture for ActorFutureItem<A, M, F, E>
     type Actor = A;
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        loop {
-            if let Some(mut fut) = self.result.take() {
-                match fut.poll_response(act, ctx) {
-                    Ok(Async::NotReady) => {
-                        self.result = Some(fut);
-                        return Ok(Async::NotReady)
-                    }
-                    Ok(Async::Ready(_)) => return Ok(Async::Ready(())),
-                    Err(_) => return Err(()),
-                }
-            }
-
+        if self.result.is_none() {
             match self.fut.poll() {
                 Ok(Async::Ready(msg)) => {
                     let fut = <A as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
@@ -67,27 +46,27 @@ impl<A, M, F, E> ActorFuture for ActorFutureItem<A, M, F, E>
                     let fut = <A as Handler<Result<M, E>>>::handle(act, Err(err), ctx);
                     self.result = Some(fut.into_response());
                 },
-                Ok(Async::NotReady) =>
-                    return Ok(Async::NotReady),
+                Ok(Async::NotReady) => return Ok(Async::NotReady),
             }
+        }
+
+        match self.result.as_mut().unwrap().poll_response(act, ctx) {
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Async::Ready(_)) => return Ok(Async::Ready(())),
+            Err(_) => return Err(()),
         }
     }
 }
 
-pub(crate)
-struct ActorDelayedMessageItem<A, M>
-    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType
-{
+pub(crate) struct ActorDelayedMessageItem<A, M> where A: Actor, M: ResponseType {
     act: PhantomData<A>,
     msg: Option<M>,
     timeout: Timeout,
     result: Option<Response<A, M>>,
 }
 
-impl<A, M> ActorDelayedMessageItem<A, M>
-    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType
-{
-    pub fn new(msg: M, timeout: Duration) -> ActorDelayedMessageItem<A, M> {
+impl<A, M> ActorDelayedMessageItem<A, M> where A: Actor, M: ResponseType {
+    pub fn new(msg: M, timeout: Duration) -> Self {
         ActorDelayedMessageItem {
             act: PhantomData,
             msg: Some(msg),
@@ -105,18 +84,7 @@ impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
     type Actor = A;
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        loop {
-            if let Some(mut fut) = self.result.take() {
-                match fut.poll_response(act, ctx) {
-                    Ok(Async::NotReady) => {
-                        self.result = Some(fut);
-                        return Ok(Async::NotReady)
-                    }
-                    Ok(Async::Ready(_)) => return Ok(Async::Ready(())),
-                    Err(_) => return Err(()),
-                }
-            }
-
+        if self.result.is_none() {
             match self.timeout.poll() {
                 Ok(Async::Ready(_)) => {
                     let fut = <A as Handler<M>>::handle(act, self.msg.take().unwrap(), ctx);
@@ -126,22 +94,23 @@ impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
                 Err(_) => unreachable!(),
             }
         }
+
+        match self.result.as_mut().unwrap().poll_response(act, ctx) {
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Async::Ready(_)) => return Ok(Async::Ready(())),
+            Err(_) => return Err(()),
+        }
     }
 }
 
-pub(crate)
-struct ActorMessageItem<A, M>
-    where A: Actor + Handler<M>, M: ResponseType,
-{
+pub(crate) struct ActorMessageItem<A, M> where A: Actor, M: ResponseType {
     act: PhantomData<A>,
     msg: Option<M>,
     result: Option<Response<A, M>>,
 }
 
-impl<A, M> ActorMessageItem<A, M>
-    where A: Actor + Handler<M>, M: ResponseType,
-{
-    pub fn new(msg: M) -> ActorMessageItem<A, M> {
+impl<A, M> ActorMessageItem<A, M> where A: Actor, M: ResponseType {
+    pub fn new(msg: M) -> Self {
         ActorMessageItem {
             act: PhantomData,
             msg: Some(msg),
@@ -151,52 +120,34 @@ impl<A, M> ActorMessageItem<A, M>
 }
 
 impl<A, M> ActorFuture for ActorMessageItem<A, M>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType,
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType
 {
     type Item = ();
     type Error = ();
     type Actor = A;
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        loop {
-            if let Some(mut fut) = self.result.take() {
-                match fut.poll_response(act, ctx) {
-                    Ok(Async::NotReady) => {
-                        self.result = Some(fut);
-                        return Ok(Async::NotReady)
-                    }
-                    Ok(Async::Ready(_)) =>
-                        return Ok(Async::Ready(())),
-                    Err(_) =>
-                        return Err(())
-                }
-            }
-
+        if self.result.is_none() {
             let fut = <Self::Actor as Handler<M>>::handle(act, self.msg.take().unwrap(), ctx);
             self.result = Some(fut.into_response());
+        }
+
+        match self.result.as_mut().unwrap().poll_response(act, ctx) {
+            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Ok(Async::Ready(_)) => Ok(Async::Ready(())),
+            Err(_) => Err(())
         }
     }
 }
 
-pub(crate)
-struct ActorStreamItem<A, M, E, S>
-    where S: Stream<Item=M, Error=E>,
-          A: Actor + Handler<Result<M, E>>,
-          M: ResponseType,
-{
+pub(crate) struct ActorStreamItem<A, M, E, S> where A: Actor, M: ResponseType {
     act: PhantomData<A>,
     fut: Option<Response<A, Result<M, E>>>,
     stream: S,
 }
 
-impl<A, M, E, S> ActorStreamItem<A, M, E, S>
-    where S: Stream<Item=M, Error=E> + 'static,
-          A: Actor + Handler<Result<M, E>>,
-          M: ResponseType
-{
-    pub fn new(fut: S) -> ActorStreamItem<A, M, E, S> {
+impl<A, M, E, S> ActorStreamItem<A, M, E, S> where A: Actor, M: ResponseType {
+    pub fn new(fut: S) -> Self {
         ActorStreamItem {
             act: PhantomData,
             fut: None,
@@ -206,8 +157,7 @@ impl<A, M, E, S> ActorStreamItem<A, M, E, S>
 
 impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + Handler<Result<M, E>>,
-          A::Context: AsyncContext<A>,
+          A: Actor + Handler<Result<M, E>>, A::Context: AsyncContext<A>,
           M: ResponseType
 {
     type Item = ();
@@ -236,10 +186,8 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
                     let fut = <A as Handler<Result<M, E>>>::handle(act, Err(err), ctx);
                     self.fut = Some(fut.into_response());
                 },
-                Ok(Async::Ready(None)) =>
-                    return Ok(Async::Ready(())),
-                Ok(Async::NotReady) =>
-                    return Ok(Async::NotReady),
+                Ok(Async::Ready(None)) => return Ok(Async::Ready(())),
+                Ok(Async::NotReady) => return Ok(Async::NotReady),
             }
 
             // stop immediately if context is waiting for future completion
@@ -250,23 +198,14 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
     }
 }
 
-pub(crate)
-struct ActorMessageStreamItem<A, M, S>
-    where S: Stream<Item=M, Error=()>,
-          A: Actor + Handler<M>,
-          M: ResponseType,
-{
+pub(crate) struct ActorMessageStreamItem<A, M, S> where A: Actor, M: ResponseType {
     act: PhantomData<A>,
     fut: Option<Response<A, M>>,
     stream: S,
 }
 
-impl<A, M, S> ActorMessageStreamItem<A, M, S>
-    where S: Stream<Item=M, Error=()> + 'static,
-          A: Actor + Handler<M>,
-          M: ResponseType
-{
-    pub fn new(fut: S) -> ActorMessageStreamItem<A, M, S> {
+impl<A, M, S> ActorMessageStreamItem<A, M, S> where A: Actor, M: ResponseType {
+    pub fn new(fut: S) -> Self {
         ActorMessageStreamItem {
             act: PhantomData,
             fut: None,
@@ -277,8 +216,7 @@ impl<A, M, S> ActorMessageStreamItem<A, M, S>
 
 impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, M, S>
     where S: Stream<Item=M, Error=()>,
-          A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
+          A: Actor + Handler<M>, A::Context: AsyncContext<A>,
           M: ResponseType
 {
     type Item = ();
@@ -303,10 +241,8 @@ impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, M, S>
                     let fut = <A as Handler<M>>::handle(act, msg, ctx);
                     self.fut = Some(fut.into_response());
                 }
-                Ok(Async::Ready(None)) =>
-                    return Ok(Async::Ready(())),
-                Ok(Async::NotReady) =>
-                    return Ok(Async::NotReady),
+                Ok(Async::Ready(None)) => return Ok(Async::Ready(())),
+                Ok(Async::NotReady) => return Ok(Async::NotReady),
                 Err(_) => (),
             }
 

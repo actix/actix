@@ -95,6 +95,7 @@ impl<A> AsyncContext<A> for FramedContext<A>
     }
 }
 
+#[doc(hidden)]
 impl<A> AsyncContextApi<A> for FramedContext<A>
     where A: Actor<Context=Self> + FramedActor,
 {

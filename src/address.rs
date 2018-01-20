@@ -40,8 +40,7 @@ impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
     where A: Actor,
           A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
-    fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>)
-    {
+    fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>) {
         (ctx.unsync_address(), ctx.sync_address())
     }
 }
@@ -74,6 +73,7 @@ impl<M: 'static> Clone for Box<Subscriber<M>> {
     }
 }
 
+/// Convenience impl to allow boxed Subscriber objects to be cloned using `Clone.clone()`.
 impl<M: 'static> Clone for Box<Subscriber<M> + Send> {
     fn clone(&self) -> Box<Subscriber<M> + Send> {
         // simplify ergonomics of `+Send` subscriber, otherwise
@@ -107,10 +107,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 
     /// Send message `M` to actor `A`. Communication channel to the actor is unbounded.
-    pub fn send<M>(&self, msg: M)
-        where A: Handler<M>,
-              M: ResponseType + 'static
-    {
+    pub fn send<M>(&self, msg: M) where A: Handler<M>, M: ResponseType + 'static {
         let _ = self.tx.unbounded_send(
             ContextProtocol::Envelope(Envelope::local(msg, None, false)));
     }
@@ -121,9 +118,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     ///
     /// if returned `Request` object get dropped, message cancels.
     pub fn call<B, M>(&self, _: &B, msg: M) -> Request<B, M>
-        where A: Handler<M>,
-              B: Actor,
-              M: ResponseType + 'static
+        where A: Handler<M>, B: Actor, M: ResponseType + 'static
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
@@ -216,8 +211,7 @@ impl<A> SyncAddress<A> where A: Actor {
     pub fn send<M>(&self, msg: M)
         where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A>,
               M: ResponseType + Send + 'static,
-              M::Item: Send,
-              M::Error: Send,
+              M::Item: Send, M::Error: Send,
     {
         if self.tx.unbounded_send(
             <<A as Actor>::Context as ToEnvelope<A>>::pack(msg, None, false)).is_err()
@@ -232,8 +226,7 @@ impl<A> SyncAddress<A> where A: Actor {
     pub fn call<B: Actor, M>(&self, _: &B, msg: M) -> Request<B, M>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
-              M::Item: Send,
-              M::Error: Send,
+              M::Item: Send, M::Error: Send,
              <A as Actor>::Context: ToEnvelope<A>,
     {
         let (tx, rx) = sync_channel();
@@ -251,8 +244,7 @@ impl<A> SyncAddress<A> where A: Actor {
     pub fn call_fut<M>(&self, msg: M) -> SyncReceiver<Result<M::Item, M::Error>>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
-              M::Item: Send,
-              M::Error: Send,
+              M::Item: Send, M::Error: Send,
              <A as Actor>::Context: ToEnvelope<A>,
     {
         let (tx, rx) = sync_channel();
@@ -269,8 +261,7 @@ impl<A> SyncAddress<A> where A: Actor {
     pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
-              M::Item: Send,
-              M::Error: Send,
+              M::Item: Send, M::Error: Send,
              <A as Actor>::Context: ToEnvelope<A>,
     {
         Box::new(self.clone())
@@ -281,8 +272,7 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
     where A: Actor + Handler<M>,
           <A as Actor>::Context: ToEnvelope<A>,
           M: ResponseType + Send + 'static,
-          M::Item: Send,
-          M::Error: Send,
+          M::Item: Send, M::Error: Send,
 {
     fn send(&self, msg: M) -> Result<(), M> {
         if self.connected() {
