@@ -315,19 +315,23 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// This method allow to handle Future in similar way as normal actor messages.
     ///
     /// ```rust
-    /// # extern crate actix;
+    /// # #[macro_use] extern crate actix;
+    /// # extern crate futures;
+    /// use std::io;
     /// use actix::prelude::*;
+    /// use futures::future;
     ///
     /// #[derive(Message)]
     /// struct Ping;
     ///
     /// struct MyActor;
     ///
-    /// impl Handler<Ping> for MyActor {
+    /// impl Handler<Result<Ping, io::Error>> for MyActor {
     ///     type Result = ();
     ///
-    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
+    ///     fn handle(&mut self, msg: Result<Ping, io::Error>, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
+    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
     ///     }
     /// }
     ///
@@ -336,10 +340,14 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     ///
     ///    fn started(&mut self, ctx: &mut Context<Self>) {
     ///        // send `Ping` to self.
-    ///        ctx.notify(Ping);
+    ///        ctx.add_future(future::result::<Ping, io::Error>(Ok(Ping)));
     ///    }
     /// }
-    /// # fn main() {}
+    /// # fn main() {
+    /// #    let sys = System::new("example");
+    /// #    let addr: Address<_> = MyActor.start();
+    /// #    sys.run();
+    /// # }
     /// ```
     fn add_future<F>(&mut self, fut: F)
         where F: Future + 'static,
@@ -357,6 +365,44 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     ///
     /// Information to consider. Actor wont receive next item from a stream
     /// until `Response` future resolves to a result. `Self::reply` resolves immediately.
+    ///
+    /// This method is similar to `add_stream` but it skips result error.
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate actix;
+    /// # extern crate futures;
+    /// # use std::io;
+    /// use actix::prelude::*;
+    /// use futures::stream::once;
+    ///
+    /// #[derive(Message)]
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl Handler<Result<Ping, io::Error>> for MyActor {
+    ///     type Result = ();
+    ///
+    ///     fn handle(&mut self, msg: Result<Ping, io::Error>, ctx: &mut Context<MyActor>) {
+    ///         println!("PING");
+    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    ///
+    ///    fn started(&mut self, ctx: &mut Context<Self>) {
+    ///        // add stream
+    ///        ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
+    ///    }
+    /// }
+    /// # fn main() {
+    /// #    let sys = System::new("example");
+    /// #    let addr: Address<_> = MyActor.start();
+    /// #    sys.run();
+    /// # }
+    /// ```
     fn add_stream<S>(&mut self, fut: S)
         where S: Stream + 'static,
               S::Item: ResponseType,
@@ -369,7 +415,42 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         }
     }
 
-    /// This method is similar to `add_stream` but it skips errors.
+    /// This method is similar to `add_stream` but it skips result error.
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate actix;
+    /// # extern crate futures;
+    /// use actix::prelude::*;
+    /// use futures::stream::once;
+    ///
+    /// #[derive(Message)]
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl Handler<Ping> for MyActor {
+    ///     type Result = ();
+    ///
+    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
+    ///         println!("PING");
+    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    ///
+    ///    fn started(&mut self, ctx: &mut Context<Self>) {
+    ///        // add messages stream
+    ///        ctx.add_message_stream(once(Ok(Ping)));
+    ///    }
+    /// }
+    /// # fn main() {
+    /// #    let sys = System::new("example");
+    /// #    let addr: Address<_> = MyActor.start();
+    /// #    sys.run();
+    /// # }
+    /// ```
     fn add_message_stream<S>(&mut self, fut: S)
         where S: Stream<Error=()> + 'static,
               S::Item: ResponseType,
