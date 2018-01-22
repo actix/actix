@@ -174,7 +174,7 @@ pub trait FramedActor: Actor {
     /// Codec type
     type Codec: Encoder + Decoder;
 
-    /// This message is called for every decoded message from framed object.
+    /// This method is called for every decoded message from framed object.
     fn handle(&mut self,
               msg: Result<<Self::Codec as Decoder>::Item, <Self::Codec as Decoder>::Error>,
               ctx: &mut Self::Context);
@@ -188,7 +188,7 @@ pub trait FramedActor: Actor {
 
     /// Add framed object to current context and return
     /// wrapper for write part of the framed object.
-    fn add_framed(&mut self, ctx: &mut Self::Context, framed: Framed<Self::Io, Self::Codec>)
+    fn add_framed(&mut self, framed: Framed<Self::Io, Self::Codec>, ctx: &mut Self::Context)
                   -> FramedCell<Self>
         where Self::Context: AsyncContext<Self> + AsyncContextApi<Self>
     {
