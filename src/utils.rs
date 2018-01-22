@@ -7,8 +7,6 @@ use fut::ActorFuture;
 use actor::Actor;
 use arbiter::Arbiter;
 
-
-#[doc(hidden)]
 pub struct Condition<T> where T: Clone {
     waiters: Vec<oneshot::Sender<T>>,
 }
@@ -31,6 +29,24 @@ impl<T> Condition<T> where T: Clone {
 impl<T> Default for Condition<T> where T: Clone {
     fn default() -> Self {
         Condition { waiters: Vec::new() }
+    }
+}
+
+pub struct Drain(oneshot::Receiver<()>);
+
+impl Drain {
+    pub(crate) fn new(rx: oneshot::Receiver<()>) -> Drain {
+        Drain(rx)
+    }
+}
+
+#[doc(hidden)]
+impl Future for Drain {
+    type Item = ();
+    type Error = ();
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        self.0.poll().map_err(|_| ())
     }
 }
 

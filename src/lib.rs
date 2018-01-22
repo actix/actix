@@ -56,12 +56,12 @@ mod message;
 mod registry;
 mod system;
 mod supervisor;
-mod utils;
 
 pub mod fut;
 pub mod actors;
 pub mod msgs;
 pub mod sync;
+pub mod utils;
 
 #[doc(hidden)]
 pub mod queue;
@@ -79,7 +79,6 @@ pub use message::{Request, Response};
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
-pub use utils::Condition;
 pub use supervisor::Supervisor;
 
 #[doc(hidden)]
@@ -101,13 +100,15 @@ pub mod prelude {
 
     #[doc(hidden)]
     pub use actix_derive::*;
+    #[doc(hidden)]
+    pub use framed::FramedContext;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorContext, AsyncContext, FramedActor, Supervised};
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress};
     pub use context::{Context, ContextFutureSpawner};
-    pub use framed::{FramedCell, FramedContext};
+    pub use framed::FramedCell;
     pub use message::Response;
     pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;

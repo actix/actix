@@ -3,7 +3,7 @@ use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
-use address::{SyncAddress, ActorAddress};
+use address::{Address, SyncAddress};
 use context::{Context, ContextProtocol, AsyncContextApi};
 use envelope::Envelope;
 use msgs::Execute;
@@ -55,7 +55,7 @@ use queue::{sync, unsync};
 /// fn main() {
 ///     let sys = System::new("test");
 ///
-///     let (addr, _) = actix::Supervisor::start(|_| MyActor);
+///     let addr = actix::Supervisor::start(|_| MyActor);
 ///
 ///     addr.send(Die);
 ///     sys.run();
@@ -72,8 +72,8 @@ pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor.
-    pub fn start<F, Addr>(f: F) -> Addr
-        where A: Actor<Context=Context<A>> + ActorAddress<A, Addr>,
+    pub fn start<F>(f: F) -> Address<A>
+        where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + 'static
     {
         // create actor
@@ -90,10 +90,10 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             sync_msgs: None,
             unsync_msgs: rx };
 
-        let addr =  <A as ActorAddress<A, Addr>>::get(&mut supervisor.ctx);
+        let addr = supervisor.unsync_msgs.sender();
         Arbiter::handle().spawn(supervisor);
 
-        addr
+        Address::new(addr)
     }
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
@@ -161,6 +161,7 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         'outer: loop {
             // supervisor is not connected, stop supervised context
             if !self.connected() {
+                println!("stop");
                 self.ctx.stop();
             }
 

@@ -44,7 +44,7 @@ impl actix::Handler<Die> for MyActor {
 
 
 #[test]
-fn test_supervisor() {
+fn test_supervisor_restart() {
     let sys = System::new("test");
 
     let starts = Arc::new(AtomicUsize::new(0));
@@ -52,12 +52,12 @@ fn test_supervisor() {
     let starts2 = Arc::clone(&starts);
     let restarts2 = Arc::clone(&restarts);
 
-    let (addr, _) = actix::Supervisor::start(move |_| MyActor(starts2, restarts2));
+    let addr = actix::Supervisor::start(move |_| MyActor(starts2, restarts2));
 
     addr.send(Die);
 
     Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
+        Timeout::new(Duration::new(0, 100_000), Arbiter::handle()).unwrap()
             .then(|_| {
                 Arbiter::system().send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
@@ -82,7 +82,7 @@ fn test_supervisor_upgrade_address() {
     let upgrade2 = Arc::clone(&upgrade);
 
     // lazy supervisor
-    let (addr, _) = actix::Supervisor::start(move |_| MyActor(starts2, restarts2));
+    let addr = actix::Supervisor::start(move |_| MyActor(starts2, restarts2));
 
     Arbiter::handle().spawn_fn(move || {
         // upgrade address to SyncAddress

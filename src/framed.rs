@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 
 use futures::{Async, AsyncSink, Future, Poll, Sink, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
-use futures::unsync::oneshot::{channel, Sender as UnsyncSender, Receiver as UnsyncReceiver};
+use futures::unsync::oneshot::{channel, Sender as UnsyncSender};
 use tokio_core::reactor::Handle;
 use tokio_io::AsyncWrite;
 use tokio_io::codec::{Framed, Encoder};
@@ -19,7 +19,7 @@ use handler::{Handler, ResponseType};
 use context::{AsyncContextApi, ContextProtocol};
 use contextimpl::ContextImpl;
 use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
-
+use utils::Drain;
 
 /// Actor execution context for
 /// [Framed](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html) object
@@ -128,8 +128,9 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
     /// Returns oneshot future. It resolves when sink is drained.
     /// All other actor activities are paused.
     #[inline]
-    pub fn drain(&mut self) -> UnsyncReceiver<()> {
-        self.framed.drain()
+    pub fn drain(&mut self) -> Drain {
+        let framed: &mut FramedCell<A> = unsafe { mem::transmute(&mut self.framed) };
+        framed.drain(self)
     }
 
     /// Get inner framed object
@@ -231,11 +232,15 @@ pub struct FramedCell<A> where A: Actor + FramedActor {
     inner: Rc<UnsafeCell<InnerActorFramedCell<A>>>,
 }
 
+pub(crate) struct FramedDrain<A> where A: Actor + FramedActor {
+    tx: Option<UnsyncSender<()>>,
+    inner: Rc<UnsafeCell<InnerActorFramedCell<A>>>,
+}
+
 struct InnerActorFramedCell<A> where A: Actor + FramedActor {
     flags: FramedFlags,
     framed: Option<Framed<A::Io, A::Codec>>,
     sink_items: VecDeque<<A::Codec as Encoder>::Item>,
-    drain: Option<UnsyncSender<()>>,
     error: Option<<A::Codec as Encoder>::Error>,
 }
 
@@ -247,7 +252,6 @@ impl<A> FramedWrapper<A> where A: Actor + FramedActor {
                 flags: FramedFlags::SINK_FLUSHED,
                 framed: Some(framed),
                 sink_items: VecDeque::new(),
-                drain: None,
                 error: None,
             }));
 
@@ -301,18 +305,17 @@ impl<A> FramedCell<A> where A: Actor + FramedActor {
 
     /// Initiate sink drain
     ///
-    /// Returns oneshot future. It resolves when sink is drained.
-    /// All other actor activities are paused.
-    pub fn drain(&mut self) -> UnsyncReceiver<()> {
-        let inner = self.as_mut();
-
-        if let Some(tx) = inner.drain.take() {
-            let _ = tx.send(());
-            error!("drain method should be called once");
-        }
+    /// Returns future. It resolves when sink is drained.
+    /// All other actor activities are paused until framed object get drained.
+    pub fn drain(&mut self, ctx: &mut A::Context) -> Drain
+        where A::Context: AsyncContext<A>
+    {
         let (tx, rx) = channel();
-        inner.drain = Some(tx);
-        rx
+
+        let drain = FramedDrain{tx: Some(tx), inner: Rc::clone(&self.inner)};
+        ctx.wait(drain);
+
+        Drain::new(rx)
     }
 
     /// Get inner framed object
@@ -346,9 +349,7 @@ impl<A> ActorFuture for FramedWrapper<A>
             let mut not_ready = true;
 
             // check framed stream
-            if inner.drain.is_none() && !inner.flags.intersects(
-                FramedFlags::CLOSING | FramedFlags::STREAM_CLOSED)
-            {
+            if !inner.flags.intersects(FramedFlags::CLOSING | FramedFlags::STREAM_CLOSED) {
                 match framed.poll() {
                     Ok(Async::Ready(Some(msg))) => {
                         not_ready = false;
@@ -374,9 +375,6 @@ impl<A> ActorFuture for FramedWrapper<A>
                         match framed.start_send(msg) {
                             Ok(AsyncSink::NotReady(msg)) => {
                                 inner.sink_items.push_front(msg);
-                                if inner.drain.is_some() {
-                                    return Ok(Async::NotReady)
-                                }
                                 break
                             }
                             Ok(AsyncSink::Ready) => {
@@ -399,10 +397,7 @@ impl<A> ActorFuture for FramedWrapper<A>
                             not_ready = false;
                             inner.flags |= FramedFlags::SINK_FLUSHED;
                         }
-                        Ok(Async::NotReady) =>
-                            if inner.drain.is_some() {
-                                return Ok(Async::NotReady);
-                            },
+                        Ok(Async::NotReady) => (),
                         Err(err) => {
                             inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::SINK_FLUSHED;
                             <A as FramedActor>::closed(act, Some(err), ctx);
@@ -415,9 +410,6 @@ impl<A> ActorFuture for FramedWrapper<A>
                     inner.sink_items.is_empty() {
                         inner.flags |= FramedFlags::SINK_CLOSED;
                     }
-            }
-            if let Some(tx) = inner.drain.take() {
-                let _ = tx.send(());
             }
 
             // are we done
@@ -439,13 +431,81 @@ impl<A> ActorFuture for FramedWrapper<A>
     }
 }
 
+impl<A> ActorFuture for FramedDrain<A>
+    where A: Actor + FramedActor, A::Context: AsyncContext<A>
+{
+    type Item = ();
+    type Error = ();
+    type Actor = A;
+
+    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
+        let inner = unsafe{ &mut *self.inner.get() };
+        let framed: &mut Framed<A::Io, A::Codec> = if let Some(ref mut framed) = inner.framed {
+            unsafe { mem::transmute(framed) }
+        } else {
+            return Ok(Async::Ready(()));
+        };
+
+        if !inner.flags.contains(FramedFlags::SINK_CLOSED) {
+            // send sink items
+            loop {
+                if let Some(msg) = inner.sink_items.pop_front() {
+                    inner.flags.remove(FramedFlags::SINK_FLUSHED);
+                    match framed.start_send(msg) {
+                        Ok(AsyncSink::NotReady(msg)) => {
+                            inner.sink_items.push_front(msg);
+                            return Ok(Async::NotReady)
+                        }
+                        Ok(AsyncSink::Ready) => continue,
+                        Err(err) => {
+                            inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                            <A as FramedActor>::closed(act, Some(err), ctx);
+                            break
+                        }
+                    }
+                }
+                break
+            }
+
+            // flush sink
+            if !inner.flags.contains(FramedFlags::SINK_FLUSHED) {
+                match framed.poll_complete() {
+                    Ok(Async::Ready(_)) => inner.flags |= FramedFlags::SINK_FLUSHED,
+                    Ok(Async::NotReady) => return Ok(Async::NotReady),
+                    Err(err) => {
+                        inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::SINK_FLUSHED;
+                        <A as FramedActor>::closed(act, Some(err), ctx);
+                    }
+                }
+            }
+
+            // close framed object, if closing and we dont need to flush any data
+            if inner.flags.contains(FramedFlags::CLOSING | FramedFlags::SINK_FLUSHED) &&
+                inner.sink_items.is_empty() {
+                    inner.flags |= FramedFlags::SINK_CLOSED;
+                }
+        }
+
+        if let Some(tx) = self.tx.take() {
+            let _ = tx.send(());
+        }
+        Ok(Async::Ready(()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::{cmp, io};
     use bytes::{Bytes, BytesMut};
-    use tokio_io::AsyncWrite;
+    use tokio_io::{AsyncWrite, AsyncRead};
     use tokio_io::codec::{Encoder, Decoder};
+
+    impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor {
+        pub(crate) fn new(act: Option<A>, io: A::Io, codec: A::Codec) -> FramedContext<A> {
+            FramedContext::framed(act, io.framed(codec))
+        }
+    }
 
     struct Buffer {
         buf: Bytes,
