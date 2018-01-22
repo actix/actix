@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{mem, fmt};
 use std::rc::Rc;
 use std::cell::UnsafeCell;
@@ -9,14 +7,13 @@ use futures::{Async, AsyncSink, Future, Poll, Sink, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::unsync::oneshot::{channel, Sender as UnsyncSender, Receiver as UnsyncReceiver};
 use tokio_core::reactor::Handle;
-use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::AsyncWrite;
 use tokio_io::codec::{Framed, Encoder};
 
 use fut::ActorFuture;
 use queue::unsync;
 
-use actor::{Actor, Supervised, SpawnHandle,
-            FramedActor, ActorState, ActorContext, AsyncContext};
+use actor::{Actor, SpawnHandle, FramedActor, ActorState, ActorContext, AsyncContext};
 use address::{Address, SyncAddress, Subscriber};
 use handler::{Handler, ResponseType};
 use context::{AsyncContextApi, ContextProtocol};
@@ -173,11 +170,6 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 {
     #[inline]
-    pub(crate) fn new(act: Option<A>, io: A::Io, codec: A::Codec) -> FramedContext<A> {
-        FramedContext::framed(act, io.framed(codec))
-    }
-
-    #[inline]
     pub(crate) fn framed(act: Option<A>, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
         let (wrp, cell) = FramedWrapper::new(framed);
         let mut imp = ContextImpl::new(act);
@@ -192,21 +184,8 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
     }
 
     #[inline]
-    pub(crate) fn restarting(&mut self) where A: Supervised {
-        let ctx: &mut FramedContext<A> = unsafe {
-            mem::transmute(self as &mut FramedContext<A>)
-        };
-        self.inner.actor().restarting(ctx);
-    }
-
-    #[inline]
     pub(crate) fn set_actor(&mut self, act: A) {
         self.inner.set_actor(act)
-    }
-
-    #[inline]
-    pub(crate) fn into_inner(self) -> A {
-        self.inner.into_inner().unwrap()
     }
 }
 

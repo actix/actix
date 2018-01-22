@@ -3,7 +3,7 @@ use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
-use address::{Address, SyncAddress};
+use address::{SyncAddress, ActorAddress};
 use context::{Context, ContextProtocol, AsyncContextApi};
 use envelope::Envelope;
 use msgs::Execute;
@@ -12,7 +12,8 @@ use queue::{sync, unsync};
 /// Actor supervisor
 ///
 /// Supervisor manages incoming message for actor. In case of actor failure, supervisor
-/// creates new execution context and restarts actor lifecycle.
+/// creates new execution context and restarts actor lifecycle. Supervisor does not
+/// does not re-create actor, it just calls `restarting()` method.
 ///
 /// Supervisor has same livecycle as actor. In situation when all addresses to supervisor
 /// get dropped and actor does not execute anything, supervisor terminates.
@@ -64,15 +65,15 @@ pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
     ctx: A::Context,
     #[allow(dead_code)]
     addr: unsync::UnboundedSender<ContextProtocol<A>>,
-    sync_msgs: sync::UnboundedReceiver<Envelope<A>>,
+    sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
     unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
 
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor.
-    pub fn start<F>(f: F) -> (Address<A>, SyncAddress<A>)
-        where A: Actor<Context=Context<A>>,
+    pub fn start<F, Addr>(f: F) -> Addr
+        where A: Actor<Context=Context<A>> + ActorAddress<A, Addr>,
               F: FnOnce(&mut A::Context) -> A + 'static
     {
         // create actor
@@ -83,58 +84,63 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
         // create supervisor
         let rx = unsync::unbounded();
-        let (stx, srx) = sync::unbounded();
         let mut supervisor = Supervisor {
             ctx: ctx,
             addr: addr,
-            sync_msgs: srx,
+            sync_msgs: None,
             unsync_msgs: rx };
-        let addr = Address::new(supervisor.unsync_msgs.sender());
-        let saddr = SyncAddress::new(stx);
+
+        let addr =  <A as ActorAddress<A, Addr>>::get(&mut supervisor.ctx);
         Arbiter::handle().spawn(supervisor);
 
-        (addr, saddr)
+        addr
     }
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
     /// actor could be started immediately or on first incoming message.
-    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, f: F) -> Option<SyncAddress<A>>
+    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, f: F) -> SyncAddress<A>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
-        if addr.connected() {
-            let (tx, rx) = sync::unbounded();
+        let (tx, rx) = sync::unbounded();
 
-            addr.send(Execute::new(move || -> Result<(), ()> {
-                // create actor
-                let mut ctx = Context::new(None);
-                let addr = ctx.unsync_sender();
-                let act = f(&mut ctx);
-                ctx.set_actor(act);
+        addr.send(Execute::new(move || -> Result<(), ()> {
+            // create actor
+            let mut ctx = Context::new(None);
+            let addr = ctx.unsync_sender();
+            let act = f(&mut ctx);
+            ctx.set_actor(act);
 
-                let lrx = unsync::unbounded();
-                let supervisor = Supervisor {
-                    ctx: ctx,
-                    addr: addr,
-                    sync_msgs: rx,
-                    unsync_msgs: lrx };
-                Arbiter::handle().spawn(supervisor);
-                Ok(())
-            }));
+            let lrx = unsync::unbounded();
+            let supervisor = Supervisor {
+                ctx: ctx,
+                addr: addr,
+                sync_msgs: Some(rx),
+                unsync_msgs: lrx };
+            Arbiter::handle().spawn(supervisor);
+            Ok(())
+        }));
 
-            if addr.connected() {
-                Some(SyncAddress::new(tx))
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+        SyncAddress::new(tx)
     }
 
     #[inline]
     fn connected(&mut self) -> bool {
-        self.unsync_msgs.connected() || self.sync_msgs.connected()
+        self.unsync_msgs.connected() ||
+            self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
+    }
+
+    fn sync_address(&mut self) -> SyncAddress<A> {
+        if self.sync_msgs.is_none() {
+            let (tx, rx) = sync::unbounded();
+            self.sync_msgs = Some(rx);
+            SyncAddress::new(tx)
+        } else {
+            if let Some(ref mut addr) = self.sync_msgs {
+                return SyncAddress::new(addr.sender())
+            }
+            unreachable!();
+        }
     }
 
     fn restart(&mut self) {
@@ -193,7 +199,7 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
                         not_ready = false;
                         match msg {
                             ContextProtocol::Upgrade(tx) => {
-                                let _ = tx.send(SyncAddress::new(self.sync_msgs.sender()));
+                                let _ = tx.send(self.sync_address());
                             }
                             ContextProtocol::Envelope(mut env) => {
                                 env.handle(act, ctx);
@@ -205,20 +211,22 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             }
 
             // process sync messages
-            loop {
-                if !ctx.is_alive() {
-                    continue 'outer
-                }
-                if ctx.waiting() {
-                    return Ok(Async::NotReady)
-                }
+            if let Some(ref mut msgs) = self.sync_msgs {
+                loop {
+                    if !ctx.is_alive() {
+                        continue 'outer
+                    }
+                    if ctx.waiting() {
+                        return Ok(Async::NotReady)
+                    }
 
-                match self.sync_msgs.poll() {
-                    Ok(Async::Ready(Some(mut env))) => {
-                        not_ready = false;
-                        env.handle(act, ctx);
-                    },
-                    Ok(Async::NotReady) | Ok(Async::Ready(None)) | Err(_) => break,
+                    match msgs.poll() {
+                        Ok(Async::Ready(Some(mut env))) => {
+                            not_ready = false;
+                            env.handle(act, ctx);
+                        },
+                        Ok(Async::NotReady) | Ok(Async::Ready(None)) | Err(_) => break,
+                    }
                 }
             }
 

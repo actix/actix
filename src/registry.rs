@@ -153,7 +153,7 @@ impl SystemRegistry {
                 let mut act = A::default();
                 act.service_started(ctx);
                 act
-            }).expect("System is dead");
+            });
             hm.borrow_mut().insert(TypeId::of::<A>(), Box::new(addr.clone()));
             return addr
         }
