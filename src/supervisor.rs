@@ -1,6 +1,7 @@
+use std::mem;
 use futures::{Future, Async, Poll, Stream};
 
-use actor::{Actor, Supervised, AsyncContext};
+use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
 use address::{Address, SyncAddress};
 use context::{Context, ContextProtocol, AsyncContextApi};
@@ -11,11 +12,10 @@ use queue::{sync, unsync};
 /// Actor supervisor
 ///
 /// Supervisor manages incoming message for actor. In case of actor failure, supervisor
-/// creates new execution context and restarts actor lifecycle. Actor can be
-/// constructed lazily.
+/// creates new execution context and restarts actor lifecycle.
 ///
 /// Supervisor has same livecycle as actor. In situation when all addresses to supervisor
-/// get dropped and actor does not execution anything supervisor terminates.
+/// get dropped and actor does not execute anything, supervisor terminates.
 ///
 /// `Supervisor` can not guarantee that actor successfully process incoming message.
 /// If actor fails during message processing, this message can not be recovered. Sender
@@ -25,8 +25,7 @@ use queue::{sync, unsync};
 ///
 /// ```rust
 /// # #[macro_use] extern crate actix;
-/// use actix::prelude::*;
-///
+/// # use actix::prelude::*;
 /// #[derive(Message)]
 /// struct Die;
 ///
@@ -55,60 +54,42 @@ use queue::{sync, unsync};
 /// fn main() {
 ///     let sys = System::new("test");
 ///
-///     let (addr, _) = actix::Supervisor::start(false, |_| MyActor);
+///     let (addr, _) = actix::Supervisor::start(|_| MyActor);
 ///
 ///     addr.send(Die);
 ///     sys.run();
 /// }
 /// ```
 pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
-    cell: Option<ActorCell<A>>,
-    factory: Option<Box<FnFactory<A>>>,
-    msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
-    sync_msgs: sync::UnboundedReceiver<Envelope<A>>,
-    msg: Option<ContextProtocol<A>>,
-    sync_msg: Option<Envelope<A>>,
-    sync_alive: bool,
-}
-
-struct ActorCell<A: Supervised> {
     ctx: A::Context,
+    #[allow(dead_code)]
     addr: unsync::UnboundedSender<ContextProtocol<A>>,
+    sync_msgs: sync::UnboundedReceiver<Envelope<A>>,
+    unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
 
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
-    /// Start new supervised actor. Depends on `lazy` argument actor could be started
-    /// immediately or on first incoming message.
-    pub fn start<F>(lazy: bool, f: F) -> (Address<A>, SyncAddress<A>)
+    /// Start new supervised actor.
+    pub fn start<F>(f: F) -> (Address<A>, SyncAddress<A>)
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + 'static
     {
         // create actor
-        let (cell, factory) = if !lazy {
-            let mut ctx = Context::new(None);
-            let addr = ctx.unsync_sender();
-            let act = f(&mut ctx);
-            ctx.set_actor(act);
-            (Some(ActorCell{ctx: ctx, addr: addr}), None)
-        } else {
-            let f: Box<FnFactory<A>> = Box::new(f);
-            (None, Some(f))
-        };
+        let mut ctx = Context::new(None);
+        let addr = ctx.unsync_sender();
+        let act = f(&mut ctx);
+        ctx.set_actor(act);
 
         // create supervisor
         let rx = unsync::unbounded();
         let (stx, srx) = sync::unbounded();
         let mut supervisor = Supervisor {
-            cell: cell,
-            factory: factory,
-            msgs: rx,
+            ctx: ctx,
+            addr: addr,
             sync_msgs: srx,
-            msg: None,
-            sync_msg: None,
-            sync_alive: true,
-        };
-        let addr = Address::new(supervisor.msgs.sender());
+            unsync_msgs: rx };
+        let addr = Address::new(supervisor.unsync_msgs.sender());
         let saddr = SyncAddress::new(stx);
         Arbiter::handle().spawn(supervisor);
 
@@ -117,7 +98,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
     /// actor could be started immediately or on first incoming message.
-    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, lazy: bool, f: F) -> Option<SyncAddress<A>>
+    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, f: F) -> Option<SyncAddress<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
@@ -126,27 +107,17 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
             addr.send(Execute::new(move || -> Result<(), ()> {
                 // create actor
-                let (cell, factory) = if lazy {
-                    let mut ctx = Context::new(None);
-                    let addr = ctx.unsync_sender();
-                    let act = f(&mut ctx);
-                    ctx.set_actor(act);
-                    (Some(ActorCell{ctx: ctx, addr: addr}), None)
-                } else {
-                    let f: Box<FnFactory<A>> = Box::new(f);
-                    (None, Some(f))
-                };
+                let mut ctx = Context::new(None);
+                let addr = ctx.unsync_sender();
+                let act = f(&mut ctx);
+                ctx.set_actor(act);
 
                 let lrx = unsync::unbounded();
                 let supervisor = Supervisor {
-                    cell: cell,
-                    factory: factory,
-                    msgs: lrx,
+                    ctx: ctx,
+                    addr: addr,
                     sync_msgs: rx,
-                    msg: None,
-                    sync_msg: None,
-                    sync_alive: true,
-                };
+                    unsync_msgs: lrx };
                 Arbiter::handle().spawn(supervisor);
                 Ok(())
             }));
@@ -161,132 +132,96 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         }
     }
 
-    fn get_cell(&mut self) -> &mut ActorCell<A> {
-        if self.cell.is_none() {
-            let f = self.factory.take().expect("Should be available");
-            let mut ctx = Context::new(None);
-
-            let addr = ctx.unsync_sender();
-            let act = f.call(&mut ctx);
-            ctx.set_actor(act);
-            self.cell = Some(ActorCell {ctx: ctx, addr: addr});
-        }
-        self.cell.as_mut().unwrap()
+    #[inline]
+    fn connected(&mut self) -> bool {
+        self.unsync_msgs.connected() || self.sync_msgs.connected()
     }
 
     fn restart(&mut self) {
-        let cell = self.cell.take().unwrap();
-        let mut ctx = Context::new(None);
-
-        let addr = ctx.unsync_sender();
-        ctx.set_actor(cell.ctx.into_inner());
-        ctx.restarting();
-        self.cell = Some(ActorCell {ctx: ctx, addr: addr});
+        let ctx = Context::new(None);
+        let ctx = mem::replace(&mut self.ctx, ctx);
+        self.ctx.set_actor(ctx.into_inner());
+        self.ctx.restarting();
+        self.addr = self.ctx.unsync_sender();
     }
 }
 
 #[doc(hidden)]
-impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
-{
+impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>> {
     type Item = ();
     type Error = ();
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        loop {
+        'outer: loop {
+            // supervisor is not connection, stop supervised context
+            if !self.connected() {
+                self.ctx.stop();
+            }
+
+            let ctx: &mut Context<A> = unsafe{ mem::transmute(&mut self.ctx) };
+            let act: &mut A = unsafe{ mem::transmute(ctx.actor()) };
+
             // poll supervised actor
-            if self.cell.is_some() {
-                match self.get_cell().ctx.poll() {
-                    Ok(Async::NotReady) => (),
-                    Ok(Async::Ready(_)) | Err(_) => {
-                        self.restart();
+            match ctx.poll() {
+                Ok(Async::NotReady) =>
+                    if ctx.waiting() {
+                        return Ok(Async::NotReady)
+                    },
+                Ok(Async::Ready(_)) | Err(_) => {
+                    // supervisor is disconnected
+                    if !self.connected() {
+                        return Ok(Async::Ready(()))
                     }
+                    self.restart();
+                    continue 'outer;
                 }
             }
 
             let mut not_ready = true;
 
-            // check messages
-            if let Some(msg) = self.msg.take() {
-                match msg {
-                    ContextProtocol::Upgrade(_) => (),
-                    // if Actor message queue is dead, store in temp
-                    msg => {
-                        if let Err(msg) = self.get_cell().addr.unbounded_send(msg) {
-                            self.msg = Some(msg.into_inner());
-                        }
-                    }
-                }
-            }
-            if self.msg.is_none() {
-                match self.msgs.poll() {
+            loop {
+                match self.unsync_msgs.poll() {
                     Ok(Async::Ready(Some(msg))) => {
                         not_ready = false;
                         match msg {
                             ContextProtocol::Upgrade(tx) => {
-                                self.sync_alive = true;
                                 let _ = tx.send(SyncAddress::new(self.sync_msgs.sender()));
                             }
-                            // if Actor message queue is dead, store in temp
-                            msg => {
-                                if let Err(msg) = self.get_cell().addr.unbounded_send(msg) {
-                                    self.msg = Some(msg.into_inner());
-                                }
-                            },
+                            ContextProtocol::Envelope(mut env) => {
+                                env.handle(act, ctx);
+                            }
                         }
                     }
-                    Ok(Async::NotReady) | Ok(Async::Ready(None)) | Err(_) => (),
+                    Ok(Async::NotReady) | Ok(Async::Ready(None)) | Err(_) => break,
+                }
+                if !ctx.is_alive() {
+                    continue 'outer
+                }
+                if ctx.waiting() {
+                    return Ok(Async::NotReady)
                 }
             }
 
-            // check remote messages. we still use local queue for remote message,
-            // because actor runs in same context as supervisor
-            if let Some(msg) = self.sync_msg.take() {
-                // if Actor message queue is dead, store in temp
-                if let Err(msg) = self.get_cell().addr.unbounded_send(
-                    ContextProtocol::Envelope(msg))
-                {
-                    if let ContextProtocol::Envelope(msg) = msg.into_inner() {
-                        self.sync_msg = Some(msg);
-                    }
+            loop {
+                if !ctx.is_alive() {
+                    continue 'outer
                 }
-            }
-            if self.sync_msg.is_none() {
+                if ctx.waiting() {
+                    return Ok(Async::NotReady)
+                }
+
                 match self.sync_msgs.poll() {
-                    Ok(Async::Ready(Some(msg))) => {
+                    Ok(Async::Ready(Some(mut env))) => {
                         not_ready = false;
-                        if let Err(msg) = self.get_cell().addr.unbounded_send(
-                            ContextProtocol::Envelope(msg))
-                        {
-                            if let ContextProtocol::Envelope(msg) = msg.into_inner() {
-                                self.sync_msg = Some(msg);
-                            }
-                        }
+                        env.handle(act, ctx);
                     },
-                    Ok(Async::NotReady) => (),
-                    Ok(Async::Ready(None)) | Err(_) => {
-                        self.sync_alive = false
-                    }
+                    Ok(Async::NotReady) | Ok(Async::Ready(None)) | Err(_) => break,
                 }
             }
 
             // are we done
             if not_ready {
                 return Ok(Async::NotReady)
-            }
-
-            // poll supervised actor
-            match self.get_cell().ctx.poll() {
-                Ok(Async::NotReady) => (),
-                Ok(Async::Ready(_)) | Err(_) => {
-                    // supervisor disconnected
-                    if !self.get_cell().ctx.alive() &&
-                        !self.msgs.connected() &&
-                        !self.sync_alive
-                    {
-                        return Ok(Async::Ready(()))
-                    }
-                    self.restart();
-                }
             }
         }
     }

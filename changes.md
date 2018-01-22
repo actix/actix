@@ -4,6 +4,8 @@
 
 * Refactor context implementation
 
+* Refactor Supervisor type
+
 
 ## 0.4.4 (2018-01-19)
 

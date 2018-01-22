@@ -186,7 +186,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn alive(&mut self) -> bool {
+    pub fn alive(&self) -> bool {
         if self.flags.contains(ContextFlags::STOPPED) {
             false
         } else {

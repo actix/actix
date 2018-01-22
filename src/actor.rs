@@ -237,10 +237,9 @@ pub trait FramedActor: Actor {
 #[allow(unused_variables)]
 /// Actors with ability to restart after failure
 ///
-/// Supervised actors can be managed by
-/// [Supervisor](https://fafhrd91.github.io/actix/actix/struct.Supervisor.html)
+/// Supervised actors can be managed by [Supervisor](struct.Supervisor.html).
 /// Lifecycle events are extended with `restarting` state for supervised actors.
-/// If actor fails supervisor creates new execution context and restarts actor.
+/// If actor fails, supervisor creates new execution context and restarts actor.
 /// `restarting` method is called during restart. After call to this method
 /// Actor execute state changes to `Started` and normal lifecycle process starts.
 pub trait Supervised: Actor {

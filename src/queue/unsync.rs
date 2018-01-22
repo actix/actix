@@ -152,7 +152,7 @@ enum State<T> {
 
 impl<T> Receiver<T> {
     /// Check if receiver connected to senders
-    pub fn connected(&mut self) -> bool {
+    pub fn connected(&self) -> bool {
         match self.state {
             State::Open(ref state) => {
                 state.borrow().sender_count != 0
@@ -340,7 +340,7 @@ pub struct UnboundedReceiver<T>(Receiver<T>);
 
 impl<T> UnboundedReceiver<T> {
     /// Check if receiver connected to senders
-    pub fn connected(&mut self) -> bool {
+    pub fn connected(&self) -> bool {
         self.0.connected()
     }
 

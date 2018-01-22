@@ -52,7 +52,7 @@ fn test_supervisor() {
     let starts2 = Arc::clone(&starts);
     let restarts2 = Arc::clone(&restarts);
 
-    let (addr, _) = actix::Supervisor::start(false, move|_| MyActor(starts2, restarts2));
+    let (addr, _) = actix::Supervisor::start(move |_| MyActor(starts2, restarts2));
 
     addr.send(Die);
 
@@ -63,37 +63,6 @@ fn test_supervisor() {
                 future::result(Ok(()))
             })
     );
-
-    sys.run();
-    assert_eq!(starts.load(Ordering::Relaxed), 2);
-    assert_eq!(restarts.load(Ordering::Relaxed), 1);
-}
-
-#[test]
-fn test_supervisor_lazy() {
-    let sys = System::new("test");
-
-    let starts = Arc::new(AtomicUsize::new(0));
-    let restarts = Arc::new(AtomicUsize::new(0));
-    let starts2 = Arc::clone(&starts);
-    let restarts2 = Arc::clone(&restarts);
-
-    let (addr, _) = actix::Supervisor::start(true, move|_| MyActor(starts2, restarts2));
-
-    // ref to supervisor, otherwise it would exit
-    let _super_addr = addr.clone();
-
-    let starts3 = Arc::clone(&starts);
-    Arbiter::handle().spawn_fn(move || {
-        assert_eq!(starts3.load(Ordering::Relaxed), 0);
-        addr.send(Die);
-
-        Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
-            .then(|_| {
-                Arbiter::system().send(actix::msgs::SystemExit(0));
-                future::result(Ok(()))
-            })
-    });
 
     sys.run();
     assert_eq!(starts.load(Ordering::Relaxed), 2);
@@ -113,7 +82,7 @@ fn test_supervisor_upgrade_address() {
     let upgrade2 = Arc::clone(&upgrade);
 
     // lazy supervisor
-    let (addr, _) = actix::Supervisor::start(true, move|_| MyActor(starts2, restarts2));
+    let (addr, _) = actix::Supervisor::start(move |_| MyActor(starts2, restarts2));
 
     Arbiter::handle().spawn_fn(move || {
         // upgrade address to SyncAddress

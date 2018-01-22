@@ -132,7 +132,7 @@ impl<A> Context<A> where A: Actor<Context=Self> {
     }
 
     #[inline]
-    pub(crate) fn alive(&mut self) -> bool {
+    pub(crate) fn is_alive(&self) -> bool {
         self.inner.alive()
     }
 
@@ -142,6 +142,11 @@ impl<A> Context<A> where A: Actor<Context=Self> {
             mem::transmute(self as &mut Context<A>)
         };
         self.inner.actor().restarting(ctx);
+    }
+
+    #[inline]
+    pub(crate) fn actor(&mut self) -> &mut A {
+        self.inner.actor()
     }
 
     #[inline]

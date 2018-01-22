@@ -51,7 +51,7 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
     }
 
     #[inline]
-    pub fn connected(&mut self) -> bool {
+    pub fn connected(&self) -> bool {
         self.unsync_msgs.connected() ||
             self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
     }

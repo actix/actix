@@ -149,7 +149,7 @@ impl SystemRegistry {
                         error!("Got unknown value: {:?}", addr),
                 }
             }
-            let addr = Supervisor::start_in(&Arbiter::system_arbiter(), false, |ctx| {
+            let addr = Supervisor::start_in(&Arbiter::system_arbiter(), |ctx| {
                 let mut act = A::default();
                 act.service_started(ctx);
                 act
