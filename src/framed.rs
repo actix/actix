@@ -30,7 +30,7 @@ pub struct FramedContext<A>
     where A: FramedActor + Actor<Context=FramedContext<A>>,
 {
     inner: ContextImpl<A>,
-    framed: ActorFramedCell<A>,
+    framed: FramedCell<A>,
 }
 
 impl<A> ToEnvelope<A> for FramedContext<A>
@@ -146,8 +146,10 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
     /// Consider to use `drain()` before replace framed object,
     /// because Sink buffer get dropped as well.
     pub fn replace(&mut self, framed: Framed<A::Io, A::Codec>) {
-        self.inner.modify();
-        self.framed.replace(framed);
+        self.framed.close();
+        let (wrp, cell) = FramedWrapper::new(framed);
+        self.framed = cell;
+        self.inner.spawn(wrp);
     }
 }
 
@@ -177,9 +179,9 @@ impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
 
     #[inline]
     pub(crate) fn framed(act: Option<A>, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
-        let cell = ActorFramedCell::new(framed);
+        let (wrp, cell) = FramedWrapper::new(framed);
         let mut imp = ContextImpl::new(act);
-        imp.spawn(cell.clone());
+        imp.spawn(wrp);
 
         FramedContext {inner: imp, framed: cell}
     }
@@ -239,8 +241,14 @@ bitflags! {
 }
 
 /// Framed object wrapper
-pub(crate)
-struct ActorFramedCell<A> where A: Actor + FramedActor {
+pub(crate) struct FramedWrapper<A> where A: Actor + FramedActor {
+    inner: Rc<UnsafeCell<InnerActorFramedCell<A>>>,
+}
+
+/// Wrapper for a framed object
+///
+/// `FramedCell` instance can be used only within same context.
+pub struct FramedCell<A> where A: Actor + FramedActor {
     inner: Rc<UnsafeCell<InnerActorFramedCell<A>>>,
 }
 
@@ -252,26 +260,23 @@ struct InnerActorFramedCell<A> where A: Actor + FramedActor {
     error: Option<<A::Codec as Encoder>::Error>,
 }
 
-impl<A> Clone for ActorFramedCell<A> where A: Actor + FramedActor {
-    fn clone(&self) -> Self {
-        ActorFramedCell{inner: Rc::clone(&self.inner)}
+impl<A> FramedWrapper<A> where A: Actor + FramedActor {
+
+    pub fn new(framed: Framed<A::Io, A::Codec>) -> (FramedWrapper<A>, FramedCell<A>) {
+        let inner = Rc::new(UnsafeCell::new(
+            InnerActorFramedCell {
+                flags: FramedFlags::SINK_FLUSHED,
+                framed: Some(framed),
+                sink_items: VecDeque::new(),
+                drain: None,
+                error: None,
+            }));
+
+        (FramedWrapper{inner: Rc::clone(&inner)}, FramedCell{inner: inner})
     }
 }
 
-impl<A> ActorFramedCell<A> where A: Actor + FramedActor {
-
-    pub fn new(framed: Framed<A::Io, A::Codec>) -> ActorFramedCell<A> {
-        ActorFramedCell {
-            inner: Rc::new(UnsafeCell::new(
-                InnerActorFramedCell {
-                    flags: FramedFlags::SINK_FLUSHED,
-                    framed: Some(framed),
-                    sink_items: VecDeque::new(),
-                    drain: None,
-                    error: None,
-                })),
-        }
-    }
+impl<A> FramedCell<A> where A: Actor + FramedActor {
 
     #[inline]
     fn as_ref(&self) -> &InnerActorFramedCell<A> {
@@ -284,26 +289,21 @@ impl<A> ActorFramedCell<A> where A: Actor + FramedActor {
     }
 
     #[inline]
-    fn cell(&mut self) -> Option<&mut Framed<A::Io, A::Codec>> {
-        self.as_mut().framed.as_mut()
-    }
-    
-    pub fn replace(&mut self, framed: Framed<A::Io, A::Codec>) {
-        let inner = self.as_mut();
-        inner.framed = Some(framed);
-        inner.flags = FramedFlags::SINK_FLUSHED;
-        inner.sink_items.clear();
-        inner.drain.take();
+    pub fn framed(&mut self) -> &mut Framed<A::Io, A::Codec> {
+        self.as_mut().framed.as_mut().unwrap()
     }
 
+    /// Close frame object
     pub fn close(&mut self) {
         self.as_mut().flags.insert(FramedFlags::CLOSING);
     }
 
+    /// Check if framed object is closed
     pub fn closed(&self) -> bool {
         self.as_ref().flags.contains(FramedFlags::STREAM_CLOSED | FramedFlags::SINK_CLOSED)
     }
 
+    /// Send item to a sink.
     pub fn send(&mut self, msg: <<A as FramedActor>::Codec as Encoder>::Item) {
         let inner = self.as_mut();
 
@@ -320,6 +320,10 @@ impl<A> ActorFramedCell<A> where A: Actor + FramedActor {
         }
     }
 
+    /// Initiate sink drain
+    ///
+    /// Returns oneshot future. It resolves when sink is drained.
+    /// All other actor activities are paused.
     pub fn drain(&mut self) -> UnsyncReceiver<()> {
         let inner = self.as_mut();
 
@@ -332,12 +336,13 @@ impl<A> ActorFramedCell<A> where A: Actor + FramedActor {
         rx
     }
 
+    /// Get inner framed object
     pub fn take(&mut self) -> Option<Framed<A::Io, A::Codec>> {
         self.as_mut().framed.take()
     }
 }
 
-impl<A> ActorFuture for ActorFramedCell<A>
+impl<A> ActorFuture for FramedWrapper<A>
     where A: Actor + FramedActor, A::Context: AsyncContext<A> + AsyncContextApi<A>,
 {
     type Item = ();
@@ -438,7 +443,9 @@ impl<A> ActorFuture for ActorFramedCell<A>
 
             // are we done
             if not_ready {
-                if self.closed() {
+                if inner.flags.contains(
+                    FramedFlags::STREAM_CLOSED | FramedFlags::SINK_CLOSED)
+                {
                     ctx.stop();
                     return Ok(Async::Ready(()))
                 } else if ctx.state() == ActorState::Stopping {

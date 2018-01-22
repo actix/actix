@@ -6,6 +6,8 @@
 
 * Refactor Supervisor type
 
+* Allow to use `Framed` instance with normal `Context`
+
 
 ## 0.4.4 (2018-01-19)
 

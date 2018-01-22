@@ -9,10 +9,10 @@ use arbiter::Arbiter;
 use address::ActorAddress;
 use envelope::ToEnvelope;
 use handler::{Handler, ResponseType};
-use context::Context;
+use context::{Context, AsyncContextApi};
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorStreamItem, ActorMessageStreamItem};
-use framed::FramedContext;
+use framed::{FramedContext, FramedCell, FramedWrapper};
 use utils::TimerFunc;
 
 
@@ -20,18 +20,16 @@ use utils::TimerFunc;
 /// Actors are objects which encapsulate state and behavior.
 ///
 /// Actors run within specific execution context
-/// [Context<A>](https://fafhrd91.github.io/actix/actix/struct.Context.html).
+/// [Context<A>](struct.Context.html).
 /// Context object is available only during execution. Each actor has separate
 /// execution context. Also execution context controls lifecycle of an actor.
 ///
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
-/// non thread safe [Address<A>](https://fafhrd91.github.io/actix/actix/struct.Address.html)
-/// or thread safe address
-/// [`SyncAddress<A>`](https://fafhrd91.github.io/actix/actix/struct.SyncAddress.html)
+/// non thread safe [Address<A>](struct.Address.html) or thread safe address
+/// [`SyncAddress<A>`](struct.SyncAddress.html)
 /// To be able to handle specific message actor has to provide
-/// [`Handler<M>`](
-/// file:///Users/nikki/personal/ctx/target/doc/actix/trait.Handler.html)
+/// [`Handler<M>`](trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
 /// handled in asynchronous fashion. Actor can spawn other actors or add futures or
 /// streams to execution context. Actor trait provides several methods that allow
@@ -187,6 +185,17 @@ pub trait FramedActor: Actor {
     fn closed(&mut self,
               error: Option<<Self::Codec as Encoder>::Error>,
               ctx: &mut Self::Context) {}
+
+    /// Add framed object to current context and return
+    /// wrapper for write part of the framed object.
+    fn add_framed(self, framed: Framed<Self::Io, Self::Codec>, ctx: &mut Self::Context)
+                  -> FramedCell<Self>
+        where Self::Context: AsyncContext<Self> + AsyncContextApi<Self>
+    {
+        let (wrp, cell) = FramedWrapper::new(framed);
+        ctx.spawn(wrp);
+        cell
+    }
 
     /// Start new actor, returns address of this actor.
     fn framed<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
