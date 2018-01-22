@@ -74,7 +74,7 @@ pub use arbiter::Arbiter;
 pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
 pub use context::Context;
 pub use envelope::ToEnvelope;
-pub use framed::{FramedCell, FramedContext};
+pub use framed::FramedCell;
 pub use message::{Request, Response};
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
@@ -84,6 +84,9 @@ pub use supervisor::Supervisor;
 
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;
+
+#[doc(hidden)]
+pub use framed::FramedContext;
 
 pub mod prelude {
 //! The `actix` prelude

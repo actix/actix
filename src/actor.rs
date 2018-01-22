@@ -197,6 +197,7 @@ pub trait FramedActor: Actor {
         cell
     }
 
+    #[doc(hidden)]
     /// Start new actor, returns address of this actor.
     fn framed<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>
@@ -204,6 +205,7 @@ pub trait FramedActor: Actor {
         Self::from_framed(self, io.framed(codec))
     }
 
+    #[doc(hidden)]
     /// Start new actor, returns address of this actor.
     fn from_framed<Addr>(self, framed: Framed<Self::Io, Self::Codec>) -> Addr
         where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>
@@ -214,6 +216,7 @@ pub trait FramedActor: Actor {
         addr
     }
 
+    #[doc(hidden)]
     /// This function starts new actor, returns address of this actor.
     /// Actor is created by factory function.
     fn create_framed<Addr, F>(io: Self::Io, codec: Self::Codec, f: F) -> Addr
@@ -223,6 +226,7 @@ pub trait FramedActor: Actor {
         Self::create_from_framed(io.framed(codec), f)
     }
 
+    #[doc(hidden)]
     /// This function starts new actor, returns address of this actor.
     /// Actor is created by factory function.
     fn create_from_framed<Addr, F>(framed: Framed<Self::Io, Self::Codec>, f: F) -> Addr
