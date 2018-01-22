@@ -153,7 +153,7 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         'outer: loop {
-            // supervisor is not connection, stop supervised context
+            // supervisor is not connected, stop supervised context
             if !self.connected() {
                 self.ctx.stop();
             }
@@ -179,7 +179,15 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
             let mut not_ready = true;
 
+            // process unsync messages
             loop {
+                if !ctx.is_alive() {
+                    continue 'outer
+                }
+                if ctx.waiting() {
+                    return Ok(Async::NotReady)
+                }
+
                 match self.unsync_msgs.poll() {
                     Ok(Async::Ready(Some(msg))) => {
                         not_ready = false;
@@ -194,14 +202,9 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
                     }
                     Ok(Async::NotReady) | Ok(Async::Ready(None)) | Err(_) => break,
                 }
-                if !ctx.is_alive() {
-                    continue 'outer
-                }
-                if ctx.waiting() {
-                    return Ok(Async::NotReady)
-                }
             }
 
+            // process sync messages
             loop {
                 if !ctx.is_alive() {
                     continue 'outer
@@ -219,7 +222,6 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
                 }
             }
 
-            // are we done
             if not_ready {
                 return Ok(Async::NotReady)
             }

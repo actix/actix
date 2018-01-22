@@ -188,7 +188,7 @@ pub trait FramedActor: Actor {
 
     /// Add framed object to current context and return
     /// wrapper for write part of the framed object.
-    fn add_framed(self, framed: Framed<Self::Io, Self::Codec>, ctx: &mut Self::Context)
+    fn add_framed(&mut self, ctx: &mut Self::Context, framed: Framed<Self::Io, Self::Codec>)
                   -> FramedCell<Self>
         where Self::Context: AsyncContext<Self> + AsyncContextApi<Self>
     {

@@ -100,15 +100,16 @@ pub mod prelude {
     pub use actix_derive::*;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
-    pub use actor::{Actor, ActorContext, AsyncContext, FramedActor};
+    pub use actor::{Actor, ActorContext, AsyncContext, FramedActor, Supervised};
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress};
     pub use context::{Context, ContextFutureSpawner};
-    pub use framed::FramedContext;
+    pub use framed::{FramedCell, FramedContext};
     pub use message::Response;
     pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;
     pub use sync::{SyncContext, SyncArbiter};
+    pub use supervisor::Supervisor;
 
     pub mod actix {
         pub use msgs;
