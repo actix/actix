@@ -1,214 +1,17 @@
-use std::{mem, fmt};
+use std::mem;
 use std::rc::Rc;
 use std::cell::UnsafeCell;
 use std::collections::VecDeque;
 
-use futures::{Async, AsyncSink, Future, Poll, Sink, Stream};
-use futures::sync::oneshot::Sender as SyncSender;
+use futures::{Async, AsyncSink, Poll, Sink, Stream};
 use futures::unsync::oneshot::{channel, Sender as UnsyncSender};
-use tokio_core::reactor::Handle;
 use tokio_io::AsyncWrite;
 use tokio_io::codec::{Framed, Encoder};
 
 use fut::ActorFuture;
-use queue::unsync;
-
-use actor::{Actor, SpawnHandle, FramedActor, ActorState, ActorContext, AsyncContext};
-use address::{Address, SyncAddress, Subscriber};
-use handler::{Handler, ResponseType};
-use context::{AsyncContextApi, ContextProtocol};
-use contextimpl::ContextImpl;
-use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
+use actor::{Actor, FramedActor, ActorState, ActorContext, AsyncContext};
+use context::AsyncContextApi;
 use utils::Drain;
-
-/// Actor execution context for
-/// [Framed](https://docs.rs/tokio-io/0.1.3/tokio_io/codec/struct.Framed.html) object
-pub struct FramedContext<A>
-    where A: FramedActor + Actor<Context=FramedContext<A>>,
-{
-    inner: ContextImpl<A>,
-    framed: FramedCell<A>,
-}
-
-impl<A> ToEnvelope<A> for FramedContext<A>
-    where A: FramedActor + Actor<Context=FramedContext<A>>,
-{
-    #[inline]
-    fn pack<M>(msg: M,
-               tx: Option<SyncSender<Result<M::Item, M::Error>>>,
-               cancel_on_drop: bool) -> Envelope<A>
-        where M: ResponseType + Send + 'static,
-              A: Handler<M> + FramedActor + Actor<Context=FramedContext<A>>,
-              M::Item: Send, M::Error: Send {
-        Envelope::new(RemoteEnvelope::new(msg, tx, cancel_on_drop))
-    }
-}
-
-impl<A> ActorContext for FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
-{
-    #[inline]
-    fn stop(&mut self) {
-        self.inner.stop()
-    }
-    #[inline]
-    fn terminate(&mut self) {
-        self.inner.terminate()
-    }
-    #[inline]
-    fn state(&self) -> ActorState {
-        self.inner.state()
-    }
-}
-
-impl<A> AsyncContext<A> for FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
-{
-    #[inline]
-    fn spawn<F>(&mut self, fut: F) -> SpawnHandle
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
-    {
-        self.inner.spawn(fut)
-    }
-    #[inline]
-    fn wait<F>(&mut self, fut: F)
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
-    {
-        self.inner.wait(fut)
-    }
-    #[doc(hidden)]
-    #[inline]
-    fn waiting(&self) -> bool {
-        self.inner.waiting()
-    }
-    #[inline]
-    fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        self.inner.cancel_future(handle)
-    }
-}
-
-#[doc(hidden)]
-impl<A> AsyncContextApi<A> for FramedContext<A>
-    where A: Actor<Context=Self> + FramedActor,
-{
-    #[inline]
-    fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
-        self.inner.unsync_sender()
-    }
-    #[inline]
-    fn unsync_address(&mut self) -> Address<A> {
-        self.inner.unsync_address()
-    }
-    #[inline]
-    fn sync_address(&mut self) -> SyncAddress<A> {
-        self.inner.sync_address()
-    }
-}
-
-impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
-{
-    /// Send item to sink. If sink is closed item returned as an error.
-    #[inline]
-    pub fn send(&mut self, msg: <A::Codec as Encoder>::Item)
-                -> Result<(), <A::Codec as Encoder>::Item> {
-        self.framed.send(msg);
-        Ok(())
-    }
-
-    /// Gracefully close Framed object. FramedContext
-    /// will try to send all buffered items and then close.
-    /// FramedContext::stop() could be used to force stop sending process.
-    #[inline]
-    pub fn close(&mut self) {
-        self.framed.close()
-    }
-
-    /// Initiate sink drain
-    ///
-    /// Returns oneshot future. It resolves when sink is drained.
-    /// All other actor activities are paused.
-    #[inline]
-    pub fn drain(&mut self) -> Drain {
-        let framed: &mut FramedCell<A> = unsafe { mem::transmute(&mut self.framed) };
-        framed.drain(self)
-    }
-
-    /// Get inner framed object
-    #[inline]
-    pub fn take(&mut self) -> Option<Framed<A::Io, A::Codec>> {
-        self.framed.take()
-    }
-
-    /// Replace existing framed object with new object.
-    ///
-    /// Consider to use `drain()` before replace framed object,
-    /// because Sink buffer get dropped as well.
-    pub fn replace(&mut self, framed: Framed<A::Io, A::Codec>) {
-        self.framed.close();
-        let (wrp, cell) = FramedWrapper::new(framed);
-        self.framed = cell;
-        self.inner.spawn(wrp);
-    }
-}
-
-#[doc(hidden)]
-impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
-{
-    #[inline]
-    pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>, M: ResponseType + 'static {
-        self.inner.subscriber()
-    }
-    #[inline]
-    pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
-        where A: Handler<M>,
-              M: ResponseType + Send + 'static,
-              M::Item: Send, M::Error: Send {
-        self.inner.sync_subscriber()
-    }
-}
-
-impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor
-{
-    #[inline]
-    pub(crate) fn framed(act: Option<A>, framed: Framed<A::Io, A::Codec>) -> FramedContext<A> {
-        let (wrp, cell) = FramedWrapper::new(framed);
-        let mut imp = ContextImpl::new(act);
-        imp.spawn(wrp);
-
-        FramedContext {inner: imp, framed: cell}
-    }
-
-    #[inline]
-    pub(crate) fn run(self, handle: &Handle) {
-        handle.spawn(self.map(|_| ()).map_err(|_| ()));
-    }
-
-    #[inline]
-    pub(crate) fn set_actor(&mut self, act: A) {
-        self.inner.set_actor(act)
-    }
-}
-
-#[doc(hidden)]
-impl<A> Future for FramedContext<A> where A: Actor<Context=Self> + FramedActor {
-    type Item = ();
-    type Error = ();
-
-    #[inline]
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let ctx: &mut FramedContext<A> = unsafe {
-            mem::transmute(self as &mut FramedContext<A>)
-        };
-        self.inner.poll(ctx)
-    }
-}
-
-impl<A> fmt::Debug for FramedContext<A> where A: Actor<Context=Self> + FramedActor {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FramedContext({:?})", self as *const _)
-    }
-}
 
 bitflags! {
     struct FramedFlags: u8 {
@@ -498,14 +301,10 @@ mod tests {
     use super::*;
     use std::{cmp, io};
     use bytes::{Bytes, BytesMut};
+    use futures::Future;
     use tokio_io::{AsyncWrite, AsyncRead};
     use tokio_io::codec::{Encoder, Decoder};
-
-    impl<A> FramedContext<A> where A: Actor<Context=Self> + FramedActor {
-        pub(crate) fn new(act: Option<A>, io: A::Io, codec: A::Codec) -> FramedContext<A> {
-            FramedContext::framed(act, io.framed(codec))
-        }
-    }
+    use prelude::*;
 
     struct Buffer {
         buf: Bytes,
@@ -621,7 +420,7 @@ mod tests {
     }
 
     impl Actor for TestActor {
-        type Context = FramedContext<Self>;
+        type Context = Context<Self>;
     }
 
     impl FramedActor for TestActor {
@@ -640,81 +439,86 @@ mod tests {
         }
     }
 
+    fn create_ctx(buf: Buffer) -> (Context<TestActor>, FramedCell<TestActor>) {
+        let mut act = TestActor::new();
+        let mut ctx = Context::new(None);
+        let cell = act.add_framed(buf.framed(TestCodec), &mut ctx);
+        ctx.set_actor(act);
+        (ctx, cell)
+    }
+
     #[test]
     fn test_basic() {
-        let mut ctx = FramedContext::new(
-            Some(TestActor::new()), Buffer::new(""), TestCodec);
+        let (mut ctx, mut cell) = create_ctx(Buffer::new(""));
 
         let _ = ctx.poll();
-        ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().feed_data("data");
+        cell.as_mut().framed.as_mut().unwrap().get_mut().feed_data("data");
 
         // messages received
         let _ = ctx.poll();
-        assert_eq!(ctx.inner.actor().msgs[0], b"da"[..]);
-        assert_eq!(ctx.inner.actor().msgs[1], b"ta"[..]);
+        assert_eq!(ctx.actor().msgs[0], b"da"[..]);
+        assert_eq!(ctx.actor().msgs[1], b"ta"[..]);
 
         // block sink
-        ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().write_block = true;
-        let _ = ctx.send(Bytes::from_static(b"11"));
-        let _ = ctx.send(Bytes::from_static(b"22"));
+        cell.as_mut().framed.as_mut().unwrap().get_mut().write_block = true;
+        cell.send(Bytes::from_static(b"11"));
+        cell.send(Bytes::from_static(b"22"));
 
         // drain
-        let _ = ctx.drain();
+        let _ = cell.drain(&mut ctx);
 
         // new data in framed, actor is paused
-        ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().feed_data("bb");
+        cell.as_mut().framed.as_mut().unwrap().get_mut().feed_data("bb");
         let _ = ctx.poll();
-        assert_eq!(ctx.inner.actor().msgs.len(), 2);
+        assert_eq!(ctx.actor().msgs.len(), 2);
 
         // sink unblocked
-        ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().write_block = false;
+        cell.as_mut().framed.as_mut().unwrap().get_mut().write_block = false;
         let _ = ctx.poll();
-        assert_eq!(ctx.inner.actor().msgs.len(), 3);
-        assert_eq!(ctx.inner.actor().msgs[2], b"bb"[..]);
+        assert_eq!(ctx.actor().msgs.len(), 3);
+        assert_eq!(ctx.actor().msgs[2], b"bb"[..]);
 
         // sink data
-        assert_eq!(ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().write, b"1122"[..]);
+        assert_eq!(cell.as_mut().framed.as_mut().unwrap().get_mut().write, b"1122"[..]);
     }
 
     #[test]
     fn test_multiple_message() {
-        let mut ctx = FramedContext::new(
-            Some(TestActor::new()), Buffer::new(""), TestCodec);
+        let (mut ctx, mut cell) = create_ctx(Buffer::new(""));
 
         let _ = ctx.poll();
-        ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().feed_data("11223344");
+        cell.as_mut().framed.as_mut().unwrap().get_mut().feed_data("11223344");
 
         // messages received
         let _ = ctx.poll();
-        assert_eq!(ctx.inner.actor().msgs,
+        assert_eq!(ctx.actor().msgs,
                    vec![Bytes::from_static(b"11"), Bytes::from_static(b"22"),
                         Bytes::from_static(b"33"), Bytes::from_static(b"44")]);
     }
 
     #[test]
     fn test_error_during_poll() {
-        let mut ctx = FramedContext::new(
-            Some(TestActor::new()), Buffer::new(""), TestCodec);
+        let (mut ctx, mut cell) = create_ctx(Buffer::new(""));
 
         let _ = ctx.poll();
-        ctx.framed.as_mut().framed.as_mut().unwrap().get_mut().write_err =
+        cell.as_mut().framed.as_mut().unwrap().get_mut().write_err =
             Some(io::Error::new(io::ErrorKind::Other, "error"));
 
-        ctx.framed.as_mut().sink_items.push_back(Bytes::from_static(b"11"));
+        cell.as_mut().sink_items.push_back(Bytes::from_static(b"11"));
         let _ = ctx.poll();
-        assert!(ctx.inner.actor().error.is_some());
-        assert!(ctx.inner.actor().closed);
+        assert!(ctx.actor().error.is_some());
+        assert!(ctx.actor().closed);
     }
 
     #[test]
     fn test_close() {
         let mut buf = Buffer::new("");
         buf.eof = true;
-        let mut ctx = FramedContext::new(Some(TestActor::new()), buf, TestCodec);
+        let (mut ctx, cell) = create_ctx(buf);
 
         let _ = ctx.poll();
-        assert!(ctx.inner.actor().error.is_none());
-        assert!(ctx.inner.actor().closed);
-        assert!(ctx.framed.closed());
+        assert!(ctx.actor().error.is_none());
+        assert!(ctx.actor().closed);
+        assert!(cell.closed());
     }
 }

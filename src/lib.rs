@@ -84,9 +84,6 @@ pub use supervisor::Supervisor;
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;
 
-#[doc(hidden)]
-pub use framed::FramedContext;
-
 pub mod prelude {
 //! The `actix` prelude
 //!
@@ -100,8 +97,6 @@ pub mod prelude {
 
     #[doc(hidden)]
     pub use actix_derive::*;
-    #[doc(hidden)]
-    pub use framed::FramedContext;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorContext, AsyncContext, FramedActor, Supervised};
@@ -124,7 +119,6 @@ pub mod prelude {
         pub use arbiter::Arbiter;
         pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
         pub use context::Context;
-        pub use framed::FramedContext;
         pub use message::{Request, Response};
         pub use system::System;
         pub use sync::{SyncContext, SyncArbiter};
@@ -146,8 +140,6 @@ pub mod dev {
 
     pub use prelude::*;
     pub use prelude::actix::*;
-
-    pub use framed::FramedContext;
 
     #[doc(hidden)]
     pub use queue;

@@ -12,7 +12,7 @@ use handler::{Handler, ResponseType};
 use context::{Context, AsyncContextApi};
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorStreamItem, ActorMessageStreamItem};
-use framed::{FramedContext, FramedCell, FramedWrapper};
+use framed::{FramedCell, FramedWrapper};
 use utils::TimerFunc;
 
 
@@ -188,68 +188,13 @@ pub trait FramedActor: Actor {
 
     /// Add framed object to current context and return
     /// wrapper for write part of the framed object.
-    fn add_framed(&mut self, framed: Framed<Self::Io, Self::Codec>, ctx: &mut Self::Context)
+    fn add_framed(&self, framed: Framed<Self::Io, Self::Codec>, ctx: &mut Self::Context)
                   -> FramedCell<Self>
         where Self::Context: AsyncContext<Self> + AsyncContextApi<Self>
     {
         let (wrp, cell) = FramedWrapper::new(framed);
         ctx.spawn(wrp);
         cell
-    }
-
-    #[doc(hidden)]
-    #[deprecated(since="0.4.5", note="Use Context and Context::add_framed() instead")]
-    /// Start new actor, returns address of this actor.
-    fn framed<Addr>(self, io: Self::Io, codec: Self::Codec) -> Addr
-        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>
-    {
-        #[allow(deprecated)]
-        Self::from_framed(self, io.framed(codec))
-    }
-
-    #[doc(hidden)]
-    #[deprecated(since="0.4.5", note="Use Context and Context::add_framed() instead")]
-    /// Start new actor, returns address of this actor.
-    fn from_framed<Addr>(self, framed: Framed<Self::Io, Self::Codec>) -> Addr
-        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>
-    {
-        let mut ctx = FramedContext::framed(Some(self), framed);
-        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
-        ctx.run(Arbiter::handle());
-        addr
-    }
-
-    #[doc(hidden)]
-    #[deprecated(since="0.4.5", note="Use Context and Context::add_framed() instead")]
-    /// This function starts new actor, returns address of this actor.
-    /// Actor is created by factory function.
-    fn create_framed<Addr, F>(io: Self::Io, codec: Self::Codec, f: F) -> Addr
-        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
-    {
-        #[allow(deprecated)]
-        Self::create_from_framed(io.framed(codec), f)
-    }
-
-    #[doc(hidden)]
-    #[deprecated(since="0.4.5", note="Use Context and Context::add_framed() instead")]
-    /// This function starts new actor, returns address of this actor.
-    /// Actor is created by factory function.
-    fn create_from_framed<Addr, F>(framed: Framed<Self::Io, Self::Codec>, f: F) -> Addr
-        where Self: Actor<Context=FramedContext<Self>> + ActorAddress<Self, Addr>,
-              F: FnOnce(&mut FramedContext<Self>) -> Self + 'static
-    {
-        let mut ctx = FramedContext::framed(None, framed);
-        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
-
-        Arbiter::handle().spawn_fn(move || {
-            let act = f(&mut ctx);
-            ctx.set_actor(act);
-            ctx.run(Arbiter::handle());
-            future::ok(())
-        });
-
-        addr
     }
 }
 
