@@ -83,14 +83,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     #[inline]
     /// Is context waiting for future completion
     pub fn waiting(&self) -> bool {
-        !self.wait.is_empty()
-    }
-
-    #[inline]
-    #[doc(hidden)]
-    // backward compatibility :)
-    pub fn wating(&self) -> bool {
-        !self.wait.is_empty()
+        !self.wait.is_empty() ||
+            self.flags.intersects(ContextFlags::STOPPING | ContextFlags::PREPSTOP)
     }
 
     #[inline]

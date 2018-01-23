@@ -64,7 +64,6 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
         self.inner.wait(fut)
     }
 
-    #[doc(hidden)]
     #[inline]
     fn waiting(&self) -> bool {
         self.inner.waiting()

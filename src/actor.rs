@@ -286,10 +286,8 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn wait<F>(&mut self, fut: F)
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
 
-    /// Check if context is waiting for future completion
-    #[doc(hidden)]
-    #[inline]
-    fn waiting(&self) -> bool { false }
+    /// Check if context is paused (waiting for future completion or stopping)
+    fn waiting(&self) -> bool;
 
     /// Cancel future. idx is a value returned by `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
