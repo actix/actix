@@ -14,6 +14,7 @@ extern crate serde_json;
 use std::net;
 use std::str::FromStr;
 use futures::Stream;
+use tokio_io::AsyncRead;
 use tokio_core::net::{TcpListener, TcpStream};
 use actix::prelude::*;
 
@@ -51,7 +52,9 @@ impl Handler<TcpConnect> for Server {
         // For each incoming connection we create `ChatSession` actor
         // with out chat server address.
         let server = self.chat.clone();
-        let _: () = ChatSession::new(server).framed(msg.0, ChatCodec);
+        let _: () = ChatSession::create_with(msg.0.framed(ChatCodec), |_, framed| {
+            ChatSession::new(server, framed)
+        });
     }
 }
 

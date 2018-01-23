@@ -27,12 +27,12 @@ pub struct ChatSession {
     hb: Instant,
     /// joined room
     room: String,
+    /// Framed wrapper
+    framed: FramedCell<ChatSession>,
 }
 
 impl Actor for ChatSession {
-    /// For tcp communication we are going to use `FramedContext`.
-    /// It is convenient wrapper around `Framed` object from `tokio_io`
-    type Context = actix::FramedContext<Self>;
+    type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         // we'll start heartbeat process on session start.
@@ -71,11 +71,10 @@ impl actix::FramedActor for ChatSession {
                 ChatRequest::List => {
                     // Send ListRooms message to chat server and wait for response
                     println!("List rooms");
-                    self.addr.call(self, server::ListRooms).then(|res, _, ctx| {
+                    self.addr.call(self, server::ListRooms).then(|res, act, _| {
                         match res {
-                            Ok(Ok(rooms)) => {
-                                let _ = ctx.send(ChatResponse::Rooms(rooms));
-                            },
+                            Ok(Ok(rooms)) =>
+                                act.framed.send(ChatResponse::Rooms(rooms)),
                             _ => println!("Something is wrong"),
                         }
                         actix::fut::ok(())
@@ -87,7 +86,7 @@ impl actix::FramedActor for ChatSession {
                     println!("Join to room: {}", name);
                     self.room = name.clone();
                     self.addr.send(server::Join{id: self.id, name: name.clone()});
-                    let _ = ctx.send(ChatResponse::Joined(name));
+                    self.framed.send(ChatResponse::Joined(name));
                 },
                 ChatRequest::Message(message) => {
                     // send message to chat server
@@ -109,23 +108,27 @@ impl actix::FramedActor for ChatSession {
 impl Handler<Message> for ChatSession {
     type Result = ();
 
-    fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: Message, _: &mut Self::Context) {
         // send message to peer
-        let _ = ctx.send(ChatResponse::Message(msg.0));
+        self.framed.send(ChatResponse::Message(msg.0));
     }
 }
 
 /// Helper methods
 impl ChatSession {
 
-    pub fn new(addr: Address<ChatServer>) -> ChatSession {
-        ChatSession {id: 0, addr: addr, hb: Instant::now(), room: "Main".to_owned()}
+    pub fn new(addr: Address<ChatServer>, framed: FramedCell<Self>) -> ChatSession {
+        ChatSession {id: 0,
+                     addr: addr,
+                     hb: Instant::now(),
+                     room: "Main".to_owned(),
+                     framed: framed}
     }
     
     /// helper method that sends ping to client every second.
     ///
     /// also this method check heartbeats from client
-    fn hb(&self, ctx: &mut actix::FramedContext<Self>) {
+    fn hb(&self, ctx: &mut actix::Context<Self>) {
         ctx.run_later(Duration::new(1, 0), |act, ctx| {
             // check client heartbeats
             if Instant::now().duration_since(act.hb) > Duration::new(10, 0) {
@@ -139,10 +142,8 @@ impl ChatSession {
                 ctx.stop();
             }
 
-            if ctx.send(ChatResponse::Ping).is_ok() {
-                // if we can not send message to sink, sink is closed (disconnected)
-                act.hb(ctx);
-            }
+            act.framed.send(ChatResponse::Ping);
+            act.hb(ctx);
         });
     }
 }

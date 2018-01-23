@@ -196,6 +196,26 @@ pub trait FramedActor: Actor {
         ctx.spawn(wrp);
         cell
     }
+
+    /// Start new asynchronous actor, returns address of newly created actor.
+    fn create_with<Addr, F>(framed: Framed<Self::Io, Self::Codec>, f: F) -> Addr
+        where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>,
+              F: FnOnce(&mut Context<Self>, FramedCell<Self>) -> Self + 'static
+    {
+        let mut ctx = Context::new(None);
+        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+        let (wrp, cell) = FramedWrapper::new(framed);
+        ctx.spawn(wrp);
+
+        Arbiter::handle().spawn_fn(move || {
+            let act = f(&mut ctx, cell);
+            ctx.set_actor(act);
+            ctx.run(Arbiter::handle());
+            future::ok(())
+        });
+
+        addr
+    }
 }
 
 #[allow(unused_variables)]
