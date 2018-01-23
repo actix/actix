@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.0 (...)
+
+* Drop FramedContext
+
+
 ## 0.4.5 (2018-01-23)
 
 * Refactor context implementation
