@@ -161,7 +161,6 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         'outer: loop {
             // supervisor is not connected, stop supervised context
             if !self.connected() {
-                println!("stop");
                 self.ctx.stop();
             }
 
