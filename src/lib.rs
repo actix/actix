@@ -147,6 +147,8 @@ pub mod dev {
     pub use prelude::*;
     pub use prelude::actix::*;
 
+    pub use framed::FramedContext;
+
     #[doc(hidden)]
     pub use queue;
     pub use address::ActorAddress;

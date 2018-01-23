@@ -179,7 +179,9 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
                         self.fut = Some(fut);
                         return Ok(Async::NotReady)
                     }
-                    Ok(Async::Ready(_)) => (),
+                    Ok(Async::Ready(_)) => if ctx.waiting() {
+                        return Ok(Async::NotReady)
+                    },
                     Err(_) => return Err(())
                 }
             }
@@ -188,18 +190,19 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
                 Ok(Async::Ready(Some(msg))) => {
                     let fut = <A as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
                     self.fut = Some(fut.into_response());
+                    if ctx.waiting() {
+                        return Ok(Async::NotReady)
+                    }
                 }
                 Err(err) => {
                     let fut = <A as Handler<Result<M, E>>>::handle(act, Err(err), ctx);
                     self.fut = Some(fut.into_response());
+                    if ctx.waiting() {
+                        return Ok(Async::NotReady)
+                    }
                 },
                 Ok(Async::Ready(None)) => return Ok(Async::Ready(())),
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
-            }
-
-            // stop immediately if context is waiting for future completion
-            if ctx.waiting() {
-                return Ok(Async::NotReady)
             }
         }
     }
@@ -233,7 +236,9 @@ impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, M, S>
                         self.fut = Some(fut);
                         return Ok(Async::NotReady)
                     }
-                    Ok(Async::Ready(_)) => (),
+                    Ok(Async::Ready(_)) => if ctx.waiting() {
+                        return Ok(Async::NotReady)
+                    },
                     Err(_) => return Err(())
                 }
             }
@@ -242,15 +247,13 @@ impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, M, S>
                 Ok(Async::Ready(Some(msg))) => {
                     let fut = <A as Handler<M>>::handle(act, msg, ctx);
                     self.fut = Some(fut.into_response());
+                    if ctx.waiting() {
+                        return Ok(Async::NotReady)
+                    }
                 }
                 Ok(Async::Ready(None)) => return Ok(Async::Ready(())),
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
                 Err(_) => (),
-            }
-
-            // stop immediately if context is waiting for future completion
-            if ctx.waiting() {
-                return Ok(Async::NotReady)
             }
         }
     }
