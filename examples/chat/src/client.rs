@@ -58,7 +58,7 @@ fn main() {
 
 
 struct ChatClient {
-    framed: FramedCell<ChatClient>,
+    framed: FramedCell<TcpStream, codec::ClientChatCodec>,
 }
 
 #[derive(Message)]
@@ -122,10 +122,7 @@ impl Handler<ClientCommand> for ChatClient
 }
 
 /// Server communication
-
-impl FramedActor for ChatClient {
-    type Io = TcpStream;
-    type Codec = codec::ClientChatCodec;
+impl FramedActor<TcpStream, codec::ClientChatCodec> for ChatClient {
 
     fn handle(&mut self, msg: io::Result<codec::ChatResponse>, _: &mut Context<Self>) {
         if let Ok(msg) = msg {

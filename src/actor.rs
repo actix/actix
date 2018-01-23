@@ -168,28 +168,25 @@ pub trait Actor: Sized + 'static {
 
 /// Actor trait that allows to handle `tokio_io::codec::Framed` objects.
 #[allow(unused_variables)]
-pub trait FramedActor: Actor {
-    /// Io type
-    type Io: AsyncRead + AsyncWrite;
-    /// Codec type
-    type Codec: Encoder + Decoder;
-
+pub trait FramedActor<Io, Codec>: Actor
+    where Io: AsyncRead + AsyncWrite + 'static,
+          Codec: Encoder + Decoder + 'static,
+{
     /// This method is called for every decoded message from framed object.
     fn handle(&mut self,
-              msg: Result<<Self::Codec as Decoder>::Item, <Self::Codec as Decoder>::Error>,
+              msg: Result<<Codec as Decoder>::Item, <Codec as Decoder>::Error>,
               ctx: &mut Self::Context);
 
     /// This method is called when framed object get closed.
     ///
     /// `error` indicates if framed get closed because of error.
-    fn closed(&mut self,
-              error: Option<<Self::Codec as Encoder>::Error>,
+    fn closed(&mut self, error: Option<<Codec as Encoder>::Error>,
               ctx: &mut Self::Context) {}
 
     /// Add framed object to current context and return
     /// wrapper for write part of the framed object.
-    fn add_framed(&self, framed: Framed<Self::Io, Self::Codec>, ctx: &mut Self::Context)
-                  -> FramedCell<Self>
+    fn add_framed(&self, framed: Framed<Io, Codec>, ctx: &mut Self::Context)
+                  -> FramedCell<Io, Codec>
         where Self::Context: AsyncContext<Self> + AsyncContextApi<Self>
     {
         let (wrp, cell) = FramedWrapper::new(framed);
@@ -198,9 +195,9 @@ pub trait FramedActor: Actor {
     }
 
     /// Start new asynchronous actor, returns address of newly created actor.
-    fn create_with<Addr, F>(framed: Framed<Self::Io, Self::Codec>, f: F) -> Addr
+    fn create_with<Addr, F>(framed: Framed<Io, Codec>, f: F) -> Addr
         where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>,
-              F: FnOnce(&mut Context<Self>, FramedCell<Self>) -> Self + 'static
+              F: FnOnce(&mut Context<Self>, FramedCell<Io, Codec>) -> Self + 'static
     {
         let mut ctx = Context::new(None);
         let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);

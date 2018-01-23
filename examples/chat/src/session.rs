@@ -28,7 +28,7 @@ pub struct ChatSession {
     /// joined room
     room: String,
     /// Framed wrapper
-    framed: FramedCell<ChatSession>,
+    framed: FramedCell<TcpStream, ChatCodec>,
 }
 
 impl Actor for ChatSession {
@@ -58,10 +58,8 @@ impl Actor for ChatSession {
     }
 }
 
-/// To use `FramedContext` we have to define Io type and Codec
-impl actix::FramedActor for ChatSession {
-    type Io = TcpStream;
-    type Codec= ChatCodec;
+/// To use `Framed` we have to implement FramedActor trait
+impl actix::FramedActor<TcpStream, ChatCodec> for ChatSession {
 
     /// This is main event loop for client requests
     fn handle(&mut self, msg: io::Result<ChatRequest>, ctx: &mut Self::Context) {
@@ -117,7 +115,8 @@ impl Handler<Message> for ChatSession {
 /// Helper methods
 impl ChatSession {
 
-    pub fn new(addr: Address<ChatServer>, framed: FramedCell<Self>) -> ChatSession {
+    pub fn new(addr: Address<ChatServer>,
+               framed: FramedCell<TcpStream, ChatCodec>) -> ChatSession {
         ChatSession {id: 0,
                      addr: addr,
                      hb: Instant::now(),
