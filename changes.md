@@ -1,6 +1,6 @@
 # CHANGES
 
-## 0.4.5 (2018-01-xx)
+## 0.4.5 (2018-01-23)
 
 * Refactor context implementation
 
