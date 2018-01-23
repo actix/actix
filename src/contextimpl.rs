@@ -87,6 +87,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
+    #[doc(hidden)]
+    // backward compatibility :)
+    pub fn wating(&self) -> bool {
+        !self.wait.is_empty()
+    }
+
+    #[inline]
     /// Initiate stop process for actor execution
     ///
     /// Actor could prevent stopping by returning `false` from `Actor::stopping()` method.
