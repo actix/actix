@@ -175,19 +175,23 @@ impl<A, Io, Codec> ActorFuture for FramedWrapper<A, Io, Codec>
 
             // check framed stream
             if !inner.flags.intersects(FramedFlags::CLOSING | FramedFlags::STREAM_CLOSED) {
-                match framed.poll() {
-                    Ok(Async::Ready(Some(msg))) => {
-                        not_ready = false;
-                        <A as FramedActor<Io, Codec>>::handle(act, Ok(msg), ctx);
-                    }
-                    Ok(Async::Ready(None)) => {
-                        inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                        <A as FramedActor<Io, Codec>>::closed(act, None, ctx);
-                    }
-                    Ok(Async::NotReady) => (),
-                    Err(err) => {
-                        inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                        <A as FramedActor<Io, Codec>>::handle(act, Err(err), ctx);
+                while !ctx.waiting() {
+                    match framed.poll() {
+                        Ok(Async::Ready(Some(msg))) => {
+                            not_ready = false;
+                            <A as FramedActor<Io, Codec>>::handle(act, Ok(msg), ctx);
+                        }
+                        Ok(Async::Ready(None)) => {
+                            inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                            <A as FramedActor<Io, Codec>>::closed(act, None, ctx);
+                            break
+                        }
+                        Ok(Async::NotReady) => break,
+                        Err(err) => {
+                            inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                            <A as FramedActor<Io, Codec>>::handle(act, Err(err), ctx);
+                            break
+                        }
                     }
                 }
             }
