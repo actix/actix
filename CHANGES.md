@@ -4,6 +4,8 @@
 
 * Drop FramedContext
 
+* Make rules of actor stopping more strict
+
 
 ## 0.4.5 (2018-01-23)
 

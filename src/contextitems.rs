@@ -4,24 +4,24 @@ use tokio_core::reactor::Timeout;
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use actor::{Actor, AsyncContext};
+use actor::{Actor, ActorContext, AsyncContext};
 use handler::{Handler, ResponseType, IntoResponse};
 use message::Response;
 
 
 pub(crate) struct ActorWaitItem<A: Actor>(Box<ActorFuture<Item=(), Error=(), Actor=A>>);
 
-impl<A> ActorWaitItem<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> ActorWaitItem<A> where A: Actor, A::Context: ActorContext + AsyncContext<A> {
 
     #[inline]
     pub fn new<F>(fut: F) -> Self where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static {
         ActorWaitItem(Box::new(fut))
     }
 
-    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context, stop: bool) -> Async<()> {
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Async<()> {
         match self.0.poll(act, ctx) {
             Ok(Async::NotReady) => {
-                if !stop {
+                if ctx.state().alive() {
                     Async::NotReady
                 } else {
                     Async::Ready(())

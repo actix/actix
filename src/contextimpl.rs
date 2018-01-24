@@ -20,7 +20,6 @@ bitflags! {
         const STARTED =  0b0000_0001;
         const RUNNING =  0b0000_0010;
         const STOPPING = 0b0000_0100;
-        const PREPSTOP = 0b0000_1000;
         const STOPPED =  0b0001_0000;
         const MODIFIED = 0b0010_0000;
     }
@@ -84,7 +83,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     /// Is context waiting for future completion
     pub fn waiting(&self) -> bool {
         !self.wait.is_empty() ||
-            self.flags.intersects(ContextFlags::STOPPING | ContextFlags::PREPSTOP)
+            self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPED)
     }
 
     #[inline]
@@ -93,8 +92,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     /// Actor could prevent stopping by returning `false` from `Actor::stopping()` method.
     pub fn stop(&mut self) {
         if self.flags.contains(ContextFlags::RUNNING) {
-            self.flags.remove(ContextFlags::RUNNING);
-            self.flags.insert(ContextFlags::STOPPING | ContextFlags::MODIFIED);
+            self.flags.remove(ContextFlags::RUNNING | ContextFlags::MODIFIED);
+            self.flags.insert(ContextFlags::STOPPING);
         }
     }
 
@@ -109,10 +108,10 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     pub fn state(&self) -> ActorState {
         if self.flags.contains(ContextFlags::RUNNING) {
             ActorState::Running
-        } else if self.flags.intersects(ContextFlags::STOPPING | ContextFlags::PREPSTOP) {
-            ActorState::Stopping
         } else if self.flags.contains(ContextFlags::STOPPED) {
             ActorState::Stopped
+        } else if self.flags.contains(ContextFlags::STOPPING) {
+            ActorState::Stopping
         } else {
             ActorState::Started
         }
@@ -188,11 +187,16 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
 
     #[inline]
     pub fn alive(&self) -> bool {
-        if self.flags.contains(ContextFlags::STOPPED) {
+        if self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPPED) {
             false
         } else {
-            self.address.connected() || !self.items.is_empty()
+            self.address.connected() || !self.items.is_empty() || !self.wait.is_empty()
         }
+    }
+
+    #[inline]
+    fn stopping(&self) -> bool {
+        self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
     }
 
     #[inline]
@@ -219,35 +223,34 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
         };
 
         if !self.flags.contains(ContextFlags::STARTED) {
-            Actor::started(act, ctx);
             self.flags.insert(ContextFlags::STARTED);
+            Actor::started(act, ctx);
         }
 
         'outer: loop {
             self.flags.remove(ContextFlags::MODIFIED);
-            let prepstop = self.flags.contains(ContextFlags::PREPSTOP);
 
             // check wait futures
-            while !self.wait.is_empty() {
-                match self.wait[0].poll(act, ctx, prepstop) {
+            while !self.wait.is_empty() && !self.stopping() {
+                match self.wait[0].poll(act, ctx) {
                     Async::Ready(_) => { self.wait.swap_remove(0); },
                     Async::NotReady => return Ok(Async::NotReady),
                 }
             }
 
             // process address
-            self.address.poll(act, ctx, prepstop);
-            if !self.wait.is_empty() {
+            self.address.poll(act, ctx);
+            if !self.wait.is_empty() && !self.stopping() {
                 continue
             }
 
             // process items
             let mut idx = 0;
-            while idx < self.items.len() {
+            while idx < self.items.len() && !self.stopping() {
                 match self.items[idx].1.poll(act, ctx) {
                     Ok(Async::NotReady) => {
                         // item scheduled wait future
-                        if !self.wait.is_empty() {
+                        if !self.wait.is_empty() && !self.stopping() {
                             // move current item to end of poll queue
                             // otherwise it is possible that same item generate wait future
                             // and prevents polling of other items
@@ -263,7 +266,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
                     Ok(Async::Ready(())) | Err(_) => {
                         self.items.swap_remove(idx);
                         // one of the items scheduled wait future
-                        if !self.wait.is_empty() {
+                        if !self.wait.is_empty() && !self.stopping() {
                             continue 'outer
                         }
                     },
@@ -280,22 +283,20 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
             if self.flags.contains(ContextFlags::RUNNING) {
                 // possible stop condition
                 if !self.alive() && Actor::stopping(act, ctx) {
-                    self.flags.remove(ContextFlags::RUNNING);
-                    self.flags.insert(ContextFlags::PREPSTOP);
-                    continue
+                    self.flags = ContextFlags::STOPPED;
+                    Actor::stopped(act, ctx);
+                    return Ok(Async::Ready(()))
                 }
             } else if self.flags.contains(ContextFlags::STOPPING) {
-                self.flags.remove(ContextFlags::STOPPING);
                 if Actor::stopping(act, ctx) {
-                    self.flags.insert(ContextFlags::PREPSTOP);
+                    self.flags = ContextFlags::STOPPED;
+                    Actor::stopped(act, ctx);
+                    return Ok(Async::Ready(()))
                 } else {
+                    self.flags.remove(ContextFlags::STOPPING);
                     self.flags.insert(ContextFlags::RUNNING);
+                    continue
                 }
-                continue
-            } else if self.flags.contains(ContextFlags::PREPSTOP) {
-                self.flags = ContextFlags::STOPPED;
-                Actor::stopped(act, ctx);
-                return Ok(Async::Ready(()))
             } else if self.flags.contains(ContextFlags::STOPPED) {
                 Actor::stopped(act, ctx);
                 return Ok(Async::Ready(()))

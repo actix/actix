@@ -57,6 +57,11 @@ use utils::TimerFunc;
 /// Actor could restore from `stopping` state to `running` state by creating new
 /// address or adding evented object, like future or stream, in `Actor::stopping` method.
 ///
+/// If actor changed state to a `stopping` state because of `Context::stop()` get called
+/// then context immediately stops processing incoming messages and calls
+/// `Actor::stopping()` method. If actor does not restore back to a `running` state, all
+/// unprocessed messages get dropped.
+///
 /// ## Stopped
 ///
 /// If actor does not modify execution context during stooping state actor state changes
@@ -244,6 +249,12 @@ pub enum ActorState {
     Stopped,
 }
 
+impl ActorState {
+    pub fn alive(&self) -> bool {
+        *self == ActorState::Started || *self == ActorState::Running
+    }
+}
+
 /// Actor execution context
 ///
 /// Each actor runs within specific execution context. `Actor::Context` defines
@@ -251,7 +262,7 @@ pub enum ActorState {
 /// (message handling).
 pub trait ActorContext: Sized {
 
-    /// Gracefully stop actor execution
+    /// Immediately stop processing incoming messages and switch to a `stopping` state
     fn stop(&mut self);
 
     /// Terminate actor execution
@@ -259,11 +270,6 @@ pub trait ActorContext: Sized {
 
     /// Actor execution state
     fn state(&self) -> ActorState;
-
-    /// Check if execution context is alive
-    fn alive(&self) -> bool {
-        self.state() == ActorState::Stopped
-    }
 }
 
 /// Asynchronous execution context

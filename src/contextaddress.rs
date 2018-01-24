@@ -43,14 +43,6 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
     }
 
     #[inline]
-    pub fn close(&mut self) {
-        self.unsync_msgs.close();
-        if let Some(ref mut msgs) = self.sync_msgs {
-            msgs.close()
-        }
-    }
-
-    #[inline]
     pub fn connected(&self) -> bool {
         self.unsync_msgs.connected() ||
             self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
@@ -79,13 +71,15 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
         }
     }
 
-    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context, stop: bool) {
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
         let mut n_polls = NumPolls(0);
         loop {
             let mut not_ready = true;
 
             // unsync messages
             loop {
+                if ctx.waiting() { return }
+
                 match self.unsync_msgs.poll() {
                     Ok(Async::Ready(Some(msg))) => {
                         not_ready = false;
@@ -100,8 +94,6 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
                     }
                     Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
                 }
-                if ctx.waiting() { return }
-
                 debug_assert!(n_polls.inc() < MAX_SYNC_POLLS,
                               "Use Self::Context::notify() instead of direct use of address");
             }
@@ -124,10 +116,7 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
             }
 
             if not_ready {
-                if stop {
-                    self.close()
-                }
-                return;
+                return
             }
         }
     }
