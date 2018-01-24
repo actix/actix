@@ -4,10 +4,11 @@ use futures::{Future, Async, Poll, Stream};
 use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
 use address::{Address, LocalAddress};
-use context::{Context, ContextProtocol};
+use context::Context;
 use envelope::Envelope;
 use msgs::Execute;
-use queue::{sync, unsync};
+use queue::sync;
+use local::{LocalAddrReceiver, LocalAddrProtocol};
 
 /// Actor supervisor
 ///
@@ -66,7 +67,7 @@ pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
     #[allow(dead_code)]
     addr: LocalAddress<A>,
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
-    unsync_msgs: unsync::Receiver<ContextProtocol<A>>,
+    unsync_msgs: LocalAddrReceiver<A>,
 }
 
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
@@ -83,7 +84,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         ctx.set_actor(act);
 
         // create supervisor
-        let rx = unsync::channel(0);
+        let rx = LocalAddrReceiver::new(0);
         let mut supervisor = Supervisor {
             ctx: ctx,
             addr: addr,
@@ -111,7 +112,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             let act = f(&mut ctx);
             ctx.set_actor(act);
 
-            let lrx = unsync::channel(0);
+            let lrx = LocalAddrReceiver::new(0);
             let supervisor = Supervisor {
                 ctx: ctx,
                 addr: addr,
@@ -198,11 +199,11 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
                     Ok(Async::Ready(Some(msg))) => {
                         not_ready = false;
                         match msg {
-                            ContextProtocol::Upgrade(tx) => {
+                            LocalAddrProtocol::Upgrade(tx) => {
                                 let _ = tx.send(self.remote_address());
                             }
-                            ContextProtocol::Envelope(mut env) => {
-                                env.handle(act, ctx);
+                            LocalAddrProtocol::Envelope(mut env) => {
+                                env.env.handle(act, ctx);
                             }
                         }
                     }

@@ -44,11 +44,9 @@ pub use actix_derive::*;
 
 mod actor;
 mod arbiter;
-mod address;
 mod context;
 mod contextimpl;
 mod contextitems;
-mod contextaddress;
 mod envelope;
 mod framed;
 mod handler;
@@ -56,6 +54,10 @@ mod message;
 mod registry;
 mod system;
 mod supervisor;
+
+mod address;
+mod contextaddress;
+mod local;
 
 pub mod fut;
 pub mod actors;
@@ -143,8 +145,9 @@ pub mod dev {
 
     #[doc(hidden)]
     pub use queue;
-    pub use address::ActorAddress;
-    pub use context::{AsyncContextApi, ContextProtocol};
+    pub use address::{ActorAddress, SendError};
+    pub use context::AsyncContextApi;
     pub use contextimpl::ContextImpl;
     pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
+    pub use local::{LocalRequest, LocalFutRequest, UpgradeAddress};
 }

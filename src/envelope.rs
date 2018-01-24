@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 use futures::{Async, Poll};
-use futures::unsync::oneshot::Sender;
 use futures::sync::oneshot::Sender as SyncSender;
 
 use fut::ActorFuture;
@@ -11,8 +10,8 @@ use context::Context;
 
 
 /// Converter trait, packs message to suitable envelope
-pub trait ToEnvelope<A: Actor>
-{
+pub trait ToEnvelope<A: Actor> {
+
     /// Pack message into suitable envelope
     fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
                cancel_on_drop: bool) -> Envelope<A>
@@ -21,8 +20,7 @@ pub trait ToEnvelope<A: Actor>
               M::Item: Send, M::Error: Send;
 }
 
-impl<A> ToEnvelope<A> for Context<A>
-    where A: Actor<Context=Context<A>>
+impl<A> ToEnvelope<A> for Context<A> where A: Actor<Context=Context<A>>
 {
     fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
                cancel_on_drop: bool) -> Envelope<A>
@@ -48,19 +46,6 @@ impl<A> Envelope<A> where A: Actor {
         Envelope(Box::new(envelop))
     }
 
-    pub(crate) fn local<M>(msg: M,
-                           tx: Option<Sender<Result<M::Item, M::Error>>>,
-                           cancel_on_drop: bool) -> Self
-        where M: ResponseType + 'static,
-              A: Actor + Handler<M>, A::Context: AsyncContext<A>
-    {
-        Envelope(Box::new(
-            LocalEnvelope{msg: Some(msg),
-                          tx: tx,
-                          act: PhantomData,
-                          cancel_on_drop: cancel_on_drop}))
-    }
-
     pub(crate) fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
         self.0.handle(act, ctx)
     }
@@ -75,40 +60,6 @@ pub trait EnvelopeProxy {
 
     /// handle message within new actor and context
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
-}
-
-struct LocalEnvelope<A, M> where M: ResponseType {
-    msg: Option<M>,
-    act: PhantomData<A>,
-    tx: Option<Sender<Result<M::Item, M::Error>>>,
-    cancel_on_drop: bool,
-}
-
-impl<A, M> EnvelopeProxy for LocalEnvelope<A, M>
-    where M: ResponseType + 'static,
-          A: Actor + Handler<M>, A::Context: AsyncContext<A>
-{
-    type Actor = A;
-
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
-    {
-        let tx = self.tx.take();
-        if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
-            return
-        }
-
-        if let Some(msg) = self.msg.take() {
-            let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
-            let tx = if let Some(tx) = tx {
-                Some(EnvelopFutureItem::Local(tx))
-            } else {
-                None
-            };
-            let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
-                msg: PhantomData, fut: fut.into_response(), tx: tx};
-            ctx.spawn(f);
-        }
-    }
 }
 
 pub struct RemoteEnvelope<A, M> where M: ResponseType {
@@ -147,11 +98,6 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
 
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
-            let tx = if let Some(tx) = tx {
-                Some(EnvelopFutureItem::Remote(tx))
-            } else {
-                None
-            };
             let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
                 msg: PhantomData, fut: fut.into_response(), tx: tx};
             ctx.spawn(f);
@@ -169,15 +115,10 @@ impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
     }
 }
 
-enum EnvelopFutureItem<M> where M: ResponseType {
-    Local(Sender<Result<M::Item, M::Error>>),
-    Remote(SyncSender<Result<M::Item, M::Error>>),
-}
-
 pub(crate) struct EnvelopFuture<A, M> where A: Actor, M: ResponseType {
     msg: PhantomData<M>,
     fut: Response<A, M>,
-    tx: Option<EnvelopFutureItem<M>>,
+    tx: Option<SyncSender<Result<M::Item, M::Error>>>,
 }
 
 impl<A, M> ActorFuture for EnvelopFuture<A, M>
@@ -194,19 +135,15 @@ impl<A, M> ActorFuture for EnvelopFuture<A, M>
     {
         match self.fut.poll_response(act, ctx) {
             Ok(Async::Ready(val)) => {
-                match self.tx.take() {
-                    Some(EnvelopFutureItem::Local(tx)) => { let _ = tx.send(Ok(val)); },
-                    Some(EnvelopFutureItem::Remote(tx)) => { let _ = tx.send(Ok(val)); },
-                    _ => (),
+                if let Some(tx) = self.tx.take() {
+                    let _ = tx.send(Ok(val));
                 }
                 Ok(Async::Ready(()))
             },
             Ok(Async::NotReady) => Ok(Async::NotReady),
             Err(err) => {
-                match self.tx.take() {
-                    Some(EnvelopFutureItem::Local(tx)) => { let _ = tx.send(Err(err)); },
-                    Some(EnvelopFutureItem::Remote(tx)) => { let _ = tx.send(Err(err)); },
-                    _ => (),
+                if let Some(tx) = self.tx.take() {
+                    let _ = tx.send(Err(err));
                 }
                 Err(())
             }

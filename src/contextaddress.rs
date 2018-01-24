@@ -2,25 +2,25 @@ use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
 use address::{Address, LocalAddress};
-use context::ContextProtocol;
 use envelope::Envelope;
-use queue::{sync, unsync};
+use queue::sync;
+use local::{LocalAddrReceiver, LocalAddrProtocol};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
 
-pub(crate) struct ContextAddress<A> where A: Actor {
+pub(crate) struct ContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
-    unsync_msgs: unsync::Receiver<ContextProtocol<A>>,
+    unsync_msgs: LocalAddrReceiver<A>,
 }
 
-impl<A> Default for ContextAddress<A> where A: Actor {
+impl<A> Default for ContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
 
     #[inline]
     fn default() -> Self {
         ContextAddress {
             sync_msgs: None,
-            unsync_msgs: unsync::channel(0) }
+            unsync_msgs: LocalAddrReceiver::new(0) }
     }
 }
 
@@ -39,7 +39,7 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
     pub fn new(rx: sync::UnboundedReceiver<Envelope<A>>) -> Self {
         ContextAddress {
             sync_msgs: Some(rx),
-            unsync_msgs: unsync::channel(0) }
+            unsync_msgs: LocalAddrReceiver::new(0) }
     }
 
     #[inline]
@@ -79,10 +79,10 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
                     Ok(Async::Ready(Some(msg))) => {
                         not_ready = false;
                         match msg {
-                            ContextProtocol::Envelope(mut env) => {
-                                env.handle(act, ctx)
+                            LocalAddrProtocol::Envelope(mut env) => {
+                                env.env.handle(act, ctx)
                             }
-                            ContextProtocol::Upgrade(tx) => {
+                            LocalAddrProtocol::Upgrade(tx) => {
                                 let _ = tx.send(self.remote_address());
                             }
                         }

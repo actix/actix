@@ -1,6 +1,5 @@
 use std::{mem, fmt};
 use futures::{Future, Poll};
-use futures::unsync::oneshot::Sender;
 use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
@@ -8,17 +7,10 @@ use queue::sync;
 
 use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
-use address::{Address, LocalAddress};
+use address::Address;
+use local::LocalAddress;
 use envelope::Envelope;
 use contextimpl::ContextImpl;
-
-/// context protocol
-pub enum ContextProtocol<A: Actor> {
-    /// message envelope
-    Envelope(Envelope<A>),
-    /// Request remote address
-    Upgrade(Sender<Address<A>>),
-}
 
 pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
 

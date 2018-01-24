@@ -6,7 +6,8 @@ use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
 use actor::{Actor, AsyncContext};
-use address::{Address, LocalAddress};
+use address::Address;
+use local::LocalAddress;
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};
 use handler::Handler;

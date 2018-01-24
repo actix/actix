@@ -1,15 +1,15 @@
 use std::mem;
 use std::cell::Cell;
-use futures::AsyncSink;
-use futures::unsync::oneshot::channel;
 use futures::sync::oneshot::{channel as sync_channel, Receiver as SyncReceiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, ResponseType};
-use context::{AsyncContextApi, ContextProtocol};
+use context::AsyncContextApi;
 use envelope::{Envelope, ToEnvelope};
-use message::{Request, LocalRequest, LocalFutRequest, UpgradeAddress};
-use queue::{sync, unsync, MessageOption, Either};
+use message::Request;
+use queue::sync;
+
+pub use local::LocalAddress;
 
 
 pub enum SendError<T> {
@@ -81,122 +81,6 @@ impl<M: 'static> Clone for Box<Subscriber<M> + Send> {
         // simplify ergonomics of `+Send` subscriber, otherwise
         // it would require new trait with custom `.boxed()` method.
         unsafe { mem::transmute(self.boxed()) }
-    }
-}
-
-/// Local address of the actor
-///
-/// Actor has to run in the same thread as owner of the address.
-pub struct LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
-    tx: unsync::Sender<ContextProtocol<A>>
-}
-
-impl<A> Clone for LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
-    fn clone(&self) -> Self {
-        LocalAddress{tx: self.tx.clone()}
-    }
-}
-
-impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
-
-    pub(crate) fn new(sender: unsync::Sender<ContextProtocol<A>>) -> LocalAddress<A> {
-        LocalAddress{tx: sender}
-    }
-
-    /// Indicates if address is still connected to the actor.
-    pub fn connected(&self) -> bool {
-        self.tx.connected()
-    }
-
-    /// Send message `M` to actor `A`. Communication channel to the actor is bounded.
-    pub fn send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where A: Handler<M>, M: ResponseType + 'static
-    {
-        let res = self.tx.send(move |opt| match opt {
-            MessageOption::Message => Either::Message((msg, ())),
-            MessageOption::Envelope => Either::Envelope(
-                ContextProtocol::Envelope(Envelope::local(msg, None, false)))
-        });
-
-        match res {
-            Ok(AsyncSink::Ready) => Ok(()),
-            Ok(AsyncSink::NotReady(msg)) => Err(SendError::Closed(msg.0)),
-            Err(msg) => Err(SendError::NotReady(msg.0)),
-        }
-    }
-
-    /// Send message to actor `A` and asynchronously wait for response.
-    ///
-    /// Communication channel to the actor is bounded.
-    ///
-    /// if returned `Request` object get dropped, message cancels.
-    pub fn call<B, M>(&self, _: &B, msg: M) -> LocalRequest<A, B, M>
-        where A: Handler<M>, M: ResponseType + 'static, B: Actor, B::Context: AsyncContext<B>
-    {
-        let (tx, rx) = channel();
-        let res = self.tx.send(move |opt| match opt {
-            MessageOption::Message => Either::Message((msg, tx)),
-            MessageOption::Envelope => Either::Envelope(
-                ContextProtocol::Envelope(Envelope::local(msg, Some(tx), true)))
-        });
-
-        match res {
-            Ok(AsyncSink::Ready) => LocalRequest::new(Some(rx), None),
-            Ok(AsyncSink::NotReady(msg)) =>
-                LocalRequest::new(Some(rx), Some((self.tx.clone(), msg.1, msg.0))),
-            Err(_) => LocalRequest::new(None, None),
-        }
-    }
-
-    /// Send message to the actor `A` and asynchronously wait for response.
-    ///
-    /// Communication channel to the actor is bounded.
-    ///
-    /// if returned `Receiver` object get dropped, message cancels.
-    pub fn call_fut<M>(&self, msg: M) -> LocalFutRequest<A, M>
-        where A: Handler<M>, M: ResponseType + 'static
-    {
-        let (tx, rx) = channel();
-        let res = self.tx.send(move |opt| match opt {
-            MessageOption::Message => Either::Message((msg, tx)),
-            MessageOption::Envelope => Either::Envelope(
-                ContextProtocol::Envelope(Envelope::local(msg, Some(tx), true)))
-        });
-
-        match res {
-            Ok(AsyncSink::Ready) =>
-                LocalFutRequest::new(Some(rx), None),
-            Ok(AsyncSink::NotReady(msg)) =>
-                LocalFutRequest::new(Some(rx), Some((self.tx.clone(), msg.1, msg.0))),
-            Err(_) =>
-                LocalFutRequest::new(None, None),
-        }
-    }
-
-    /// Upgrade address to remote Address.
-    pub fn upgrade(&self) -> UpgradeAddress<A> {
-        UpgradeAddress::new(self.tx.clone())
-    }
-
-    /// Get `Subscriber` for specific message type
-    pub fn subscriber<M>(&self) -> Box<Subscriber<M>>
-        where A: Handler<M>, M: ResponseType + 'static
-    {
-        Box::new(Clone::clone(self))
-    }
-}
-
-impl<A, M> Subscriber<M> for LocalAddress<A>
-    where A: Actor + Handler<M>, A::Context: AsyncContext<A>,
-          M: ResponseType + 'static
-{
-    fn send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.send(msg)
-    }
-
-    #[doc(hidden)]
-    fn boxed(&self) -> Box<Subscriber<M>> {
-        Box::new(self.clone())
     }
 }
 
