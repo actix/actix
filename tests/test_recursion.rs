@@ -55,7 +55,7 @@ impl Handler<Count> for CounterActor {
 
         // send a message to self,
         // creating sorta async recursion
-        let my_address: Address<CounterActor> = ctx.address();
+        let my_address: LocalAddress<CounterActor> = ctx.address();
 
         my_address.send(Count(msg.0 + 1));
         Ok(TrackableItem::new())
@@ -68,7 +68,7 @@ impl Handler<Count> for CounterActor {
 #[should_panic]
 fn test_recursion() {
     let system = actix::System::new("test");
-    let addr: Address<_> = CounterActor.start();
+    let addr: LocalAddress<_> = CounterActor.start();
     addr.send(Count(0));
     system.run();
 }

@@ -55,7 +55,7 @@ fn test_active_address() {
     let stopping = Arc::new(AtomicBool::new(false));
     let stopped = Arc::new(AtomicBool::new(false));
 
-    let _addr: Address<_> = MyActor{
+    let _addr: LocalAddress<_> = MyActor{
         started: Arc::clone(&started),
         stopping: Arc::clone(&stopping),
         stopped: Arc::clone(&stopped),
@@ -113,7 +113,7 @@ fn test_stop_after_drop_address() {
     let stopping = Arc::new(AtomicBool::new(false));
     let stopped = Arc::new(AtomicBool::new(false));
 
-    let addr: Address<_> = MyActor{
+    let addr: LocalAddress<_> = MyActor{
         started: Arc::clone(&started),
         stopping: Arc::clone(&stopping),
         stopped: Arc::clone(&stopped),

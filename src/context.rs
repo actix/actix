@@ -8,7 +8,7 @@ use queue::{sync, unsync};
 
 use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
-use address::{Address, SyncAddress, Subscriber};
+use address::{LocalAddress, SyncAddress, Subscriber};
 use envelope::Envelope;
 use contextimpl::ContextImpl;
 use handler::{Handler, ResponseType};
@@ -24,7 +24,7 @@ pub enum ContextProtocol<A: Actor> {
 pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
     fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>>;
 
-    fn unsync_address(&mut self) -> Address<A>;
+    fn local_address(&mut self) -> LocalAddress<A>;
 
     fn sync_address(&mut self) -> SyncAddress<A>;
 }
@@ -84,8 +84,8 @@ impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
     }
 
     #[inline]
-    fn unsync_address(&mut self) -> Address<A> {
-        self.inner.unsync_address()
+    fn local_address(&mut self) -> LocalAddress<A> {
+        self.inner.local_address()
     }
 
     #[inline]

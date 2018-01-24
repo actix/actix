@@ -1,7 +1,7 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{Address, SyncAddress};
+use address::{LocalAddress, SyncAddress};
 use context::ContextProtocol;
 use envelope::Envelope;
 use queue::{sync, unsync};
@@ -54,8 +54,8 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
     }
 
     #[inline]
-    pub fn unsync_address(&mut self) -> Address<A> {
-        Address::new(self.unsync_msgs.sender())
+    pub fn local_address(&mut self) -> LocalAddress<A> {
+        LocalAddress::new(self.unsync_msgs.sender())
     }
 
     pub fn sync_address(&mut self) -> SyncAddress<A> {

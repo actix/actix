@@ -7,7 +7,7 @@ use fut::ActorFuture;
 use queue::{sync, unsync};
 
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
-use address::{Address, SyncAddress, Subscriber};
+use address::{LocalAddress, SyncAddress, Subscriber};
 use context::{AsyncContextApi, ContextProtocol};
 use contextitems::ActorWaitItem;
 use contextaddress::ContextAddress;
@@ -158,9 +158,9 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn unsync_address(&mut self) -> Address<A> {
+    pub fn local_address(&mut self) -> LocalAddress<A> {
         self.modify();
-        self.address.unsync_address()
+        self.address.local_address()
     }
 
     #[inline]
@@ -174,7 +174,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
         where A: Handler<M>,
               M: ResponseType + 'static {
         self.modify();
-        Box::new(self.address.unsync_address())
+        Box::new(self.address.local_address())
     }
 
     #[inline]

@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use actor::{Actor, Supervised};
 use arbiter::Arbiter;
-use address::{Address, SyncAddress};
+use address::{LocalAddress, SyncAddress};
 use context::Context;
 use supervisor::Supervisor;
 
@@ -102,14 +102,14 @@ impl Registry {
     /// Query registry for specific actor. Returns address of the actor.
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
-    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Address<A> {
+    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> LocalAddress<A> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<Address<A>>() {
+            if let Some(addr) = addr.downcast_ref::<LocalAddress<A>>() {
                 return addr.clone()
             }
         }
-        let addr: Address<_> = A::create(|ctx| {
+        let addr: LocalAddress<_> = A::create(|ctx| {
             let mut act = A::default();
             act.service_started(ctx);
             act

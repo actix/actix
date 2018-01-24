@@ -3,7 +3,7 @@ use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
-use address::{Address, SyncAddress};
+use address::{LocalAddress, SyncAddress};
 use context::{Context, ContextProtocol, AsyncContextApi};
 use envelope::Envelope;
 use msgs::Execute;
@@ -71,8 +71,8 @@ pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
 
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
-    /// Start new supervised actor.
-    pub fn start<F>(f: F) -> Address<A>
+    /// Start new supervised actor in current Arbiter.
+    pub fn start<F>(f: F) -> LocalAddress<A>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + 'static
     {
@@ -93,7 +93,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         let addr = supervisor.unsync_msgs.sender();
         Arbiter::handle().spawn(supervisor);
 
-        Address::new(addr)
+        LocalAddress::new(addr)
     }
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument

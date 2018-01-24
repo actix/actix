@@ -17,30 +17,27 @@ pub trait ActorAddress<A, T> where A: Actor {
     fn get(ctx: &mut A::Context) -> T;
 }
 
-impl<A> ActorAddress<A, Address<A>> for A
-    where A: Actor,
-          A::Context: AsyncContext<A> + AsyncContextApi<A>
+impl<A> ActorAddress<A, LocalAddress<A>> for A
+    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
-    fn get(ctx: &mut A::Context) -> Address<A> {
-        ctx.unsync_address()
+    fn get(ctx: &mut A::Context) -> LocalAddress<A> {
+        ctx.local_address()
     }
 }
 
 impl<A> ActorAddress<A, SyncAddress<A>> for A
-    where A: Actor,
-          A::Context: AsyncContext<A> + AsyncContextApi<A>
+    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
     fn get(ctx: &mut A::Context) -> SyncAddress<A> {
         ctx.sync_address()
     }
 }
 
-impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
-    where A: Actor,
-          A::Context: AsyncContext<A> + AsyncContextApi<A>
+impl<A> ActorAddress<A, (LocalAddress<A>, SyncAddress<A>)> for A
+    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
-    fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>) {
-        (ctx.unsync_address(), ctx.sync_address())
+    fn get(ctx: &mut A::Context) -> (LocalAddress<A>, SyncAddress<A>) {
+        (ctx.local_address(), ctx.sync_address())
     }
 }
 
@@ -81,23 +78,23 @@ impl<M: 'static> Clone for Box<Subscriber<M> + Send> {
     }
 }
 
-/// Address of the actor
+/// Local address of the actor
 ///
 /// Actor has to run in the same thread as owner of the address.
-pub struct Address<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     tx: unsync::UnboundedSender<ContextProtocol<A>>
 }
 
-impl<A> Clone for Address<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Clone for LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     fn clone(&self) -> Self {
-        Address{tx: self.tx.clone() }
+        LocalAddress{tx: self.tx.clone()}
     }
 }
 
-impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
 
-    pub(crate) fn new(sender: unsync::UnboundedSender<ContextProtocol<A>>) -> Address<A> {
-        Address{tx: sender}
+    pub(crate) fn new(sender: unsync::UnboundedSender<ContextProtocol<A>>) -> LocalAddress<A> {
+        LocalAddress{tx: sender}
     }
 
     /// Indicates if address is still connected to the actor.
@@ -132,8 +129,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     ///
     /// if returned `Receiver` object get dropped, message cancels.
     pub fn call_fut<M>(&self, msg: M) -> Receiver<Result<M::Item, M::Error>>
-        where A: Handler<M>,
-              M: ResponseType + 'static
+        where A: Handler<M>, M: ResponseType + 'static
     {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(
@@ -152,16 +148,14 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
 
     /// Get `Subscriber` for specific message type
     pub fn subscriber<M>(&self) -> Box<Subscriber<M>>
-        where A: Handler<M>,
-              M: ResponseType + 'static
+        where A: Handler<M>, M: ResponseType + 'static
     {
         Box::new(Clone::clone(self))
     }
 }
 
-impl<A, M> Subscriber<M> for Address<A>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
+impl<A, M> Subscriber<M> for LocalAddress<A>
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>,
           M: ResponseType + 'static
 {
     fn send(&self, msg: M) -> Result<(), M> {

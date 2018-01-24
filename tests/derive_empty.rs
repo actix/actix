@@ -1,7 +1,7 @@
 extern crate futures;
 #[macro_use] extern crate actix;
 
-use actix::{msgs, Actor, Address, Arbiter, Context, Handler, System};
+use actix::{msgs, Actor, LocalAddress, Arbiter, Context, Handler, System};
 use futures::{future, Future};
 
 #[derive(Message)]
@@ -23,7 +23,7 @@ impl Handler<Empty> for EmptyActor {
 #[cfg_attr(feature="cargo-clippy", allow(unit_cmp))]
 fn response_derive_empty() {
     let system = System::new("test");
-    let addr: Address<_> = EmptyActor.start();
+    let addr: LocalAddress<_> = EmptyActor.start();
     let res = addr.call_fut(Empty);
     
     system.handle().spawn(res.then(|res| {
