@@ -11,7 +11,6 @@ use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
 use actor::{Actor, FramedActor, ActorState, ActorContext, AsyncContext};
-use context::AsyncContextApi;
 use utils::Drain;
 
 bitflags! {
@@ -148,7 +147,7 @@ impl<Io, Codec> FramedCell<Io, Codec>
 }
 
 impl<A, Io, Codec> ActorFuture for FramedWrapper<A, Io, Codec>
-    where A: Actor + FramedActor<Io, Codec>, A::Context: AsyncContext<A> + AsyncContextApi<A>,
+    where A: Actor + FramedActor<Io, Codec>, A::Context: AsyncContext<A>,
           Io: AsyncRead + AsyncWrite + 'static,
           Codec: Encoder + Decoder + 'static,
 {

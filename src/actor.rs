@@ -9,7 +9,7 @@ use arbiter::Arbiter;
 use address::ActorAddress;
 use envelope::ToEnvelope;
 use handler::{Handler, ResponseType};
-use context::{Context, AsyncContextApi};
+use context::Context;
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorStreamItem, ActorMessageStreamItem};
 use framed::{FramedCell, FramedWrapper};
@@ -27,7 +27,7 @@ use utils::TimerFunc;
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
 /// non thread safe [`LocalAddress<A>`](struct.LocalAddress.html) or thread safe address
-/// [`SyncAddress<A>`](struct.SyncAddress.html)
+/// [`Address<A>`](struct.Address.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
@@ -192,7 +192,7 @@ pub trait FramedActor<Io, Codec>: Actor
     /// wrapper for write part of the framed object.
     fn add_framed(&self, framed: Framed<Io, Codec>, ctx: &mut Self::Context)
                   -> FramedCell<Io, Codec>
-        where Self::Context: AsyncContext<Self> + AsyncContextApi<Self>
+        where Self::Context: AsyncContext<Self>
     {
         let (wrp, cell) = FramedWrapper::new(framed);
         ctx.spawn(wrp);

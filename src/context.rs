@@ -4,29 +4,27 @@ use futures::unsync::oneshot::Sender;
 use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
-use queue::{sync, unsync};
+use queue::sync;
 
 use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
-use address::{LocalAddress, SyncAddress, Subscriber};
+use address::{Address, LocalAddress};
 use envelope::Envelope;
 use contextimpl::ContextImpl;
-use handler::{Handler, ResponseType};
 
 /// context protocol
 pub enum ContextProtocol<A: Actor> {
     /// message envelope
     Envelope(Envelope<A>),
-    /// Request sync address
-    Upgrade(Sender<SyncAddress<A>>),
+    /// Request remote address
+    Upgrade(Sender<Address<A>>),
 }
 
 pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
-    fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>>;
+
+    fn remote_address(&mut self) -> Address<A>;
 
     fn local_address(&mut self) -> LocalAddress<A>;
-
-    fn sync_address(&mut self) -> SyncAddress<A>;
 }
 
 /// Actor execution context
@@ -79,36 +77,13 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
 impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
 
     #[inline]
-    fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
-        self.inner.unsync_sender()
-    }
-
-    #[inline]
     fn local_address(&mut self) -> LocalAddress<A> {
         self.inner.local_address()
     }
 
     #[inline]
-    fn sync_address(&mut self) -> SyncAddress<A> {
-        self.inner.sync_address()
-    }
-}
-
-#[doc(hidden)]
-impl<A> Context<A> where A: Actor<Context=Self> {
-
-    #[inline]
-    pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>, M: ResponseType + 'static
-    {
-        self.inner.subscriber()
-    }
-
-    #[inline]
-    pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
-        where A: Handler<M>,
-              M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send {
-        self.inner.sync_subscriber()
+    fn remote_address(&mut self) -> Address<A> {
+        self.inner.remote_address()
     }
 }
 

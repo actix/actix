@@ -71,7 +71,7 @@ pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
 pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
-pub use address::{LocalAddress, SyncAddress, Subscriber, ActorAddress};
+pub use address::{Address, LocalAddress, Subscriber, ActorAddress};
 pub use context::Context;
 pub use envelope::ToEnvelope;
 pub use framed::FramedCell;
@@ -101,7 +101,7 @@ pub mod prelude {
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorContext, AsyncContext, FramedActor, Supervised};
     pub use arbiter::Arbiter;
-    pub use address::{LocalAddress, SyncAddress};
+    pub use address::{Address, LocalAddress};
     pub use context::{Context, ContextFutureSpawner};
     pub use framed::FramedCell;
     pub use message::Response;
@@ -117,7 +117,7 @@ pub mod prelude {
                         ActorContext, AsyncContext, SpawnHandle};
         pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
         pub use arbiter::Arbiter;
-        pub use address::{LocalAddress, SyncAddress, Subscriber, ActorAddress};
+        pub use address::{Address, LocalAddress, Subscriber, ActorAddress};
         pub use context::Context;
         pub use message::{Request, Response};
         pub use system::System;

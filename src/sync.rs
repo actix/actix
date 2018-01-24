@@ -82,7 +82,7 @@ use tokio_core::reactor::Core;
 
 use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
-use address::SyncAddress;
+use address::Address;
 use context::Context;
 use handler::{Handler, ResponseType, IntoResponse};
 use envelope::{Envelope, EnvelopeProxy, ToEnvelope};
@@ -100,7 +100,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of started actor.
-    pub fn start<F>(threads: usize, factory: F) -> SyncAddress<A>
+    pub fn start<F>(threads: usize, factory: F) -> Address<A>
         where F: Sync + Send + Fn() -> A + 'static
     {
         let factory = Arc::new(factory);
@@ -119,7 +119,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
         Arbiter::handle().spawn(
             SyncArbiter{queue: queue, msgs: rx, threads: threads});
 
-        SyncAddress::new(tx)
+        Address::new(tx)
     }
 }
 

@@ -26,7 +26,7 @@ impl actix::Handler<Ping> for MyActor {
     }
 }
 
-struct MyActor2(Option<LocalAddress<MyActor>>, Option<SyncAddress<MyActor>>);
+struct MyActor2(Option<LocalAddress<MyActor>>, Option<Address<MyActor>>);
 
 impl Actor for MyActor2 {
     type Context = actix::Context<Self>;
@@ -89,7 +89,7 @@ fn test_sync_address() {
     let count = Arc::new(AtomicUsize::new(0));
     let arbiter = Arbiter::new("sync-test");
 
-    let addr: SyncAddress<_> = MyActor(Arc::clone(&count)).start();
+    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     let addr3 = addr.clone();
     addr.send(Ping(1));

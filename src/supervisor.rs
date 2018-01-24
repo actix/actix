@@ -3,8 +3,8 @@ use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
-use address::{LocalAddress, SyncAddress};
-use context::{Context, ContextProtocol, AsyncContextApi};
+use address::{Address, LocalAddress};
+use context::{Context, ContextProtocol};
 use envelope::Envelope;
 use msgs::Execute;
 use queue::{sync, unsync};
@@ -64,7 +64,7 @@ use queue::{sync, unsync};
 pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
     ctx: A::Context,
     #[allow(dead_code)]
-    addr: unsync::UnboundedSender<ContextProtocol<A>>,
+    addr: LocalAddress<A>,
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
     unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
 }
@@ -78,7 +78,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     {
         // create actor
         let mut ctx = Context::new(None);
-        let addr = ctx.unsync_sender();
+        let addr = ctx.address();
         let act = f(&mut ctx);
         ctx.set_actor(act);
 
@@ -98,7 +98,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
     /// actor could be started immediately or on first incoming message.
-    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, f: F) -> SyncAddress<A>
+    pub fn start_in<F>(addr: &Address<Arbiter>, f: F) -> Address<A>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
@@ -107,7 +107,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         addr.send(Execute::new(move || -> Result<(), ()> {
             // create actor
             let mut ctx = Context::new(None);
-            let addr = ctx.unsync_sender();
+            let addr = ctx.address();
             let act = f(&mut ctx);
             ctx.set_actor(act);
 
@@ -121,7 +121,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             Ok(())
         }));
 
-        SyncAddress::new(tx)
+        Address::new(tx)
     }
 
     #[inline]
@@ -130,14 +130,14 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
     }
 
-    fn sync_address(&mut self) -> SyncAddress<A> {
+    fn remote_address(&mut self) -> Address<A> {
         if self.sync_msgs.is_none() {
             let (tx, rx) = sync::unbounded();
             self.sync_msgs = Some(rx);
-            SyncAddress::new(tx)
+            Address::new(tx)
         } else {
             if let Some(ref mut addr) = self.sync_msgs {
-                return SyncAddress::new(addr.sender())
+                return Address::new(addr.sender())
             }
             unreachable!();
         }
@@ -148,7 +148,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         let ctx = mem::replace(&mut self.ctx, ctx);
         self.ctx.set_actor(ctx.into_inner());
         self.ctx.restarting();
-        self.addr = self.ctx.unsync_sender();
+        self.addr = self.ctx.address();
     }
 }
 
@@ -199,7 +199,7 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
                         not_ready = false;
                         match msg {
                             ContextProtocol::Upgrade(tx) => {
-                                let _ = tx.send(self.sync_address());
+                                let _ = tx.send(self.remote_address());
                             }
                             ContextProtocol::Envelope(mut env) => {
                                 env.handle(act, ctx);

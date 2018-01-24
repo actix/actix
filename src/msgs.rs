@@ -1,7 +1,7 @@
 //! Actix system messages
 
 use actor::Actor;
-use address::SyncAddress;
+use address::Address;
 use context::Context;
 use handler::ResponseType;
 
@@ -25,7 +25,7 @@ impl ResponseType for StopArbiter {
 pub struct StartActor<A: Actor>(Box<FnBox<A>>);
 
 impl<A: Actor> ResponseType for StartActor<A> {
-    type Item = SyncAddress<A>;
+    type Item = Address<A>;
     type Error = ();
 }
 
@@ -37,18 +37,18 @@ impl<A: Actor<Context=Context<A>>> StartActor<A>
         StartActor(Box::new(|| A::create(f)))
     }
 
-    pub(crate) fn call(self) -> SyncAddress<A> {
+    pub(crate) fn call(self) -> Address<A> {
         self.0.call_box()
     }
 }
 
 trait FnBox<A: Actor>: Send + 'static {
-    fn call_box(self: Box<Self>) -> SyncAddress<A>;
+    fn call_box(self: Box<Self>) -> Address<A>;
 }
 
-impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
+impl<A: Actor, F: FnOnce() -> Address<A> + Send + 'static> FnBox<A> for F {
     #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
-    fn call_box(self: Box<Self>) -> SyncAddress<A> {
+    fn call_box(self: Box<Self>) -> Address<A> {
         (*self)()
     }
 }
@@ -63,7 +63,7 @@ impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
 /// # extern crate actix;
 /// use actix::prelude::*;
 ///
-/// struct MyActor{addr: SyncAddress<Arbiter>}
+/// struct MyActor{addr: Address<Arbiter>}
 ///
 /// impl Actor for MyActor {
 ///    type Context = Context<Self>;

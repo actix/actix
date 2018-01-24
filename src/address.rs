@@ -25,19 +25,19 @@ impl<A> ActorAddress<A, LocalAddress<A>> for A
     }
 }
 
-impl<A> ActorAddress<A, SyncAddress<A>> for A
+impl<A> ActorAddress<A, Address<A>> for A
     where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
-    fn get(ctx: &mut A::Context) -> SyncAddress<A> {
-        ctx.sync_address()
+    fn get(ctx: &mut A::Context) -> Address<A> {
+        ctx.remote_address()
     }
 }
 
-impl<A> ActorAddress<A, (LocalAddress<A>, SyncAddress<A>)> for A
+impl<A> ActorAddress<A, (LocalAddress<A>, Address<A>)> for A
     where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
-    fn get(ctx: &mut A::Context) -> (LocalAddress<A>, SyncAddress<A>) {
-        (ctx.local_address(), ctx.sync_address())
+    fn get(ctx: &mut A::Context) -> (LocalAddress<A>, Address<A>) {
+        (ctx.local_address(), ctx.remote_address())
     }
 }
 
@@ -50,7 +50,7 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
 /// Subscriber trait describes ability of actor to receive one specific message
 ///
 /// You can get subscriber with `Address::subscriber()` or
-/// `SyncAddress::subscriber()` methods. Both methods returns boxed trait object.
+/// `Address::subscriber()` methods. Both methods returns boxed trait object.
 ///
 /// It is possible to use `Clone::clone()` method to get cloned subscriber.
 pub trait Subscriber<M: 'static> {
@@ -138,8 +138,8 @@ impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
         rx
     }
 
-    /// Upgrade address to SyncAddress.
-    pub fn upgrade(&self) -> Receiver<SyncAddress<A>> {
+    /// Upgrade address to remote Address.
+    pub fn upgrade(&self) -> Receiver<Address<A>> {
         let (tx, rx) = channel();
         let _ = self.tx.unbounded_send(ContextProtocol::Upgrade(tx));
 
@@ -174,24 +174,24 @@ impl<A, M> Subscriber<M> for LocalAddress<A>
 }
 
 /// `Send` address of the actor. Actor can run in different thread
-pub struct SyncAddress<A> where A: Actor {
+pub struct Address<A> where A: Actor {
     tx: sync::UnboundedSender<Envelope<A>>,
     closed: Cell<bool>,
 }
 
-unsafe impl<A> Send for SyncAddress<A> where A: Actor {}
-unsafe impl<A> Sync for SyncAddress<A> where A: Actor {}
+unsafe impl<A> Send for Address<A> where A: Actor {}
+unsafe impl<A> Sync for Address<A> where A: Actor {}
 
-impl<A> Clone for SyncAddress<A> where A: Actor {
+impl<A> Clone for Address<A> where A: Actor {
     fn clone(&self) -> Self {
-        SyncAddress{tx: self.tx.clone(), closed: self.closed.clone()}
+        Address{tx: self.tx.clone(), closed: self.closed.clone()}
     }
 }
 
-impl<A> SyncAddress<A> where A: Actor {
+impl<A> Address<A> where A: Actor {
 
-    pub(crate) fn new(sender: sync::UnboundedSender<Envelope<A>>) -> SyncAddress<A> {
-        SyncAddress{tx: sender, closed: Cell::new(false)}
+    pub(crate) fn new(sender: sync::UnboundedSender<Envelope<A>>) -> Address<A> {
+        Address{tx: sender, closed: Cell::new(false)}
     }
 
     /// Indicates if address is still connected to the actor.
@@ -261,7 +261,7 @@ impl<A> SyncAddress<A> where A: Actor {
     }
 }
 
-impl<A, M> Subscriber<M> for SyncAddress<A>
+impl<A, M> Subscriber<M> for Address<A>
     where A: Actor + Handler<M>,
           <A as Actor>::Context: ToEnvelope<A>,
           M: ResponseType + Send + 'static,

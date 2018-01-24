@@ -1,7 +1,7 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{LocalAddress, SyncAddress};
+use address::{Address, LocalAddress};
 use context::ContextProtocol;
 use envelope::Envelope;
 use queue::{sync, unsync};
@@ -48,27 +48,22 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
             self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
     }
 
-    #[inline]
-    pub fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
-        self.unsync_msgs.sender()
+    pub fn remote_address(&mut self) -> Address<A> {
+        if self.sync_msgs.is_none() {
+            let (tx, rx) = sync::unbounded();
+            self.sync_msgs = Some(rx);
+            Address::new(tx)
+        } else {
+            if let Some(ref mut addr) = self.sync_msgs {
+                return Address::new(addr.sender())
+            }
+            unreachable!();
+        }
     }
 
     #[inline]
     pub fn local_address(&mut self) -> LocalAddress<A> {
         LocalAddress::new(self.unsync_msgs.sender())
-    }
-
-    pub fn sync_address(&mut self) -> SyncAddress<A> {
-        if self.sync_msgs.is_none() {
-            let (tx, rx) = sync::unbounded();
-            self.sync_msgs = Some(rx);
-            SyncAddress::new(tx)
-        } else {
-            if let Some(ref mut addr) = self.sync_msgs {
-                return SyncAddress::new(addr.sender())
-            }
-            unreachable!();
-        }
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
@@ -88,7 +83,7 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
                                 env.handle(act, ctx)
                             }
                             ContextProtocol::Upgrade(tx) => {
-                                let _ = tx.send(self.sync_address());
+                                let _ = tx.send(self.remote_address());
                             }
                         }
                     }

@@ -4,11 +4,11 @@ use futures::{Async, Poll};
 use smallvec::SmallVec;
 
 use fut::ActorFuture;
-use queue::{sync, unsync};
+use queue::sync;
 
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
-use address::{LocalAddress, SyncAddress, Subscriber};
-use context::{AsyncContextApi, ContextProtocol};
+use address::{Address, LocalAddress, Subscriber};
+use context::AsyncContextApi;
 use contextitems::ActorWaitItem;
 use contextaddress::ContextAddress;
 use handler::{Handler, ResponseType};
@@ -152,21 +152,15 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn unsync_sender(&mut self) -> unsync::UnboundedSender<ContextProtocol<A>> {
-        self.modify();
-        self.address.unsync_sender()
-    }
-
-    #[inline]
     pub fn local_address(&mut self) -> LocalAddress<A> {
         self.modify();
         self.address.local_address()
     }
 
     #[inline]
-    pub fn sync_address(&mut self) -> SyncAddress<A> {
+    pub fn remote_address(&mut self) -> Address<A> {
         self.modify();
-        self.address.sync_address()
+        self.address.remote_address()
     }
 
     #[inline]
@@ -178,11 +172,11 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn sync_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
+    pub fn remote_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>,
               M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send {
         self.modify();
-        Box::new(self.address.sync_address())
+        Box::new(self.address.remote_address())
     }
 
     #[inline]

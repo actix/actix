@@ -1,8 +1,8 @@
 use actor::Actor;
+use address::Address;
 use fut::ActorFuture;
 use message::Response;
 use context::Context;
-use address::SyncAddress;
 
 /// Message response type
 pub trait ResponseType {
@@ -49,8 +49,8 @@ impl<A, M> IntoResponse<A, M> for Result<M::Item, M::Error>
     }
 }
 
-impl<A, M, B> IntoResponse<A, M> for SyncAddress<B>
-    where A: Actor + Handler<M>, M: ResponseType<Item=SyncAddress<B>, Error=()>,
+impl<A, M, B> IntoResponse<A, M> for Address<B>
+    where A: Actor + Handler<M>, M: ResponseType<Item=Address<B>, Error=()>,
           B: Actor<Context=Context<B>>
 {
     fn into_response(self) -> Response<A, M> {

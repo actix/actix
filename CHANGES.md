@@ -6,7 +6,7 @@
 
 * Make rules of actor stopping more strict
 
-* Rename Address to a LocalAddress, SyncAddress to a Address
+* Rename Address to LocalAddress, SyncAddress to Address
 
 
 ## 0.4.5 (2018-01-23)

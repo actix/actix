@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use actor::{Actor, Supervised};
 use arbiter::Arbiter;
-use address::{LocalAddress, SyncAddress};
+use address::{Address, LocalAddress};
 use context::Context;
 use supervisor::Supervisor;
 
@@ -138,10 +138,10 @@ impl SystemRegistry {
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
-    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> SyncAddress<A> {
+    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> Address<A> {
         if let Ok(hm) = self.registry.lock() {
             if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
-                match addr.downcast_ref::<SyncAddress<A>>() {
+                match addr.downcast_ref::<Address<A>>() {
                     Some(addr) => {
                         return addr.clone()
                     },
