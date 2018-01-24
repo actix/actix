@@ -11,7 +11,7 @@ const MAX_SYNC_POLLS: u32 = 256;
 
 pub(crate) struct ContextAddress<A> where A: Actor {
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
-    unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
+    unsync_msgs: unsync::Receiver<ContextProtocol<A>>,
 }
 
 impl<A> Default for ContextAddress<A> where A: Actor {
@@ -20,7 +20,7 @@ impl<A> Default for ContextAddress<A> where A: Actor {
     fn default() -> Self {
         ContextAddress {
             sync_msgs: None,
-            unsync_msgs: unsync::unbounded() }
+            unsync_msgs: unsync::channel(0) }
     }
 }
 
@@ -39,7 +39,7 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
     pub fn new(rx: sync::UnboundedReceiver<Envelope<A>>) -> Self {
         ContextAddress {
             sync_msgs: Some(rx),
-            unsync_msgs: unsync::unbounded() }
+            unsync_msgs: unsync::channel(0) }
     }
 
     #[inline]

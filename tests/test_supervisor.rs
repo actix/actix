@@ -53,8 +53,7 @@ fn test_supervisor_restart() {
     let restarts2 = Arc::clone(&restarts);
 
     let addr = actix::Supervisor::start(move |_| MyActor(starts2, restarts2));
-
-    addr.send(Die);
+    let _ = addr.send(Die);
 
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100_000), Arbiter::handle()).unwrap()

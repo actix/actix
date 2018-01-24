@@ -1,60 +1,223 @@
 use std::marker::PhantomData;
 
-use futures::{Async, Future, Poll};
+use futures::{Async, AsyncSink, Future, Poll};
 use futures::sync::oneshot::{Receiver as SyncReceiver};
-use futures::unsync::oneshot::{Canceled, Receiver};
+use futures::unsync::oneshot::{channel, Canceled, Sender, Receiver};
 
-use actor::Actor;
+use address::Address;
+use envelope::Envelope;
+use queue::{unsync, MessageOption, Either};
+use actor::{Actor, AsyncContext};
 use fut::ActorFuture;
 use handler::{Handler, ResponseType};
-
-enum RequestIo<M: ResponseType> {
-    Local(Receiver<Result<M::Item, M::Error>>),
-    Remote(SyncReceiver<Result<M::Item, M::Error>>),
-}
+use context::ContextProtocol;
 
 /// `Request` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct Request<A, M> where A: Actor, M: ResponseType {
-    rx: RequestIo<M>,
-    act: PhantomData<A>,
+pub struct LocalRequest<A, B, M>
+    where A: Actor + Handler<M>, M: ResponseType + 'static,
+          B: Actor, B::Context: AsyncContext<B>
+{
+    rx: Option<Receiver<Result<M::Item, M::Error>>>,
+    info: Option<(unsync::Sender<ContextProtocol<A>>, Sender<Result<M::Item, M::Error>>, M)>,
+    act: PhantomData<B>,
 }
 
-impl<A, M> Request<A, M> where A: Actor, M: ResponseType {
-
-    pub(crate) fn local(rx: Receiver<Result<M::Item, M::Error>>) -> Request<A, M> {
-        Request{rx: RequestIo::Local(rx), act: PhantomData}
-    }
-
-    pub(crate) fn remote(rx: SyncReceiver<Result<M::Item, M::Error>>) -> Request<A, M> {
-        Request{rx: RequestIo::Remote(rx), act: PhantomData}
+impl<A, B, M> LocalRequest<A, B, M>
+    where A: Actor + Handler<M>, M: ResponseType + 'static,
+          B: Actor, B::Context: AsyncContext<B>
+{
+    pub(crate) fn new(rx: Option<Receiver<Result<M::Item, M::Error>>>,
+                      info: Option<(unsync::Sender<ContextProtocol<A>>,
+                                    Sender<Result<M::Item, M::Error>>, M)>) -> LocalRequest<A, B, M>
+    {
+        LocalRequest{rx: rx, info: info, act: PhantomData}
     }
 }
 
-impl<A, M> Future for Request<A, M> where A: Actor, M: ResponseType {
+impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
+          B: Actor, B::Context: AsyncContext<B>,
+{
+    type Item = Result<M::Item, M::Error>;
+    type Error = Canceled;
+    type Actor = B;
+
+    fn poll(&mut self, _: &mut B, _: &mut B::Context) -> Poll<Self::Item, Self::Error> {
+        // send message
+        if let Some((sender, tx, msg)) = self.info.take() {
+            let res = sender.send(move |opt| {
+                match opt {
+                    MessageOption::Message => Either::Message((msg, tx)),
+                    MessageOption::Envelope => Either::Envelope(
+                        ContextProtocol::Envelope(Envelope::local(msg, Some(tx), true)))
+                }
+            });
+
+            match res {
+                Ok(AsyncSink::Ready) => (),
+                Ok(AsyncSink::NotReady(msg)) => {
+                    self.info = Some((sender, msg.1, msg.0));
+                    return Ok(Async::NotReady)
+                }
+                Err(_) => return Err(Canceled),
+            }
+        }
+
+        if let Some(ref mut rx) = self.rx {
+            rx.poll()
+        } else {
+            Err(Canceled)
+        }
+    }
+}
+
+/// `LocalFutRequest` is a `Future` which represents asynchronous message sending process.
+#[must_use = "future do nothing unless polled"]
+pub struct LocalFutRequest<A, M>
+    where A: Actor + Handler<M>, M: ResponseType + 'static,
+{
+    rx: Option<Receiver<Result<M::Item, M::Error>>>,
+    info: Option<(unsync::Sender<ContextProtocol<A>>, Sender<Result<M::Item, M::Error>>, M)>,
+}
+
+impl<A, M> LocalFutRequest<A, M>
+    where A: Actor + Handler<M>, M: ResponseType + 'static,
+{
+    pub(crate) fn new(rx: Option<Receiver<Result<M::Item, M::Error>>>,
+                      info: Option<(unsync::Sender<ContextProtocol<A>>,
+                                    Sender<Result<M::Item, M::Error>>, M)>)
+                      -> LocalFutRequest<A, M>
+    {
+        LocalFutRequest{rx: rx, info: info}
+    }
+}
+
+impl<A, M> Future for LocalFutRequest<A, M>
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
+{
     type Item = Result<M::Item, M::Error>;
     type Error = Canceled;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        match self.rx {
-            RequestIo::Local(ref mut rx) => rx.poll(),
-            RequestIo::Remote(ref mut rx) => rx.poll(),
+        // send message
+        if let Some((sender, tx, msg)) = self.info.take() {
+            let res = sender.send(move |opt| {
+                match opt {
+                    MessageOption::Message => Either::Message((msg, tx)),
+                    MessageOption::Envelope => Either::Envelope(
+                        ContextProtocol::Envelope(Envelope::local(msg, Some(tx), true)))
+                }
+            });
+
+            match res {
+                Ok(AsyncSink::Ready) => (),
+                Ok(AsyncSink::NotReady(msg)) => {
+                    self.info = Some((sender, msg.1, msg.0));
+                    return Ok(Async::NotReady)
+                }
+                Err(_) => return Err(Canceled),
+            }
+        }
+
+        if let Some(ref mut rx) = self.rx {
+            rx.poll()
+        } else {
+            Err(Canceled)
         }
     }
 }
 
-impl<A, M> ActorFuture for Request<A, M> where A: Actor, M: ResponseType {
+/// `Request` is a `Future` which represents asynchronous message sending process.
+#[must_use = "future do nothing unless polled"]
+pub struct UpgradeAddress<A> where A: Actor {
+    tx: Option<Sender<Address<A>>>,
+    rx: Option<Receiver<Address<A>>>,
+    proto: unsync::Sender<ContextProtocol<A>>,
+}
+
+impl<A> UpgradeAddress<A> where A: Actor
+{
+    pub(crate) fn new(proto: unsync::Sender<ContextProtocol<A>>) -> UpgradeAddress<A> {
+        let (tx, rx) = channel();
+        let res = proto.send(move |opt| match opt {
+            MessageOption::Message => Either::Message(tx),
+            MessageOption::Envelope => Either::Envelope(ContextProtocol::Upgrade(tx))
+        });
+
+        match res {
+            Ok(AsyncSink::Ready) =>
+                UpgradeAddress{tx: None, rx: Some(rx), proto: proto},
+            Ok(AsyncSink::NotReady(tx)) =>
+                UpgradeAddress{tx: Some(tx), rx: Some(rx), proto: proto},
+            Err(_) =>
+                UpgradeAddress{tx: None, rx: None, proto: proto},
+        }
+    }
+}
+
+impl<A> Future for UpgradeAddress<A>
+    where A: Actor, A::Context: AsyncContext<A>
+{
+    type Item = Address<A>;
+    type Error = Canceled;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        // send message
+        if let Some(tx) = self.tx.take() {
+            let res = self.proto.send(move |opt| match opt {
+                MessageOption::Message => Either::Message(tx),
+                MessageOption::Envelope => Either::Envelope(ContextProtocol::Upgrade(tx))
+            });
+
+            match res {
+                Ok(AsyncSink::Ready) => (),
+                Ok(AsyncSink::NotReady(msg)) => {
+                    self.tx = Some(msg);
+                    return Ok(Async::NotReady)
+                }
+                Err(_) => return Err(Canceled),
+            }
+        }
+
+        if let Some(ref mut rx) = self.rx {
+            rx.poll()
+        } else {
+            Err(Canceled)
+        }
+    }
+}
+
+/// `Request` is a `Future` which represents asynchronous message sending process.
+#[must_use = "future do nothing unless polled"]
+pub struct Request<A, B, M>
+    where A: Actor + Handler<M>, M: ResponseType,
+          B: Actor, B::Context: AsyncContext<B>
+{
+    rx: SyncReceiver<Result<M::Item, M::Error>>,
+    act_a: PhantomData<A>,
+    act_b: PhantomData<B>,
+}
+
+impl<A, B, M> Request<A, B, M>
+    where A: Actor + Handler<M>, M: ResponseType,
+          B: Actor, B::Context: AsyncContext<B>
+{
+    pub(crate) fn new(rx: SyncReceiver<Result<M::Item, M::Error>>) -> Request<A, B, M> {
+        Request{rx: rx, act_a: PhantomData, act_b: PhantomData}
+    }
+}
+
+impl<A, B, M> ActorFuture for Request<A, B, M>
+    where A: Actor + Handler<M>, M: ResponseType,
+          B: Actor, B::Context: AsyncContext<B>,
+{
     type Item = Result<M::Item, M::Error>;
     type Error = Canceled;
-    type Actor = A;
+    type Actor = B;
 
-    fn poll(&mut self,
-            _: &mut A,
-            _: &mut <Self::Actor as Actor>::Context) -> Poll<Self::Item, Self::Error> {
-        match self.rx {
-            RequestIo::Local(ref mut rx) => rx.poll(),
-            RequestIo::Remote(ref mut rx) => rx.poll(),
-        }
+    fn poll(&mut self, _: &mut B, _: &mut B::Context) -> Poll<Self::Item, Self::Error> {
+        self.rx.poll()
     }
 }
 

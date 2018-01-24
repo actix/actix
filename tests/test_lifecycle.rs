@@ -14,7 +14,7 @@ use actix::prelude::*;
 use actix::msgs::SystemExit;
 
 
-struct MyActor{
+struct MyActor {
     started: Arc<AtomicBool>,
     stopping: Arc<AtomicBool>,
     stopped: Arc<AtomicBool>,

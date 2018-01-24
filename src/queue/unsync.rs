@@ -5,18 +5,16 @@
 //!
 //! These queues are the same as those in `futures::sync`, except they're not
 //! intended to be sent across threads.
-#![allow(dead_code)]
 
-use std::any::Any;
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::error::Error;
-use std::fmt;
 use std::mem;
 use std::rc::{Rc, Weak};
 
 use futures::task::{self, Task};
-use futures::{Async, AsyncSink, Poll, StartSend, Sink, Stream};
+use futures::{Async, AsyncSink, Poll, StartSend, Stream};
+
+use queue::{Either, MessageOption};
 
 /// Creates a bounded in-memory channel with buffered storage.
 ///
@@ -25,7 +23,11 @@ use futures::{Async, AsyncSink, Poll, StartSend, Sink, Stream};
 /// with backpressure. The channel capacity is exactly `buffer`. On average,
 /// sending a message through this channel performs no dynamic allocation.
 pub fn channel<T>(buffer: usize) -> Receiver<T> {
-    channel_(Some(buffer))
+    if buffer == 0 {
+        channel_(None)
+    } else {
+        channel_(Some(buffer))
+    }
 }
 
 fn channel_<T>(buffer: Option<usize>) -> Receiver<T> {
@@ -34,7 +36,6 @@ fn channel_<T>(buffer: Option<usize>) -> Receiver<T> {
         capacity: buffer,
         blocked_senders: VecDeque::new(),
         blocked_recv: None,
-        sender_count: 0,
     }));
     Receiver { state: State::Open(shared) }
 }
@@ -45,8 +46,6 @@ struct Shared<T> {
     capacity: Option<usize>,
     blocked_senders: VecDeque<Task>,
     blocked_recv: Option<Task>,
-    // TODO: Redundant to Rc::weak_count; use that if/when stabilized
-    sender_count: usize,
 }
 
 /// The transmission end of a channel.
@@ -65,20 +64,22 @@ impl<T> Sender<T> {
         }
     }
 
-    fn do_send(&self, msg: T) -> StartSend<T, SendError<T>> {
+    pub fn send<F, M>(&self, f: F) -> StartSend<M, M>
+        where F: FnOnce(MessageOption) -> Either<T, M>
+    {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
-            None => return Err(SendError(msg)),
+            None => return Err(f(MessageOption::Message).unwrap_message()),
         };
         let mut shared = shared.borrow_mut();
 
         match shared.capacity {
             Some(capacity) if shared.buffer.len() == capacity => {
                 shared.blocked_senders.push_back(task::current());
-                Ok(AsyncSink::NotReady(msg))
+                Ok(AsyncSink::NotReady(f(MessageOption::Message).unwrap_message()))
             }
             _ => {
-                shared.buffer.push_back(msg);
+                shared.buffer.push_back(f(MessageOption::Envelope).unwrap_envelope());
                 if let Some(task) = shared.blocked_recv.take() {
                     drop(shared);
                     task.notify();
@@ -91,28 +92,7 @@ impl<T> Sender<T> {
 
 impl<T> Clone for Sender<T> {
     fn clone(&self) -> Self {
-        let result = Sender { shared: Weak::clone(&self.shared) };
-        if let Some(shared) = self.shared.upgrade() {
-            shared.borrow_mut().sender_count += 1;
-        }
-        result
-    }
-}
-
-impl<T> Sink for Sender<T> {
-    type SinkItem = T;
-    type SinkError = SendError<T>;
-
-    fn start_send(&mut self, msg: T) -> StartSend<T, SendError<T>> {
-        self.do_send(msg)
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-
-    fn close(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
+        Sender { shared: Weak::clone(&self.shared) }
     }
 }
 
@@ -122,12 +102,10 @@ impl<T> Drop for Sender<T> {
             Some(shared) => shared,
             None => return,
         };
-        let mut shared = shared.borrow_mut();
-        shared.sender_count -= 1;
-        if shared.sender_count == 0 {
-            if let Some(task) = shared.blocked_recv.take() {
+        if Rc::weak_count(&shared) == 1 {
+            let task = { shared.borrow_mut().blocked_recv.take() };
+            if let Some(task) = task {
                 // Wake up receiver as its stream has ended
-                drop(shared);
                 task.notify();
             }
         }
@@ -155,7 +133,7 @@ impl<T> Receiver<T> {
     pub fn connected(&self) -> bool {
         match self.state {
             State::Open(ref state) => {
-                state.borrow().sender_count != 0
+                Rc::weak_count(state) != 0
             }
             State::Closed(ref deque) => {
                 !deque.is_empty()
@@ -170,9 +148,7 @@ impl<T> Receiver<T> {
     pub fn sender(&mut self) -> Sender<T> {
         let (sender, items) = match self.state {
             State::Open(ref state) => {
-                let sender = Sender { shared: Rc::downgrade(state) };
-                state.borrow_mut().sender_count += 1;
-                (Some(sender), None)
+                (Some(Sender { shared: Rc::downgrade(state) }), None)
             }
             State::Closed(ref mut buf) => {
                 let items = mem::replace(buf, VecDeque::new());
@@ -186,7 +162,6 @@ impl<T> Receiver<T> {
                 capacity: None,
                 blocked_senders: VecDeque::new(),
                 blocked_recv: None,
-                sender_count: 1,
             }));
             let sender = Sender { shared: Rc::downgrade(&shared) };
             self.state = State::Open(shared);
@@ -260,152 +235,5 @@ impl<T> Stream for Receiver<T> {
 impl<T> Drop for Receiver<T> {
     fn drop(&mut self) {
         self.close();
-    }
-}
-
-/// The transmission end of an unbounded channel.
-///
-/// This is created by the `unbounded` function.
-#[derive(Debug)]
-pub struct UnboundedSender<T>(Sender<T>);
-
-impl<T> Clone for UnboundedSender<T> {
-    fn clone(&self) -> Self {
-        UnboundedSender(self.0.clone())
-    }
-}
-
-impl<T> Sink for UnboundedSender<T> {
-    type SinkItem = T;
-    type SinkError = SendError<T>;
-
-    fn start_send(&mut self, msg: T) -> StartSend<T, SendError<T>> {
-        self.0.start_send(msg)
-    }
-    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-    fn close(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-}
-
-impl<'a, T> Sink for &'a UnboundedSender<T> {
-    type SinkItem = T;
-    type SinkError = SendError<T>;
-
-    fn start_send(&mut self, msg: T) -> StartSend<T, SendError<T>> {
-        self.0.do_send(msg)
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-
-    fn close(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-}
-
-impl<T> UnboundedSender<T> {
-    pub fn connected(&self) -> bool {
-        self.0.connected()
-    }
-
-    /// Sends the provided message along this channel.
-    ///
-    /// This is an unbounded sender, so this function differs from `Sink::send`
-    /// by ensuring the return type reflects that the channel is always ready to
-    /// receive messages.
-    pub fn unbounded_send(&self, msg: T) -> Result<(), SendError<T>> {
-        let shared = match self.0.shared.upgrade() {
-            Some(shared) => shared,
-            None => return Err(SendError(msg)),
-        };
-        let mut shared = shared.borrow_mut();
-        shared.buffer.push_back(msg);
-        if let Some(task) = shared.blocked_recv.take() {
-            drop(shared);
-            task.notify();
-        }
-        Ok(())
-    }
-}
-
-/// The receiving end of an unbounded channel.
-///
-/// This is created by the `unbounded` function.
-#[derive(Debug)]
-pub struct UnboundedReceiver<T>(Receiver<T>);
-
-impl<T> UnboundedReceiver<T> {
-    /// Check if receiver connected to senders
-    pub fn connected(&self) -> bool {
-        self.0.connected()
-    }
-
-    /// Get the sender half
-    pub fn sender(&mut self) -> UnboundedSender<T> {
-        UnboundedSender(self.0.sender())
-    }
-
-    /// Closes the receiving half
-    ///
-    /// This prevents any further messages from being sent on the channel while
-    /// still enabling the receiver to drain messages that are buffered.
-    pub fn close(&mut self) {
-        self.0.close();
-    }
-
-    /// Check if the receiving half is closed
-    pub fn is_closed(&self) -> bool {
-        self.0.is_closed()
-    }
-}
-
-impl<T> Stream for UnboundedReceiver<T> {
-    type Item = T;
-    type Error = ();
-
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        self.0.poll()
-    }
-}
-
-/// Creates an unbounded in-memory channel with buffered storage.
-///
-/// Identical semantics to `channel`, except with no limit to buffer size.
-pub fn unbounded<T>() -> UnboundedReceiver<T> {
-    UnboundedReceiver(channel_(None))
-}
-
-/// Error type for sending, used when the receiving end of a channel is
-/// dropped
-pub struct SendError<T>(T);
-
-impl<T> fmt::Debug for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_tuple("SendError")
-            .field(&"...")
-            .finish()
-    }
-}
-
-impl<T> fmt::Display for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "send failed because receiver is gone")
-    }
-}
-
-impl<T: Any> Error for SendError<T> {
-    fn description(&self) -> &str {
-        "send failed because receiver is gone"
-    }
-}
-
-impl<T> SendError<T> {
-    /// Returns the message that was attempted to be sent but failed.
-    pub fn into_inner(self) -> T {
-        self.0
     }
 }

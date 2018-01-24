@@ -66,7 +66,7 @@ pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
     #[allow(dead_code)]
     addr: LocalAddress<A>,
     sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
-    unsync_msgs: unsync::UnboundedReceiver<ContextProtocol<A>>,
+    unsync_msgs: unsync::Receiver<ContextProtocol<A>>,
 }
 
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
@@ -83,7 +83,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         ctx.set_actor(act);
 
         // create supervisor
-        let rx = unsync::unbounded();
+        let rx = unsync::channel(0);
         let mut supervisor = Supervisor {
             ctx: ctx,
             addr: addr,
@@ -111,7 +111,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             let act = f(&mut ctx);
             ctx.set_actor(act);
 
-            let lrx = unsync::unbounded();
+            let lrx = unsync::channel(0);
             let supervisor = Supervisor {
                 ctx: ctx,
                 addr: addr,

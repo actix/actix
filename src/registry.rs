@@ -55,7 +55,7 @@ use supervisor::Supervisor;
 ///
 ///    fn started(&mut self, _: &mut Context<Self>) {
 ///       let act = Arbiter::registry().get::<MyActor1>();
-///       act.send(Ping)
+///       act.send(Ping);
 ///    }
 /// }
 ///
