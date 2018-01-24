@@ -6,10 +6,9 @@
 //! These queues are the same as those in `futures::sync`, except they're not
 //! intended to be sent across threads.
 
+use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::mem;
-use std::rc::{Rc, Weak};
 
 use futures::task::{self, Task};
 use futures::{Async, AsyncSink, Poll, StartSend, Stream};
@@ -31,13 +30,13 @@ pub fn channel<T>(buffer: usize) -> Receiver<T> {
 }
 
 fn channel_<T>(buffer: Option<usize>) -> Receiver<T> {
-    let shared = Rc::new(RefCell::new(Shared {
-        buffer: VecDeque::new(),
-        capacity: buffer,
-        blocked_senders: VecDeque::new(),
-        blocked_recv: None,
-    }));
-    Receiver { state: State::Open(shared) }
+    Receiver {
+        state: Rc::new(RefCell::new(Shared {
+            buffer: VecDeque::new(),
+            capacity: buffer,
+            blocked_senders: VecDeque::new(),
+            blocked_recv: None }))
+    }
 }
 
 #[derive(Debug)]
@@ -117,28 +116,13 @@ impl<T> Drop for Sender<T> {
 /// This is created by the `channel` function.
 #[derive(Debug)]
 pub struct Receiver<T> {
-    state: State<T>,
-}
-
-/// Possible states of a receiver. We're either Open (can receive more messages)
-/// or we're closed with a list of messages we have left to receive.
-#[derive(Debug)]
-enum State<T> {
-    Open(Rc<RefCell<Shared<T>>>),
-    Closed(VecDeque<T>),
+    state: Rc<RefCell<Shared<T>>>,
 }
 
 impl<T> Receiver<T> {
     /// Check if receiver connected to senders
     pub fn connected(&self) -> bool {
-        match self.state {
-            State::Open(ref state) => {
-                Rc::weak_count(state) != 0
-            }
-            State::Closed(ref deque) => {
-                !deque.is_empty()
-            }
-        }
+        Rc::weak_count(&self.state) != 0
     }
 
     /// Get the sender half
@@ -146,57 +130,7 @@ impl<T> Receiver<T> {
     /// If receiver is not closed, create new Sender
     /// otherwise re-open receiver.
     pub fn sender(&mut self) -> Sender<T> {
-        let (sender, items) = match self.state {
-            State::Open(ref state) => {
-                (Some(Sender { shared: Rc::downgrade(state) }), None)
-            }
-            State::Closed(ref mut buf) => {
-                let items = mem::replace(buf, VecDeque::new());
-                (None, Some(items))
-            }
-        };
-
-        if let Some(items) = items {
-            let shared = Rc::new(RefCell::new(Shared {
-                buffer: items,
-                capacity: None,
-                blocked_senders: VecDeque::new(),
-                blocked_recv: None,
-            }));
-            let sender = Sender { shared: Rc::downgrade(&shared) };
-            self.state = State::Open(shared);
-            sender
-        } else {
-            sender.unwrap()
-        }
-    }
-
-    /// Closes the receiving half
-    ///
-    /// This prevents any further messages from being sent on the channel while
-    /// still enabling the receiver to drain messages that are buffered.
-    pub fn close(&mut self) {
-        let (blockers, items) = match self.state {
-            State::Open(ref state) => {
-                let mut state = state.borrow_mut();
-                let items = mem::replace(&mut state.buffer, VecDeque::new());
-                let blockers = mem::replace(&mut state.blocked_senders, VecDeque::new());
-                (blockers, items)
-            }
-            State::Closed(_) => return,
-        };
-        self.state = State::Closed(items);
-        for task in blockers {
-            task.notify();
-        }
-    }
-
-    /// Check if the receiving half is closed
-    pub fn is_closed(&self) -> bool {
-        match self.state {
-            State::Closed(_) => true,
-            _ => false
-        }
+        Sender{shared: Rc::downgrade(&self.state)}
     }
 }
 
@@ -205,20 +139,13 @@ impl<T> Stream for Receiver<T> {
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        let me = match self.state {
-            State::Open(ref mut me) => me,
-            State::Closed(ref mut items) => {
-                return Ok(Async::Ready(items.pop_front()))
-            }
-        };
-
-        if let Some(shared) = Rc::get_mut(me) {
+        if let Some(shared) = Rc::get_mut(&mut self.state) {
             // All senders have been dropped, so drain the buffer and end the
             // stream.
             return Ok(Async::Ready(shared.borrow_mut().buffer.pop_front()));
         }
 
-        let mut shared = me.borrow_mut();
+        let mut shared = self.state.borrow_mut();
         if let Some(msg) = shared.buffer.pop_front() {
             if let Some(task) = shared.blocked_senders.pop_front() {
                 drop(shared);
@@ -234,6 +161,8 @@ impl<T> Stream for Receiver<T> {
 
 impl<T> Drop for Receiver<T> {
     fn drop(&mut self) {
-        self.close();
+        for task in &self.state.borrow().blocked_senders {
+            task.notify();
+        }
     }
 }
