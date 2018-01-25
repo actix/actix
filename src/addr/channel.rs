@@ -74,7 +74,7 @@ use std::usize;
 use std::thread;
 use std::cell::Cell;
 use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering::{Relaxed, SeqCst};
+use std::sync::atomic::Ordering::SeqCst;
 use std::sync::{Arc, Mutex};
 
 use futures::task::{self, Task};
@@ -126,7 +126,7 @@ struct Inner<A: Actor> {
     state: AtomicUsize,
 
     // Atomic, FIFO queue used to send messages to the receiver
-    message_queue: Queue<Option<Envelope<A>>>,
+    message_queue: Queue<Envelope<A>>,
 
     // Atomic, FIFO queue used to send parked task handles to the receiver.
     parked_queue: Queue<Arc<Mutex<SenderTask>>>,
@@ -157,7 +157,6 @@ struct ReceiverTask {
 // Returned from Receiver::try_park()
 enum TryPark {
     Parked,
-    Closed,
     NotEmpty,
 }
 
@@ -289,7 +288,7 @@ impl<A: Actor> AddressSender<A> {
         } else {
             let (tx, rx) = sync_channel();
             let env = <A::Context as ToEnvelope<A>>::pack(msg, Some(tx));
-            self.queue_push_and_signal(Some(env));
+            self.queue_push_and_signal(env);
             Ok(rx)
         }
     }
@@ -318,7 +317,7 @@ impl<A: Actor> AddressSender<A> {
             Err(SendError::NotReady(msg))
         } else {
             let env = <A::Context as ToEnvelope<A>>::pack(msg, None);
-            self.queue_push_and_signal(Some(env));
+            self.queue_push_and_signal(env);
             Ok(())
         }
     }
@@ -331,32 +330,17 @@ impl<A: Actor> AddressSender<A> {
               M::Item: Send, M::Error: Send,
               M: ResponseType + Send + 'static,
     {
-        if self.inc_num_messages_force(false).is_none() {
+        if self.inc_num_messages_force().is_none() {
             Err(SendError::Closed(msg))
         } else {
             let env = <A::Context as ToEnvelope<A>>::pack(msg, None);
-            self.queue_push_and_signal(Some(env));
+            self.queue_push_and_signal(env);
             Ok(())
         }
     }
 
-    /// While dropping the `Sender`, `task::current()` can't be called safely.
-    /// In this case, in order to maintain internal consistency, a blank message
-    /// is pushed onto the parked task queue.
-    fn do_close(&mut self) {
-        let park_self = match self.inc_num_messages_force(true) {
-            Some(park_self) => park_self,
-            None => return
-        };
-
-        if park_self {
-            self.park(false);
-        }
-        self.queue_push_and_signal(None);
-    }
-
     // Push message to the queue and signal to the receiver
-    fn queue_push_and_signal(&self, msg: Option<Envelope<A>>) {
+    fn queue_push_and_signal(&self, msg: Envelope<A>) {
         // Push the message onto the message queue
         self.inner.message_queue.push(msg);
 
@@ -391,23 +375,15 @@ impl<A: Actor> AddressSender<A> {
         }
     }
 
-    // Increment the number of queued messages. Returns if the sender should
-    // block.
-    fn inc_num_messages_force(&self, close: bool) -> Option<bool> {
+    // Increment the number of queued messages. Returns if the sender should block.
+    fn inc_num_messages_force(&self) -> Option<bool> {
         let mut curr = self.inner.state.load(SeqCst);
-
         loop {
             let mut state = decode_state(curr);
             if !state.is_open {
                 return None;
             }
-
             state.num_messages += 1;
-
-            // The channel is closed by all sender handles being dropped.
-            if close {
-                state.is_open = false;
-            }
 
             let next = encode_state(&state);
             match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
@@ -541,9 +517,9 @@ impl<A: Actor> Drop for AddressSender<A> {
     fn drop(&mut self) {
         // Ordering between variables don't matter here
         let prev = self.inner.num_senders.fetch_sub(1, SeqCst);
-
+        // last sender, notify receiver task
         if prev == 1 {
-            self.do_close();
+            self.signal();
         }
     }
 }
@@ -556,30 +532,10 @@ impl<A: Actor> Drop for AddressSender<A> {
 impl<A: Actor> AddressReceiver<A> {
 
     pub fn connected(&self) -> bool {
-        let curr = self.inner.state.load(Relaxed);
-        let state = decode_state(curr);
-
-        state.is_open || state.num_messages != 0
+        self.inner.num_senders.load(SeqCst) != 0
     }
 
     pub fn sender(&mut self) -> AddressSender<A> {
-        // change state to open
-        let mut curr_state = self.inner.state.load(SeqCst);
-        loop {
-            let mut state = decode_state(curr_state);
-
-            if state.is_open {
-                break
-            }
-            state.is_open = true;
-
-            let next = encode_state(&state);
-            match self.inner.state.compare_exchange(curr_state, next, SeqCst, SeqCst) {
-                Ok(_) => break,
-                Err(actual) => curr_state = actual,
-            }
-        }
-
         // this code same as Sender::clone
         let mut curr = self.inner.num_senders.load(SeqCst);
 
@@ -606,48 +562,12 @@ impl<A: Actor> AddressReceiver<A> {
         }
     }
 
-    /// Closes the receiving half
-    ///
-    /// This prevents any further messages from being sent on the channel while
-    /// still enabling the receiver to drain messages that are buffered.
-    pub fn close(&mut self) {
-        let mut curr = self.inner.state.load(SeqCst);
-
-        loop {
-            let mut state = decode_state(curr);
-
-            if !state.is_open {
-                break
-            }
-
-            state.is_open = false;
-
-            let next = encode_state(&state);
-            match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
-                Ok(_) => break,
-                Err(actual) => curr = actual,
-            }
-        }
-
-        // Wake up any threads waiting as they'll see that we've closed the
-        // channel and will continue on their merry way.
-        loop {
-            match unsafe { self.inner.parked_queue.pop() } {
-                PopResult::Data(task) => {
-                    task.lock().unwrap().notify();
-                }
-                PopResult::Empty => break,
-                PopResult::Inconsistent => thread::yield_now(),
-            }
-        }
-    }
-
     fn next_message(&mut self) -> Async<Option<Envelope<A>>> {
         // Pop off a message
         loop {
             match unsafe { self.inner.message_queue.pop() } {
                 PopResult::Data(msg) => {
-                    return Async::Ready(msg);
+                    return Async::Ready(Some(msg));
                 }
                 PopResult::Empty => {
                     // The queue is empty, return NotReady
@@ -693,14 +613,6 @@ impl<A: Actor> AddressReceiver<A> {
 
     // Try to park the receiver task
     fn try_park(&self) -> TryPark {
-        let curr = self.inner.state.load(SeqCst);
-        let state = decode_state(curr);
-
-        // If the channel is closed, then there is no need to park.
-        if !state.is_open && state.num_messages == 0 {
-            return TryPark::Closed;
-        }
-
         // First, track the task in the `recv_task` slot
         let mut recv_task = self.inner.recv_task.lock().unwrap();
 
@@ -750,11 +662,6 @@ impl<A: Actor> Stream for AddressReceiver<A> {
                             // empty, return NotReady.
                             return Ok(Async::NotReady);
                         }
-                        TryPark::Closed => {
-                            // The channel is closed, there will be no further
-                            // messages.
-                            return Ok(Async::Ready(None));
-                        }
                         TryPark::NotEmpty => {
                             // A message has been sent while attempting to
                             // park. Loop again, the next iteration is
@@ -780,8 +687,35 @@ impl<A: Actor> Stream for AddressReceiver<A> {
 
 impl<A: Actor> Drop for AddressReceiver<A> {
     fn drop(&mut self) {
+        // close
+        let mut curr = self.inner.state.load(SeqCst);
+        loop {
+            let mut state = decode_state(curr);
+            if !state.is_open {
+                break
+            }
+            state.is_open = false;
+
+            let next = encode_state(&state);
+            match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
+                Ok(_) => break,
+                Err(actual) => curr = actual,
+            }
+        }
+
+        // Wake up any threads waiting as they'll see that we've closed the
+        // channel and will continue on their merry way.
+        loop {
+            match unsafe { self.inner.parked_queue.pop() } {
+                PopResult::Data(task) => {
+                    task.lock().unwrap().notify();
+                }
+                PopResult::Empty => break,
+                PopResult::Inconsistent => thread::yield_now(),
+            }
+        }
+
         // Drain the channel of all pending messages
-        self.close();
         while self.next_message().is_ready() {
             // ...
         }
