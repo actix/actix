@@ -70,10 +70,11 @@
 // by the queue structure.
 #![allow(dead_code)]
 
+use std::usize;
+use std::thread;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::{Arc, Mutex};
-use std::thread;
 
 use futures::task::{self, Task};
 use futures::{Async, Poll, Stream};
