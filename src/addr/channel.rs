@@ -72,6 +72,7 @@
 
 use std::usize;
 use std::thread;
+use std::cell::Cell;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::{Arc, Mutex};
@@ -101,7 +102,7 @@ pub struct AddressSender<A: Actor> {
 
     // True if the sender might be blocked. This is an optimization to avoid
     // having to lock the mutex most of the time.
-    maybe_parked: bool,
+    maybe_parked: Cell<bool>,
 }
 
 trait AssertKinds: Send + Sync + Clone {}
@@ -231,7 +232,7 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>
     let tx = AddressSender {
         inner: Arc::clone(&inner),
         sender_task: Arc::new(Mutex::new(SenderTask::new())),
-        maybe_parked: false,
+        maybe_parked: Cell::new(false),
     };
 
     let rx = AddressReceiver {
@@ -263,6 +264,11 @@ impl<A: Actor> AddressSender<A> {
               M::Item: Send, M::Error: Send,
               M: ResponseType + Send + 'static,
     {
+        // If the sender is currently blocked, reject the message
+        if !self.poll_unparked(false).is_ready() {
+            return Err(SendError::NotReady(msg))
+        }
+
         // First, increment the number of messages contained by the channel.
         // This operation will also atomically determine if the sender task
         // should be parked.
@@ -298,6 +304,11 @@ impl<A: Actor> AddressSender<A> {
               M::Item: Send, M::Error: Send,
               M: ResponseType + Send + 'static,
     {
+        // If the sender is currently blocked, reject the message
+        if !self.poll_unparked(false).is_ready() {
+            return Err(SendError::NotReady(msg))
+        }
+
         let park_self = match self.inc_num_messages() {
             Some(park_self) => park_self,
             None => return Err(SendError::Closed(msg)),
@@ -456,6 +467,40 @@ impl<A: Actor> AddressSender<A> {
         // Send handle over queue
         let t = Arc::clone(&self.sender_task);
         self.inner.parked_queue.push(t);
+
+        // Check to make sure we weren't closed after we sent our task on the queue
+        let state = decode_state(self.inner.state.load(SeqCst));
+        self.maybe_parked.set(state.is_open);
+    }
+
+    fn poll_unparked(&self, do_park: bool) -> Async<()> {
+        // First check the `maybe_parked` variable. This avoids acquiring the
+        // lock in most cases
+        if self.maybe_parked.get() {
+            // Get a lock on the task handle
+            let mut task = self.sender_task.lock().unwrap();
+
+            if !task.is_parked {
+                self.maybe_parked.set(false);
+                return Async::Ready(())
+            }
+
+            // At this point, an unpark request is pending, so there will be an
+            // unpark sometime in the future. We just need to make sure that
+            // the correct task will be notified.
+            //
+            // Update the task in case the `Sender` has been moved to another
+            // task
+            task.task = if do_park {
+                Some(task::current())
+            } else {
+                None
+            };
+
+            Async::NotReady
+        } else {
+            Async::Ready(())
+        }
     }
 }
 
@@ -483,7 +528,7 @@ impl<A: Actor> Clone for AddressSender<A> {
                 return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
-                    maybe_parked: false,
+                    maybe_parked: Cell::new(false),
                 };
             }
 
@@ -553,7 +598,7 @@ impl<A: Actor> AddressReceiver<A> {
                 return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
-                    maybe_parked: false,
+                    maybe_parked: Cell::new(false),
                 };
             }
 
