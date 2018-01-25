@@ -62,7 +62,29 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     /// return message back.
     ///
     /// This method does not register current task in recivers queue.
-    pub fn send<M>(&self, msg: M) -> Result<(), SendError<M>>
+    pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
+        where A: Handler<M>, M: ResponseType + 'static
+    {
+        let shared = match self.shared.upgrade() {
+            Some(shared) => shared,
+            None => return Err(SendError::Closed(msg)),
+        };
+        let mut shared = shared.borrow_mut();
+
+        shared.buffer.push_back(
+            LocalAddrProtocol::Envelope(LocalEnvelope::new(msg, None, false)));
+        if let Some(task) = shared.blocked_recv.take() {
+            drop(shared);
+            task.notify();
+        }
+        Ok(())
+    }
+
+    /// Try to put message to a reciver queue, if queue is full
+    /// return message back.
+    ///
+    /// This method does not register current task in recivers queue.
+    pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
         where A: Handler<M>, M: ResponseType + 'static
     {
         let shared = match self.shared.upgrade() {
@@ -88,7 +110,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     /// return message back.
     ///
     /// This method registers current task in recivers queue.
-    pub fn send_and_wait<M>(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>
+    pub fn send<M>(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>
         where A: Handler<M>, M: ResponseType + 'static
     {
         let shared = match self.shared.upgrade() {

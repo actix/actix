@@ -215,7 +215,10 @@ impl Actor for DefaultSignalsHandler {
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = Arbiter::system_registry().get::<ProcessSignals>();
         let slf: Address<_> = ctx.address();
-        addr.send(Subscribe(slf.subscriber()))
+        addr.call(self, Subscribe(slf.subscriber()))
+            .map(|_, _, _| ())
+            .map_err(|_, _, _| ())
+            .wait(ctx)
     }
 }
 

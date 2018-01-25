@@ -19,6 +19,7 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn stopping(&mut self, _: &mut Self::Context) -> bool {
+        println!("SEND");
         Arbiter::system().send(actix::msgs::SystemExit(0));
         true
     }

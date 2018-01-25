@@ -8,6 +8,8 @@
 
 * Rename Address to LocalAddress, SyncAddress to Address
 
+* Use bounded channels for actor communications
+
 
 ## 0.4.5 (2018-01-23)
 

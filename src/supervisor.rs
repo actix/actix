@@ -5,10 +5,10 @@ use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
 use address::{Address, LocalAddress};
 use context::Context;
-use envelope::Envelope;
 use msgs::Execute;
-use queue::sync;
 use local::{LocalAddrReceiver, LocalAddrProtocol};
+use addr::channel as sync;
+use addr::AddressReceiver;
 
 /// Actor supervisor
 ///
@@ -66,7 +66,7 @@ pub struct Supervisor<A: Supervised> where A: Actor<Context=Context<A>> {
     ctx: A::Context,
     #[allow(dead_code)]
     addr: LocalAddress<A>,
-    sync_msgs: Option<sync::UnboundedReceiver<Envelope<A>>>,
+    sync_msgs: Option<AddressReceiver<A>>,
     unsync_msgs: LocalAddrReceiver<A>,
 }
 
@@ -103,7 +103,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
-        let (tx, rx) = sync::unbounded();
+        let (tx, rx) = sync::channel(0);
 
         addr.send(Execute::new(move || -> Result<(), ()> {
             // create actor
@@ -133,7 +133,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     fn remote_address(&mut self) -> Address<A> {
         if self.sync_msgs.is_none() {
-            let (tx, rx) = sync::unbounded();
+            let (tx, rx) = sync::channel(0);
             self.sync_msgs = Some(rx);
             Address::new(tx)
         } else {

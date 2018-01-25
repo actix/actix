@@ -5,8 +5,7 @@ use tokio_core::reactor::Timeout;
 use fut::ActorFuture;
 use arbiter::Arbiter;
 use actor::{Actor, ActorContext, AsyncContext};
-use handler::{Handler, ResponseType, IntoResponse};
-use message::Response;
+use handler::{Handler, Response, ResponseType, IntoResponse};
 
 
 pub(crate) struct ActorWaitItem<A: Actor>(Box<ActorFuture<Item=(), Error=(), Actor=A>>);

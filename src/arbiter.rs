@@ -13,7 +13,7 @@ use msgs::{Execute, StartActor, StopArbiter};
 use handler::Handler;
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};
-use queue::sync;
+use addr::channel as sync;
 
 thread_local!(
     static HND: RefCell<Option<Handle>> = RefCell::new(None);
@@ -189,7 +189,7 @@ impl Arbiter {
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + Send + 'static
     {
-        let (stx, srx) = sync::unbounded();
+        let (stx, srx) = sync::channel(0);
 
         // new arbiter
         let addr = Arbiter::new("actor");

@@ -70,27 +70,28 @@
 // by the queue structure.
 #![allow(dead_code)]
 
-use std::fmt;
-use std::error::Error;
-use std::any::Any;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::usize;
 
 use futures::task::{self, Task};
-use futures::{Async, AsyncSink, Poll, StartSend, Sink, Stream};
+use futures::{Async, Poll, Stream};
+use futures::sync::oneshot::{channel as sync_channel, Receiver};
+
 use super::queue::{Queue, PopResult};
 
+use actor::Actor;
+use address::SendError;
+use handler::{Handler, ResponseType, MessageResult};
+use envelope::{Envelope, ToEnvelope};
 
 /// The transmission end of a channel which is used to send values.
 ///
 /// This is created by the `channel` method.
-#[derive(Debug)]
-pub struct Sender<T> {
+pub struct AddressSender<A: Actor> {
     // Channel state shared between the sender and receiver.
-    inner: Arc<Inner<T>>,
+    inner: Arc<Inner<A>>,
 
     // Handle to the task that is blocked on this sender. This handle is sent
     // to the receiver half in order to be notified when the sender becomes
@@ -102,14 +103,7 @@ pub struct Sender<T> {
     maybe_parked: bool,
 }
 
-/// The transmission end of a channel which is used to send values.
-///
-/// This is created by the `unbounded` method.
-#[derive(Debug)]
-pub struct UnboundedSender<T>(Sender<T>);
-
 trait AssertKinds: Send + Sync + Clone {}
-impl AssertKinds for UnboundedSender<u32> {}
 
 
 /// The receiving end of a channel which implements the `Stream` trait.
@@ -117,134 +111,20 @@ impl AssertKinds for UnboundedSender<u32> {}
 /// This is a concrete implementation of a stream which can be used to represent
 /// a stream of values being computed elsewhere. This is created by the
 /// `channel` method.
-#[derive(Debug)]
-pub struct Receiver<T> {
-    inner: Arc<Inner<T>>,
+pub struct AddressReceiver<A: Actor> {
+    inner: Arc<Inner<A>>,
 }
 
-/// The receiving end of a channel which implements the `Stream` trait.
-///
-/// This is a concrete implementation of a stream which can be used to represent
-/// a stream of values being computed elsewhere. This is created by the
-/// `unbounded` method.
-#[derive(Debug)]
-pub struct UnboundedReceiver<T>(Receiver<T>);
-
-/// Error type for sending, used when the receiving end of a channel is
-/// dropped
-#[derive(Clone, PartialEq, Eq)]
-pub struct SendError<T>(T);
-
-/// Error type returned from `try_send`
-#[derive(Clone, PartialEq, Eq)]
-pub struct TrySendError<T> {
-    kind: TrySendErrorKind<T>,
-}
-
-#[derive(Clone, PartialEq, Eq)]
-enum TrySendErrorKind<T> {
-    Full(T),
-    Disconnected(T),
-}
-
-impl<T> fmt::Debug for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_tuple("SendError")
-            .field(&"...")
-            .finish()
-    }
-}
-
-impl<T> fmt::Display for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "send failed because receiver is gone")
-    }
-}
-
-impl<T: Any> Error for SendError<T>
-{
-    fn description(&self) -> &str {
-        "send failed because receiver is gone"
-    }
-}
-
-impl<T> SendError<T> {
-    /// Returns the message that was attempted to be sent but failed.
-    pub fn into_inner(self) -> T {
-        self.0
-    }
-}
-
-impl<T> fmt::Debug for TrySendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_tuple("TrySendError")
-            .field(&"...")
-            .finish()
-    }
-}
-
-impl<T> fmt::Display for TrySendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        if self.is_full() {
-            write!(fmt, "send failed because channel is full")
-        } else {
-            write!(fmt, "send failed because receiver is gone")
-        }
-    }
-}
-
-impl<T: Any> Error for TrySendError<T> {
-    fn description(&self) -> &str {
-        if self.is_full() {
-            "send failed because channel is full"
-        } else {
-            "send failed because receiver is gone"
-        }
-    }
-}
-
-impl<T> TrySendError<T> {
-    /// Returns true if this error is a result of the channel being full
-    pub fn is_full(&self) -> bool {
-        use self::TrySendErrorKind::*;
-
-        match self.kind {
-            Full(_) => true,
-            _ => false,
-        }
-    }
-
-    /// Returns true if this error is a result of the receiver being dropped
-    pub fn is_disconnected(&self) -> bool {
-        use self::TrySendErrorKind::*;
-
-        match self.kind {
-            Disconnected(_) => true,
-            _ => false,
-        }
-    }
-
-    /// Returns the message that was attempted to be sent but failed.
-    pub fn into_inner(self) -> T {
-        use self::TrySendErrorKind::*;
-
-        match self.kind {
-            Full(v) | Disconnected(v) => v,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct Inner<T> {
-    // Max buffer size of the channel. If `None` then the channel is unbounded.
-    buffer: Option<usize>,
+struct Inner<A: Actor> {
+    // Max buffer size of the channel. If `0` then the channel is unbounded.
+    buffer: usize,
 
     // Internal channel state. Consists of the number of messages stored in the
     // channel as well as a flag signalling that the channel is closed.
     state: AtomicUsize,
 
     // Atomic, FIFO queue used to send messages to the receiver
-    message_queue: Queue<Option<T>>,
+    message_queue: Queue<Option<Envelope<A>>>,
 
     // Atomic, FIFO queue used to send parked task handles to the receiver.
     parked_queue: Queue<Arc<Mutex<SenderTask>>>,
@@ -330,31 +210,11 @@ impl SenderTask {
 ///
 /// The `Receiver` returned implements the `Stream` trait and has access to any
 /// number of the associated combinators for transforming the result.
-pub fn channel<T>(buffer: usize) -> (Sender<T>, Receiver<T>) {
+pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>) {
     // Check that the requested buffer size does not exceed the maximum buffer
     // size permitted by the system.
     assert!(buffer < MAX_BUFFER, "requested buffer size too large");
-    channel2(Some(buffer))
-}
 
-/// Creates an in-memory channel implementation of the `Stream` trait with
-/// unbounded capacity.
-///
-/// This method creates a concrete implementation of the `Stream` trait which
-/// can be used to send values across threads in a streaming fashion. A `send`
-/// on this channel will always succeed as long as the receive half has not
-/// been closed. If the receiver falls behind, messages will be buffered
-/// internally.
-///
-/// **Note** that the amount of available system memory is an implicit bound to
-/// the channel. Using an `unbounded` channel has the ability of causing the
-/// process to run out of memory. In this case, the process will be aborted.
-pub fn unbounded<T>() -> (UnboundedSender<T>, UnboundedReceiver<T>) {
-    let (tx, rx) = channel2(None);
-    (UnboundedSender(tx), UnboundedReceiver(rx))
-}
-
-fn channel2<T>(buffer: Option<usize>) -> (Sender<T>, Receiver<T>) {
     let inner = Arc::new(Inner {
         buffer: buffer,
         state: AtomicUsize::new(INIT_STATE),
@@ -367,57 +227,41 @@ fn channel2<T>(buffer: Option<usize>) -> (Sender<T>, Receiver<T>) {
         }),
     });
 
-    let tx = Sender {
+    let tx = AddressSender {
         inner: Arc::clone(&inner),
         sender_task: Arc::new(Mutex::new(SenderTask::new())),
         maybe_parked: false,
     };
 
-    let rx = Receiver {
+    let rx = AddressReceiver {
         inner: inner,
     };
 
     (tx, rx)
 }
 
-/*
- *
- * ===== impl Sender =====
- *
- */
+//
+//
+// ===== impl Sender =====
+//
+//
+impl<A: Actor> AddressSender<A> {
 
-impl<T> Sender<T> {
+    pub fn connected(&self) -> bool {
+        let curr = self.inner.state.load(SeqCst);
+        let state = decode_state(curr);
 
-    /// Attempts to send a message on this `Sender<T>` without blocking.
-    ///
-    /// This function, unlike `start_send`, is safe to call whether it's being
-    /// called on a task or not. Note that this function, however, will *not*
-    /// attempt to block the current task if the message cannot be sent.
-    ///
-    /// It is not recommended to call this function from inside of a future,
-    /// only from an external thread where you've otherwise arranged to be
-    /// notified when the channel is no longer full.
-
-    pub fn try_send(&mut self, msg: T) -> Result<(), TrySendError<T>> {
-        // If the sender is currently blocked, reject the message
-        if !self.poll_unparked(false).is_ready() {
-            return Err(TrySendError {
-                kind: TrySendErrorKind::Full(msg),
-            });
-        }
-
-        // The channel has capacity to accept the message, so send it
-        self.do_send(Some(msg), false)
-            .map_err(|SendError(v)| {
-                TrySendError {
-                    kind: TrySendErrorKind::Disconnected(v),
-                }
-            })
+        state.is_open
     }
 
-    // Do the send without failing
-    // None means close
-    fn do_send(&mut self, msg: Option<T>, do_park: bool) -> Result<(), SendError<T>> {
+    /// Attempts to send a message on this `Sender<A>` with blocking.
+    ///
+    /// This function, must be called from inside of a task.
+    pub fn send<M>(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>
+        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A>,
+              M::Item: Send, M::Error: Send,
+              M: ResponseType + Send + 'static,
+    {
         // First, increment the number of messages contained by the channel.
         // This operation will also atomically determine if the sender task
         // should be parked.
@@ -425,57 +269,82 @@ impl<T> Sender<T> {
         // None is returned in the case that the channel has been closed by the
         // receiver. This happens when `Receiver::close` is called or the
         // receiver is dropped.
-        let park_self = match self.inc_num_messages(msg.is_none()) {
+        let park_self = match self.inc_num_messages() {
             Some(park_self) => park_self,
-            None => {
-                // The receiver has closed the channel. Only abort if actually
-                // sending a message. It is important that the stream
-                // termination (None) is always sent. This technically means
-                // that it is possible for the queue to contain the following
-                // number of messages:
-                //
-                //     num-senders + buffer + 1
-                //
-                if let Some(msg) = msg {
-                    return Err(SendError(msg));
-                } else {
-                    return Ok(());
-                }
-            }
+            None => return Err(SendError::Closed(msg)),
         };
 
         // If the channel has reached capacity, then the sender task needs to
         // be parked. This will send the task handle on the parked task queue.
-        //
-        // However, when `do_send` is called while dropping the `Sender`,
-        // `task::current()` can't be called safely. In this case, in order to
-        // maintain internal consistency, a blank message is pushed onto the
-        // parked task queue.
         if park_self {
-            self.park(do_park);
+            self.park(true);
+            Err(SendError::NotReady(msg))
+        } else {
+            let (tx, rx) = sync_channel();
+            let env = <A::Context as ToEnvelope<A>>::pack(msg, Some(tx));
+            self.queue_push_and_signal(Some(env));
+            Ok(rx)
         }
-
-        self.queue_push_and_signal(msg);
-
-        Ok(())
     }
 
-    // Do the send without parking current task.
-    //
-    // To be called from unbounded sender.
-    fn do_send_nb(&self, msg: T) -> Result<(), SendError<T>> {
-        match self.inc_num_messages(false) {
-            Some(park_self) => assert!(!park_self),
-            None => return Err(SendError(msg)),
+    /// Attempts to send a message on this `Sender<A>` without blocking.
+    ///
+    /// This function, unlike `send`, is safe to call whether it's being
+    /// called on a task or not. Note that this function, however, will *not*
+    /// attempt to block the current task if the message cannot be sent.
+    pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
+        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A>,
+              M::Item: Send, M::Error: Send,
+              M: ResponseType + Send + 'static,
+    {
+        let park_self = match self.inc_num_messages() {
+            Some(park_self) => park_self,
+            None => return Err(SendError::Closed(msg)),
         };
 
-        self.queue_push_and_signal(Some(msg));
+        if park_self {
+            Err(SendError::NotReady(msg))
+        } else {
+            let env = <A::Context as ToEnvelope<A>>::pack(msg, None);
+            self.queue_push_and_signal(Some(env));
+            Ok(())
+        }
+    }
 
-        Ok(())
+    /// Send a message on this `Sender<A>` without blocking.
+    ///
+    /// This function does not park current task.
+    pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
+        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A>,
+              M::Item: Send, M::Error: Send,
+              M: ResponseType + Send + 'static,
+    {
+        if self.inc_num_messages_force(false).is_none() {
+            Err(SendError::Closed(msg))
+        } else {
+            let env = <A::Context as ToEnvelope<A>>::pack(msg, None);
+            self.queue_push_and_signal(Some(env));
+            Ok(())
+        }
+    }
+
+    /// While dropping the `Sender`, `task::current()` can't be called safely.
+    /// In this case, in order to maintain internal consistency, a blank message
+    /// is pushed onto the parked task queue.
+    fn do_close(&mut self) {
+        let park_self = match self.inc_num_messages_force(true) {
+            Some(park_self) => park_self,
+            None => return
+        };
+
+        if park_self {
+            self.park(false);
+        }
+        self.queue_push_and_signal(None);
     }
 
     // Push message to the queue and signal to the receiver
-    fn queue_push_and_signal(&self, msg: Option<T>) {
+    fn queue_push_and_signal(&self, msg: Option<Envelope<A>>) {
         // Push the message onto the message queue
         self.inner.message_queue.push(msg);
 
@@ -486,22 +355,40 @@ impl<T> Sender<T> {
 
     // Increment the number of queued messages. Returns if the sender should
     // block.
-    fn inc_num_messages(&self, close: bool) -> Option<bool> {
+    fn inc_num_messages(&self) -> Option<bool> {
         let mut curr = self.inner.state.load(SeqCst);
-
         loop {
             let mut state = decode_state(curr);
-
-            // The receiver end closed the channel.
             if !state.is_open {
                 return None;
             }
 
-            // This probably is never hit? Odds are the process will run out of
-            // memory first. It may be worth to return something else in this
-            // case?
-            assert!(state.num_messages < MAX_CAPACITY, "buffer space exhausted; \
-                    sending this messages would overflow the state");
+            // receiver is full
+            let park_self = self.inner.buffer != 0 && state.num_messages >= self.inner.buffer;
+            if park_self {
+                return Some(true);
+            }
+
+            state.num_messages += 1;
+
+            let next = encode_state(&state);
+            match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
+                Ok(_) => return Some(false),
+                Err(actual) => curr = actual,
+            }
+        }
+    }
+
+    // Increment the number of queued messages. Returns if the sender should
+    // block.
+    fn inc_num_messages_force(&self, close: bool) -> Option<bool> {
+        let mut curr = self.inner.state.load(SeqCst);
+
+        loop {
+            let mut state = decode_state(curr);
+            if !state.is_open {
+                return None;
+            }
 
             state.num_messages += 1;
 
@@ -513,13 +400,8 @@ impl<T> Sender<T> {
             let next = encode_state(&state);
             match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
                 Ok(_) => {
-                    // Block if the current number of pending messages has exceeded
-                    // the configured buffer size
-                    let park_self = match self.inner.buffer {
-                        Some(buffer) => state.num_messages > buffer,
-                        None => false,
-                    };
-
+                    let park_self = self.inner.buffer != 0 &&
+                        state.num_messages >= self.inner.buffer;
                     return Some(park_self)
                 }
                 Err(actual) => curr = actual,
@@ -556,9 +438,8 @@ impl<T> Sender<T> {
         }
     }
 
-    fn park(&mut self, can_park: bool) {
+    fn park(&self, can_park: bool) {
         // TODO: clean up internal state if the task::current will fail
-
         let task = if can_park {
             Some(task::current())
         } else {
@@ -574,155 +455,11 @@ impl<T> Sender<T> {
         // Send handle over queue
         let t = Arc::clone(&self.sender_task);
         self.inner.parked_queue.push(t);
-
-        // Check to make sure we weren't closed after we sent our task on the
-        // queue
-        let state = decode_state(self.inner.state.load(SeqCst));
-        self.maybe_parked = state.is_open;
-    }
-
-    /// Polls the channel to determine if there is guaranteed to be capacity to send at least one
-    /// item without waiting.
-    ///
-    /// Returns `Ok(Async::Ready(_))` if there is sufficient capacity, or returns
-    /// `Ok(Async::NotReady)` if the channel is not guaranteed to have capacity. Returns
-    /// `Err(SendError(_))` if the receiver has been dropped.
-    ///
-    /// # Panics
-    ///
-    /// This method will panic if called from outside the context of a task or future.
-    pub fn poll_ready(&mut self) -> Poll<(), SendError<()>> {
-        let state = decode_state(self.inner.state.load(SeqCst));
-        if !state.is_open {
-            return Err(SendError(()));
-        }
-
-        Ok(self.poll_unparked(true))
-    }
-
-    fn poll_unparked(&mut self, do_park: bool) -> Async<()> {
-        // First check the `maybe_parked` variable. This avoids acquiring the
-        // lock in most cases
-        if self.maybe_parked {
-            // Get a lock on the task handle
-            let mut task = self.sender_task.lock().unwrap();
-
-            if !task.is_parked {
-                self.maybe_parked = false;
-                return Async::Ready(())
-            }
-
-            // At this point, an unpark request is pending, so there will be an
-            // unpark sometime in the future. We just need to make sure that
-            // the correct task will be notified.
-            //
-            // Update the task in case the `Sender` has been moved to another
-            // task
-            task.task = if do_park {
-                Some(task::current())
-            } else {
-                None
-            };
-
-            Async::NotReady
-        } else {
-            Async::Ready(())
-        }
     }
 }
 
-impl<T> Sink for Sender<T> {
-    type SinkItem = T;
-    type SinkError = SendError<T>;
-
-    fn start_send(&mut self, msg: T) -> StartSend<T, SendError<T>> {
-        // If the sender is currently blocked, reject the message before doing
-        // any work.
-        if !self.poll_unparked(true).is_ready() {
-            return Ok(AsyncSink::NotReady(msg));
-        }
-
-        // The channel has capacity to accept the message, so send it.
-        self.do_send(Some(msg), true)?;
-
-        Ok(AsyncSink::Ready)
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-
-    fn close(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-}
-
-impl<T> UnboundedSender<T> {
-    /// Sends the provided message along this channel.
-    ///
-    /// This is an unbounded sender, so this function differs from `Sink::send`
-    /// by ensuring the return type reflects that the channel is always ready to
-    /// receive messages.
-    #[deprecated(note = "renamed to `unbounded_send`")]
-    #[doc(hidden)]
-    pub fn send(&self, msg: T) -> Result<(), SendError<T>> {
-        self.unbounded_send(msg)
-    }
-
-    /// Sends the provided message along this channel.
-    ///
-    /// This is an unbounded sender, so this function differs from `Sink::send`
-    /// by ensuring the return type reflects that the channel is always ready to
-    /// receive messages.
-    pub fn unbounded_send(&self, msg: T) -> Result<(), SendError<T>> {
-        self.0.do_send_nb(msg)
-    }
-}
-
-impl<T> Sink for UnboundedSender<T> {
-    type SinkItem = T;
-    type SinkError = SendError<T>;
-
-    fn start_send(&mut self, msg: T) -> StartSend<T, SendError<T>> {
-        self.0.start_send(msg)
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
-        self.0.poll_complete()
-    }
-
-    fn close(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-}
-
-impl<'a, T> Sink for &'a UnboundedSender<T> {
-    type SinkItem = T;
-    type SinkError = SendError<T>;
-
-    fn start_send(&mut self, msg: T) -> StartSend<T, SendError<T>> {
-        self.0.do_send_nb(msg)?;
-        Ok(AsyncSink::Ready)
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-
-    fn close(&mut self) -> Poll<(), SendError<T>> {
-        Ok(Async::Ready(()))
-    }
-}
-
-impl<T> Clone for UnboundedSender<T> {
-    fn clone(&self) -> UnboundedSender<T> {
-        UnboundedSender(self.0.clone())
-    }
-}
-
-
-impl<T> Clone for Sender<T> {
-    fn clone(&self) -> Sender<T> {
+impl<A: Actor> Clone for AddressSender<A> {
+    fn clone(&self) -> AddressSender<A> {
         // Since this atomic op isn't actually guarding any memory and we don't
         // care about any orderings besides the ordering on the single atomic
         // variable, a relaxed ordering is acceptable.
@@ -742,7 +479,7 @@ impl<T> Clone for Sender<T> {
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
             if actual == curr {
-                return Sender {
+                return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
                     maybe_parked: false,
@@ -754,24 +491,24 @@ impl<T> Clone for Sender<T> {
     }
 }
 
-impl<T> Drop for Sender<T> {
+impl<A: Actor> Drop for AddressSender<A> {
     fn drop(&mut self) {
         // Ordering between variables don't matter here
         let prev = self.inner.num_senders.fetch_sub(1, SeqCst);
 
         if prev == 1 {
-            let _ = self.do_send(None, false);
+            self.do_close();
         }
     }
 }
 
-/*
- *
- * ===== impl Receiver =====
- *
- */
+//
+//
+// ===== impl Receiver =====
+//
+//
+impl<A: Actor> AddressReceiver<A> {
 
-impl<T> Receiver<T> {
     pub fn connected(&self) -> bool {
         let curr = self.inner.state.load(Relaxed);
         let state = decode_state(curr);
@@ -779,7 +516,7 @@ impl<T> Receiver<T> {
         state.is_open || state.num_messages != 0
     }
 
-    fn sender(&mut self) -> Sender<T> {
+    pub fn sender(&mut self) -> AddressSender<A> {
         // change state to open
         let mut curr_state = self.inner.state.load(SeqCst);
         loop {
@@ -812,7 +549,7 @@ impl<T> Receiver<T> {
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
             if actual == curr {
-                return Sender {
+                return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
                     maybe_parked: false,
@@ -859,7 +596,7 @@ impl<T> Receiver<T> {
         }
     }
 
-    fn next_message(&mut self) -> Async<Option<T>> {
+    fn next_message(&mut self) -> Async<Option<Envelope<A>>> {
         // Pop off a message
         loop {
             match unsafe { self.inner.message_queue.pop() } {
@@ -948,11 +685,11 @@ impl<T> Receiver<T> {
     }
 }
 
-impl<T> Stream for Receiver<T> {
-    type Item = T;
+impl<A: Actor> Stream for AddressReceiver<A> {
+    type Item = Envelope<A>;
     type Error = ();
 
-    fn poll(&mut self) -> Poll<Option<T>, ()> {
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         loop {
             // Try to read a message off of the message queue.
             let msg = match self.next_message() {
@@ -995,7 +732,7 @@ impl<T> Stream for Receiver<T> {
     }
 }
 
-impl<T> Drop for Receiver<T> {
+impl<A: Actor> Drop for AddressReceiver<A> {
     fn drop(&mut self) {
         // Drain the channel of all pending messages
         self.close();
@@ -1005,60 +742,27 @@ impl<T> Drop for Receiver<T> {
     }
 }
 
-impl<T> UnboundedReceiver<T> {
-    pub fn connected(&self) -> bool {
-        self.0.connected()
-    }
-
-    pub fn sender(&mut self) -> UnboundedSender<T> {
-        UnboundedSender(self.0.sender())
-    }
-
-    /// Closes the receiving half
-    ///
-    /// This prevents any further messages from being sent on the channel while
-    /// still enabling the receiver to drain messages that are buffered.
-    pub fn close(&mut self) {
-        self.0.close();
-    }
-}
-
-impl<T> Stream for UnboundedReceiver<T> {
-    type Item = T;
-    type Error = ();
-
-    fn poll(&mut self) -> Poll<Option<T>, ()> {
-        self.0.poll()
-    }
-}
-
-
-/*
- *
- * ===== impl Inner =====
- *
- */
-
-impl<T> Inner<T> {
+//
+//
+// ===== impl Inner =====
+//
+//
+impl<A: Actor> Inner<A> {
     // The return value is such that the total number of messages that can be
     // enqueued into the channel will never exceed MAX_CAPACITY
     fn max_senders(&self) -> usize {
-        match self.buffer {
-            Some(buffer) => MAX_CAPACITY - buffer,
-            None => MAX_BUFFER,
-        }
+        MAX_CAPACITY - self.buffer
     }
 }
 
-unsafe impl<T: Send> Send for Inner<T> {}
-unsafe impl<T: Send> Sync for Inner<T> {}
+unsafe impl<A: Actor> Send for Inner<A> {}
+unsafe impl<A: Actor> Sync for Inner<A> {}
 
-/*
- *
- * ===== Helpers =====
- *
- */
-
+//
+//
+// ===== Helpers =====
+//
+//
 fn decode_state(num: usize) -> State {
     State {
         is_open: num & OPEN_MASK == OPEN_MASK,

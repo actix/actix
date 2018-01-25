@@ -84,15 +84,15 @@ use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
 use address::Address;
 use context::Context;
-use handler::{Handler, ResponseType, IntoResponse};
+use handler::{Handler, Response, ResponseType, IntoResponse};
 use envelope::{Envelope, EnvelopeProxy, ToEnvelope};
-use message::Response;
-use queue::sync;
+use addr::channel as sync;
+use addr::AddressReceiver;
 
 /// Sync arbiter
 pub struct SyncArbiter<A> where A: Actor<Context=SyncContext<A>> {
     queue: Arc<MsQueue<SyncContextProtocol<A>>>,
-    msgs: sync::UnboundedReceiver<Envelope<A>>,
+    msgs: AddressReceiver<A>,
     threads: usize,
 }
 
@@ -115,7 +115,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
             });
         }
 
-        let (tx, rx) = sync::unbounded();
+        let (tx, rx) = sync::channel(0);
         Arbiter::handle().spawn(
             SyncArbiter{queue: queue, msgs: rx, threads: threads});
 
@@ -157,14 +157,13 @@ impl<A> ToEnvelope<A> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>>,
 {
     fn pack<M>(msg: M,
-               tx: Option<SyncSender<Result<M::Item, M::Error>>>,
-               cancel_on_drop: bool) -> Envelope<A>
+               tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               <M as ResponseType>::Item: Send,
               <M as ResponseType>::Error: Send
     {
-        Envelope::new(SyncEnvelope::new(msg, tx, cancel_on_drop))
+        Envelope::new(SyncEnvelope::new(msg, tx))
     }
 }
 
@@ -279,19 +278,16 @@ pub(crate) struct SyncEnvelope<A, M>
     msg: Option<M>,
     tx: Option<SyncSender<Result<M::Item, M::Error>>>,
     actor: PhantomData<A>,
-    cancel_on_drop: bool,
 }
 
 impl<A, M>  SyncEnvelope<A, M>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
           M: ResponseType,
 {
-    pub fn new(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
-               cancel_on_drop: bool) -> Self {
+    pub fn new(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Self {
         SyncEnvelope{msg: Some(msg),
                      tx: tx,
-                     actor: PhantomData,
-                     cancel_on_drop: cancel_on_drop}
+                     actor: PhantomData}
     }
 }
 
@@ -304,7 +300,7 @@ impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
     fn handle(&mut self, act: &mut A, ctx: &mut A::Context)
     {
         let tx = self.tx.take();
-        if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
+        if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
             return
         }
 

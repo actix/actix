@@ -30,11 +30,20 @@ impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
         self.tx.connected()
     }
 
-    /// Send message `M` to the actor `A`. Communication channel to the actor is bounded.
-    pub fn send<M>(&self, msg: M) -> Result<(), SendError<M>>
+    /// Send message `M` to the actor `A`
+    ///
+    /// This method ignores receiver capacity and silently fails if actor is closed.
+    pub fn send<M>(&self, msg: M) where A: Handler<M>, M: ResponseType + 'static {
+        let _ = self.tx.do_send(msg);
+    }
+
+    /// Try to send message `M` to the actor `A`
+    ///
+    /// This function fails if receiver if full or closed.
+    pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
         where A: Handler<M>, M: ResponseType + 'static
     {
-        self.tx.send(msg)
+        self.tx.try_send(msg)
     }
 
     /// Send message to actor `A` and asynchronously wait for response.
@@ -45,7 +54,7 @@ impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     pub fn call<B, M>(&self, _: &B, msg: M) -> LocalRequest<A, B, M>
         where A: Handler<M>, M: ResponseType + 'static, B: Actor, B::Context: AsyncContext<B>
     {
-        match self.tx.send_and_wait(msg) {
+        match self.tx.send(msg) {
             Ok(rx) => LocalRequest::new(Some(rx), None),
             Err(SendError::NotReady(msg)) =>
                 LocalRequest::new(None, Some((self.tx.clone(), msg))),
@@ -62,7 +71,7 @@ impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     pub fn call_fut<M>(&self, msg: M) -> LocalFutRequest<A, M>
         where A: Handler<M>, M: ResponseType + 'static
     {
-        match self.tx.send_and_wait(msg) {
+        match self.tx.send(msg) {
             Ok(rx) => LocalFutRequest::new(Some(rx), None),
             Err(SendError::NotReady(msg)) =>
                 LocalFutRequest::new(None, Some((self.tx.clone(), msg))),
@@ -90,7 +99,7 @@ impl<A, M> Subscriber<M> for LocalAddress<A>
           M: ResponseType + 'static
 {
     fn send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.send(msg)
+        self.try_send(msg)
     }
 
     #[doc(hidden)]

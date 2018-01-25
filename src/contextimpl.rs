@@ -4,17 +4,15 @@ use futures::{Async, Poll};
 use smallvec::SmallVec;
 
 use fut::ActorFuture;
-use queue::sync;
-
+use addr::AddressReceiver;
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
 use address::{Address, LocalAddress, Subscriber};
-use context::AsyncContextApi;
+use context::AsyncContextAddress;
 use contextitems::ActorWaitItem;
 use contextaddress::ContextAddress;
 use handler::{Handler, ResponseType};
-use envelope::Envelope;
 
-
+/// internal context state
 bitflags! {
     struct ContextFlags: u8 {
         const STARTED =  0b0000_0001;
@@ -39,7 +37,7 @@ pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     handle: SpawnHandle,
 }
 
-impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
+impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextAddress<A>
 {
     #[inline]
     pub fn new(act: Option<A>) -> ContextImpl<A> {
@@ -54,7 +52,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn with_receiver(act: Option<A>, rx: sync::UnboundedReceiver<Envelope<A>>) -> Self {
+    pub fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Self {
         ContextImpl {
             act: act,
             wait: SmallVec::new(),

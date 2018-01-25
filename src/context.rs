@@ -3,24 +3,22 @@ use futures::{Future, Poll};
 use tokio_core::reactor::Handle;
 
 use fut::ActorFuture;
-use queue::sync;
-
 use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
+use addr::AddressReceiver;
 use address::Address;
 use local::LocalAddress;
-use envelope::Envelope;
 use contextimpl::ContextImpl;
 
-pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
+pub trait AsyncContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
 
-    fn remote_address(&mut self) -> Address<A>;
+    fn remote(&mut self) -> Address<A>;
 
-    fn local_address(&mut self) -> LocalAddress<A>;
+    fn local(&mut self) -> LocalAddress<A>;
 }
 
 /// Actor execution context
-pub struct Context<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A> {
+pub struct Context<A> where A: Actor<Context=Context<A>> {
     inner: ContextImpl<A>,
 }
 
@@ -66,15 +64,15 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
 }
 
 #[doc(hidden)]
-impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
+impl<A> AsyncContextAddress<A> for Context<A> where A: Actor<Context=Self> {
 
     #[inline]
-    fn local_address(&mut self) -> LocalAddress<A> {
+    fn local(&mut self) -> LocalAddress<A> {
         self.inner.local_address()
     }
 
     #[inline]
-    fn remote_address(&mut self) -> Address<A> {
+    fn remote(&mut self) -> Address<A> {
         self.inner.remote_address()
     }
 }
@@ -87,8 +85,7 @@ impl<A> Context<A> where A: Actor<Context=Self> {
     }
 
     #[inline]
-    pub(crate) fn with_receiver(act: Option<A>,
-                                rx: sync::UnboundedReceiver<Envelope<A>>) -> Context<A> {
+    pub(crate) fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Context<A> {
         Context { inner: ContextImpl::with_receiver(act, rx) }
     }
 

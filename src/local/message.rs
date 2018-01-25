@@ -44,7 +44,7 @@ impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
     fn poll(&mut self, _: &mut B, _: &mut B::Context) -> Poll<Self::Item, Self::Error> {
         // send message
         if let Some((sender, msg)) = self.info.take() {
-            match sender.send_and_wait(msg) {
+            match sender.send(msg) {
                 Ok(rx) => self.rx = Some(rx),
                 Err(SendError::NotReady(msg)) => {
                     self.info = Some((sender, msg));
@@ -89,7 +89,7 @@ impl<A, M> Future for LocalFutRequest<A, M>
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         // send message
         if let Some((sender, msg)) = self.info.take() {
-            match sender.send_and_wait(msg) {
+            match sender.send(msg) {
                 Ok(rx) => self.rx = Some(rx),
                 Err(SendError::NotReady(msg)) => {
                     self.info = Some((sender, msg));

@@ -1,20 +1,17 @@
 use std::marker::PhantomData;
 use futures::{Async, Poll};
-use futures::sync::oneshot::Sender as SyncSender;
+use futures::sync::oneshot::Sender;
 
 use fut::ActorFuture;
 use actor::{Actor, AsyncContext};
-use handler::{Handler, ResponseType, IntoResponse};
-use message::Response;
 use context::Context;
-
+use handler::{Handler, Response, ResponseType, IntoResponse, MessageResult};
 
 /// Converter trait, packs message to suitable envelope
 pub trait ToEnvelope<A: Actor> {
 
     /// Pack message into suitable envelope
-    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
-               cancel_on_drop: bool) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               M::Item: Send, M::Error: Send;
@@ -22,17 +19,14 @@ pub trait ToEnvelope<A: Actor> {
 
 impl<A> ToEnvelope<A> for Context<A> where A: Actor<Context=Context<A>>
 {
-    fn pack<M>(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>,
-               cancel_on_drop: bool) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
         where A: Handler<M>,
-              M: ResponseType + 'static,
-              M::Item: Send, M::Error: Send,
+              M: ResponseType + 'static, M::Item: Send, M::Error: Send,
     {
         Envelope(Box::new(
             RemoteEnvelope{msg: Some(msg),
                            tx: tx,
-                           act: PhantomData,
-                           cancel_on_drop: cancel_on_drop}))
+                           act: PhantomData}))
     }
 }
 
@@ -65,22 +59,19 @@ pub trait EnvelopeProxy {
 pub struct RemoteEnvelope<A, M> where M: ResponseType {
     act: PhantomData<A>,
     msg: Option<M>,
-    tx: Option<SyncSender<Result<M::Item, M::Error>>>,
-    cancel_on_drop: bool,
+    tx: Option<Sender<MessageResult<M>>>,
 }
 
 impl<A, M> RemoteEnvelope<A, M> where A: Actor, M: ResponseType {
 
     pub fn new(msg: M,
-               tx: Option<SyncSender<Result<M::Item, M::Error>>>,
-               cancel_on_drop: bool) -> RemoteEnvelope<A, M>
+               tx: Option<Sender<Result<M::Item, M::Error>>>) -> RemoteEnvelope<A, M>
         where A: Handler<M>,
               M: Send + 'static, M::Item: Send, M::Item: Send
     {
         RemoteEnvelope{msg: Some(msg),
                        tx: tx,
-                       act: PhantomData,
-                       cancel_on_drop: cancel_on_drop}
+                       act: PhantomData}
     }
 }
 
@@ -92,7 +83,7 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
 
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context) {
         let tx = self.tx.take();
-        if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
+        if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
             return
         }
 
@@ -118,7 +109,7 @@ impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
 pub(crate) struct EnvelopFuture<A, M> where A: Actor, M: ResponseType {
     msg: PhantomData<M>,
     fut: Response<A, M>,
-    tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+    tx: Option<Sender<Result<M::Item, M::Error>>>,
 }
 
 impl<A, M> ActorFuture for EnvelopFuture<A, M>

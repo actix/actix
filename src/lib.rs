@@ -50,13 +50,13 @@ mod contextitems;
 mod envelope;
 mod framed;
 mod handler;
-mod message;
 mod registry;
 mod system;
 mod supervisor;
 
 mod address;
 mod contextaddress;
+mod addr;
 mod local;
 
 pub mod fut;
@@ -65,19 +65,15 @@ pub mod msgs;
 pub mod sync;
 pub mod utils;
 
-#[doc(hidden)]
-pub mod queue;
-
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
+pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, LocalAddress, Subscriber, ActorAddress};
 pub use context::Context;
 pub use envelope::ToEnvelope;
 pub use framed::FramedCell;
-pub use message::{Request, Response};
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
@@ -106,8 +102,7 @@ pub mod prelude {
     pub use address::{Address, LocalAddress};
     pub use context::{Context, ContextFutureSpawner};
     pub use framed::FramedCell;
-    pub use message::Response;
-    pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
+    pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;
     pub use sync::{SyncContext, SyncArbiter};
     pub use supervisor::Supervisor;
@@ -117,11 +112,10 @@ pub mod prelude {
         pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
         pub use actor::{Actor, ActorState, FramedActor, Supervised,
                         ActorContext, AsyncContext, SpawnHandle};
-        pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture};
+        pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
         pub use arbiter::Arbiter;
         pub use address::{Address, LocalAddress, Subscriber, ActorAddress};
         pub use context::Context;
-        pub use message::{Request, Response};
         pub use system::System;
         pub use sync::{SyncContext, SyncArbiter};
         pub use registry::{ArbiterService, SystemService};
@@ -143,11 +137,11 @@ pub mod dev {
     pub use prelude::*;
     pub use prelude::actix::*;
 
-    #[doc(hidden)]
-    pub use queue;
     pub use address::{ActorAddress, SendError};
-    pub use context::AsyncContextApi;
+    pub use context::AsyncContextAddress;
     pub use contextimpl::ContextImpl;
     pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
+
+    pub use addr::Request;
     pub use local::{LocalRequest, LocalFutRequest, UpgradeAddress};
 }
