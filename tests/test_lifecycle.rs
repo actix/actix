@@ -47,6 +47,34 @@ impl Actor for MyActor {
     }
 }
 
+struct MySyncActor {
+    started: Arc<AtomicBool>,
+    stopping: Arc<AtomicBool>,
+    stopped: Arc<AtomicBool>,
+    restore_after_stop: bool,
+}
+
+impl Actor for MySyncActor {
+    type Context = actix::SyncContext<Self>;
+
+    fn started(&mut self, _: &mut Self::Context) {
+        self.started.store(true, Ordering::Relaxed);
+    }
+    fn stopping(&mut self, _: &mut Self::Context) -> bool {
+        self.stopping.store(true, Ordering::Relaxed);
+
+        if self.restore_after_stop {
+            self.restore_after_stop = false;
+            false
+        } else {
+            true
+        }
+    }
+    fn stopped(&mut self, _: &mut Self::Context) {
+        self.stopped.store(true, Ordering::Relaxed);
+    }
+}
+
 #[test]
 fn test_active_address() {
     let sys = System::new("test");
@@ -168,6 +196,47 @@ fn test_stop_after_drop_sync_address() {
         assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
+            .then(move |_| {
+                drop(addr);
+                Arbiter::system().send(SystemExit(0));
+                future::result(Ok(()))
+            })
+    });
+
+    sys.run();
+    assert!(started.load(Ordering::Relaxed), "Not started");
+    assert!(stopping.load(Ordering::Relaxed), "Not stopping");
+    assert!(stopped.load(Ordering::Relaxed), "Not stopped");
+}
+
+#[test]
+fn test_stop_after_drop_sync_actor() {
+    let sys = System::new("test");
+
+    let started = Arc::new(AtomicBool::new(false));
+    let stopping = Arc::new(AtomicBool::new(false));
+    let stopped = Arc::new(AtomicBool::new(false));
+
+    let started1 = Arc::clone(&started);
+    let stopping1 = Arc::clone(&stopping);
+    let stopped1 = Arc::clone(&stopped);
+
+    let addr: Address<_> = SyncArbiter::start(1, move || MySyncActor {
+        started: Arc::clone(&started1),
+        stopping: Arc::clone(&stopping1),
+        stopped: Arc::clone(&stopped1),
+        restore_after_stop: false});
+
+    let started2 = Arc::clone(&started);
+    let stopping2 = Arc::clone(&stopping);
+    let stopped2 = Arc::clone(&stopped);
+
+    Arbiter::handle().spawn_fn(move || {
+        assert!(started2.load(Ordering::Relaxed), "Not started");
+        assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
+        assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
+
+        Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
             .then(move |_| {
                 drop(addr);
                 Arbiter::system().send(SystemExit(0));

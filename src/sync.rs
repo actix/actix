@@ -1,8 +1,10 @@
 //! Sync actors support
 //!
-//! Sync actors could be used for cpu bound behavior. Only one sync actor
+//! Sync actors could be used for cpu bound load. Only one sync actor
 //! runs within arbiter's thread. Sync actor process one message at a time.
 //! Sync arbiter can start mutiple threads with separate instance of actor in each.
+//! Note on actor `stopping` lifecycle event, sync actor can not prevent
+//! stopping by returning `false` from `stopping` method.
 //! Multi consumer queue is used as a communication channel queue.
 //! To be able to start sync actor via `SyncArbiter`
 //! Actor has to use `SyncContext` as an execution context.
@@ -99,7 +101,7 @@ pub struct SyncArbiter<A> where A: Actor<Context=SyncContext<A>> {
 impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
     /// Start new sync arbiter with specified number of worker threads.
-    /// Returns address of started actor.
+    /// Returns address of the started actor.
     pub fn start<F>(threads: usize, factory: F) -> Address<A>
         where F: Sync + Send + Fn() -> A + 'static
     {
@@ -123,7 +125,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
     }
 }
 
-impl<A> Actor for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>{
+impl<A> Actor for SyncArbiter<A> where A: Actor<Context=SyncContext<A>> {
     type Context = Context<Self>;
 }
 
@@ -136,20 +138,24 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         loop {
             match self.msgs.poll() {
-                Ok(Async::Ready(Some(msg))) => {
-                    let _ = self.queue.send(SyncContextProtocol::Envelope(msg));
-                }
+                Ok(Async::Ready(Some(msg))) =>
+                    self.queue.send(SyncContextProtocol::Envelope(msg))
+                    .expect("Should not fail"),
                 Ok(Async::NotReady) => break,
-                Ok(Async::Ready(None)) | Err(_) => {
-                    // stop sync arbiters
-                    for _ in 0..self.threads {
-                        let _ = self.queue.send(SyncContextProtocol::Stop);
-                    }
-                    return Ok(Async::Ready(()))
-                },
+                Ok(Async::Ready(None)) | Err(_) => unreachable!(),
             }
         }
-        Ok(Async::NotReady)
+
+        // stop condition
+        if self.msgs.connected() {
+            Ok(Async::NotReady)
+        } else {
+            // stop sync arbiters
+            for _ in 0..self.threads {
+                let _ = self.queue.send(SyncContextProtocol::Stop);
+            }
+            Ok(Async::Ready(()))
+        }
     }
 }
 
@@ -160,8 +166,7 @@ impl<A> ToEnvelope<A> for SyncContext<A>
                tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
-              <M as ResponseType>::Item: Send,
-              <M as ResponseType>::Error: Send
+              M::Item: Send, M::Error: Send
     {
         Envelope::new(SyncEnvelope::new(msg, tx))
     }
@@ -211,7 +216,9 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
             match self.queue.recv() {
                 Ok(SyncContextProtocol::Stop) => {
                     self.state = ActorState::Stopping;
-                    A::stopping(&mut self.act, ctx);
+                    if !A::stopping(&mut self.act, ctx) {
+                        warn!("stopping method is not supported for sync actors");
+                    }
                     self.state = ActorState::Stopped;
                     A::stopped(&mut self.act, ctx);
                     return
@@ -345,8 +352,7 @@ impl<A, M> Future for ResponseFuture<A, M>
     type Item = M::Item;
     type Error = M::Error;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error>
-    {
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         let act = unsafe{ &mut *self.act };
         let ctx = unsafe{ &mut *self.ctx };
 
