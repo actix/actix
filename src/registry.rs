@@ -109,7 +109,7 @@ impl Registry {
                 return addr.clone()
             }
         }
-        let addr: LocalAddress<_> = A::create(|ctx| {
+        let addr: LocalAddress<_> = Supervisor::start(|ctx| {
             let mut act = A::default();
             act.service_started(ctx);
             act

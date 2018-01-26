@@ -10,6 +10,8 @@
 
 * Use bounded channels for actor communications
 
+* Add dns resolver and tcp connector utility actor
+
 
 ## 0.4.5 (2018-01-23)
 

@@ -30,6 +30,10 @@ extern crate futures;
 extern crate tokio_io;
 extern crate tokio_core;
 extern crate tokio_signal;
+extern crate trust_dns_resolver;
+
+#[macro_use]
+extern crate failure;
 
 #[cfg_attr(feature="cargo-clippy", allow(useless_attribute))]
 #[allow(unused_imports)]

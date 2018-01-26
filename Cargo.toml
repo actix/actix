@@ -41,10 +41,14 @@ tokio-signal = "0.1"
 # other
 log = "0.4"
 crossbeam = "0.3"
+failure = "0.1.1"
 bitflags = "1.0"
 smallvec = "0.6"
 libc = { version = "0.2" }
 uuid = { version = "0.5", features = ["v4"] }
+
+# dns
+trust-dns-resolver = "0.7"
 
 [dev-dependencies]
 skeptic = "0.13"
