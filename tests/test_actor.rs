@@ -1,10 +1,13 @@
 extern crate actix;
 extern crate futures;
+extern crate tokio_core;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering};
+use std::time::Duration;
 use actix::prelude::*;
 use futures::{Future, future};
+use tokio_core::reactor::Timeout;
 
 #[derive(Debug)]
 struct Num(usize);
@@ -136,8 +139,11 @@ fn test_restart_sync_actor() {
     Arbiter::handle().spawn_fn(move || {
         addr.call_fut(Num(4))
             .then(move |_| {
-                Arbiter::system().send(actix::msgs::SystemExit(0));
-                future::result(Ok(()))
+                Timeout::new(Duration::new(0, 100_000), Arbiter::handle()).unwrap()
+                    .then(move |_| {
+                        Arbiter::system().send(actix::msgs::SystemExit(0));
+                        future::result(Ok(()))
+                    })
             })
     });
 
