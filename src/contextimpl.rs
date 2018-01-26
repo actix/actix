@@ -4,7 +4,7 @@ use futures::{Async, Poll};
 use smallvec::SmallVec;
 
 use fut::ActorFuture;
-use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
+use actor::{Actor, AsyncContext, ActorState, SpawnHandle, Supervised};
 use address::{Address, AddressReceiver, LocalAddress};
 use context::AsyncContextAddress;
 use contextitems::ActorWaitItem;
@@ -171,6 +171,21 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     #[inline]
     fn stopping(&self) -> bool {
         self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
+    }
+
+    /// Restart context. Cleanup all futures, except address queue.
+    #[inline]
+    pub fn restart(&mut self, ctx: &mut A::Context) -> bool where A: Supervised {
+        if self.act.is_none() || !self.address.connected() {
+            false
+        } else {
+            self.flags = ContextFlags::RUNNING;
+            self.wait = SmallVec::new();
+            self.items = SmallVec::new();
+            self.handle = SpawnHandle::default();
+            self.actor().restarting(ctx);
+            true
+        }
     }
 
     #[inline]

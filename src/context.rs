@@ -93,18 +93,14 @@ impl<A> Context<A> where A: Actor<Context=Self> {
     }
 
     #[inline]
-    pub(crate) fn is_alive(&self) -> bool {
-        self.inner.alive()
-    }
-
-    #[inline]
-    pub(crate) fn restarting(&mut self) where A: Supervised {
+    pub(crate) fn restart(&mut self) -> bool where A: Supervised {
         let ctx: &mut Context<A> = unsafe {
             mem::transmute(self as &mut Context<A>)
         };
-        self.inner.actor().restarting(ctx);
+        self.inner.restart(ctx)
     }
 
+    #[cfg(test)]
     #[inline]
     pub(crate) fn actor(&mut self) -> &mut A {
         self.inner.actor()
@@ -113,11 +109,6 @@ impl<A> Context<A> where A: Actor<Context=Self> {
     #[inline]
     pub(crate) fn set_actor(&mut self, act: A) {
         self.inner.set_actor(act)
-    }
-
-    #[inline]
-    pub(crate) fn into_inner(self) -> A {
-        self.inner.into_inner().unwrap()
     }
 }
 
