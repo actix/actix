@@ -185,7 +185,6 @@ pub struct SyncContext<A> where A: Actor<Context=SyncContext<A>> {
     stopping: bool,
     state: ActorState,
     factory: Arc<Fn() -> A + Send + Sync>,
-    restart: bool,
 }
 
 impl<A> SyncContext<A> where A: Actor<Context=Self> {
@@ -199,7 +198,6 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
             stopping: false,
             state: ActorState::Started,
             factory: factory,
-            restart: false,
         }
     }
 
@@ -225,50 +223,37 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
                 },
                 Ok(SyncContextProtocol::Envelope(mut env)) => {
                     env.handle(&mut self.act, ctx);
-
-                    if self.restart {
-                        self.restart = false;
-                        self.stopping = false;
-
-                        // stop old actor
-                        A::stopping(&mut self.act, ctx);
-                        self.state = ActorState::Stopped;
-                        A::stopped(&mut self.act, ctx);
-
-                        // start new actor
-                        self.state = ActorState::Started;
-                        self.act = (*self.factory)();
-                        A::started(&mut self.act, ctx);
-                        self.state = ActorState::Running;
-                    }
-                },
+ },
                 Err(_) => return
             }
 
             if self.stopping {
+                self.stopping = false;
+
+                // stop old actor
                 A::stopping(&mut self.act, ctx);
                 self.state = ActorState::Stopped;
                 A::stopped(&mut self.act, ctx);
-                return
+
+                // start new actor
+                self.state = ActorState::Started;
+                self.act = (*self.factory)();
+                A::started(&mut self.act, ctx);
+                self.state = ActorState::Running;
             }
         }
-    }
-
-    /// Initiate actor restart process.
-    pub fn restart(&mut self) {
-        self.restart = true;
     }
 }
 
 impl<A> ActorContext for SyncContext<A> where A: Actor<Context=Self>
 {
-    /// Stop actor execution
+    /// Stop current actor. SyncContext creates and starts new actor.
     fn stop(&mut self) {
         self.stopping = true;
         self.state = ActorState::Stopping;
     }
 
-    /// Terminate actor execution
+    /// Terminate actor execution. SyncContext creates and starts new actor.
     fn terminate(&mut self) {
         self.stopping = true;
         self.state = ActorState::Stopping;

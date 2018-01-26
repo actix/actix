@@ -84,7 +84,7 @@ struct MySyncActor {
     stopping: Arc<AtomicUsize>,
     stopped: Arc<AtomicUsize>,
     msgs: Arc<AtomicUsize>,
-    restart: bool,
+    stop: bool,
 }
 
 impl Actor for MySyncActor {
@@ -106,11 +106,10 @@ impl actix::Handler<Num> for MySyncActor {
     type Result = ();
 
     fn handle(&mut self, msg: Num, ctx: &mut Self::Context) {
-        if self.restart {
-            ctx.restart();
-            self.restart = false;
-        }
         self.msgs.fetch_add(msg.0, Ordering::Relaxed);
+        if self.stop {
+            ctx.stop();
+        }
     }
 }
 
@@ -133,7 +132,7 @@ fn test_restart_sync_actor() {
         stopping: Arc::clone(&stopping1),
         stopped: Arc::clone(&stopped1),
         msgs: Arc::clone(&msgs1),
-        restart: started1.load(Ordering::Relaxed) == 0});
+        stop: started1.load(Ordering::Relaxed) == 0});
     addr.send(Num(2));
 
     Arbiter::handle().spawn_fn(move || {
