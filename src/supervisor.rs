@@ -71,8 +71,8 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         // create actor
         let mut ctx = Context::new(None);
         let act = f(&mut ctx);
-        ctx.set_actor(act);
         let addr = ctx.address();
+        ctx.set_actor(act);
 
         // create supervisor
         Arbiter::handle().spawn(Supervisor::<A>{ctx: ctx});
@@ -118,18 +118,5 @@ impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
                 }
             }
         }
-    }
-}
-
-trait FnFactory<A: Actor>: 'static where A::Context: AsyncContext<A> {
-    fn call(self: Box<Self>, &mut A::Context) -> A;
-}
-
-impl<A: Actor, F: FnOnce(&mut A::Context) -> A + 'static> FnFactory<A> for F
-    where A::Context: AsyncContext<A>
-{
-    #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
-    fn call(self: Box<Self>, ctx: &mut A::Context) -> A {
-        (*self)(ctx)
     }
 }
