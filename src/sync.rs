@@ -75,7 +75,7 @@ use std::thread;
 use std::sync::Arc;
 use std::marker::PhantomData;
 
-use crossbeam::sync::MsQueue;
+use crossbeam_channel as channel;
 use futures::{Async, Future, Poll, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
 use tokio_core::reactor::Core;
@@ -91,7 +91,7 @@ use addr::AddressReceiver;
 
 /// Sync arbiter
 pub struct SyncArbiter<A> where A: Actor<Context=SyncContext<A>> {
-    queue: Arc<MsQueue<SyncContextProtocol<A>>>,
+    queue: channel::Sender<SyncContextProtocol<A>>,
     msgs: AddressReceiver<A>,
     threads: usize,
 }
@@ -104,11 +104,11 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
         where F: Sync + Send + Fn() -> A + 'static
     {
         let factory = Arc::new(factory);
-        let queue = Arc::new(MsQueue::new());
+        let (sender, receiver) = channel::unbounded();
 
         for _ in 0..threads {
             let f = Arc::clone(&factory);
-            let actor_queue = Arc::clone(&queue);
+            let actor_queue = receiver.clone();
 
             thread::spawn(move || {
                 SyncContext::new(f, actor_queue).run()
@@ -117,7 +117,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
         let (tx, rx) = sync::channel(0);
         Arbiter::handle().spawn(
-            SyncArbiter{queue: queue, msgs: rx, threads: threads});
+            SyncArbiter{queue: sender, msgs: rx, threads: threads});
 
         Address::new(tx)
     }
@@ -137,13 +137,13 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
         loop {
             match self.msgs.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    self.queue.push(SyncContextProtocol::Envelope(msg));
+                    let _ = self.queue.send(SyncContextProtocol::Envelope(msg));
                 }
                 Ok(Async::NotReady) => break,
                 Ok(Async::Ready(None)) | Err(_) => {
                     // stop sync arbiters
                     for _ in 0..self.threads {
-                        self.queue.push(SyncContextProtocol::Stop);
+                        let _ = self.queue.send(SyncContextProtocol::Stop);
                     }
                     return Ok(Async::Ready(()))
                 },
@@ -176,7 +176,7 @@ enum SyncContextProtocol<A> where A: Actor<Context=SyncContext<A>> {
 pub struct SyncContext<A> where A: Actor<Context=SyncContext<A>> {
     act: A,
     core: Option<Core>,
-    queue: Arc<MsQueue<SyncContextProtocol<A>>>,
+    queue: channel::Receiver<SyncContextProtocol<A>>,
     stopping: bool,
     state: ActorState,
     factory: Arc<Fn() -> A + Send + Sync>,
@@ -185,8 +185,8 @@ pub struct SyncContext<A> where A: Actor<Context=SyncContext<A>> {
 
 impl<A> SyncContext<A> where A: Actor<Context=Self> {
     /// Create new SyncContext
-    fn new(factory: Arc<Fn() -> A + Send + Sync>,
-           queue: Arc<MsQueue<SyncContextProtocol<A>>>) -> Self {
+    fn new(factory: Arc<Fn() -> A+Send+Sync>,
+           queue: channel::Receiver<SyncContextProtocol<A>>) -> Self {
         SyncContext {
             act: factory(),
             core: None,
@@ -208,15 +208,15 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
         self.state = ActorState::Running;
 
         loop {
-            match self.queue.pop() {
-                SyncContextProtocol::Stop => {
+            match self.queue.recv() {
+                Ok(SyncContextProtocol::Stop) => {
                     self.state = ActorState::Stopping;
                     A::stopping(&mut self.act, ctx);
                     self.state = ActorState::Stopped;
                     A::stopped(&mut self.act, ctx);
                     return
                 },
-                SyncContextProtocol::Envelope(mut env) => {
+                Ok(SyncContextProtocol::Envelope(mut env)) => {
                     env.handle(&mut self.act, ctx);
 
                     if self.restart {
@@ -235,6 +235,7 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
                         self.state = ActorState::Running;
                     }
                 },
+                Err(_) => return
             }
 
             if self.stopping {
