@@ -12,7 +12,7 @@ fn test_resolver() {
         let resolver: LocalAddress<_> = Arbiter::registry().get::<resolver::Connector>();
         resolver.call_fut(
             resolver::Resolve::host("localhost"))
-            .then(|addrs| {
+            .then(|_| {
                 Arbiter::system().send(actix::msgs::SystemExit(0));
                 Ok::<_, ()>(())
             })
@@ -23,7 +23,7 @@ fn test_resolver() {
 
         resolver.call_fut(
             resolver::Connect::host("localhost:5000"))
-            .then(|stream| {
+            .then(|_| {
                 Ok::<_, ()>(())
             })
     });

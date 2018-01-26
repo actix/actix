@@ -111,7 +111,7 @@ impl<Io, Codec> FramedCell<Io, Codec>
         let inner = self.as_mut();
 
         // try to write to sink immediately
-        if inner.sink_items.is_empty() && inner.framed.is_none() {
+        if inner.sink_items.is_empty() && inner.framed.is_some() {
             inner.flags.remove(FramedFlags::SINK_FLUSHED);
             match inner.framed.as_mut().unwrap().start_send(msg) {
                 Ok(AsyncSink::NotReady(msg)) => inner.sink_items.push_front(msg),
