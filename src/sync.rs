@@ -223,8 +223,8 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
                 },
                 Ok(SyncContextProtocol::Envelope(mut env)) => {
                     env.handle(&mut self.act, ctx);
- },
-                Err(_) => return
+                },
+                Err(_) => (),
             }
 
             if self.stopping {
