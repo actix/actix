@@ -27,9 +27,6 @@ To use `actix`, add this to your `Cargo.toml`:
 actix = "0.4"
 ```
 
-You may consider to check 
-[chat example](https://github.com/actix/actix/tree/master/examples/chat). 
-
 ### Initialize the Actix
 
 In order to use actix you first need to create an `System`.
