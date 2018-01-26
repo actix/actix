@@ -16,7 +16,7 @@
 //!         let resolver: LocalAddress<_> = Arbiter::registry().get::<resolver::Connector>();
 //!
 //!         resolver.call_fut(
-//!             resolver::Resolve::host("localhost"))      // <- resolve "localhost"
+//!             resolver::Resolve::host("localhost"))       // <- resolve "localhost"
 //!                 .then(|addrs| {
 //!                     println!("RESULT: {:?}", addrs);
 //! #                   Arbiter::system().send(actix::msgs::SystemExit(0));
@@ -28,7 +28,7 @@
 //!         let resolver: LocalAddress<_> = Arbiter::registry().get::<resolver::Connector>();
 //!
 //!         resolver.call_fut(
-//!             resolver::Connect::host("localhost:5000"))      // <- connect to a "localhost"
+//!             resolver::Connect::host("localhost:5000"))  // <- connect to a "localhost"
 //!                 .then(|stream| {
 //!                     println!("RESULT: {:?}", stream);
 //!                     Ok::<_, ()>(())
