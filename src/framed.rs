@@ -114,7 +114,7 @@ impl<Io, Codec> FramedCell<Io, Codec>
         if inner.sink_items.is_empty() && inner.framed.is_some() {
             inner.flags.remove(FramedFlags::SINK_FLUSHED);
             match inner.framed.as_mut().unwrap().start_send(msg) {
-                Ok(AsyncSink::NotReady(msg)) => inner.sink_items.push_front(msg),
+                Ok(AsyncSink::NotReady(msg)) => inner.sink_items.push_back(msg),
                 Ok(AsyncSink::Ready) => (),
                 Err(err) => inner.error = Some(err),
             }
@@ -519,6 +519,35 @@ mod tests {
         assert_eq!(ctx.actor().msgs,
                    vec![Bytes::from_static(b"11"), Bytes::from_static(b"22"),
                         Bytes::from_static(b"33"), Bytes::from_static(b"44")]);
+    }
+
+    #[test]
+    fn test_drain() {
+        let (mut ctx, mut cell) = create_ctx(Buffer::new(""));
+
+        let _ = ctx.poll();
+
+        // block sink
+        cell.as_mut().framed.as_mut().unwrap().get_mut().write_block = true;
+        cell.as_mut().sink_items.push_back(Bytes::from_static(b"11"));
+        cell.send(Bytes::from_static(b"22"));
+
+        // drain
+        let _ = cell.drain(&mut ctx);
+
+        // new data in framed, actor is paused
+        cell.as_mut().framed.as_mut().unwrap().get_mut().feed_data("bb");
+        let _ = ctx.poll();
+        assert_eq!(ctx.actor().msgs.len(), 0);
+
+        // sink unblocked
+        cell.as_mut().framed.as_mut().unwrap().get_mut().write_block = false;
+        let _ = ctx.poll();
+        assert_eq!(ctx.actor().msgs.len(), 1);
+        assert_eq!(ctx.actor().msgs[0], b"bb"[..]);
+
+        // sink data
+        assert_eq!(cell.as_mut().framed.as_mut().unwrap().get_mut().write, b"1122"[..]);
     }
 
     #[test]

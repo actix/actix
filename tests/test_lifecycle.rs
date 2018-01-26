@@ -160,8 +160,11 @@ fn test_stop_after_drop_address() {
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
                 drop(addr);
-                Arbiter::system().send(SystemExit(0));
-                future::result(Ok(()))
+                Timeout::new(Duration::new(0, 10_000), Arbiter::handle()).unwrap()
+                    .then(|_| {
+                        Arbiter::system().send(SystemExit(0));
+                        future::result(Ok(()))
+                    })
             })
     });
 
