@@ -86,10 +86,10 @@ impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 
     /// Get `Subscriber` for specific message type
-    pub fn subscriber<M>(&self) -> Box<Subscriber<M>>
+    pub fn into_subscriber<M>(self) -> Box<Subscriber<M>>
         where A: Handler<M>, M: ResponseType + 'static
     {
-        Box::new(Clone::clone(self))
+        Box::new(self)
     }
 }
 

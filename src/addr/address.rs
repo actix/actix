@@ -88,12 +88,12 @@ impl<A> Address<A> where A: Actor {
         }
     }
 
-    /// Get `Subscriber` for specific message type
-    pub fn subscriber<M: 'static + Send>(&self) -> Box<Subscriber<M> + Send>
+    /// Convert address to a `Subscriber` for specific message type
+    pub fn into_subscriber<M: 'static + Send>(self) -> Box<Subscriber<M> + Send>
         where A: Handler<M>, A::Context: ToEnvelope<A>,
               M: ResponseType + Send + 'static,
               M::Item: Send, M::Error: Send {
-        Box::new(self.clone())
+        Box::new(self)
     }
 }
 

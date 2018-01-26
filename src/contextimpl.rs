@@ -6,11 +6,10 @@ use smallvec::SmallVec;
 use fut::ActorFuture;
 use addr::AddressReceiver;
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
-use address::{Address, LocalAddress, Subscriber};
+use address::{Address, LocalAddress};
 use context::AsyncContextAddress;
 use contextitems::ActorWaitItem;
 use contextaddress::ContextAddress;
-use handler::{Handler, ResponseType};
 
 /// internal context state
 bitflags! {
@@ -159,22 +158,6 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     pub fn remote_address(&mut self) -> Address<A> {
         self.modify();
         self.address.remote_address()
-    }
-
-    #[inline]
-    pub fn subscriber<M>(&mut self) -> Box<Subscriber<M>>
-        where A: Handler<M>,
-              M: ResponseType + 'static {
-        self.modify();
-        Box::new(self.address.local_address())
-    }
-
-    #[inline]
-    pub fn remote_subscriber<M>(&mut self) -> Box<Subscriber<M> + Send>
-        where A: Handler<M>,
-              M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send {
-        self.modify();
-        Box::new(self.address.remote_address())
     }
 
     #[inline]
