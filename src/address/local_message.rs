@@ -3,11 +3,12 @@ use std::marker::PhantomData;
 use futures::{Async, Future, Poll};
 use futures::unsync::oneshot::{Canceled, Receiver};
 
-use address::{Address, SendError};
 use actor::{Actor, AsyncContext};
 use fut::ActorFuture;
 use handler::{Handler, ResponseType};
-use super::channel::LocalAddrSender;
+
+use super::{Address, SendError};
+use super::local_channel::LocalAddrSender;
 
 
 /// `LocalRequest` is a `Future` which represents asynchronous message sending process.

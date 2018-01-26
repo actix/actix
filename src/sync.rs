@@ -84,12 +84,10 @@ use tokio_core::reactor::Core;
 
 use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
-use address::Address;
+use address::{sync_channel, Address, AddressReceiver};
 use context::Context;
 use handler::{Handler, Response, ResponseType, IntoResponse};
 use envelope::{Envelope, EnvelopeProxy, ToEnvelope};
-use addr::channel as sync;
-use addr::AddressReceiver;
 
 /// Sync arbiter
 pub struct SyncArbiter<A> where A: Actor<Context=SyncContext<A>> {
@@ -117,7 +115,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
             });
         }
 
-        let (tx, rx) = sync::channel(0);
+        let (tx, rx) = sync_channel::channel(0);
         Arbiter::handle().spawn(
             SyncArbiter{queue: sender, msgs: rx, threads: threads});
 

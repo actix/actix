@@ -3,12 +3,10 @@ use futures::{Future, Async, Poll, Stream};
 
 use actor::{Actor, Supervised, ActorContext, AsyncContext};
 use arbiter::Arbiter;
-use address::{Address, LocalAddress};
+use address::{Address, LocalAddress, LocalAddrReceiver, LocalAddrProtocol};
+use address::{sync_channel, AddressReceiver};
 use context::Context;
 use msgs::Execute;
-use local::{LocalAddrReceiver, LocalAddrProtocol};
-use addr::channel as sync;
-use addr::AddressReceiver;
 
 /// Actor supervisor
 ///
@@ -103,7 +101,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
-        let (tx, rx) = sync::channel(0);
+        let (tx, rx) = sync_channel::channel(0);
 
         addr.send(Execute::new(move || -> Result<(), ()> {
             // create actor
@@ -133,7 +131,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     fn remote_address(&mut self) -> Address<A> {
         if self.sync_msgs.is_none() {
-            let (tx, rx) = sync::channel(0);
+            let (tx, rx) = sync_channel::channel(0);
             self.sync_msgs = Some(rx);
             Address::new(tx)
         } else {

@@ -60,8 +60,6 @@ mod supervisor;
 
 mod address;
 mod contextaddress;
-mod addr;
-mod local;
 
 pub mod fut;
 pub mod actors;
@@ -145,7 +143,5 @@ pub mod dev {
     pub use context::AsyncContextAddress;
     pub use contextimpl::ContextImpl;
     pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
-
-    pub use addr::Request;
-    pub use local::{LocalRequest, LocalFutRequest, UpgradeAddress};
+    pub use address::{Request, LocalRequest, LocalFutRequest, UpgradeAddress};
 }

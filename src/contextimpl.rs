@@ -4,9 +4,8 @@ use futures::{Async, Poll};
 use smallvec::SmallVec;
 
 use fut::ActorFuture;
-use addr::AddressReceiver;
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle};
-use address::{Address, LocalAddress};
+use address::{Address, AddressReceiver, LocalAddress};
 use context::AsyncContextAddress;
 use contextitems::ActorWaitItem;
 use contextaddress::ContextAddress;

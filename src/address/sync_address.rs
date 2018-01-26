@@ -3,8 +3,8 @@ use handler::{Handler, ResponseType};
 use envelope::ToEnvelope;
 use address::{SendError, Subscriber};
 
-use super::message::{Request, RequestFut};
-use super::channel::AddressSender;
+use super::{Request, RequestFut};
+use super::sync_channel::AddressSender;
 
 /// `Send` address of the actor. Actor can run in different thread
 pub struct Address<A> where A: Actor {

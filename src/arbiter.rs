@@ -6,14 +6,12 @@ use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
 use actor::{Actor, AsyncContext};
-use address::Address;
-use local::LocalAddress;
+use address::{sync_channel, Address, LocalAddress};
 use context::Context;
 use msgs::{Execute, StartActor, StopArbiter};
 use handler::Handler;
 use registry::{Registry, SystemRegistry};
 use system::{System, RegisterArbiter, UnregisterArbiter};
-use addr::channel as sync;
 
 thread_local!(
     static HND: RefCell<Option<Handle>> = RefCell::new(None);
@@ -189,7 +187,7 @@ impl Arbiter {
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + Send + 'static
     {
-        let (stx, srx) = sync::channel(0);
+        let (stx, srx) = sync_channel::channel(0);
 
         // new arbiter
         let addr = Arbiter::new("actor");

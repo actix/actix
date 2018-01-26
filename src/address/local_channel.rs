@@ -15,10 +15,9 @@ use futures::task::{self, Task};
 use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
-use address::{Address, SendError};
 use handler::{Handler, MessageResult, ResponseType};
-use super::LocalAddrProtocol;
-use super::envelope::LocalEnvelope;
+use super::{Address, SendError, LocalEnvelope, LocalAddrProtocol};
+
 
 struct Shared<A: Actor> {
     buffer: VecDeque<LocalAddrProtocol<A>>,

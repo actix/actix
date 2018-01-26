@@ -2,8 +2,8 @@ use actor::{Actor, AsyncContext};
 use address::{SendError, Subscriber};
 use handler::{Handler, ResponseType};
 
-use super::channel::LocalAddrSender;
-use super::message::{LocalRequest, LocalFutRequest, UpgradeAddress};
+use super::local_channel::LocalAddrSender;
+use super::local_message::{LocalRequest, LocalFutRequest, UpgradeAddress};
 
 
 /// Local address of the actor

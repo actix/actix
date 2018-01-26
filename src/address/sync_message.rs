@@ -6,10 +6,10 @@ use futures::unsync::oneshot::Canceled;
 
 use actor::{Actor, AsyncContext};
 use fut::ActorFuture;
-use address::SendError;
 use handler::{Handler, ResponseType, MessageResult};
 
-use super::channel::AddressSender;
+use super::SendError;
+use super::sync_channel::AddressSender;
 
 
 /// `Request` is a `Future` which represents asynchronous message sending process.

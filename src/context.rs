@@ -5,9 +5,7 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
-use addr::AddressReceiver;
-use address::Address;
-use local::LocalAddress;
+use address::{Address, AddressReceiver, LocalAddress};
 use contextimpl::ContextImpl;
 
 pub trait AsyncContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {

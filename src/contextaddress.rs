@@ -1,11 +1,8 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{Address, LocalAddress};
-use local::{LocalAddrReceiver, LocalAddrProtocol};
-use addr::AddressReceiver;
-use addr::channel as sync;
-
+use address::{sync_channel, Address, AddressReceiver,
+              LocalAddress, LocalAddrReceiver, LocalAddrProtocol};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -51,7 +48,7 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
 
     pub fn remote_address(&mut self) -> Address<A> {
         if self.sync_msgs.is_none() {
-            let (tx, rx) = sync::channel(0);
+            let (tx, rx) = sync_channel::channel(0);
             self.sync_msgs = Some(rx);
             Address::new(tx)
         } else {
