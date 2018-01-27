@@ -120,41 +120,45 @@ impl Registry {
     }
 }
 
+// TODO: Remove lock
 /// System wide actors registry
 ///
 /// System registry serves same purpose as [Registry](struct.Registry.html), except
 /// it is shared across all arbiters.
 pub struct SystemRegistry {
-    #[cfg_attr(feature="cargo-clippy", allow(type_complexity))]
-    registry: Arc<Mutex<RefCell<HashMap<TypeId, Box<Any>>>>>,
+    registry: Arc<Mutex<HashMap<TypeId, Box<Any>>>>,
 }
 
 unsafe impl Send for SystemRegistry {}
 
 impl SystemRegistry {
     pub(crate) fn new() -> Self {
-        SystemRegistry{registry: Arc::new(Mutex::new(RefCell::new(HashMap::new())))}
+        SystemRegistry{registry: Arc::new(Mutex::new(HashMap::new()))}
     }
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
     pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> Address<A> {
-        if let Ok(hm) = self.registry.lock() {
-            if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
-                match addr.downcast_ref::<Address<A>>() {
-                    Some(addr) => {
-                        return addr.clone()
-                    },
-                    None =>
-                        error!("Got unknown value: {:?}", addr),
+        {
+            if let Ok(hm) = self.registry.lock() {
+                if let Some(addr) = hm.get(&TypeId::of::<A>()) {
+                    match addr.downcast_ref::<Address<A>>() {
+                        Some(addr) => {
+                            return addr.clone()
+                        },
+                        None => error!("Got unknown value: {:?}", addr),
+                    }
                 }
-            }
-            let addr = Supervisor::start_in(&Arbiter::system_arbiter(), |ctx| {
-                let mut act = A::default();
-                act.service_started(ctx);
-                act
-            });
-            hm.borrow_mut().insert(TypeId::of::<A>(), Box::new(addr.clone()));
+            } else { panic!("System registry lock is poisoned"); }
+        }
+
+        let addr = Supervisor::start_in(&Arbiter::system_arbiter(), |ctx| {
+            let mut act = A::default();
+            act.service_started(ctx);
+            act
+        });
+        if let Ok(mut hm) = self.registry.lock() {
+            hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
             return addr
         }
         panic!("System registry lock is poisoned");
