@@ -131,8 +131,9 @@ impl actix::SystemService for ProcessSignals {
         #[cfg(unix)]
         {
             // SIGHUP
-            unix::Signal::new(libc::SIGHUP, handle).map_err(|_| ())
+            unix::Signal::new(libc::SIGHUP, handle)
                 .actfuture()
+                .drop_err()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
                      ctx.add_stream(sig.map(|_| SignalType::Hup)))
                 .spawn(ctx);
