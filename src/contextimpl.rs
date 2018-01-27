@@ -6,7 +6,7 @@ use smallvec::SmallVec;
 use fut::ActorFuture;
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle, Supervised};
 use address::{Address, SyncAddress, SyncAddressReceiver};
-use context::AsyncContextAddress;
+use context::AsyncContextApi;
 use contextitems::ActorWaitItem;
 use contextaddress::ContextAddress;
 
@@ -35,7 +35,7 @@ pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     handle: SpawnHandle,
 }
 
-impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextAddress<A>
+impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
 {
     #[inline]
     pub fn new(act: Option<A>) -> ContextImpl<A> {
@@ -148,13 +148,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn local_address(&mut self) -> Address<A> {
+    pub fn unsync_address(&mut self) -> Address<A> {
         self.modify();
         self.address.local_address()
     }
 
     #[inline]
-    pub fn remote_address(&mut self) -> SyncAddress<A> {
+    pub fn sync_address(&mut self) -> SyncAddress<A> {
         self.modify();
         self.address.remote_address()
     }

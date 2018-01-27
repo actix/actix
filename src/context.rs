@@ -8,11 +8,11 @@ use actor::{Actor, Supervised,
 use address::{Address, SyncAddress, SyncAddressReceiver};
 use contextimpl::ContextImpl;
 
-pub trait AsyncContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
+pub trait AsyncContextApi<A> where A: Actor, A::Context: AsyncContext<A> {
 
-    fn remote(&mut self) -> SyncAddress<A>;
+    fn sync_address(&mut self) -> SyncAddress<A>;
 
-    fn local(&mut self) -> Address<A>;
+    fn unsync_address(&mut self) -> Address<A>;
 }
 
 /// Actor execution context
@@ -62,16 +62,16 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
 }
 
 #[doc(hidden)]
-impl<A> AsyncContextAddress<A> for Context<A> where A: Actor<Context=Self> {
+impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
 
     #[inline]
-    fn local(&mut self) -> Address<A> {
-        self.inner.local_address()
+    fn unsync_address(&mut self) -> Address<A> {
+        self.inner.unsync_address()
     }
 
     #[inline]
-    fn remote(&mut self) -> SyncAddress<A> {
-        self.inner.remote_address()
+    fn sync_address(&mut self) -> SyncAddress<A> {
+        self.inner.sync_address()
     }
 }
 

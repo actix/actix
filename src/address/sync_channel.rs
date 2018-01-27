@@ -217,7 +217,7 @@ impl<A: Actor> AddressSender<A> {
             Err(SendError::NotReady(msg))
         } else {
             let (tx, rx) = sync_channel();
-            let env = <A::Context as ToEnvelope<A>>::pack(msg, Some(tx));
+            let env = <A::Context as ToEnvelope<A>>::pack_msg(msg, Some(tx));
             self.queue_push_and_signal(env);
             Ok(rx)
         }
@@ -246,7 +246,7 @@ impl<A: Actor> AddressSender<A> {
         if park_self {
             Err(SendError::NotReady(msg))
         } else {
-            let env = <A::Context as ToEnvelope<A>>::pack(msg, None);
+            let env = <A::Context as ToEnvelope<A>>::pack_msg(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
         }
@@ -263,7 +263,7 @@ impl<A: Actor> AddressSender<A> {
         if self.inc_num_messages_force().is_none() {
             Err(SendError::Closed(msg))
         } else {
-            let env = <A::Context as ToEnvelope<A>>::pack(msg, None);
+            let env = <A::Context as ToEnvelope<A>>::pack_msg(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
         }

@@ -87,7 +87,7 @@ use arbiter::Arbiter;
 use address::{sync_channel, SyncAddress, SyncAddressReceiver,
               Envelope, EnvelopeProxy, ToEnvelope};
 use context::Context;
-use handler::{Handler, Response, ResponseType, IntoResponse};
+use handler::{Handler, Response, ResponseType, IntoResponse, MessageResult};
 
 
 /// Sync arbiter
@@ -161,8 +161,7 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
 impl<A> ToEnvelope<A> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>>,
 {
-    fn pack<M>(msg: M,
-               tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Envelope<A>
+    fn pack_msg<M>(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               M::Item: Send, M::Error: Send
