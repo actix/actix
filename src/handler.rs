@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 
 use actor::Actor;
-use address::Address;
+use address::SyncAddress;
 use fut::ActorFuture;
 use context::Context;
 
@@ -50,8 +50,8 @@ impl<A, M> IntoResponse<A, M> for Result<M::Item, M::Error>
     }
 }
 
-impl<A, M, B> IntoResponse<A, M> for Address<B>
-    where A: Actor + Handler<M>, M: ResponseType<Item=Address<B>, Error=()>,
+impl<A, M, B> IntoResponse<A, M> for SyncAddress<B>
+    where A: Actor + Handler<M>, M: ResponseType<Item=SyncAddress<B>, Error=()>,
           B: Actor<Context=Context<B>>
 {
     fn into_response(self) -> Response<A, M> {

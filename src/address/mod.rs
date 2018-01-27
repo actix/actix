@@ -14,14 +14,14 @@ mod local_envelope;
 use actor::{Actor, AsyncContext};
 
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope, RemoteEnvelope};
-pub use self::local_address::LocalAddress;
+pub use self::local_address::Address;
 pub use self::local_message::{LocalRequest, LocalFutRequest, UpgradeAddress};
 pub(crate) use self::local_envelope::LocalEnvelope;
 pub(crate) use self::local_channel::LocalAddrReceiver;
 
-pub use self::sync_address::Address;
+pub use self::sync_address::SyncAddress;
 pub use self::sync_message::{Request, RequestFut};
-pub(crate) use self::sync_channel::AddressReceiver;
+pub(crate) use self::sync_channel::SyncAddressReceiver;
 
 pub use context::AsyncContextAddress;
 
@@ -30,7 +30,7 @@ pub(crate) enum LocalAddrProtocol<A: Actor> {
     /// message envelope
     Envelope(LocalEnvelope<A>),
     /// Request remote address
-    Upgrade(Sender<Address<A>>),
+    Upgrade(Sender<SyncAddress<A>>),
 }
 
 pub enum SendError<T> {
@@ -62,26 +62,26 @@ pub trait ActorAddress<A, T> where A: Actor {
     fn get(ctx: &mut A::Context) -> T;
 }
 
-impl<A> ActorAddress<A, LocalAddress<A>> for A
-    where A: Actor, A::Context: AsyncContext<A> + AsyncContextAddress<A>
-{
-    fn get(ctx: &mut A::Context) -> LocalAddress<A> {
-        ctx.local()
-    }
-}
-
 impl<A> ActorAddress<A, Address<A>> for A
     where A: Actor, A::Context: AsyncContext<A> + AsyncContextAddress<A>
 {
     fn get(ctx: &mut A::Context) -> Address<A> {
+        ctx.local()
+    }
+}
+
+impl<A> ActorAddress<A, SyncAddress<A>> for A
+    where A: Actor, A::Context: AsyncContext<A> + AsyncContextAddress<A>
+{
+    fn get(ctx: &mut A::Context) -> SyncAddress<A> {
         ctx.remote()
     }
 }
 
-impl<A> ActorAddress<A, (LocalAddress<A>, Address<A>)> for A
+impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
     where A: Actor, A::Context: AsyncContext<A> + AsyncContextAddress<A>
 {
-    fn get(ctx: &mut A::Context) -> (LocalAddress<A>, Address<A>) {
+    fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>) {
         (ctx.local(), ctx.remote())
     }
 }

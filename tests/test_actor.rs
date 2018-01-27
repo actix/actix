@@ -127,7 +127,7 @@ fn test_restart_sync_actor() {
     let stopped1 = Arc::clone(&stopped);
     let msgs1 = Arc::clone(&msgs);
 
-    let addr: Address<_> = SyncArbiter::start(1, move || MySyncActor {
+    let addr: SyncAddress<_> = SyncArbiter::start(1, move || MySyncActor {
         started: Arc::clone(&started1),
         stopping: Arc::clone(&stopping1),
         stopped: Arc::clone(&stopped1),

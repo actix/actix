@@ -48,7 +48,7 @@
 //!    let sys = System::new("test");
 //!
 //!    // Start signals handler
-//!    let addr: Address<_> = Signals.start();
+//!    let addr: SyncAddress<_> = Signals.start();
 //!
 //!    // send SIGTERM
 //!    std::thread::spawn(move || {
@@ -215,7 +215,7 @@ impl Actor for DefaultSignalsHandler {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = Arbiter::system_registry().get::<ProcessSignals>();
-        let slf: Address<_> = ctx.address();
+        let slf: SyncAddress<_> = ctx.address();
         addr.call(self, Subscribe(slf.into_subscriber()))
             .map(|_, _, _| ())
             .map_err(|_, _, _| ())

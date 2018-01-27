@@ -24,8 +24,8 @@ use utils::TimerFunc;
 ///
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
-/// non thread safe [`LocalAddress<A>`](struct.LocalAddress.html) or thread safe address
-/// [`Address<A>`](struct.Address.html)
+/// non thread safe [`Address<A>`](struct.Address.html) or thread safe address
+/// [`SyncAddress<A>`](struct.SyncAddress.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
@@ -103,7 +103,7 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: LocalAddress<_> = MyActor.start();
+    /// let addr: Address<_> = MyActor.start();
     /// ```
     fn start<Addr>(self) -> Addr
         where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
@@ -136,7 +136,7 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: LocalAddress<_> = MyActor::create(|ctx: &mut Context<MyActor>| {
+    /// let addr: Address<_> = MyActor::create(|ctx: &mut Context<MyActor>| {
     ///     MyActor{val: 10}
     /// });
     /// ```
@@ -329,7 +329,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: LocalAddress<_> = MyActor.start();
+    /// #    let addr: Address<_> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```
@@ -383,7 +383,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: LocalAddress<_> = MyActor.start();
+    /// #    let addr: Address<_> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```
@@ -431,7 +431,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: LocalAddress<_> = MyActor.start();
+    /// #    let addr: Address<_> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```

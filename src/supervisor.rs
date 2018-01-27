@@ -2,7 +2,7 @@ use futures::{Future, Async, Poll};
 
 use actor::{Actor, Supervised, AsyncContext};
 use arbiter::Arbiter;
-use address::{sync_channel, Address, LocalAddress};
+use address::{sync_channel, Address, SyncAddress};
 use context::Context;
 use msgs::Execute;
 
@@ -65,7 +65,7 @@ pub struct Supervisor<A> where A: Supervised + Actor<Context=Context<A>> {
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor in current Arbiter.
-    pub fn start<F>(f: F) -> LocalAddress<A>
+    pub fn start<F>(f: F) -> Address<A>
         where F: FnOnce(&mut A::Context) -> A + 'static
     {
         // create actor
@@ -82,7 +82,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 
     /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
     /// actor could be started immediately or on first incoming message.
-    pub fn start_in<F>(addr: &Address<Arbiter>, f: F) -> Address<A>
+    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, f: F) -> SyncAddress<A>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
@@ -96,7 +96,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             Ok(())
         }));
 
-        Address::new(tx)
+        SyncAddress::new(tx)
     }
 }
 

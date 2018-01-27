@@ -1,14 +1,14 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Address, AddressReceiver,
-              LocalAddress, LocalAddrReceiver, LocalAddrProtocol};
+use address::{sync_channel, Address, LocalAddrReceiver, LocalAddrProtocol,
+              SyncAddress, SyncAddressReceiver};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
 
 pub(crate) struct ContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
-    sync_msgs: Option<AddressReceiver<A>>,
+    sync_msgs: Option<SyncAddressReceiver<A>>,
     unsync_msgs: LocalAddrReceiver<A>,
 }
 
@@ -34,7 +34,7 @@ impl NumPolls {
 impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
 {
     #[inline]
-    pub fn new(rx: AddressReceiver<A>) -> Self {
+    pub fn new(rx: SyncAddressReceiver<A>) -> Self {
         ContextAddress {
             sync_msgs: Some(rx),
             unsync_msgs: LocalAddrReceiver::new(0) }
@@ -46,22 +46,22 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
             self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
     }
 
-    pub fn remote_address(&mut self) -> Address<A> {
+    pub fn remote_address(&mut self) -> SyncAddress<A> {
         if self.sync_msgs.is_none() {
             let (tx, rx) = sync_channel::channel(0);
             self.sync_msgs = Some(rx);
-            Address::new(tx)
+            SyncAddress::new(tx)
         } else {
             if let Some(ref mut addr) = self.sync_msgs {
-                return Address::new(addr.sender())
+                return SyncAddress::new(addr.sender())
             }
             unreachable!();
         }
     }
 
     #[inline]
-    pub fn local_address(&mut self) -> LocalAddress<A> {
-        LocalAddress::new(self.unsync_msgs.sender())
+    pub fn local_address(&mut self) -> Address<A> {
+        Address::new(self.unsync_msgs.sender())
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {

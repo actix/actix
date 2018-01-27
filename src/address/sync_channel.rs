@@ -43,7 +43,7 @@ trait AssertKinds: Send + Sync + Clone {}
 /// This is a concrete implementation of a stream which can be used to represent
 /// a stream of values being computed elsewhere. This is created by the
 /// `channel` method.
-pub struct AddressReceiver<A: Actor> {
+pub struct SyncAddressReceiver<A: Actor> {
     inner: Arc<Inner<A>>,
 }
 
@@ -141,7 +141,7 @@ impl SenderTask {
 ///
 /// The `Receiver` returned implements the `Stream` trait and has access to any
 /// number of the associated combinators for transforming the result.
-pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>) {
+pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, SyncAddressReceiver<A>) {
     // Check that the requested buffer size does not exceed the maximum buffer
     // size permitted by the system.
     assert!(buffer < MAX_BUFFER, "requested buffer size too large");
@@ -164,7 +164,7 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>
         maybe_parked: Cell::new(false),
     };
 
-    let rx = AddressReceiver {
+    let rx = SyncAddressReceiver {
         inner: inner,
     };
 
@@ -459,7 +459,7 @@ impl<A: Actor> Drop for AddressSender<A> {
 // ===== impl Receiver =====
 //
 //
-impl<A: Actor> AddressReceiver<A> {
+impl<A: Actor> SyncAddressReceiver<A> {
 
     pub fn connected(&self) -> bool {
         self.inner.num_senders.load(SeqCst) != 0
@@ -573,7 +573,7 @@ impl<A: Actor> AddressReceiver<A> {
     }
 }
 
-impl<A: Actor> Stream for AddressReceiver<A> {
+impl<A: Actor> Stream for SyncAddressReceiver<A> {
     type Item = Envelope<A>;
     type Error = ();
 
@@ -615,7 +615,7 @@ impl<A: Actor> Stream for AddressReceiver<A> {
     }
 }
 
-impl<A: Actor> Drop for AddressReceiver<A> {
+impl<A: Actor> Drop for SyncAddressReceiver<A> {
     fn drop(&mut self) {
         // close
         let mut curr = self.inner.state.load(SeqCst);

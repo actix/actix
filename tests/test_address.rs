@@ -26,7 +26,7 @@ impl actix::Handler<Ping> for MyActor {
     }
 }
 
-struct MyActor2(Option<LocalAddress<MyActor>>, Option<Address<MyActor>>);
+struct MyActor2(Option<Address<MyActor>>, Option<SyncAddress<MyActor>>);
 
 impl Actor for MyActor2 {
     type Context = actix::Context<Self>;
@@ -64,7 +64,7 @@ fn test_address() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: LocalAddress<_> = MyActor(Arc::clone(&count)).start();
+    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     addr.send(Ping(0));
 
@@ -89,7 +89,7 @@ fn test_sync_address() {
     let count = Arc::new(AtomicUsize::new(0));
     let arbiter = Arbiter::new("sync-test");
 
-    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
+    let addr: SyncAddress<_> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     let addr3 = addr.clone();
     addr.send(Ping(1));
@@ -119,11 +119,11 @@ fn test_address_upgrade() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: LocalAddress<_> = MyActor(Arc::clone(&count)).start();
+    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
     addr.send(Ping(0));
 
     let addr2 = addr.clone();
-    let _addr3: LocalAddress<_> = MyActor2(Some(addr2), None).start();
+    let _addr3: Address<_> = MyActor2(Some(addr2), None).start();
 
     Arbiter::handle().spawn_fn(move || {
         Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
@@ -146,7 +146,7 @@ fn test_address_upgrade_with_drop() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: LocalAddress<_> = MyActor(Arc::clone(&count)).start();
+    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
     addr.send(Ping(0));
 
     Arbiter::handle().spawn(
@@ -174,7 +174,7 @@ fn test_address_upgrade_with_drop() {
 fn test_error_result() {
     let sys = System::new("test");
 
-    let addr: LocalAddress<_> = MyActor3.start();
+    let addr: Address<_> = MyActor3.start();
 
     Arbiter::handle().spawn_fn(move || {
         addr.call_fut(Ping(0)).then(|res| {

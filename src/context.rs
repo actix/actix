@@ -5,14 +5,14 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
-use address::{Address, AddressReceiver, LocalAddress};
+use address::{Address, SyncAddress, SyncAddressReceiver};
 use contextimpl::ContextImpl;
 
 pub trait AsyncContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
 
-    fn remote(&mut self) -> Address<A>;
+    fn remote(&mut self) -> SyncAddress<A>;
 
-    fn local(&mut self) -> LocalAddress<A>;
+    fn local(&mut self) -> Address<A>;
 }
 
 /// Actor execution context
@@ -65,12 +65,12 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
 impl<A> AsyncContextAddress<A> for Context<A> where A: Actor<Context=Self> {
 
     #[inline]
-    fn local(&mut self) -> LocalAddress<A> {
+    fn local(&mut self) -> Address<A> {
         self.inner.local_address()
     }
 
     #[inline]
-    fn remote(&mut self) -> Address<A> {
+    fn remote(&mut self) -> SyncAddress<A> {
         self.inner.remote_address()
     }
 }
@@ -83,7 +83,7 @@ impl<A> Context<A> where A: Actor<Context=Self> {
     }
 
     #[inline]
-    pub(crate) fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Context<A> {
+    pub(crate) fn with_receiver(act: Option<A>, rx: SyncAddressReceiver<A>) -> Context<A> {
         Context { inner: ContextImpl::with_receiver(act, rx) }
     }
 

@@ -5,23 +5,23 @@ use super::{Request, RequestFut, SendError, Subscriber, ToEnvelope};
 use super::sync_channel::AddressSender;
 
 /// `Send` address of the actor. Actor can run in different thread
-pub struct Address<A> where A: Actor {
+pub struct SyncAddress<A> where A: Actor {
     tx: AddressSender<A>
 }
 
-unsafe impl<A> Send for Address<A> where A: Actor {}
-unsafe impl<A> Sync for Address<A> where A: Actor {}
+unsafe impl<A> Send for SyncAddress<A> where A: Actor {}
+unsafe impl<A> Sync for SyncAddress<A> where A: Actor {}
 
-impl<A> Clone for Address<A> where A: Actor {
+impl<A> Clone for SyncAddress<A> where A: Actor {
     fn clone(&self) -> Self {
-        Address{tx: self.tx.clone()}
+        SyncAddress{tx: self.tx.clone()}
     }
 }
 
-impl<A> Address<A> where A: Actor {
+impl<A> SyncAddress<A> where A: Actor {
 
-    pub(crate) fn new(sender: AddressSender<A>) -> Address<A> {
-        Address{tx: sender}
+    pub(crate) fn new(sender: AddressSender<A>) -> SyncAddress<A> {
+        SyncAddress{tx: sender}
     }
 
     /// Indicates if actor is still alive
@@ -95,7 +95,7 @@ impl<A> Address<A> where A: Actor {
     }
 }
 
-impl<A, M> Subscriber<M> for Address<A>
+impl<A, M> Subscriber<M> for SyncAddress<A>
     where A: Actor + Handler<M>,
           <A as Actor>::Context: ToEnvelope<A>,
           M: ResponseType + Send + 'static,

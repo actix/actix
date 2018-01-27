@@ -16,7 +16,7 @@ use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, MessageResult, ResponseType};
-use super::{Address, SendError, LocalEnvelope, LocalAddrProtocol};
+use super::{SyncAddress, SendError, LocalEnvelope, LocalAddrProtocol};
 
 
 struct Shared<A: Actor> {
@@ -41,7 +41,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         }
     }
 
-    pub fn upgrade(&self) -> Result<Receiver<Address<A>>, ()> {
+    pub fn upgrade(&self) -> Result<Receiver<SyncAddress<A>>, ()> {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
             None => return Err(()),

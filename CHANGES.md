@@ -6,8 +6,6 @@
 
 * Make rules of actor stopping more strict
 
-* Rename Address to LocalAddress, SyncAddress to Address
-
 * Use bounded channels for actor communications
 
 * Add dns resolver and tcp connector utility actor

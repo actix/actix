@@ -3,7 +3,7 @@ use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
 use actor::Actor;
-use address::Address;
+use address::SyncAddress;
 use arbiter::Arbiter;
 use handler::{Handler, ResponseType};
 use context::Context;
@@ -51,7 +51,7 @@ use msgs::{SystemExit, StopArbiter};
 /// ```
 pub struct System {
     stop: Option<Sender<i32>>,
-    arbiters: HashMap<String, Address<Arbiter>>,
+    arbiters: HashMap<String, SyncAddress<Arbiter>>,
 }
 
 impl Actor for System {
@@ -123,7 +123,7 @@ impl Handler<SystemExit> for System {
 }
 
 /// Register Arbiter within system
-pub(crate) struct RegisterArbiter(pub String, pub Address<Arbiter>);
+pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);
 
 #[doc(hidden)]
 impl ResponseType for RegisterArbiter {

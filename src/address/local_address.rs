@@ -9,20 +9,20 @@ use super::local_message::{LocalRequest, LocalFutRequest, UpgradeAddress};
 /// Local address of the actor
 ///
 /// Actor has to run in the same thread as owner of the address.
-pub struct LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct Address<A> where A: Actor, A::Context: AsyncContext<A> {
     tx: LocalAddrSender<A>
 }
 
-impl<A> Clone for LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Clone for Address<A> where A: Actor, A::Context: AsyncContext<A> {
     fn clone(&self) -> Self {
-        LocalAddress{tx: self.tx.clone()}
+        Address{tx: self.tx.clone()}
     }
 }
 
-impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
 
-    pub(crate) fn new(sender: LocalAddrSender<A>) -> LocalAddress<A> {
-        LocalAddress{tx: sender}
+    pub(crate) fn new(sender: LocalAddrSender<A>) -> Address<A> {
+        Address{tx: sender}
     }
 
     /// Indicates if actor is still alive
@@ -93,7 +93,7 @@ impl<A> LocalAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 }
 
-impl<A, M> Subscriber<M> for LocalAddress<A>
+impl<A, M> Subscriber<M> for Address<A>
     where A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
           M: ResponseType + 'static

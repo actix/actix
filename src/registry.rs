@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use actor::{Actor, Supervised};
 use arbiter::Arbiter;
-use address::{Address, LocalAddress};
+use address::{Address, SyncAddress};
 use context::Context;
 use supervisor::Supervisor;
 
@@ -102,14 +102,14 @@ impl Registry {
     /// Query registry for specific actor. Returns address of the actor.
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
-    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> LocalAddress<A> {
+    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Address<A> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<LocalAddress<A>>() {
+            if let Some(addr) = addr.downcast_ref::<Address<A>>() {
                 return addr.clone()
             }
         }
-        let addr: LocalAddress<_> = Supervisor::start(|ctx| {
+        let addr: Address<_> = Supervisor::start(|ctx| {
             let mut act = A::default();
             act.service_started(ctx);
             act
@@ -138,11 +138,11 @@ impl SystemRegistry {
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
-    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> Address<A> {
+    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> SyncAddress<A> {
         {
             if let Ok(hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
-                    match addr.downcast_ref::<Address<A>>() {
+                    match addr.downcast_ref::<SyncAddress<A>>() {
                         Some(addr) => {
                             return addr.clone()
                         },

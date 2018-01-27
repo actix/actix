@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 
 use fut::ActorFuture;
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle, Supervised};
-use address::{Address, AddressReceiver, LocalAddress};
+use address::{Address, SyncAddress, SyncAddressReceiver};
 use context::AsyncContextAddress;
 use contextitems::ActorWaitItem;
 use contextaddress::ContextAddress;
@@ -50,7 +50,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Self {
+    pub fn with_receiver(act: Option<A>, rx: SyncAddressReceiver<A>) -> Self {
         ContextImpl {
             act: act,
             wait: SmallVec::new(),
@@ -148,13 +148,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
-    pub fn local_address(&mut self) -> LocalAddress<A> {
+    pub fn local_address(&mut self) -> Address<A> {
         self.modify();
         self.address.local_address()
     }
 
     #[inline]
-    pub fn remote_address(&mut self) -> Address<A> {
+    pub fn remote_address(&mut self) -> SyncAddress<A> {
         self.modify();
         self.address.remote_address()
     }

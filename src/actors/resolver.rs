@@ -13,7 +13,7 @@
 //!     let sys = System::new("test");
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: LocalAddress<_> = Arbiter::registry().get::<resolver::Connector>();
+//!         let resolver: Address<_> = Arbiter::registry().get::<resolver::Connector>();
 //!
 //!         resolver.call_fut(
 //!             resolver::Resolve::host("localhost"))       // <- resolve "localhost"
@@ -25,7 +25,7 @@
 //!    });
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: LocalAddress<_> = Arbiter::registry().get::<resolver::Connector>();
+//!         let resolver: Address<_> = Arbiter::registry().get::<resolver::Connector>();
 //!
 //!         resolver.call_fut(
 //!             resolver::Connect::host("localhost:5000"))  // <- connect to a "localhost"
