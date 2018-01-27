@@ -27,7 +27,7 @@ fn main() {
     Arbiter::handle().spawn(
         TcpStream::connect(&addr, Arbiter::handle())
             .and_then(|stream| {
-                let addr: Address<_> = ChatClient::create_with(
+                let addr: SyncAddress<_> = ChatClient::create_with(
                     stream.framed(codec::ClientChatCodec),
                     |_, framed| ChatClient{framed: framed});
 
