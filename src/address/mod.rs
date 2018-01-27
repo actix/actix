@@ -1,6 +1,7 @@
 use std::{mem, fmt};
 use futures::unsync::oneshot::Sender;
 
+mod envelope;
 mod queue;
 pub(crate) mod sync_channel;
 mod sync_address;
@@ -12,6 +13,7 @@ mod local_envelope;
 
 use actor::{Actor, AsyncContext};
 
+pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope, RemoteEnvelope};
 pub use self::local_address::LocalAddress;
 pub use self::local_message::{LocalRequest, LocalFutRequest, UpgradeAddress};
 pub(crate) use self::local_envelope::LocalEnvelope;

@@ -51,7 +51,6 @@ mod arbiter;
 mod context;
 mod contextimpl;
 mod contextitems;
-mod envelope;
 mod framed;
 mod handler;
 mod registry;
@@ -72,9 +71,8 @@ pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
 pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
-pub use address::{Address, LocalAddress, Subscriber, ActorAddress};
+pub use address::{Address, ActorAddress, LocalAddress, Subscriber, ToEnvelope};
 pub use context::Context;
-pub use envelope::ToEnvelope;
 pub use framed::FramedCell;
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
@@ -139,9 +137,9 @@ pub mod dev {
     pub use prelude::*;
     pub use prelude::actix::*;
 
-    pub use address::{ActorAddress, SendError};
     pub use context::AsyncContextAddress;
     pub use contextimpl::ContextImpl;
-    pub use envelope::{Envelope, ToEnvelope, RemoteEnvelope};
-    pub use address::{Request, LocalRequest, LocalFutRequest, UpgradeAddress};
+    pub use address::{ActorAddress, SendError,
+                      Envelope, ToEnvelope, RemoteEnvelope,
+                      Request, LocalRequest, LocalFutRequest, UpgradeAddress};
 }

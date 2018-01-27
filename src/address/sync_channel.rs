@@ -10,12 +10,13 @@ use futures::task::{self, Task};
 use futures::{Async, Poll, Stream};
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
 
-use super::queue::{Queue, PopResult};
-
 use actor::Actor;
-use address::SendError;
 use handler::{Handler, ResponseType, MessageResult};
-use envelope::{Envelope, ToEnvelope};
+
+use super::SendError;
+use super::queue::{Queue, PopResult};
+use super::envelope::{Envelope, ToEnvelope};
+
 
 /// The transmission end of a channel which is used to send values.
 ///

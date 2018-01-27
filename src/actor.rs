@@ -5,8 +5,7 @@ use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use address::ActorAddress;
-use envelope::ToEnvelope;
+use address::{ActorAddress, ToEnvelope};
 use handler::{Handler, Response, ResponseType};
 use context::Context;
 use contextitems::{ActorFutureItem, ActorMessageItem,

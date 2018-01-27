@@ -6,7 +6,7 @@ use futures::unsync::oneshot::Sender;
 use fut::ActorFuture;
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Response, ResponseType, IntoResponse};
-use envelope::EnvelopeProxy;
+use super::EnvelopeProxy;
 
 pub struct LocalEnvelope<A>{
     pub env: Box<EnvelopeProxy<Actor=A>>,

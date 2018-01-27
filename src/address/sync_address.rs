@@ -1,9 +1,7 @@
 use actor::Actor;
 use handler::{Handler, ResponseType};
-use envelope::ToEnvelope;
-use address::{SendError, Subscriber};
 
-use super::{Request, RequestFut};
+use super::{Request, RequestFut, SendError, Subscriber, ToEnvelope};
 use super::sync_channel::AddressSender;
 
 /// `Send` address of the actor. Actor can run in different thread
