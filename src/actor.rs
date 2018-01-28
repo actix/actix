@@ -366,16 +366,14 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     ///
     /// struct MyActor;
     ///
-    /// impl Handler<Ping> for MyActor {
+    /// impl StreamHandler<Ping, io::Error> for MyActor {
     ///     type Result = ();
     ///
     ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
     /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
     ///     }
-    /// }
     ///
-    /// impl StreamHandler<Ping, io::Error> for MyActor {
     ///     fn finished(&mut self, error: Option<io::Error>,
     ///                 ctx: &mut Self::Context, handle: SpawnHandle) {
     ///         println!("finished");
@@ -399,7 +397,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
         where S: Stream + 'static,
               S::Item: ResponseType,
-              A: Handler<S::Item> + StreamHandler<S::Item, S::Error>
+              A: StreamHandler<S::Item, S::Error>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");

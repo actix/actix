@@ -28,15 +28,12 @@ impl Actor for MyActor {
     }
 }
 
-impl actix::Handler<Num> for MyActor {
+impl actix::StreamHandler<Num, ()> for MyActor {
     type Result = ();
 
     fn handle(&mut self, msg: Num, _: &mut actix::Context<MyActor>) {
         self.0.fetch_add(msg.0, Ordering::Relaxed);
     }
-}
-
-impl actix::StreamHandler<Num, ()> for MyActor {
 
     fn finished(&mut self, err: Option<()>, _: &mut actix::Context<MyActor>, _: SpawnHandle) {
         if err.is_some() {

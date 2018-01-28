@@ -10,6 +10,8 @@
 
 * Add dns resolver and tcp connector utility actor
 
+* Add StreamHandler trait for stream handling
+
 
 ## 0.4.5 (2018-01-23)
 

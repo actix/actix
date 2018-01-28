@@ -170,7 +170,7 @@ impl<A, M, E, S> ActorStreamItem<A, M, E, S> where A: Actor, M: ResponseType {
 
 impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + Handler<M> + StreamHandler<M, E>, A::Context: AsyncContext<A>,
+          A: Actor + StreamHandler<M, E>, A::Context: AsyncContext<A>,
           M: ResponseType
 {
     type Item = ();
@@ -199,7 +199,7 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
 
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = <A as Handler<M>>::handle(act, msg, ctx);
+                    let fut = <A as StreamHandler<M, E>>::handle(act, msg, ctx);
                     self.fut = Some(fut.into_response());
                     if ctx.waiting() {
                         return Ok(Async::NotReady)
