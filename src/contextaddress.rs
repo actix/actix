@@ -6,6 +6,10 @@ use address::{sync_channel, Address, LocalAddrReceiver, SyncAddress, SyncAddress
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
 
+/// Default address channel capacity
+pub const DEFAULT_CAPACITY: usize = 16;
+
+
 pub(crate) struct ContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
     sync_msgs: Option<SyncAddressReceiver<A>>,
     unsync_msgs: LocalAddrReceiver<A>,
@@ -17,7 +21,7 @@ impl<A> Default for ContextAddress<A> where A: Actor, A::Context: AsyncContext<A
     fn default() -> Self {
         ContextAddress {
             sync_msgs: None,
-            unsync_msgs: LocalAddrReceiver::new(0) }
+            unsync_msgs: LocalAddrReceiver::new(DEFAULT_CAPACITY) }
     }
 }
 
@@ -36,9 +40,18 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
     pub fn new(rx: SyncAddressReceiver<A>) -> Self {
         ContextAddress {
             sync_msgs: Some(rx),
-            unsync_msgs: LocalAddrReceiver::new(0) }
+            unsync_msgs: LocalAddrReceiver::new(16) }
     }
 
+    pub fn capacity(&self) -> usize {
+        self.unsync_msgs.capacity()
+    }
+
+    pub fn set_capacity(&mut self, cap: usize) {
+        self.unsync_msgs.set_capacity(cap);
+        self.sync_msgs.as_mut().map(|msgs| msgs.set_capacity(cap));
+    }
+    
     #[inline]
     pub fn connected(&self) -> bool {
         self.unsync_msgs.connected() ||
@@ -47,7 +60,7 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
 
     pub fn remote_address(&mut self) -> SyncAddress<A> {
         if self.sync_msgs.is_none() {
-            let (tx, rx) = sync_channel::channel(0);
+            let (tx, rx) = sync_channel::channel(self.unsync_msgs.capacity());
             self.sync_msgs = Some(rx);
             SyncAddress::new(tx)
         } else {

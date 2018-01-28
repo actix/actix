@@ -4,6 +4,7 @@ use actor::{Actor, Supervised, AsyncContext};
 use arbiter::Arbiter;
 use address::{sync_channel, Address, SyncAddress};
 use context::Context;
+use contextaddress::DEFAULT_CAPACITY;
 use msgs::Execute;
 
 /// Actor supervisor
@@ -86,7 +87,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
-        let (tx, rx) = sync_channel::channel(0);
+        let (tx, rx) = sync_channel::channel(DEFAULT_CAPACITY);
 
         addr.send(Execute::new(move || -> Result<(), ()> {
             let mut ctx = Context::with_receiver(None, rx);

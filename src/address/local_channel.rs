@@ -150,13 +150,13 @@ impl<A> LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
     ///
     /// This method creates concrete implementations of the `Stream`
     /// traits which can be used to communicate a stream of values between tasks
-    /// with backpressure. The channel capacity is exactly `buffer`. On average,
+    /// with backpressure. The channel capacity is exactly `cap`. On average,
     /// sending a message through this channel performs no dynamic allocation.
-    pub fn new(buffer: usize) -> LocalAddrReceiver<A> {
+    pub fn new(cap: usize) -> LocalAddrReceiver<A> {
         LocalAddrReceiver {
             state: Rc::new(RefCell::new(Shared {
                 buffer: VecDeque::new(),
-                capacity: buffer,
+                capacity: cap,
                 blocked_senders: VecDeque::new(),
                 blocked_recv: None }))
         }
@@ -168,11 +168,32 @@ impl<A> LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 
     /// Get the sender half
-    ///
-    /// If receiver is not closed, create new Sender
-    /// otherwise re-open receiver.
     pub fn sender(&mut self) -> LocalAddrSender<A> {
         LocalAddrSender{shared: Rc::downgrade(&self.state)}
+    }
+
+    /// Get channel capacity
+    pub fn capacity(&self) -> usize {
+        self.state.borrow().capacity
+    }
+
+    /// Set channel capacity
+    ///
+    /// This method also wakes up waiting senders
+    pub fn set_capacity(&mut self, size: usize) {
+        let mut shared = self.state.borrow_mut();
+        shared.capacity = size;
+
+        // wake up senders
+        if shared.buffer.len() < shared.capacity {
+            for _ in 0..shared.capacity-shared.buffer.len() {
+                if let Some(task) = shared.blocked_senders.pop_front() {
+                    task.notify();
+                } else {
+                    break
+                }
+            }
+        }
     }
 }
 
@@ -206,5 +227,60 @@ impl<A> Drop for LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A
         for task in &self.state.borrow().blocked_senders {
             task.notify();
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use prelude::*;
+
+    struct Act;
+    impl Actor for Act {
+        type Context = Context<Act>;
+    }
+
+    struct Ping;
+    impl ResponseType for Ping {
+        type Item = ();
+        type Error = ();
+    }
+
+    impl Handler<Ping> for Act {
+        type Result = ();
+        fn handle(&mut self, _: Ping, _: &mut Context<Act>) {}
+    }
+
+    #[test]
+    fn test_cap() {
+        let sys = System::new("test");
+
+        Arbiter::handle().spawn_fn(move || {
+            let mut recv = LocalAddrReceiver::<Act>::new(1);
+            assert_eq!(recv.capacity(), 1);
+
+            let s1 = recv.sender();
+            let s2 = recv.sender();
+
+            let _ = s1.send(Ping);
+            assert_eq!(recv.state.borrow().buffer.len(), 1);
+
+            let _ = s2.send(Ping);
+            assert_eq!(recv.state.borrow().buffer.len(), 1);
+            assert_eq!(recv.state.borrow().blocked_senders.len(), 1);
+
+            recv.set_capacity(10);
+            assert_eq!(recv.state.borrow().buffer.len(), 1);
+            assert_eq!(recv.state.borrow().blocked_senders.len(), 0);
+
+            let _ = s2.send(Ping);
+            assert_eq!(recv.state.borrow().buffer.len(), 2);
+
+            Arbiter::system().send(actix::msgs::SystemExit(0));
+            Ok(())
+        });
+
+        sys.run();
     }
 }

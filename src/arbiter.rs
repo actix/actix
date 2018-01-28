@@ -8,6 +8,7 @@ use futures::sync::oneshot::{channel, Sender};
 use actor::{Actor, AsyncContext};
 use address::{sync_channel, Address, SyncAddress};
 use context::Context;
+use contextaddress::DEFAULT_CAPACITY;
 use msgs::{Execute, StartActor, StopArbiter};
 use handler::Handler;
 use registry::{Registry, SystemRegistry};
@@ -187,7 +188,7 @@ impl Arbiter {
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + Send + 'static
     {
-        let (stx, srx) = sync_channel::channel(0);
+        let (stx, srx) = sync_channel::channel(DEFAULT_CAPACITY);
 
         // new arbiter
         let addr = Arbiter::new("actor");

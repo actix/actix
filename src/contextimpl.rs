@@ -157,6 +157,17 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
+    pub fn capacity(&mut self) -> usize {
+        self.address.capacity()
+    }
+
+    #[inline]
+    pub fn set_mailbox_capacity(&mut self, cap: usize) {
+        self.modify();
+        self.address.set_capacity(cap);
+    }
+
+    #[inline]
     pub fn unsync_address(&mut self) -> Address<A> {
         self.modify();
         self.address.local_address()

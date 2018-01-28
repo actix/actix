@@ -84,6 +84,13 @@ impl<A> Context<A> where A: Actor<Context=Self> {
         self.inner.curr_handle()
     }
 
+    /// Set mailbox capacity
+    ///
+    /// By default mailbox capacity is set to 16 messages.
+    pub fn set_mailbox_capacity(&mut self, cap: usize) {
+        self.inner.set_mailbox_capacity(cap)
+    }
+
     #[inline]
     pub(crate) fn new(act: Option<A>) -> Context<A> {
         Context { inner: ContextImpl::new(act) }

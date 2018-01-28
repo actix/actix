@@ -3,7 +3,7 @@ use std::usize;
 use std::thread;
 use std::cell::Cell;
 use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering::SeqCst;
+use std::sync::atomic::Ordering::{SeqCst, Relaxed};
 use std::sync::{Arc, Mutex};
 
 use futures::task::{self, Task};
@@ -49,7 +49,7 @@ pub struct SyncAddressReceiver<A: Actor> {
 
 struct Inner<A: Actor> {
     // Max buffer size of the channel. If `0` then the channel is unbounded.
-    buffer: usize,
+    buffer: AtomicUsize,
 
     // Internal channel state. Consists of the number of messages stored in the
     // channel as well as a flag signalling that the channel is closed.
@@ -147,7 +147,7 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, SyncAddressReceive
     assert!(buffer < MAX_BUFFER, "requested buffer size too large");
 
     let inner = Arc::new(Inner {
-        buffer: buffer,
+        buffer: AtomicUsize::new(buffer),
         state: AtomicUsize::new(INIT_STATE),
         message_queue: Queue::new(),
         parked_queue: Queue::new(),
@@ -290,7 +290,8 @@ impl<A: Actor> AddressSender<A> {
             }
 
             // receiver is full
-            let park_self = self.inner.buffer != 0 && state.num_messages >= self.inner.buffer;
+            let buffer = self.inner.buffer.load(Relaxed);
+            let park_self = buffer != 0 && state.num_messages >= buffer;
             if park_self {
                 return Some(true);
             }
@@ -318,8 +319,8 @@ impl<A: Actor> AddressSender<A> {
             let next = encode_state(&state);
             match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
                 Ok(_) => {
-                    let park_self = self.inner.buffer != 0 &&
-                        state.num_messages >= self.inner.buffer;
+                    let buffer = self.inner.buffer.load(Relaxed);
+                    let park_self = buffer != 0 && state.num_messages >= buffer;
                     return Some(park_self)
                 }
                 Err(actual) => curr = actual,
@@ -465,6 +466,34 @@ impl<A: Actor> SyncAddressReceiver<A> {
         self.inner.num_senders.load(SeqCst) != 0
     }
 
+    /// Set channel capacity
+    ///
+    /// This method wakes up all waiting senders if new capacity is greater than current
+    pub fn set_capacity(&mut self, cap: usize) {
+        let buffer = self.inner.buffer.load(Relaxed);
+        self.inner.buffer.store(cap, Relaxed);
+
+        // wake up all
+        if cap > buffer {
+            loop {
+                match unsafe { self.inner.parked_queue.pop() } {
+                    PopResult::Data(task) => {
+                        task.lock().unwrap().notify();
+                    }
+                    PopResult::Empty => {
+                        // Queue empty, no task to wake up.
+                        return;
+                    }
+                    PopResult::Inconsistent => {
+                        // Same as above
+                        thread::yield_now();
+                    }
+                }
+            }
+        }
+    }
+
+    /// Get sender side of the channel
     pub fn sender(&mut self) -> AddressSender<A> {
         // this code same as Sender::clone
         let mut curr = self.inner.num_senders.load(SeqCst);
@@ -661,7 +690,7 @@ impl<A: Actor> Inner<A> {
     // The return value is such that the total number of messages that can be
     // enqueued into the channel will never exceed MAX_CAPACITY
     fn max_senders(&self) -> usize {
-        MAX_CAPACITY - self.buffer
+        MAX_CAPACITY - self.buffer.load(Relaxed)
     }
 }
 
