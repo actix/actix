@@ -153,18 +153,19 @@ impl<A, M> ActorFuture for ActorMessageItem<A, M>
     }
 }
 
-pub(crate) struct ActorStreamItem<A, M, E, S> where A: Actor, M: ResponseType {
+pub(crate) struct ActorStreamItem<A, M, E, S> {
     stream: S,
     handle: Rc<Cell<SpawnHandle>>,
-    fut: Option<Response<A, M>>,
-    error: PhantomData<E>,
     started: bool,
+    act: PhantomData<A>,
+    msg: PhantomData<M>,
+    error: PhantomData<E>,
 }
 
-impl<A, M, E, S> ActorStreamItem<A, M, E, S> where A: Actor, M: ResponseType {
+impl<A, M, E, S> ActorStreamItem<A, M, E, S> {
     pub fn new(fut: S, handle: Rc<Cell<SpawnHandle>>) -> Self {
-        ActorStreamItem{fut: None, stream: fut,
-                        handle: handle, error: PhantomData, started: false}
+        ActorStreamItem{stream: fut, handle: handle, started: false,
+                        act: PhantomData, msg: PhantomData, error: PhantomData}
     }
 }
 
@@ -184,23 +185,9 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
         }
         
         loop {
-            if let Some(mut fut) = self.fut.take() {
-                match fut.poll_response(act, ctx) {
-                    Ok(Async::NotReady) => {
-                        self.fut = Some(fut);
-                        return Ok(Async::NotReady)
-                    }
-                    Ok(Async::Ready(_)) => if ctx.waiting() {
-                        return Ok(Async::NotReady)
-                    },
-                    Err(_) => return Err(())
-                }
-            }
-
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = <A as StreamHandler<M, E>>::handle(act, msg, ctx);
-                    self.fut = Some(fut.into_response());
+                    <A as StreamHandler<M, E>>::handle(act, msg, ctx);
                     if ctx.waiting() {
                         return Ok(Async::NotReady)
                     }

@@ -89,15 +89,13 @@ pub trait Handler<M> where Self: Actor, M: ResponseType
 ///
 /// `StreamHandler` is an extension of a `Handler` with stream specific methods.
 #[allow(unused_variables)]
-pub trait StreamHandler<M, E> where Self: Actor, M: ResponseType,
+pub trait StreamHandler<M, E> where Self: Actor
 {
-    type Result: IntoResponse<Self, M>;
-
     /// Method is called when stream get polled first time.
     fn started(&mut self, ctx: &mut Self::Context, handle: SpawnHandle) {}
 
     /// Method is called for every message received by this Actor
-    fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
+    fn handle(&mut self, msg: M, ctx: &mut Self::Context);
 
     /// Method is called when stream finishes.
     ///

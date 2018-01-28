@@ -367,7 +367,6 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// struct MyActor;
     ///
     /// impl StreamHandler<Ping, io::Error> for MyActor {
-    ///     type Result = ();
     ///
     ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");

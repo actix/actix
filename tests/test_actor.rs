@@ -29,7 +29,6 @@ impl Actor for MyActor {
 }
 
 impl actix::StreamHandler<Num, ()> for MyActor {
-    type Result = ();
 
     fn handle(&mut self, msg: Num, _: &mut actix::Context<MyActor>) {
         self.0.fetch_add(msg.0, Ordering::Relaxed);
