@@ -1,5 +1,3 @@
-use std::rc::Rc;
-use std::cell::Cell;
 use std::marker::PhantomData;
 use futures::{Async, Poll, Stream};
 
@@ -14,7 +12,7 @@ use actor::{Actor, ActorState, ActorContext, AsyncContext, SpawnHandle};
 pub trait StreamHandler<I, E> where Self: Actor
 {
     /// Method is called when stream get polled first time.
-    fn started(&mut self, ctx: &mut Self::Context, handle: SpawnHandle) {}
+    fn started(&mut self, ctx: &mut Self::Context) {}
 
     /// Method is called for every message received by this Actor
     fn handle(&mut self, item: I, ctx: &mut Self::Context);
@@ -22,7 +20,7 @@ pub trait StreamHandler<I, E> where Self: Actor
     /// Method is called when stream finishes.
     ///
     /// Error indicates if stream finished with error.
-    fn finished(&mut self, error: Option<E>, ctx: &mut Self::Context, handle: SpawnHandle) {}
+    fn finished(&mut self, error: Option<E>, ctx: &mut Self::Context) {}
 
     /// This method is similar to `add_future` but works with streams.
     ///
@@ -79,17 +77,13 @@ pub trait StreamHandler<I, E> where Self: Actor
             error!("Context::add_stream called for stopped actor.");
             SpawnHandle::default()
         } else {
-            let handle = Rc::new(Cell::new(SpawnHandle::default()));
-            let h = ctx.spawn(ActorStream::new(fut, Rc::clone(&handle)));
-            handle.as_ref().set(h);
-            h
+            ctx.spawn(ActorStream::new(fut))
         }
     }
 }
 
 pub(crate) struct ActorStream<A, M, E, S> {
     stream: S,
-    handle: Rc<Cell<SpawnHandle>>,
     started: bool,
     act: PhantomData<A>,
     msg: PhantomData<M>,
@@ -97,8 +91,8 @@ pub(crate) struct ActorStream<A, M, E, S> {
 }
 
 impl<A, M, E, S> ActorStream<A, M, E, S> {
-    pub fn new(fut: S, handle: Rc<Cell<SpawnHandle>>) -> Self {
-        ActorStream{stream: fut, handle: handle, started: false,
+    pub fn new(fut: S) -> Self {
+        ActorStream{stream: fut, started: false,
                     act: PhantomData, msg: PhantomData, error: PhantomData}
     }
 }
@@ -114,25 +108,23 @@ impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
         if !self.started {
             self.started = true;
-            <A as StreamHandler<M, E>>::started(act, ctx, self.handle.as_ref().get());
+            <A as StreamHandler<M, E>>::started(act, ctx);
         }
         
         loop {
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    <A as StreamHandler<M, E>>::handle(act, msg, ctx);
+                    A::handle(act, msg, ctx);
                     if ctx.waiting() {
                         return Ok(Async::NotReady)
                     }
                 }
                 Err(err) => {
-                    <A as StreamHandler<M, E>>::finished(
-                        act, Some(err), ctx, self.handle.as_ref().get());
+                    A::finished(act, Some(err), ctx);
                     return Ok(Async::Ready(()))
                 },
                 Ok(Async::Ready(None)) => {
-                    <A as StreamHandler<M, E>>::finished(
-                        act, None, ctx, self.handle.as_ref().get());
+                    A::finished(act, None, ctx);
                     return Ok(Async::Ready(()))
                 }
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
