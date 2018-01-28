@@ -67,14 +67,14 @@ pub mod sync;
 pub mod utils;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
-pub use actor::{Actor, ActorState, FramedActor, Supervised,
+pub use actor::{Actor, ActorState, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
 pub use handler::{Handler, StreamHandler,
                   Response, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope};
 pub use context::Context;
-pub use framed::FramedCell;
+pub use framed::{FramedHandler, FramedCell};
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
@@ -98,11 +98,11 @@ pub mod prelude {
     pub use actix_derive::*;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
-    pub use actor::{Actor, ActorContext, AsyncContext, FramedActor, Supervised, SpawnHandle};
+    pub use actor::{Actor, ActorState, ActorContext, AsyncContext, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress};
     pub use context::{Context, ContextFutureSpawner};
-    pub use framed::FramedCell;
+    pub use framed::{FramedCell, FramedHandler};
     pub use handler::{Handler, StreamHandler,
                       Response, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;
@@ -110,17 +110,10 @@ pub mod prelude {
     pub use supervisor::Supervisor;
 
     pub mod actix {
+        pub use prelude::*;
+        pub use fut;
         pub use msgs;
-        pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
-        pub use actor::{Actor, ActorState, FramedActor, Supervised,
-                        ActorContext, AsyncContext, SpawnHandle};
-        pub use handler::{Handler, StreamHandler,
-                          Response, ResponseType, MessageResult, ResponseFuture};
-        pub use arbiter::Arbiter;
-        pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
-        pub use context::Context;
-        pub use system::System;
-        pub use sync::{SyncContext, SyncArbiter};
+        pub use address::{Subscriber, ActorAddress};
         pub use registry::{ArbiterService, SystemService};
         pub use utils::Condition;
     }

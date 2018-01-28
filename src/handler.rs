@@ -2,8 +2,8 @@ use futures::{Async, Poll};
 
 use actor::{Actor, SpawnHandle};
 use address::SyncAddress;
-use fut::ActorFuture;
 use context::Context;
+use fut::ActorFuture;
 
 /// Message response type
 pub trait ResponseType {

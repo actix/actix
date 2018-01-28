@@ -59,7 +59,7 @@ impl Actor for ChatSession {
 }
 
 /// To use `Framed` we have to implement FramedActor trait
-impl actix::FramedActor<TcpStream, ChatCodec> for ChatSession {
+impl FramedHandler<TcpStream, ChatCodec> for ChatSession {
 
     /// This is main event loop for client requests
     fn handle(&mut self, msg: io::Result<ChatRequest>, ctx: &mut Self::Context) {
