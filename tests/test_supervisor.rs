@@ -3,7 +3,7 @@ extern crate futures;
 extern crate tokio_core;
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use futures::{future, Future};
 use tokio_core::reactor::Timeout;
@@ -70,41 +70,4 @@ fn test_supervisor_restart() {
     assert_eq!(starts.load(Ordering::Relaxed), 3);
     assert_eq!(restarts.load(Ordering::Relaxed), 2);
     assert_eq!(messages.load(Ordering::Relaxed), 2);
-}
-
-#[test]
-fn test_supervisor_upgrade_address() {
-    let sys = System::new("test");
-
-    let starts = Arc::new(AtomicUsize::new(0));
-    let restarts = Arc::new(AtomicUsize::new(0));
-    let messages = Arc::new(AtomicUsize::new(0));
-    let starts2 = Arc::clone(&starts);
-    let restarts2 = Arc::clone(&restarts);
-    let messages2 = Arc::clone(&messages);
-
-    let upgrade = Arc::new(AtomicBool::new(false));
-    let upgrade2 = Arc::clone(&upgrade);
-
-    // lazy supervisor
-    let addr = actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
-
-    Arbiter::handle().spawn_fn(move || {
-        // upgrade address to SyncAddress
-        Arbiter::handle().spawn(addr.upgrade().then(move |_| {
-            upgrade2.store(true, Ordering::Relaxed);
-            future::result(Ok(()))
-        }));
-
-        Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
-            .then(|_| {
-                Arbiter::system().send(actix::msgs::SystemExit(0));
-                future::result(Ok(()))
-            })
-    });
-
-    sys.run();
-    assert!(upgrade.load(Ordering::Relaxed));
-    assert_eq!(starts.load(Ordering::Relaxed), 1);
-    assert_eq!(restarts.load(Ordering::Relaxed), 0);
 }

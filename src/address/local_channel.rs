@@ -16,11 +16,11 @@ use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, MessageResult, ResponseType};
-use super::{SyncAddress, SendError, LocalEnvelope, LocalAddrProtocol};
+use super::{SendError, LocalEnvelope};
 
 
 struct Shared<A: Actor> {
-    buffer: VecDeque<LocalAddrProtocol<A>>,
+    buffer: VecDeque<LocalEnvelope<A>>,
     capacity: usize,
     blocked_senders: VecDeque<Task>,
     blocked_recv: Option<Task>,
@@ -41,22 +41,6 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         }
     }
 
-    pub fn upgrade(&self) -> Result<Receiver<SyncAddress<A>>, ()> {
-        let shared = match self.shared.upgrade() {
-            Some(shared) => shared,
-            None => return Err(()),
-        };
-        let mut shared = shared.borrow_mut();
-
-        let (tx, rx) = channel();
-        shared.buffer.push_front(LocalAddrProtocol::Upgrade(tx));
-        if let Some(task) = shared.blocked_recv.take() {
-            drop(shared);
-            task.notify();
-        }
-        Ok(rx)
-    }
-
     /// Try to put message to a reciver queue, if queue is full
     /// return message back.
     ///
@@ -70,8 +54,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         };
         let mut shared = shared.borrow_mut();
 
-        shared.buffer.push_back(
-            LocalAddrProtocol::Envelope(LocalEnvelope::new(msg, None, false)));
+        shared.buffer.push_back(LocalEnvelope::new(msg, None, false));
         if let Some(task) = shared.blocked_recv.take() {
             drop(shared);
             task.notify();
@@ -93,8 +76,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         let mut shared = shared.borrow_mut();
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
-            shared.buffer.push_back(
-                LocalAddrProtocol::Envelope(LocalEnvelope::new(msg, None, false)));
+            shared.buffer.push_back(LocalEnvelope::new(msg, None, false));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -120,8 +102,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
             let (tx, rx) = channel();
-            shared.buffer.push_back(
-                LocalAddrProtocol::Envelope(LocalEnvelope::new(msg, Some(tx), true)));
+            shared.buffer.push_back(LocalEnvelope::new(msg, Some(tx), true));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -196,7 +177,7 @@ impl<A> LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
 }
 
 impl<A> Stream for LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
-    type Item = LocalAddrProtocol<A>;
+    type Item = LocalEnvelope<A>;
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {

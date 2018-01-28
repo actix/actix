@@ -140,6 +140,5 @@ pub mod dev {
     pub use context::AsyncContextApi;
     pub use contextimpl::ContextImpl;
     pub use address::{ActorAddress, SendError,
-                      Envelope, ToEnvelope, RemoteEnvelope,
-                      Request, LocalRequest, LocalFutRequest, UpgradeAddress};
+                      Envelope, ToEnvelope, RemoteEnvelope, Request, LocalRequest, LocalFutRequest};
 }

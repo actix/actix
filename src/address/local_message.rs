@@ -7,7 +7,7 @@ use actor::{Actor, AsyncContext};
 use fut::ActorFuture;
 use handler::{Handler, ResponseType};
 
-use super::{SyncAddress, SendError};
+use super::SendError;
 use super::local_channel::LocalAddrSender;
 
 
@@ -100,37 +100,6 @@ impl<A, M> Future for LocalFutRequest<A, M>
             }
         }
 
-        if let Some(ref mut rx) = self.rx {
-            rx.poll()
-        } else {
-            Err(Canceled)
-        }
-    }
-}
-
-/// `UpgradeAddress` is a `Future` which resolves to a `SyncAddress<A>`
-#[must_use = "future do nothing unless polled"]
-pub struct UpgradeAddress<A> where A: Actor, A::Context: AsyncContext<A> {
-    rx: Option<Receiver<SyncAddress<A>>>,
-}
-
-impl<A> UpgradeAddress<A> where A: Actor, A::Context: AsyncContext<A>
-{
-    pub(crate) fn new(proto: &LocalAddrSender<A>) -> UpgradeAddress<A> {
-        match proto.upgrade() {
-            Ok(rx) => UpgradeAddress{rx: Some(rx)},
-            Err(_) => UpgradeAddress{rx: None},
-        }
-    }
-}
-
-impl<A> Future for UpgradeAddress<A>
-    where A: Actor, A::Context: AsyncContext<A>
-{
-    type Item = SyncAddress<A>;
-    type Error = Canceled;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if let Some(ref mut rx) = self.rx {
             rx.poll()
         } else {

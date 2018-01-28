@@ -1,8 +1,7 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Address, LocalAddrReceiver, LocalAddrProtocol,
-              SyncAddress, SyncAddressReceiver};
+use address::{sync_channel, Address, LocalAddrReceiver, SyncAddress, SyncAddressReceiver};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -74,16 +73,9 @@ impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
                 if ctx.waiting() { return }
 
                 match self.unsync_msgs.poll() {
-                    Ok(Async::Ready(Some(msg))) => {
+                    Ok(Async::Ready(Some(mut msg))) => {
                         not_ready = false;
-                        match msg {
-                            LocalAddrProtocol::Envelope(mut env) => {
-                                env.env.handle(act, ctx)
-                            }
-                            LocalAddrProtocol::Upgrade(tx) => {
-                                let _ = tx.send(self.remote_address());
-                            }
-                        }
+                        msg.env.handle(act, ctx);
                     }
                     Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
                 }

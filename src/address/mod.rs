@@ -1,5 +1,4 @@
 use std::{mem, fmt};
-use futures::unsync::oneshot::Sender;
 
 mod envelope;
 mod queue;
@@ -15,7 +14,7 @@ use actor::{Actor, AsyncContext};
 
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope, RemoteEnvelope};
 pub use self::local_address::Address;
-pub use self::local_message::{LocalRequest, LocalFutRequest, UpgradeAddress};
+pub use self::local_message::{LocalRequest, LocalFutRequest};
 pub(crate) use self::local_envelope::LocalEnvelope;
 pub(crate) use self::local_channel::LocalAddrReceiver;
 
@@ -24,14 +23,6 @@ pub use self::sync_message::{Request, RequestFut};
 pub(crate) use self::sync_channel::SyncAddressReceiver;
 
 pub use context::AsyncContextApi;
-
-/// context protocol
-pub(crate) enum LocalAddrProtocol<A: Actor> {
-    /// message envelope
-    Envelope(LocalEnvelope<A>),
-    /// Request remote address
-    Upgrade(Sender<SyncAddress<A>>),
-}
 
 pub enum SendError<T> {
     NotReady(T),

@@ -26,24 +26,6 @@ impl actix::Handler<Ping> for MyActor {
     }
 }
 
-struct MyActor2(Option<Address<MyActor>>, Option<SyncAddress<MyActor>>);
-
-impl Actor for MyActor2 {
-    type Context = actix::Context<Self>;
-
-    fn started(&mut self, ctx: &mut actix::Context<Self>) {
-        self.0.take().unwrap().upgrade()
-            .actfuture()
-            .then(move |addr, act: &mut Self, _: &mut _| {
-                let addr = addr.unwrap();
-                addr.send(Ping(10));
-                act.1 = Some(addr);
-                Arbiter::system().send(actix::msgs::SystemExit(0));
-                actix::fut::ok(())
-            }).spawn(ctx);
-    }
-}
-
 struct MyActor3;
 
 impl Actor for MyActor3 {
@@ -112,62 +94,6 @@ fn test_sync_address() {
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 4);
-}
-
-#[test]
-fn test_address_upgrade() {
-    let sys = System::new("test");
-    let count = Arc::new(AtomicUsize::new(0));
-
-    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
-    addr.send(Ping(0));
-
-    let addr2 = addr.clone();
-    let _addr3: Address<_> = MyActor2(Some(addr2), None).start();
-
-    Arbiter::handle().spawn_fn(move || {
-        Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
-            .then(move |_| {
-                addr.send(Ping(3));
-                Arbiter::handle().spawn_fn(move || {
-                    Arbiter::system().send(actix::msgs::SystemExit(0));
-                    future::result(Ok(()))
-                });
-                future::result(Ok(()))
-            })
-    });
-
-    sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 3);
-}
-
-#[test]
-fn test_address_upgrade_with_drop() {
-    let sys = System::new("test");
-    let count = Arc::new(AtomicUsize::new(0));
-
-    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
-    addr.send(Ping(0));
-
-    Arbiter::handle().spawn(
-        addr.upgrade()
-            .map_err(|_| ())
-            .and_then(move |saddr| {
-                saddr.send(Ping(1));
-                drop(saddr);
-
-                addr.upgrade()
-                    .map_err(|_| ())
-                    .and_then(move |saddr| {
-                        saddr.send(Ping(1));
-
-                        Arbiter::system().send(actix::msgs::SystemExit(0));
-                        future::result(Ok(()))
-                    })
-            }));
-
-    sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 3);
 }
 
 #[test]

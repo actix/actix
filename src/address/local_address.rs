@@ -3,7 +3,7 @@ use address::{SendError, Subscriber};
 use handler::{Handler, ResponseType};
 
 use super::local_channel::LocalAddrSender;
-use super::local_message::{LocalRequest, LocalFutRequest, UpgradeAddress};
+use super::local_message::{LocalRequest, LocalFutRequest};
 
 
 /// Local address of the actor
@@ -78,11 +78,6 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
             Err(SendError::Closed(_)) =>
                 LocalFutRequest::new(None, None),
         }
-    }
-
-    /// Upgrade address to remote Address.
-    pub fn upgrade(&self) -> UpgradeAddress<A> {
-        UpgradeAddress::new(&self.tx)
     }
 
     /// Get `Subscriber` for specific message type
