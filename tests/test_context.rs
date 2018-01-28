@@ -154,22 +154,6 @@ impl Handler<Ping> for ContextWait {
     }
 }
 
-impl Handler<Result<Ping, ()>> for ContextWait {
-    type Result = ();
-
-    fn handle(&mut self, _: Result<Ping, ()>, ctx: &mut Self::Context) {
-        let cnt = self.cnt.load(Ordering::Relaxed);
-        self.cnt.store(cnt+1, Ordering::Relaxed);
-
-        let fut = Timeout::new(Duration::from_secs(10), Arbiter::handle()).unwrap();
-        fut.map_err(|_| ()).map(|_| ())
-            .into_actor(self)
-            .wait(ctx);
-
-        Arbiter::system().send(SystemExit(0));
-    }
-}
-
 #[test]
 fn test_wait_context() {
     let sys = System::new("test");
