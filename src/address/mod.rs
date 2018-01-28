@@ -25,14 +25,14 @@ pub(crate) use self::sync_channel::SyncAddressReceiver;
 pub use context::AsyncContextApi;
 
 pub enum SendError<T> {
-    NotReady(T),
+    Full(T),
     Closed(T),
 }
 
 impl<T> fmt::Debug for SendError<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            SendError::NotReady(_) => write!(fmt, "SendError::NotReady(..)"),
+            SendError::Full(_) => write!(fmt, "SendError::Full(..)"),
             SendError::Closed(_) => write!(fmt, "SendError::Closed(..)"),
         }
     }
@@ -41,7 +41,7 @@ impl<T> fmt::Debug for SendError<T> {
 impl<T> fmt::Display for SendError<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            SendError::NotReady(_) => write!(fmt, "send failed because receiver is full"),
+            SendError::Full(_) => write!(fmt, "send failed because receiver is full"),
             SendError::Closed(_) => write!(fmt, "send failed because receiver is gone"),
         }
     }

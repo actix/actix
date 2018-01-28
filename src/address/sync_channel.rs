@@ -195,7 +195,7 @@ impl<A: Actor> AddressSender<A> {
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false).is_ready() {
-            return Err(SendError::NotReady(msg))
+            return Err(SendError::Full(msg))
         }
 
         // First, increment the number of messages contained by the channel.
@@ -214,7 +214,7 @@ impl<A: Actor> AddressSender<A> {
         // be parked. This will send the task handle on the parked task queue.
         if park_self {
             self.park(true);
-            Err(SendError::NotReady(msg))
+            Err(SendError::Full(msg))
         } else {
             let (tx, rx) = sync_channel();
             let env = <A::Context as ToEnvelope<A>>::pack_msg(msg, Some(tx));
@@ -235,7 +235,7 @@ impl<A: Actor> AddressSender<A> {
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false).is_ready() {
-            return Err(SendError::NotReady(msg))
+            return Err(SendError::Full(msg))
         }
 
         let park_self = match self.inc_num_messages() {
@@ -244,7 +244,7 @@ impl<A: Actor> AddressSender<A> {
         };
 
         if park_self {
-            Err(SendError::NotReady(msg))
+            Err(SendError::Full(msg))
         } else {
             let env = <A::Context as ToEnvelope<A>>::pack_msg(msg, None);
             self.queue_push_and_signal(env);

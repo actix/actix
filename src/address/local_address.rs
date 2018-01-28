@@ -56,7 +56,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     {
         match self.tx.send(msg) {
             Ok(rx) => LocalRequest::new(Some(rx), None),
-            Err(SendError::NotReady(msg)) =>
+            Err(SendError::Full(msg)) =>
                 LocalRequest::new(None, Some((self.tx.clone(), msg))),
             Err(SendError::Closed(_)) =>
                 LocalRequest::new(None, None)
@@ -73,7 +73,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     {
         match self.tx.send(msg) {
             Ok(rx) => LocalFutRequest::new(Some(rx), None),
-            Err(SendError::NotReady(msg)) =>
+            Err(SendError::Full(msg)) =>
                 LocalFutRequest::new(None, Some((self.tx.clone(), msg))),
             Err(SendError::Closed(_)) =>
                 LocalFutRequest::new(None, None),

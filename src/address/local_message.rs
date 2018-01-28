@@ -47,7 +47,7 @@ impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
         if let Some((sender, msg)) = self.info.take() {
             match sender.send(msg) {
                 Ok(rx) => self.rx = Some(rx),
-                Err(SendError::NotReady(msg)) => {
+                Err(SendError::Full(msg)) => {
                     self.info = Some((sender, msg));
                     return Ok(Async::NotReady)
                 }
@@ -92,7 +92,7 @@ impl<A, M> Future for LocalFutRequest<A, M>
         if let Some((sender, msg)) = self.info.take() {
             match sender.send(msg) {
                 Ok(rx) => self.rx = Some(rx),
-                Err(SendError::NotReady(msg)) => {
+                Err(SendError::Full(msg)) => {
                     self.info = Some((sender, msg));
                     return Ok(Async::NotReady)
                 },

@@ -62,7 +62,7 @@ impl<A> SyncAddress<A> where A: Actor {
     {
         match self.tx.send(msg) {
             Ok(rx) => Request::new(Some(rx), None),
-            Err(SendError::NotReady(msg)) =>
+            Err(SendError::Full(msg)) =>
                 Request::new(None, Some((self.tx.clone(), msg))),
             Err(SendError::Closed(_)) =>
                 Request::new(None, None),
@@ -79,7 +79,7 @@ impl<A> SyncAddress<A> where A: Actor {
     {
         match self.tx.send(msg) {
             Ok(rx) => RequestFut::new(Some(rx), None),
-            Err(SendError::NotReady(msg)) =>
+            Err(SendError::Full(msg)) =>
                 RequestFut::new(None, Some((self.tx.clone(), msg))),
             Err(SendError::Closed(_)) =>
                 RequestFut::new(None, None),

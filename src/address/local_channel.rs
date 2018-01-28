@@ -83,7 +83,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
             }
             Ok(())
         } else {
-            Err(SendError::NotReady(msg))
+            Err(SendError::Full(msg))
         }
     }
 
@@ -110,7 +110,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
             Ok(rx)
         } else {
             shared.blocked_senders.push_back(task::current());
-            Err(SendError::NotReady(msg))
+            Err(SendError::Full(msg))
         }
     }
 }
