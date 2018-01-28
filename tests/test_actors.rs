@@ -38,7 +38,7 @@ fn test_signal() {
     let _: SyncAddress<_> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
-        sig.send(Ok(signal::SignalType::Quit));
+        sig.send(signal::SignalType::Quit);
         Ok(())
     });
     sys.run();
@@ -50,7 +50,7 @@ fn test_signal_term() {
     let _: SyncAddress<_> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
-        sig.send(Ok(signal::SignalType::Term));
+        sig.send(signal::SignalType::Term);
         Ok(())
     });
     sys.run();
@@ -62,8 +62,8 @@ fn test_signal_int() {
     let _: SyncAddress<_> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
-        sig.send(Ok(signal::SignalType::Hup));
-        sig.send(Ok(signal::SignalType::Int));
+        sig.send(signal::SignalType::Hup);
+        sig.send(signal::SignalType::Int);
         Ok(())
     });
     sys.run();

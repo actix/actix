@@ -1,11 +1,14 @@
+use std::rc::Rc;
+use std::cell::Cell;
 use std::time::Duration;
+use std::marker::PhantomData;
 use futures::{Async, Future, Poll, Stream};
 use tokio_core::reactor::Timeout;
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use actor::{Actor, ActorContext, AsyncContext};
-use handler::{Handler, Response, ResponseType, IntoResponse};
+use actor::{Actor, ActorContext, AsyncContext, SpawnHandle};
+use handler::{Handler, StreamHandler, Response, ResponseType, IntoResponse};
 
 
 pub(crate) struct ActorWaitItem<A: Actor>(Box<ActorFuture<Item=(), Error=(), Actor=A>>);
@@ -152,18 +155,22 @@ impl<A, M> ActorFuture for ActorMessageItem<A, M>
 
 pub(crate) struct ActorStreamItem<A, M, E, S> where A: Actor, M: ResponseType {
     stream: S,
-    fut: Option<Response<A, Result<M, E>>>,
+    handle: Rc<Cell<SpawnHandle>>,
+    fut: Option<Response<A, M>>,
+    error: PhantomData<E>,
+    started: bool,
 }
 
 impl<A, M, E, S> ActorStreamItem<A, M, E, S> where A: Actor, M: ResponseType {
-    pub fn new(fut: S) -> Self {
-        ActorStreamItem{fut: None, stream: fut}
+    pub fn new(fut: S, handle: Rc<Cell<SpawnHandle>>) -> Self {
+        ActorStreamItem{fut: None, stream: fut,
+                        handle: handle, error: PhantomData, started: false}
     }
 }
 
 impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
     where S: Stream<Item=M, Error=E>,
-          A: Actor + Handler<Result<M, E>>, A::Context: AsyncContext<A>,
+          A: Actor + Handler<M> + StreamHandler<M, E>, A::Context: AsyncContext<A>,
           M: ResponseType
 {
     type Item = ();
@@ -171,6 +178,11 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
     type Actor = A;
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
+        if !self.started {
+            self.started = true;
+            <A as StreamHandler<M, E>>::started(act, ctx, self.handle.as_ref().get());
+        }
+        
         loop {
             if let Some(mut fut) = self.fut.take() {
                 match fut.poll_response(act, ctx) {
@@ -187,20 +199,22 @@ impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
 
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = <A as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
+                    let fut = <A as Handler<M>>::handle(act, msg, ctx);
                     self.fut = Some(fut.into_response());
                     if ctx.waiting() {
                         return Ok(Async::NotReady)
                     }
                 }
                 Err(err) => {
-                    let fut = <A as Handler<Result<M, E>>>::handle(act, Err(err), ctx);
-                    self.fut = Some(fut.into_response());
-                    if ctx.waiting() {
-                        return Ok(Async::NotReady)
-                    }
+                    <A as StreamHandler<M, E>>::finished(
+                        act, Some(err), ctx, self.handle.as_ref().get());
+                    return Ok(Async::Ready(()))
                 },
-                Ok(Async::Ready(None)) => return Ok(Async::Ready(())),
+                Ok(Async::Ready(None)) => {
+                    <A as StreamHandler<M, E>>::finished(
+                        act, None, ctx, self.handle.as_ref().get());
+                    return Ok(Async::Ready(()))
+                }
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
             }
         }

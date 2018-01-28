@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use std::cell::Cell;
 use std::time::Duration;
 use futures::{future, Future, Stream};
 use tokio_io::{AsyncRead, AsyncWrite};
@@ -6,7 +8,7 @@ use tokio_io::codec::{Framed, Encoder, Decoder};
 use fut::ActorFuture;
 use arbiter::Arbiter;
 use address::{ActorAddress, ToEnvelope};
-use handler::{Handler, Response, ResponseType};
+use handler::{Handler, Response, ResponseType, StreamHandler};
 use context::Context;
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorStreamItem, ActorMessageStreamItem};
@@ -364,12 +366,19 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     ///
     /// struct MyActor;
     ///
-    /// impl Handler<Result<Ping, io::Error>> for MyActor {
+    /// impl Handler<Ping> for MyActor {
     ///     type Result = ();
     ///
-    ///     fn handle(&mut self, msg: Result<Ping, io::Error>, ctx: &mut Context<MyActor>) {
+    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
     /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
+    ///     }
+    /// }
+    ///
+    /// impl StreamHandler<Ping, io::Error> for MyActor {
+    ///     fn finished(&mut self, error: Option<io::Error>,
+    ///                 ctx: &mut Self::Context, handle: SpawnHandle) {
+    ///         println!("finished");
     ///     }
     /// }
     ///
@@ -387,15 +396,19 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// #    sys.run();
     /// # }
     /// ```
-    fn add_stream<S>(&mut self, fut: S)
+    fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
         where S: Stream + 'static,
               S::Item: ResponseType,
-              A: Handler<Result<S::Item, S::Error>>
+              A: Handler<S::Item> + StreamHandler<S::Item, S::Error>
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
+            SpawnHandle::default()
         } else {
-            self.spawn(ActorStreamItem::new(fut));
+            let handle = Rc::new(Cell::new(SpawnHandle::default()));
+            let h = self.spawn(ActorStreamItem::new(fut, Rc::clone(&handle)));
+            handle.as_ref().set(h);
+            h
         }
     }
 

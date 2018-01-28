@@ -62,7 +62,6 @@
 //! }
 //! ```
 use std;
-use std::io;
 use libc;
 use futures::{Future, Stream};
 use tokio_signal;
@@ -125,7 +124,7 @@ impl actix::SystemService for ProcessSignals {
         tokio_signal::ctrl_c(handle).map_err(|_| ())
             .actfuture()
             .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                 ctx.add_stream(sig.map(|_| SignalType::Int)))
+                 ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Int)))
             .spawn(ctx);
 
         #[cfg(unix)]
@@ -135,49 +134,42 @@ impl actix::SystemService for ProcessSignals {
                 .actfuture()
                 .drop_err()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_stream(sig.map(|_| SignalType::Hup)))
+                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Hup)))
                 .spawn(ctx);
 
             // SIGTERM
             unix::Signal::new(libc::SIGTERM, handle).map_err(|_| ())
                 .actfuture()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_stream(sig.map(|_| SignalType::Term)))
+                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Term)))
                 .spawn(ctx);
 
             // SIGQUIT
             unix::Signal::new(libc::SIGQUIT, handle).map_err(|_| ())
                 .actfuture()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_stream(sig.map(|_| SignalType::Quit)))
+                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Quit)))
                 .spawn(ctx);
 
             // SIGCHLD
             unix::Signal::new(libc::SIGCHLD, handle).map_err(|_| ())
                 .actfuture()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_stream(sig.map(|_| SignalType::Child)))
+                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Child)))
                 .spawn(ctx);
         }
     }
 }
 
 #[doc(hidden)]
-impl Handler<io::Result<SignalType>> for ProcessSignals {
+impl Handler<SignalType> for ProcessSignals {
     type Result = ();
 
-    fn handle(&mut self, msg: io::Result<SignalType>, _: &mut Self::Context) {
-        match msg {
-            Ok(sig) => {
-                let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
-                for subscr in subscribers {
-                    if subscr.send(Signal(sig)).is_ok() {
-                        self.subscribers.push(subscr);
-                    }
-                }
-            },
-            Err(err) => {
-                error!("Error during signal handling: {}", err);
+    fn handle(&mut self, sig: SignalType, _: &mut Self::Context) {
+        let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
+        for subscr in subscribers {
+            if subscr.send(Signal(sig)).is_ok() {
+                self.subscribers.push(subscr);
             }
         }
     }

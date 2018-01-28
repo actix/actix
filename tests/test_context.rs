@@ -216,7 +216,7 @@ fn test_stream_wait_context() {
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
         let actor = ContextWait{cnt: m2};
-        ctx.add_stream(rx);
+        ctx.add_message_stream(rx);
         actor
     });
     sys.run();
@@ -298,7 +298,7 @@ fn test_stream_nowait_context() {
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
         let actor = ContextNoWait{cnt: m2};
-        ctx.add_stream(rx);
+        ctx.add_message_stream(rx);
         actor
     });
     sys.run();

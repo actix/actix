@@ -1,6 +1,6 @@
 use futures::{Async, Poll};
 
-use actor::Actor;
+use actor::{Actor, SpawnHandle};
 use address::SyncAddress;
 use fut::ActorFuture;
 use context::Context;
@@ -85,6 +85,20 @@ pub trait Handler<M> where Self: Actor, M: ResponseType
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
 }
 
+/// Stream handler
+///
+/// `StreamHandler` is an extension of a `Handler` with stream specific methods.
+#[allow(unused_variables)]
+pub trait StreamHandler<M, E>: Handler<M> where Self: Actor, M: ResponseType,
+{
+    /// Method is called when stream get polled first time.
+    fn started(&mut self, ctx: &mut Self::Context, handle: SpawnHandle) {}
+
+    /// Method is called when stream finishes.
+    ///
+    /// Error indicates if stream finished with error.
+    fn finished(&mut self, error: Option<E>, ctx: &mut Self::Context, handle: SpawnHandle) {}
+}
 
 /// `Response` represents asynchronous message handling process.
 pub struct Response<A, M> where A: Actor, M: ResponseType {

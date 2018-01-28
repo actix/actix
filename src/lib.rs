@@ -69,7 +69,8 @@ pub mod utils;
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, FramedActor, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
+pub use handler::{Handler, StreamHandler,
+                  Response, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope};
 pub use context::Context;
@@ -97,12 +98,13 @@ pub mod prelude {
     pub use actix_derive::*;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
-    pub use actor::{Actor, ActorContext, AsyncContext, FramedActor, Supervised};
+    pub use actor::{Actor, ActorContext, AsyncContext, FramedActor, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress};
     pub use context::{Context, ContextFutureSpawner};
     pub use framed::FramedCell;
-    pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
+    pub use handler::{Handler, StreamHandler,
+                      Response, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;
     pub use sync::{SyncContext, SyncArbiter};
     pub use supervisor::Supervisor;
@@ -112,7 +114,8 @@ pub mod prelude {
         pub use fut::{self, ActorFuture, ActorStream, WrapFuture, WrapStream};
         pub use actor::{Actor, ActorState, FramedActor, Supervised,
                         ActorContext, AsyncContext, SpawnHandle};
-        pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
+        pub use handler::{Handler, StreamHandler,
+                          Response, ResponseType, MessageResult, ResponseFuture};
         pub use arbiter::Arbiter;
         pub use address::{Address, SyncAddress, Subscriber, ActorAddress};
         pub use context::Context;

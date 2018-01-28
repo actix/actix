@@ -23,19 +23,24 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn stopping(&mut self, _: &mut Self::Context) -> bool {
-        println!("SEND");
         Arbiter::system().send(actix::msgs::SystemExit(0));
         true
     }
 }
 
-impl actix::Handler<Result<Num, ()>> for MyActor {
+impl actix::Handler<Num> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, msg: Result<Num, ()>, _: &mut actix::Context<MyActor>) {
-        if let Ok(msg) = msg {
-            self.0.fetch_add(msg.0, Ordering::Relaxed);
-        } else {
+    fn handle(&mut self, msg: Num, _: &mut actix::Context<MyActor>) {
+        self.0.fetch_add(msg.0, Ordering::Relaxed);
+    }
+}
+
+impl actix::StreamHandler<Num, ()> for MyActor {
+
+    fn finished(&mut self, err: Option<()>, _: &mut actix::Context<MyActor>, _: SpawnHandle) {
+        if err.is_some() {
+            self.0.fetch_add(1, Ordering::Relaxed);
             self.1.store(true, Ordering::Relaxed);
         }
     }
@@ -74,7 +79,7 @@ fn test_stream_with_error() {
     });
 
     sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 7);
+    assert_eq!(count.load(Ordering::Relaxed), 3);
     assert!(error.load(Ordering::Relaxed));
 }
 
