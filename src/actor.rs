@@ -1,15 +1,13 @@
-use std::rc::Rc;
-use std::cell::Cell;
 use std::time::Duration;
 use futures::{future, Future, Stream};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
 use address::{ActorAddress, ToEnvelope};
-use handler::{Handler, Response, ResponseType, StreamHandler};
+use handler::{Handler, Response, ResponseType};
 use context::Context;
 use contextitems::{ActorFutureItem, ActorMessageItem,
-                   ActorDelayedMessageItem, ActorStreamItem, ActorMessageStreamItem};
+                   ActorDelayedMessageItem, ActorMessageStreamItem};
 use utils::TimerFunc;
 
 
@@ -292,68 +290,6 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
             error!("Context::add_future called for stopped actor.");
         } else {
             self.spawn(ActorFutureItem::new(fut));
-        }
-    }
-
-    /// This method is similar to `add_future` but works with streams.
-    ///
-    /// Information to consider. Actor wont receive next item from a stream
-    /// until `Response` future resolves to a result. `Self::reply` resolves immediately.
-    ///
-    /// This method is similar to `add_stream` but it skips result error.
-    ///
-    /// ```rust
-    /// # #[macro_use] extern crate actix;
-    /// # extern crate futures;
-    /// # use std::io;
-    /// use actix::prelude::*;
-    /// use futures::stream::once;
-    ///
-    /// #[derive(Message)]
-    /// struct Ping;
-    ///
-    /// struct MyActor;
-    ///
-    /// impl StreamHandler<Ping, io::Error> for MyActor {
-    ///
-    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
-    ///         println!("PING");
-    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
-    ///     }
-    ///
-    ///     fn finished(&mut self, error: Option<io::Error>,
-    ///                 ctx: &mut Self::Context, handle: SpawnHandle) {
-    ///         println!("finished");
-    ///     }
-    /// }
-    ///
-    /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
-    ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        // add stream
-    ///        ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
-    ///    }
-    /// }
-    /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr: Address<_> = MyActor.start();
-    /// #    sys.run();
-    /// # }
-    /// ```
-    fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
-        where S: Stream + 'static,
-              S::Item: ResponseType,
-              A: StreamHandler<S::Item, S::Error>
-    {
-        if self.state() == ActorState::Stopped {
-            error!("Context::add_stream called for stopped actor.");
-            SpawnHandle::default()
-        } else {
-            let handle = Rc::new(Cell::new(SpawnHandle::default()));
-            let h = self.spawn(ActorStreamItem::new(fut, Rc::clone(&handle)));
-            handle.as_ref().set(h);
-            h
         }
     }
 

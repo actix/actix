@@ -58,7 +58,7 @@ impl Actor for ChatSession {
     }
 }
 
-/// To use `Framed` we have to implement FramedActor trait
+/// To use `Framed` with an actor, we have to implement `FramedHandler` trait
 impl FramedHandler<TcpStream, ChatCodec> for ChatSession {
 
     /// This is main event loop for client requests

@@ -51,7 +51,7 @@ fn test_stream() {
 
     let act_count = Arc::clone(&count);
     MyActor::create::<(), _>(move |ctx| {
-        ctx.add_stream(futures::stream::iter_ok::<_, ()>(items));
+        MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
         MyActor(act_count, err)
     });
 
@@ -70,7 +70,7 @@ fn test_stream_with_error() {
     let act_count = Arc::clone(&count);
     let act_error = Arc::clone(&error);
     MyActor::create::<(), _>(move |ctx| {
-        ctx.add_stream(futures::stream::iter_result(items));
+        MyActor::add_stream(futures::stream::iter_result(items), ctx);
         MyActor(act_count, act_error)
     });
 

@@ -104,11 +104,11 @@ impl Handler<ClientCommand> for ChatClient
             let v: Vec<&str> = m.splitn(2, ' ').collect();
             match v[0] {
                 "/list" => {
-                    let _ = self.framed.send(codec::ChatRequest::List);
+                    self.framed.send(codec::ChatRequest::List);
                 },
                 "/join" => {
                     if v.len() == 2 {
-                        let _ = self.framed.send(codec::ChatRequest::Join(v[1].to_owned()));
+                        self.framed.send(codec::ChatRequest::Join(v[1].to_owned()));
                     } else {
                         println!("!!! room name is required");
                     }
@@ -116,7 +116,7 @@ impl Handler<ClientCommand> for ChatClient
                 _ => println!("!!! unknown command"),
             }
         } else {
-            let _ = self.framed.send(codec::ChatRequest::Message(m.to_owned()));
+            self.framed.send(codec::ChatRequest::Message(m.to_owned()));
         }
     }
 }
@@ -138,7 +138,7 @@ impl FramedHandler<TcpStream, codec::ClientChatCodec> for ChatClient {
                     for room in rooms {
                         println!("{}", room);
                     }
-                    println!("");
+                    println!();
                 }
                 _ => (),
             }

@@ -1,14 +1,11 @@
-use std::rc::Rc;
-use std::cell::Cell;
 use std::time::Duration;
-use std::marker::PhantomData;
 use futures::{Async, Future, Poll, Stream};
 use tokio_core::reactor::Timeout;
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use actor::{Actor, ActorContext, AsyncContext, SpawnHandle};
-use handler::{Handler, StreamHandler, Response, ResponseType, IntoResponse};
+use actor::{Actor, ActorContext, AsyncContext};
+use handler::{Handler, Response, ResponseType, IntoResponse};
 
 
 pub(crate) struct ActorWaitItem<A: Actor>(Box<ActorFuture<Item=(), Error=(), Actor=A>>);
@@ -149,61 +146,6 @@ impl<A, M> ActorFuture for ActorMessageItem<A, M>
             Ok(Async::NotReady) => Ok(Async::NotReady),
             Ok(Async::Ready(_)) => Ok(Async::Ready(())),
             Err(_) => Err(())
-        }
-    }
-}
-
-pub(crate) struct ActorStreamItem<A, M, E, S> {
-    stream: S,
-    handle: Rc<Cell<SpawnHandle>>,
-    started: bool,
-    act: PhantomData<A>,
-    msg: PhantomData<M>,
-    error: PhantomData<E>,
-}
-
-impl<A, M, E, S> ActorStreamItem<A, M, E, S> {
-    pub fn new(fut: S, handle: Rc<Cell<SpawnHandle>>) -> Self {
-        ActorStreamItem{stream: fut, handle: handle, started: false,
-                        act: PhantomData, msg: PhantomData, error: PhantomData}
-    }
-}
-
-impl<A, M, E, S> ActorFuture for ActorStreamItem<A, M, E, S>
-    where S: Stream<Item=M, Error=E>,
-          A: Actor + StreamHandler<M, E>, A::Context: AsyncContext<A>,
-          M: ResponseType
-{
-    type Item = ();
-    type Error = ();
-    type Actor = A;
-
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        if !self.started {
-            self.started = true;
-            <A as StreamHandler<M, E>>::started(act, ctx, self.handle.as_ref().get());
-        }
-        
-        loop {
-            match self.stream.poll() {
-                Ok(Async::Ready(Some(msg))) => {
-                    <A as StreamHandler<M, E>>::handle(act, msg, ctx);
-                    if ctx.waiting() {
-                        return Ok(Async::NotReady)
-                    }
-                }
-                Err(err) => {
-                    <A as StreamHandler<M, E>>::finished(
-                        act, Some(err), ctx, self.handle.as_ref().get());
-                    return Ok(Async::Ready(()))
-                },
-                Ok(Async::Ready(None)) => {
-                    <A as StreamHandler<M, E>>::finished(
-                        act, None, ctx, self.handle.as_ref().get());
-                    return Ok(Async::Ready(()))
-                }
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-            }
         }
     }
 }

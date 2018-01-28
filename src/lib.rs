@@ -51,8 +51,9 @@ mod arbiter;
 mod context;
 mod contextimpl;
 mod contextitems;
-mod framed;
 mod handler;
+mod framed;
+mod stream;
 mod registry;
 mod system;
 mod supervisor;
@@ -69,11 +70,12 @@ pub mod utils;
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler, StreamHandler,
+pub use handler::{Handler,
                   Response, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope};
 pub use context::Context;
+pub use stream::StreamHandler;
 pub use framed::{FramedHandler, FramedCell};
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
@@ -103,8 +105,8 @@ pub mod prelude {
     pub use address::{Address, SyncAddress};
     pub use context::{Context, ContextFutureSpawner};
     pub use framed::{FramedCell, FramedHandler};
-    pub use handler::{Handler, StreamHandler,
-                      Response, ResponseType, MessageResult, ResponseFuture};
+    pub use stream::StreamHandler;
+    pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;
     pub use sync::{SyncContext, SyncArbiter};
     pub use supervisor::Supervisor;
