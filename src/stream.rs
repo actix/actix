@@ -11,11 +11,11 @@ use actor::{Actor, ActorState, ActorContext, AsyncContext, SpawnHandle};
 #[allow(unused_variables)]
 pub trait StreamHandler<I, E> where Self: Actor
 {
-    /// Method is called when stream get polled first time.
-    fn started(&mut self, ctx: &mut Self::Context) {}
-
     /// Method is called for every message received by this Actor
     fn handle(&mut self, item: I, ctx: &mut Self::Context);
+
+    /// Method is called when stream get polled first time.
+    fn started(&mut self, ctx: &mut Self::Context) {}
 
     /// Method is called when stream finishes.
     ///
@@ -48,8 +48,7 @@ pub trait StreamHandler<I, E> where Self: Actor
     /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
     ///     }
     ///
-    ///     fn finished(&mut self, error: Option<io::Error>,
-    ///                 ctx: &mut Self::Context, handle: SpawnHandle) {
+    ///     fn finished(&mut self, error: Option<io::Error>, ctx: &mut Self::Context) {
     ///         println!("finished");
     ///     }
     /// }

@@ -7,6 +7,7 @@ use std::time::Duration;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use futures::{future, Future};
+use futures::stream::once;
 use futures::unsync::mpsc::unbounded;
 use tokio_core::reactor::Timeout;
 use actix::prelude::*;
@@ -304,4 +305,39 @@ fn test_stream_nowait_context() {
     sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
+}
+
+
+struct ContextHandle {h: Arc<AtomicUsize>}
+impl Actor for ContextHandle {
+    type Context = Context<Self>;
+}
+
+impl StreamHandler<Ping, ()> for ContextHandle {
+
+    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
+        self.h.store(ctx.handle().into_usize(), Ordering::Relaxed);
+        Arbiter::system().send(SystemExit(0));
+    }
+}
+
+#[test]
+fn test_current_context_handle() {
+    let sys = System::new("test");
+
+    let h = Arc::new(AtomicUsize::new(0));
+    let h2 = Arc::clone(&h);
+    let m = Arc::new(AtomicUsize::new(0));
+    let m2 = Arc::clone(&m);
+
+    let _addr: Address<_> = ContextHandle::create(move |ctx| {
+        h2.store(
+            ContextHandle::add_stream(
+                once::<Ping, ()>(Ok(Ping)), ctx).into_usize(), Ordering::Relaxed);
+
+        ContextHandle{h: m2}
+    });
+    sys.run();
+
+    assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
 }

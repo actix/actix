@@ -77,6 +77,13 @@ impl<A> AsyncContextApi<A> for Context<A> where A: Actor<Context=Self> {
 
 impl<A> Context<A> where A: Actor<Context=Self> {
 
+    /// Handle of the running future
+    ///
+    /// SpawnHandle is the handle that `AsyncContext::spawn()` method return
+    pub fn handle(&self) -> SpawnHandle {
+        self.inner.curr_handle()
+    }
+
     #[inline]
     pub(crate) fn new(act: Option<A>) -> Context<A> {
         Context { inner: ContextImpl::new(act) }

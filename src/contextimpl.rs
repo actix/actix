@@ -33,6 +33,7 @@ pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
     items: SmallVec<[Item<A>; 3]>,
     handle: SpawnHandle,
+    curr_handle: SpawnHandle,
 }
 
 impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
@@ -44,8 +45,9 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
             wait: SmallVec::new(),
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
-            handle: SpawnHandle::default(),
             address: ContextAddress::default(),
+            handle: SpawnHandle::default(),
+            curr_handle: SpawnHandle::default(),
         }
     }
 
@@ -56,8 +58,9 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
             wait: SmallVec::new(),
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
-            handle: SpawnHandle::default(),
             address: ContextAddress::new(rx),
+            handle: SpawnHandle::default(),
+            curr_handle: SpawnHandle::default(),
         }
     }
 
@@ -114,11 +117,17 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     }
 
     #[inline]
+    /// Handle of the running future
+    pub fn curr_handle(&self) -> SpawnHandle {
+        self.curr_handle
+    }
+
+    #[inline]
     /// Spawn new future to this context.
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
-        self.flags.insert(ContextFlags::MODIFIED);
+        self.modify();
         self.handle = self.handle.next();
         let fut: Box<ActorFuture<Item=(), Error=(), Actor=A>> = Box::new(fut);
         self.items.push((self.handle, fut));
@@ -130,8 +139,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     ///
     /// During wait period actor does not receive any messages.
     pub fn wait<F>(&mut self, f: F) where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static {
+        self.modify();
         self.wait.push(ActorWaitItem::new(f));
-        self.flags.insert(ContextFlags::MODIFIED);
     }
 
     #[inline]
@@ -139,7 +148,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         for idx in 0..self.items.len() {
             if self.items[idx].0 == handle {
-                self.flags.insert(ContextFlags::MODIFIED);
+                self.modify();
                 self.items.swap_remove(idx);
                 return true
             }
@@ -236,6 +245,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
             // process items
             let mut idx = 0;
             while idx < self.items.len() && !self.stopping() {
+                self.curr_handle = self.items[idx].0;
                 match self.items[idx].1.poll(act, ctx) {
                     Ok(Async::NotReady) => {
                         // item scheduled wait future
@@ -261,6 +271,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
                     },
                 }
             }
+            self.curr_handle = SpawnHandle::default();
 
             // ContextFlags::MODIFIED indicates that new IO item has
             // been added during poll process

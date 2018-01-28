@@ -384,6 +384,10 @@ impl SpawnHandle {
     pub fn next(self) -> SpawnHandle {
         SpawnHandle(self.0 + 1)
     }
+    #[doc(hidden)]
+    pub fn into_usize(self) -> usize {
+        self.0
+    }
 }
 
 impl Default for SpawnHandle {

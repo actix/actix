@@ -34,7 +34,7 @@ impl actix::StreamHandler<Num, ()> for MyActor {
         self.0.fetch_add(msg.0, Ordering::Relaxed);
     }
 
-    fn finished(&mut self, err: Option<()>, _: &mut actix::Context<MyActor>, _: SpawnHandle) {
+    fn finished(&mut self, err: Option<()>, _: &mut actix::Context<MyActor>) {
         if err.is_some() {
             self.0.fetch_add(1, Ordering::Relaxed);
             self.1.store(true, Ordering::Relaxed);

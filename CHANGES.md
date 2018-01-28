@@ -10,7 +10,9 @@
 
 * Add dns resolver and tcp connector utility actor
 
-* Add StreamHandler trait for stream handling
+* Add `StreamHandler` trait for stream handling
+
+* Add `Context::handle()` method, currently runnign future handle
 
 
 ## 0.4.5 (2018-01-23)
