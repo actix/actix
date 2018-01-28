@@ -10,16 +10,16 @@ const MAX_SYNC_POLLS: u32 = 256;
 pub const DEFAULT_CAPACITY: usize = 16;
 
 
-pub(crate) struct ContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
+pub(crate) struct Mailbox<A> where A: Actor, A::Context: AsyncContext<A> {
     sync_msgs: Option<SyncAddressReceiver<A>>,
     unsync_msgs: LocalAddrReceiver<A>,
 }
 
-impl<A> Default for ContextAddress<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Default for Mailbox<A> where A: Actor, A::Context: AsyncContext<A> {
 
     #[inline]
     fn default() -> Self {
-        ContextAddress {
+        Mailbox {
             sync_msgs: None,
             unsync_msgs: LocalAddrReceiver::new(DEFAULT_CAPACITY) }
     }
@@ -34,11 +34,11 @@ impl NumPolls {
     }
 }
 
-impl<A> ContextAddress<A> where A: Actor, A::Context: AsyncContext<A>
+impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
 {
     #[inline]
     pub fn new(rx: SyncAddressReceiver<A>) -> Self {
-        ContextAddress {
+        Mailbox {
             sync_msgs: Some(rx),
             unsync_msgs: LocalAddrReceiver::new(16) }
     }

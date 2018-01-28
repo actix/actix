@@ -8,7 +8,7 @@ use actor::{Actor, AsyncContext, ActorState, SpawnHandle, Supervised};
 use address::{Address, SyncAddress, SyncAddressReceiver};
 use context::AsyncContextApi;
 use contextitems::ActorWaitItem;
-use contextaddress::ContextAddress;
+use mailbox::Mailbox;
 
 /// internal context state
 bitflags! {
@@ -29,7 +29,7 @@ type Item<A> = (SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
 pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     act: Option<A>,
     flags: ContextFlags,
-    address: ContextAddress<A>,
+    mailbox: Mailbox<A>,
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
     items: SmallVec<[Item<A>; 3]>,
     handle: SpawnHandle,
@@ -45,7 +45,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
             wait: SmallVec::new(),
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
-            address: ContextAddress::default(),
+            mailbox: Mailbox::default(),
             handle: SpawnHandle::default(),
             curr_handle: SpawnHandle::default(),
         }
@@ -58,7 +58,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
             wait: SmallVec::new(),
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
-            address: ContextAddress::new(rx),
+            mailbox: Mailbox::new(rx),
             handle: SpawnHandle::default(),
             curr_handle: SpawnHandle::default(),
         }
@@ -158,25 +158,25 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
 
     #[inline]
     pub fn capacity(&mut self) -> usize {
-        self.address.capacity()
+        self.mailbox.capacity()
     }
 
     #[inline]
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
         self.modify();
-        self.address.set_capacity(cap);
+        self.mailbox.set_capacity(cap);
     }
 
     #[inline]
     pub fn unsync_address(&mut self) -> Address<A> {
         self.modify();
-        self.address.local_address()
+        self.mailbox.local_address()
     }
 
     #[inline]
     pub fn sync_address(&mut self) -> SyncAddress<A> {
         self.modify();
-        self.address.remote_address()
+        self.mailbox.remote_address()
     }
 
     #[inline]
@@ -184,7 +184,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
         if self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPPED) {
             false
         } else {
-            self.address.connected() || !self.items.is_empty() || !self.wait.is_empty()
+            self.mailbox.connected() || !self.items.is_empty() || !self.wait.is_empty()
         }
     }
 
@@ -196,7 +196,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
     /// Restart context. Cleanup all futures, except address queue.
     #[inline]
     pub fn restart(&mut self, ctx: &mut A::Context) -> bool where A: Supervised {
-        if self.act.is_none() || !self.address.connected() {
+        if self.act.is_none() || !self.mailbox.connected() {
             false
         } else {
             self.flags = ContextFlags::RUNNING;
@@ -247,8 +247,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContex
                 }
             }
 
-            // process address
-            self.address.poll(act, ctx);
+            // process mailbox
+            self.mailbox.poll(act, ctx);
             if !self.wait.is_empty() && !self.stopping() {
                 continue
             }

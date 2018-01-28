@@ -8,7 +8,7 @@ use futures::sync::oneshot::{channel, Sender};
 use actor::{Actor, AsyncContext};
 use address::{sync_channel, Address, SyncAddress};
 use context::Context;
-use contextaddress::DEFAULT_CAPACITY;
+use mailbox::DEFAULT_CAPACITY;
 use msgs::{Execute, StartActor, StopArbiter};
 use handler::Handler;
 use registry::{Registry, SystemRegistry};

@@ -59,7 +59,7 @@ mod system;
 mod supervisor;
 
 mod address;
-mod contextaddress;
+mod mailbox;
 
 pub mod fut;
 pub mod actors;

@@ -4,7 +4,7 @@ use actor::{Actor, Supervised, AsyncContext};
 use arbiter::Arbiter;
 use address::{sync_channel, Address, SyncAddress};
 use context::Context;
-use contextaddress::DEFAULT_CAPACITY;
+use mailbox::DEFAULT_CAPACITY;
 use msgs::Execute;
 
 /// Actor supervisor
