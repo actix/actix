@@ -79,7 +79,7 @@ impl<A> Context<A> where A: Actor<Context=Self> {
 
     /// Handle of the running future
     ///
-    /// SpawnHandle is the handle that `AsyncContext::spawn()` method return
+    /// SpawnHandle is the handle returned by `AsyncContext::spawn()` method.
     pub fn handle(&self) -> SpawnHandle {
         self.inner.curr_handle()
     }
