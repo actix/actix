@@ -50,7 +50,7 @@ impl<A> SyncAddress<A> where A: Actor {
               M: ResponseType + Send + 'static,
               M::Item: Send, M::Error: Send,
     {
-        self.tx.try_send(msg)
+        self.tx.try_send(msg, false)
     }
 
     /// Send message to actor `A` and asynchronously wait for response.
@@ -102,7 +102,11 @@ impl<A, M> Subscriber<M> for SyncAddress<A>
           M::Item: Send, M::Error: Send,
 {
     fn send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.try_send(msg)
+        self.tx.do_send(msg)
+    }
+
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.tx.try_send(msg, true)
     }
 
     #[doc(hidden)]

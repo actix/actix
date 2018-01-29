@@ -224,11 +224,7 @@ impl<A: Actor> AddressSender<A> {
     }
 
     /// Attempts to send a message on this `Sender<A>` without blocking.
-    ///
-    /// This function, unlike `send`, is safe to call whether it's being
-    /// called on a task or not. Note that this function, however, will *not*
-    /// attempt to block the current task if the message cannot be sent.
-    pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
+    pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
         where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A>,
               M::Item: Send, M::Error: Send,
               M: ResponseType + Send + 'static,
@@ -244,6 +240,9 @@ impl<A: Actor> AddressSender<A> {
         };
 
         if park_self {
+            if park {
+                self.park(true);
+            }
             Err(SendError::Full(msg))
         } else {
             let env = <A::Context as ToEnvelope<A>>::pack_msg(msg, None);

@@ -32,7 +32,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
 
     /// Send message `M` to the actor `A`
     ///
-    /// This method ignores receiver capacity and silently fails if actor is closed.
+    /// This method ignores receiver capacity, it silently fails if mailbox is closed.
     pub fn send<M>(&self, msg: M) where A: Handler<M>, M: ResponseType + 'static {
         let _ = self.tx.do_send(msg);
     }
@@ -43,7 +43,7 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
         where A: Handler<M>, M: ResponseType + 'static
     {
-        self.tx.try_send(msg)
+        self.tx.try_send(msg, false)
     }
 
     /// Send message to actor `A` and asynchronously wait for response.
@@ -94,7 +94,11 @@ impl<A, M> Subscriber<M> for Address<A>
           M: ResponseType + 'static
 {
     fn send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.try_send(msg)
+        self.tx.do_send(msg)
+    }
+
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.tx.try_send(msg, true)
     }
 
     #[doc(hidden)]

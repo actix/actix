@@ -90,8 +90,15 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
 ///
 /// It is possible to use `Clone::clone()` method to get cloned subscriber.
 pub trait Subscriber<M: 'static> {
-    /// Send buffered message
+
+    /// Send message
     fn send(&self, msg: M) -> Result<(), SendError<M>>;
+
+    /// Try send message
+    ///
+    /// This method fails if actor's mailbox is full or closed. This method
+    /// register current task in receivers queue.
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
 
     #[doc(hidden)]
     /// Create boxed clone of the current subscriber

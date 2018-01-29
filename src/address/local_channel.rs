@@ -65,8 +65,9 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     /// Try to put message to a reciver queue, if queue is full
     /// return message back.
     ///
-    /// This method does not register current task in recivers queue.
-    pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
+    /// This method may register current task in recivers queue depends on
+    /// state of `park` parameter.
+    pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
         where A: Handler<M>, M: ResponseType + 'static
     {
         let shared = match self.shared.upgrade() {
@@ -83,6 +84,9 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
             }
             Ok(())
         } else {
+            if park {
+                shared.blocked_senders.push_back(task::current());
+            }
             Err(SendError::Full(msg))
         }
     }
