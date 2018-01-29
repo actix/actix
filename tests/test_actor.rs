@@ -139,7 +139,7 @@ fn test_restart_sync_actor() {
     Arbiter::handle().spawn_fn(move || {
         addr.call_fut(Num(4))
             .then(move |_| {
-                Timeout::new(Duration::new(0, 100_000), Arbiter::handle()).unwrap()
+                Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle()).unwrap()
                     .then(move |_| {
                         Arbiter::system().send(actix::msgs::SystemExit(0));
                         future::result(Ok(()))
