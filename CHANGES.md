@@ -1,6 +1,6 @@
 # CHANGES
 
-## 0.5.0 (...)
+## 0.5.0 (2018-01-..)
 
 * Drop FramedContext
 
@@ -13,6 +13,8 @@
 * Add `StreamHandler` trait for stream handling
 
 * Add `Context::handle()` method, currently runnign future handle
+
+* Add `Sink` implementation for `Subscriber`
 
 
 ## 0.4.5 (2018-01-23)
