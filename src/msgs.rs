@@ -63,7 +63,7 @@ impl<A: Actor, F: FnOnce() -> SyncAddress<A> + Send + 'static> FnBox<A> for F {
 /// # extern crate actix;
 /// use actix::prelude::*;
 ///
-/// struct MyActor{addr: Address<Arbiter>}
+/// struct MyActor{addr: SyncAddress<Arbiter>}
 ///
 /// impl Actor for MyActor {
 ///    type Context = Context<Self>;

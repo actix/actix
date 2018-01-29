@@ -234,7 +234,6 @@ impl<A> Drop for LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -717,3 +717,83 @@ fn encode_state(state: &State) -> usize {
 
     num
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use prelude::*;
+    use std::{time, thread};
+
+    struct Act;
+    impl Actor for Act {
+        type Context = Context<Act>;
+    }
+
+    struct Ping;
+    impl ResponseType for Ping {
+        type Item = ();
+        type Error = ();
+    }
+
+    impl Handler<Ping> for Act {
+        type Result = ();
+        fn handle(&mut self, _: Ping, _: &mut Context<Act>) {}
+    }
+
+    #[test]
+    fn test_cap() {
+        let sys = System::new("test");
+
+        Arbiter::handle().spawn_fn(move || {
+            let (s1, mut recv) = channel::<Act>(1);
+            let s2 = recv.sender();
+
+            let arb: SyncAddress<_> = Arbiter::new("s1");
+            arb.send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+                let _ = s1.send(Ping);
+                Ok(())
+            }));
+            thread::sleep(time::Duration::from_millis(100));
+            let arb2 = Arbiter::new("s1");
+            arb2.send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+                let _ = s2.send(Ping);
+                Ok(())
+            }));
+
+            thread::sleep(time::Duration::from_millis(100));
+            let state = decode_state(recv.inner.state.load(SeqCst));
+            assert_eq!(state.num_messages, 1);
+
+            let p = loop {
+                match unsafe { recv.inner.parked_queue.pop() } {
+                    PopResult::Data(task) => break Some(task),
+                    PopResult::Empty => break None,
+                    PopResult::Inconsistent => thread::yield_now(),
+                }
+            };
+
+            assert!(p.is_some());
+            recv.inner.parked_queue.push(p.unwrap());
+
+            recv.set_capacity(10);
+
+            thread::sleep(time::Duration::from_millis(100));
+            let state = decode_state(recv.inner.state.load(SeqCst));
+            assert_eq!(state.num_messages, 1);
+
+            let p = loop {
+                match unsafe { recv.inner.parked_queue.pop() } {
+                    PopResult::Data(task) => break Some(task),
+                    PopResult::Empty => break None,
+                    PopResult::Inconsistent => thread::yield_now(),
+                }
+            };
+            assert!(p.is_none());
+
+            Arbiter::system().send(actix::msgs::SystemExit(0));
+            Ok(())
+        });
+
+        sys.run();
+    }
+}
