@@ -1,4 +1,5 @@
 use std::{mem, fmt};
+use futures::{Async, AsyncSink, Poll, Sink, StartSend};
 
 mod envelope;
 mod queue;
@@ -27,6 +28,14 @@ pub use context::AsyncContextApi;
 pub enum SendError<T> {
     Full(T),
     Closed(T),
+}
+
+impl<T> SendError<T> {
+    pub fn into_inner(self) -> T {
+        match self {
+            SendError::Full(msg) | SendError::Closed(msg) => msg,
+        }
+    }
 }
 
 impl<T> fmt::Debug for SendError<T> {
@@ -112,11 +121,63 @@ impl<M: 'static> Clone for Box<Subscriber<M>> {
     }
 }
 
+impl<M: 'static> fmt::Debug for Box<Subscriber<M>> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Subscriber<_>")
+    }
+}
+
 /// Convenience impl to allow boxed Subscriber objects to be cloned using `Clone.clone()`.
 impl<M: 'static> Clone for Box<Subscriber<M> + Send> {
     fn clone(&self) -> Box<Subscriber<M> + Send> {
         // simplify ergonomics of `+Send` subscriber, otherwise
         // it would require new trait with custom `.boxed()` method.
         unsafe { mem::transmute(self.boxed()) }
+    }
+}
+
+impl<M: 'static> fmt::Debug for Box<Subscriber<M> + Send> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Subscriber<_> + Send")
+    }
+}
+
+impl<M: 'static> Sink for Box<Subscriber<M>> {
+    type SinkItem = M;
+    type SinkError = M;
+
+    fn start_send(&mut self, msg: M) -> StartSend<M, M> {
+        match self.try_send(msg) {
+            Ok(()) => Ok(AsyncSink::Ready),
+            Err(err) => Err(err.into_inner()),
+        }
+    }
+
+    fn poll_complete(&mut self) -> Poll<(), M> {
+        Ok(Async::Ready(()))
+    }
+
+    fn close(&mut self) -> Poll<(), M> {
+        Ok(Async::Ready(()))
+    }
+}
+
+impl<M: 'static> Sink for Box<Subscriber<M> + Send> {
+    type SinkItem = M;
+    type SinkError = M;
+
+    fn start_send(&mut self, msg: M) -> StartSend<M, M> {
+        match self.try_send(msg) {
+            Ok(()) => Ok(AsyncSink::Ready),
+            Err(err) => Err(err.into_inner()),
+        }
+    }
+
+    fn poll_complete(&mut self) -> Poll<(), M> {
+        Ok(Async::Ready(()))
+    }
+
+    fn close(&mut self) -> Poll<(), M> {
+        Ok(Async::Ready(()))
     }
 }
