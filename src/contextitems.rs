@@ -102,7 +102,7 @@ impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
         if self.result.is_none() {
             match self.timeout.poll() {
                 Ok(Async::Ready(_)) => {
-                    let fut = <A as Handler<M>>::handle(act, self.msg.take().unwrap(), ctx);
+                    let fut = A::handle(act, self.msg.take().unwrap(), ctx);
                     self.result = Some(fut.into_response());
                 },
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
@@ -138,7 +138,7 @@ impl<A, M> ActorFuture for ActorMessageItem<A, M>
 
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
         if self.result.is_none() {
-            let fut = <Self::Actor as Handler<M>>::handle(act, self.msg.take().unwrap(), ctx);
+            let fut = Handler::handle(act, self.msg.take().unwrap(), ctx);
             self.result = Some(fut.into_response());
         }
 
@@ -187,7 +187,7 @@ impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, M, S>
 
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = <A as Handler<M>>::handle(act, msg, ctx);
+                    let fut = Handler::handle(act, msg, ctx);
                     self.fut = Some(fut.into_response());
                     if ctx.waiting() {
                         return Ok(Async::NotReady)

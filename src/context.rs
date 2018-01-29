@@ -86,7 +86,7 @@ impl<A> Context<A> where A: Actor<Context=Self> {
 
     /// Set mailbox capacity
     ///
-    /// By default mailbox capacity is set to 16 messages.
+    /// By default mailbox capacity is 16 messages.
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
         self.inner.set_mailbox_capacity(cap)
     }

@@ -5,6 +5,21 @@ use address::SyncAddress;
 use context::Context;
 use fut::ActorFuture;
 
+/// Message handler
+///
+/// `Handler` implementation is a general way how to handle
+/// incoming messages, streams, futures.
+///
+/// `M` is a message which can be handled by the actor.
+#[allow(unused_variables)]
+pub trait Handler<M> where Self: Actor, M: ResponseType {
+    /// The type of value that this handle will return
+    type Result: IntoResponse<Self, M>;
+
+    /// Method is called for every message received by this Actor
+    fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
+}
+
 /// Message response type
 pub trait ResponseType {
 
@@ -20,6 +35,8 @@ impl<I, E> ResponseType for Result<I, E> where I: ResponseType {
     type Error = ();
 }
 
+/// A specialized [`Result`](https://doc.rust-lang.org/std/result/enum.Result.html)
+/// for message result responses
 pub type MessageResult<M: ResponseType> = Result<M::Item, M::Error>;
 
 pub trait IntoResponse<A: Actor, M: ResponseType> {
@@ -70,21 +87,6 @@ impl<A, M> IntoResponse<A, M> for Box<ActorFuture<Item=M::Item, Error=M::Error, 
     }
 }
 
-/// Message handler
-///
-/// `Handler` implementation is a general way how to handle
-/// incoming messages, streams, futures.
-///
-/// `M` is a message which can be handled by the actor.
-#[allow(unused_variables)]
-pub trait Handler<M> where Self: Actor, M: ResponseType
-{
-    type Result: IntoResponse<Self, M>;
-
-    /// Method is called for every message received by this Actor
-    fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
-}
-
 /// `Response` represents asynchronous message handling process.
 pub struct Response<A, M> where A: Actor, M: ResponseType {
     inner: Option<ResponseTypeItem<A, M>>,
@@ -123,8 +125,8 @@ impl<A, M> From<Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>> for Res
     }
 }
 
-impl<A, M> Response<A, M> where A: Actor, M: ResponseType
-{
+impl<A, M> Response<A, M> where A: Actor, M: ResponseType {
+
     /// Create response
     pub fn reply(val: Result<M::Item, M::Error>) -> Self {
         Response {inner: Some(ResponseTypeItem::Result(val))}
