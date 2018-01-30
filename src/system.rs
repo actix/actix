@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use tokio_core::reactor::{Core, Handle};
+use futures::Future;
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
 use actor::Actor;
@@ -103,6 +104,12 @@ impl SystemRunner {
             Ok(code) => code,
             Err(_) => 1,
         }
+    }
+
+    pub fn run_until_complete<F, I, E>(&mut self, fut: F) -> Result<I, E>
+        where F: Future<Item=I, Error=E>
+    {
+        self.core.run(fut)
     }
 }
 
