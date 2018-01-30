@@ -105,6 +105,7 @@ pub mod prelude {
     pub use address::{Address, SyncAddress};
     pub use context::{Context, ContextFutureSpawner};
     pub use framed::{FramedCell, FramedHandler};
+    pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
     pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
     pub use system::System;

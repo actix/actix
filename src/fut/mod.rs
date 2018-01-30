@@ -6,6 +6,7 @@ use futures::{Future, Poll, Stream};
 mod chain;
 mod and_then;
 mod either;
+mod from_err;
 mod result;
 mod then;
 mod map;
@@ -20,6 +21,7 @@ mod helpers;
 
 pub use self::either::Either;
 pub use self::and_then::AndThen;
+pub use self::from_err::FromErr;
 pub use self::then::Then;
 pub use self::map::Map;
 pub use self::map_err::{MapErr, DropErr};
@@ -75,6 +77,13 @@ pub trait ActorFuture {
     fn drop_err(self) -> DropErr<Self> where Self: Sized
     {
         map_err::DropErr::new(self)
+    }
+
+    /// Map this future's error to any error implementing `From` for
+    /// this future's `Error`, returning a new future.
+    fn from_err<E:From<Self::Error>>(self) -> FromErr<Self, E> where Self: Sized,
+    {
+        from_err::new(self)
     }
 
     /// Chain on a computation for when a future finished, passing the result of

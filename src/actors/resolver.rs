@@ -7,16 +7,16 @@
 //! # extern crate futures;
 //! # use futures::{future, Future};
 //! use actix::prelude::*;
-//! use actix::actors::resolver;
+//! use actix::actors;
 //!
 //! fn main() {
 //!     let sys = System::new("test");
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: Address<_> = Arbiter::registry().get::<resolver::Connector>();
+//!         let resolver: Address<_> = actors::Connector::from_registry();
 //!
 //!         resolver.call_fut(
-//!             resolver::Resolve::host("localhost"))       // <- resolve "localhost"
+//!             actors::Resolve::host("localhost"))       // <- resolve "localhost"
 //!                 .then(|addrs| {
 //!                     println!("RESULT: {:?}", addrs);
 //! #                   Arbiter::system().send(actix::msgs::SystemExit(0));
@@ -25,10 +25,10 @@
 //!    });
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: Address<_> = Arbiter::registry().get::<resolver::Connector>();
+//!         let resolver: Address<_> = actors::Connector::from_registry();
 //!
 //!         resolver.call_fut(
-//!             resolver::Connect::host("localhost:5000"))  // <- connect to a "localhost"
+//!             actors::Connect::host("localhost:5000"))  // <- connect to a "localhost"
 //!                 .then(|stream| {
 //!                     println!("RESULT: {:?}", stream);
 //!                     Ok::<_, ()>(())
@@ -205,9 +205,9 @@ impl Resolver {
         }
 
         // split the string by ':' and convert the second part to u16
-        let mut parts_iter = addr.rsplitn(2, ':');
-        let port_str = try_opt!(parts_iter.next(), "invalid socket address");
+        let mut parts_iter = addr.splitn(2, ':');
         let host = try_opt!(parts_iter.next(), "invalid socket address");
+        let port_str = parts_iter.next().unwrap_or("");
         let port: u16 = port_str.parse().unwrap_or(port);
 
         Ok((host, port))

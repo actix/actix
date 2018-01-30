@@ -95,3 +95,9 @@ impl<T, E, A> ActorFuture for FutureResult<T, E, A> where A:Actor {
         self.inner.take().expect("cannot poll Result twice").map(Async::Ready)
     }
 }
+
+impl<T, E, A> From<Result<T, E>> for FutureResult<T, E, A> {
+    fn from(r: Result<T, E>) -> Self {
+        result(r)
+    }
+}

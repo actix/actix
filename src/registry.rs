@@ -82,15 +82,27 @@ pub struct Registry {
 /// Trait defines arbiter's service.
 #[allow(unused_variables)]
 pub trait ArbiterService: Actor<Context=Context<Self>> + Supervised + Default {
+
     /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
+
+    /// Get actor's address from arbiter registry
+    fn from_registry() -> Address<Self> {
+        Arbiter::registry().get::<Self>()
+    }
 }
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
 pub trait SystemService: Actor<Context=Context<Self>> + Supervised + Default {
+
     /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
+
+    /// Get actor's address from system registry
+    fn from_registry() -> SyncAddress<Self> {
+        Arbiter::system_registry().get::<Self>()
+    }
 }
 
 impl Registry {

@@ -1,4 +1,6 @@
 //! Helper actors
 
+mod resolver;
 pub mod signal;
-pub mod resolver;
+
+pub use self::resolver::{Connect, Resolve, Connector, ConnectorError};

@@ -2,16 +2,17 @@ extern crate actix;
 extern crate futures;
 use futures::Future;
 use actix::prelude::*;
-use actix::actors::{resolver, signal};
+use actix::actors::{self, signal};
+
 
 #[test]
 fn test_resolver() {
     let sys = System::new("test");
 
     Arbiter::handle().spawn({
-        let resolver: Address<_> = Arbiter::registry().get::<resolver::Connector>();
+        let resolver: Address<_> = Arbiter::registry().get::<actors::Connector>();
         resolver.call_fut(
-            resolver::Resolve::host("localhost"))
+            actors::Resolve::host("localhost"))
             .then(|_| {
                 Arbiter::system().send(actix::msgs::SystemExit(0));
                 Ok::<_, ()>(())
@@ -19,10 +20,10 @@ fn test_resolver() {
     });
 
     Arbiter::handle().spawn({
-        let resolver: Address<_> = Arbiter::registry().get::<resolver::Connector>();
+        let resolver: Address<_> = Arbiter::registry().get::<actors::Connector>();
 
         resolver.call_fut(
-            resolver::Connect::host("localhost:5000"))
+            actors::Connect::host("localhost:5000"))
             .then(|_| {
                 Ok::<_, ()>(())
             })
