@@ -158,3 +158,153 @@ fn test_error_result() {
 
     sys.run();
 }
+
+struct TimeoutActor;
+
+impl Actor for TimeoutActor {
+    type Context = actix::Context<Self>;
+}
+
+impl Handler<Ping> for TimeoutActor {
+    type Result = ();
+
+    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
+        Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle()).unwrap()
+            .map_err(|_| ())
+            .into_actor(self)
+            .wait(ctx);
+    }
+}
+
+#[test]
+fn test_message_timeout() {
+    let sys = System::new("test");
+
+    let addr: Address<_> = TimeoutActor.start();
+    let count = Arc::new(AtomicUsize::new(0));
+    let count2 = Arc::clone(&count);
+
+    Arbiter::handle().spawn_fn(move || {
+        addr.send(Ping(0));
+        addr.call_fut(Ping(0))
+            .timeout(Duration::new(0, 1_000))
+            .then(move |res| {
+                match res {
+                    Ok(Err(_)) => panic!("Should not happen"),
+                    Err(MailboxError::Timeout) => {
+                        count2.fetch_add(1, Ordering::Relaxed);
+                    },
+                    _ => panic!("Should not happen"),
+                }
+                Arbiter::system().send(actix::msgs::SystemExit(0));
+                futures::future::result(Ok(()))
+            })
+    });
+
+    sys.run();
+    assert_eq!(count.load(Ordering::Relaxed), 1);
+}
+
+#[test]
+fn test_sync_message_timeout() {
+    let sys = System::new("test");
+
+    let addr: SyncAddress<_> = TimeoutActor.start();
+    let count = Arc::new(AtomicUsize::new(0));
+    let count2 = Arc::clone(&count);
+
+    Arbiter::handle().spawn_fn(move || {
+        addr.send(Ping(0));
+        addr.call_fut(Ping(0))
+            .timeout(Duration::new(0, 1_000))
+            .then(move |res| {
+                match res {
+                    Ok(Err(_)) => panic!("Should not happen"),
+                    Err(MailboxError::Timeout) => {
+                        count2.fetch_add(1, Ordering::Relaxed);
+                    },
+                    _ => panic!("Should not happen"),
+                }
+                Arbiter::system().send(actix::msgs::SystemExit(0));
+                futures::future::result(Ok(()))
+            })
+    });
+
+    sys.run();
+    assert_eq!(count.load(Ordering::Relaxed), 1);
+}
+
+struct TimeoutActor2(Address<TimeoutActor>, Arc<AtomicUsize>);
+
+impl Actor for TimeoutActor2 {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.0.send(Ping(0));
+        self.0.call(self, Ping(0))
+            .timeout(Duration::new(0, 1_000))
+            .then(move |res, act, _| {
+                match res {
+                    Ok(Err(_)) => panic!("Should not happen"),
+                    Err(MailboxError::Timeout) => {
+                        act.1.fetch_add(1, Ordering::Relaxed);
+                    },
+                    _ => panic!("Should not happen"),
+                }
+                Arbiter::system().send(actix::msgs::SystemExit(0));
+                actix::fut::ok(())
+            })
+            .wait(ctx)
+    }
+}
+
+#[test]
+fn test_call_message_timeout() {
+    let sys = System::new("test");
+    let addr: Address<_> = TimeoutActor.start();
+
+    let count = Arc::new(AtomicUsize::new(0));
+    let count2 = Arc::clone(&count);
+    let _addr2: Address<_> = TimeoutActor2(addr, count2).start();
+
+    sys.run();
+    assert_eq!(count.load(Ordering::Relaxed), 1);
+}
+
+
+struct TimeoutActor3(SyncAddress<TimeoutActor>, Arc<AtomicUsize>);
+
+impl Actor for TimeoutActor3 {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.0.send(Ping(0));
+        self.0.call(self, Ping(0))
+            .timeout(Duration::new(0, 1_000))
+            .then(move |res, act, _| {
+                match res {
+                    Ok(Err(_)) => panic!("Should not happen"),
+                    Err(MailboxError::Timeout) => {
+                        act.1.fetch_add(1, Ordering::Relaxed);
+                    },
+                    _ => panic!("Should not happen"),
+                }
+                Arbiter::system().send(actix::msgs::SystemExit(0));
+                actix::fut::ok(())
+            })
+            .wait(ctx)
+    }
+}
+
+#[test]
+fn test_sync_call_message_timeout() {
+    let sys = System::new("test");
+    let addr: SyncAddress<_> = TimeoutActor.start();
+
+    let count = Arc::new(AtomicUsize::new(0));
+    let count2 = Arc::clone(&count);
+    let _addr2: Address<_> = TimeoutActor3(addr, count2).start();
+
+    sys.run();
+    assert_eq!(count.load(Ordering::Relaxed), 1);
+}

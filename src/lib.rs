@@ -102,7 +102,7 @@ pub mod prelude {
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
-    pub use address::{Address, SyncAddress};
+    pub use address::{Address, SyncAddress, SendError, MailboxError};
     pub use context::{Context, ContextFutureSpawner};
     pub use framed::{FramedCell, FramedHandler};
     pub use registry::{ArbiterService, SystemService};

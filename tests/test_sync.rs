@@ -58,8 +58,8 @@ impl Handler<Fibonacci> for SyncActor {
                 last = curr;
                 curr = sum;
                 i += 1;
-	        }
-	        Ok(sum)
+            }
+            Ok(sum)
         }
     }
 }
