@@ -19,6 +19,7 @@ mod stream_then;
 mod stream_and_then;
 mod stream_finish;
 mod stream_fold;
+mod stream_timeout;
 mod helpers;
 
 pub use self::either::Either;
@@ -35,6 +36,7 @@ pub use self::stream_then::StreamThen;
 pub use self::stream_and_then::StreamAndThen;
 pub use self::stream_finish::StreamFinish;
 pub use self::stream_fold::StreamFold;
+pub use self::stream_timeout::StreamTimeout;
 pub use self::helpers::{Finish, FinishStream};
 
 use actor::Actor;
@@ -182,7 +184,16 @@ pub trait ActorStream {
         stream_fold::new(self, f, init)
     }
 
-    /// Converts a stream to a future that resolves when stream completes.
+    /// Add timeout to stream.
+    ///
+    /// `err` value get returned as a timeout error.
+    fn timeout(self, timeout: Duration, err: Self::Error) -> StreamTimeout<Self>
+        where Self: Sized
+    {
+        stream_timeout::new(self, timeout, err)
+    }
+
+    /// Converts a stream to a future that resolves when stream finishes.
     fn finish(self) -> StreamFinish<Self>
         where Self: Sized
     {
@@ -292,7 +303,11 @@ pub trait WrapStream<A> where A: Actor
     /// The error that the future may resolve with.
     type Error;
 
+    #[doc(hidden)]
     fn actstream(self) -> Self::Stream;
+
+    /// Convert normal stream to a ActorStream
+    fn into_actor(self, a: &A) -> Self::Stream;
 }
 
 impl<S: Stream, A: Actor> WrapStream<A> for S {
@@ -300,7 +315,12 @@ impl<S: Stream, A: Actor> WrapStream<A> for S {
     type Item = S::Item;
     type Error = S::Error;
 
+    #[doc(hidden)]
     fn actstream(self) -> Self::Stream {
+        wrap_stream(self)
+    }
+
+    fn into_actor(self, _: &A) -> Self::Stream {
         wrap_stream(self)
     }
 }
