@@ -137,6 +137,7 @@ pub mod dev {
     pub use prelude::actix::*;
 
     pub use contextimpl::ContextImpl;
+    pub use handler::IntoResponse;
     pub use address::{ActorAddress, SendError,
                       Envelope, ToEnvelope, RemoteEnvelope, Request,
                       LocalRequest, LocalFutRequest};

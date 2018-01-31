@@ -39,6 +39,7 @@ impl<I, E> ResponseType for Result<I, E> where I: ResponseType {
 /// for message result responses
 pub type MessageResult<M: ResponseType> = Result<M::Item, M::Error>;
 
+/// Convert trait, that help convert type into a `Response`
 pub trait IntoResponse<A: Actor, M: ResponseType> {
     fn into_response(self) -> Response<A, M>;
 }
