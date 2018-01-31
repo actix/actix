@@ -235,14 +235,14 @@ fn test_stop_after_drop_sync_actor() {
     let stopped2 = Arc::clone(&stopped);
 
     Arbiter::handle().spawn_fn(move || {
-        Timeout::new(Duration::new(0, 1_500_000), Arbiter::handle()).unwrap()
+        Timeout::new(Duration::from_secs(2), Arbiter::handle()).unwrap()
             .then(move |_| {
                 assert!(started2.load(Ordering::Relaxed), "Not started");
                 assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
                 assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
                 drop(addr);
 
-                Timeout::new(Duration::new(0, 1_500_000), Arbiter::handle()).unwrap()
+                Timeout::new(Duration::from_secs(2), Arbiter::handle()).unwrap()
                     .then(move |_| {
                         Arbiter::system().send(SystemExit(0));
                         future::result(Ok(()))
