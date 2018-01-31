@@ -142,7 +142,14 @@ impl<A, M> ActorFuture for EnvelopFuture<A, M>
                 }
                 Ok(Async::Ready(()))
             },
-            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Ok(Async::NotReady) => {
+                if let Some(ref tx) = self.tx {
+                    if tx.is_canceled() {
+                        return Ok(Async::Ready(()))
+                    }
+                }
+                Ok(Async::NotReady)
+            }
             Err(err) => {
                 if let Some(tx) = self.tx.take() {
                     let _ = tx.send(Err(err));
