@@ -73,7 +73,7 @@ impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
                     self.info = Some((sender, msg));
                     return self.poll_timeout();
                 }
-                Err(SendError::Closed(_)) => return Err(MailboxError::Dropped),
+                Err(SendError::Closed(_)) => return Err(MailboxError::Closed),
             }
         }
 
@@ -84,10 +84,10 @@ impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
                     self.rx = Some(rx);
                     self.poll_timeout()
                 }
-                Err(_) => Err(MailboxError::Dropped),
+                Err(_) => Err(MailboxError::Closed),
             }
         } else {
-            Err(MailboxError::Dropped)
+            Err(MailboxError::Closed)
         }
     }
 }
@@ -144,7 +144,7 @@ impl<A, M> Future for LocalFutRequest<A, M>
                     self.info = Some((sender, msg));
                     return self.poll_timeout();
                 },
-                Err(_) => return Err(MailboxError::Dropped),
+                Err(_) => return Err(MailboxError::Closed),
             }
         }
 
@@ -155,10 +155,10 @@ impl<A, M> Future for LocalFutRequest<A, M>
                     self.rx = Some(rx);
                     self.poll_timeout()
                 }
-                Err(_) => Err(MailboxError::Dropped),
+                Err(_) => Err(MailboxError::Closed),
             }
         } else {
-            Err(MailboxError::Dropped)
+            Err(MailboxError::Closed)
         }
     }
 }

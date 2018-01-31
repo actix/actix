@@ -30,10 +30,10 @@ pub enum SendError<T> {
     Closed(T),
 }
 
-#[derive(Fail, Debug)]
+#[derive(Fail)]
 pub enum MailboxError {
-    #[fail(display="Mailbox has dropped")]
-    Dropped,
+    #[fail(display="Mailbox has closed")]
+    Closed,
     #[fail(display="Message delivery timed out")]
     Timeout,
 }
@@ -61,6 +61,12 @@ impl<T> fmt::Display for SendError<T> {
             SendError::Full(_) => write!(fmt, "send failed because receiver is full"),
             SendError::Closed(_) => write!(fmt, "send failed because receiver is gone"),
         }
+    }
+}
+
+impl fmt::Debug for MailboxError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "MailboxError({})", self)
     }
 }
 
