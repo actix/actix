@@ -188,7 +188,7 @@ pub trait ActorStream {
     ///
     /// `err` value get returned as a timeout error.
     fn timeout(self, timeout: Duration, err: Self::Error) -> StreamTimeout<Self>
-        where Self: Sized
+        where Self: Sized, Self::Error: Clone
     {
         stream_timeout::new(self, timeout, err)
     }

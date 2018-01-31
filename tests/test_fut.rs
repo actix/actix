@@ -15,7 +15,7 @@ struct MyActor {
     timeout: Arc<AtomicBool>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 enum Error {
     Timeout,
     Generic,

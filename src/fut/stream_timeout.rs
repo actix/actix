@@ -16,23 +16,23 @@ use arbiter::Arbiter;
 pub struct StreamTimeout<S> where S: ActorStream
 {
     stream: S,
-    err: Option<S::Error>,
+    err: S::Error,
     dur: Duration,
     timeout: Option<TokioTimeout>,
 }
 
 pub fn new<S>(stream: S, timeout: Duration, err: S::Error) -> StreamTimeout<S>
-    where S: ActorStream
+    where S: ActorStream, S::Error: Clone
 {
     StreamTimeout {
         stream: stream,
-        err: Some(err),
+        err: err,
         dur: timeout,
         timeout: None,
     }
 }
 
-impl<S> ActorStream for StreamTimeout<S> where S: ActorStream
+impl<S> ActorStream for StreamTimeout<S> where S: ActorStream, S::Error: Clone
 {
     type Item = S::Item;
     type Error = S::Error;
@@ -64,6 +64,6 @@ impl<S> ActorStream for StreamTimeout<S> where S: ActorStream
         }
         self.timeout.take();
 
-        Err(self.err.take().expect("Stream should not be polled after timeout"))
+        Err(self.err.clone())
     }
 }
