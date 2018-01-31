@@ -1,5 +1,6 @@
 //! Custom `Future` implementation with `Actix` support
 
+use std::time::Duration;
 use std::marker::PhantomData;
 use futures::{Future, Poll, Stream};
 
@@ -11,6 +12,7 @@ mod result;
 mod then;
 mod map;
 mod map_err;
+mod timeout;
 mod stream_map;
 mod stream_map_err;
 mod stream_then;
@@ -23,6 +25,7 @@ pub use self::either::Either;
 pub use self::and_then::AndThen;
 pub use self::from_err::FromErr;
 pub use self::then::Then;
+pub use self::timeout::Timeout;
 pub use self::map::Map;
 pub use self::map_err::{MapErr, DropErr};
 pub use self::result::{result, ok, err, FutureResult};
@@ -106,6 +109,12 @@ pub trait ActorFuture {
         and_then::new(self, f)
     }
 
+    /// Add timeout to futures chain.
+    ///
+    /// `err` value get returned as a timeout error.
+    fn timeout(self, timeout: Duration, err: Self::Error) -> Timeout<Self> where Self: Sized {
+        timeout::new(self, timeout, err)
+    }
 }
 
 /// A stream of values, not all of which may have been produced yet.
