@@ -3,7 +3,7 @@ use futures::{future, Future, Stream};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use address::{ActorAddress, ToEnvelope};
+use address::{Address, SyncAddress, ActorAddress, ToEnvelope};
 use handler::{Handler, Response, ResponseType};
 use context::Context;
 use contextitems::{ActorFutureItem, ActorMessageItem,
@@ -225,6 +225,14 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn address<Address>(&mut self) -> Address where A: ActorAddress<A, Address> {
         <A as ActorAddress<A, Address>>::get(self)
     }
+
+    #[doc(hidden)]
+    /// Return `SyncAddress` of the context
+    fn sync_address(&mut self) -> SyncAddress<A>;
+
+    #[doc(hidden)]
+    /// Return `Address` of the context
+    fn local_address(&mut self) -> Address<A>;
 
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.

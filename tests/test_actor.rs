@@ -176,7 +176,7 @@ fn test_add_future() {
     let count = Arc::new(AtomicUsize::new(0));
     let act_count = Arc::clone(&count);
 
-    let _addr: () = MyActor2::create(move |ctx| {
+    MyActor2::create::<(), _>(move |ctx| {
         let act = MyActor2(act_count);
 
         ctx.add_future(

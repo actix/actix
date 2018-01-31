@@ -6,7 +6,6 @@ use smallvec::SmallVec;
 use fut::ActorFuture;
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle, Supervised};
 use address::{Address, SyncAddress, SyncAddressReceiver};
-use context::AsyncContextApi;
 use contextitems::ActorWaitItem;
 use mailbox::Mailbox;
 
@@ -36,7 +35,7 @@ pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     curr_handle: SpawnHandle,
 }
 
-impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
+impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
 {
     #[inline]
     pub fn new(act: Option<A>) -> ContextImpl<A> {

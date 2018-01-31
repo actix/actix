@@ -161,7 +161,7 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
 impl<A> ToEnvelope<A> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>>,
 {
-    fn pack_msg<M>(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               M::Item: Send, M::Error: Send

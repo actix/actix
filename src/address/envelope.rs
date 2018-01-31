@@ -11,27 +11,15 @@ use handler::{Handler, Response, ResponseType, IntoResponse, MessageResult};
 pub trait ToEnvelope<A: Actor> {
 
     /// Pack message into suitable envelope
-    fn pack_msg<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + Send + 'static,
               M::Item: Send, M::Error: Send;
-
-
-    // TODO: drop channel_on_drop
-    #[doc(hidden)]
-    #[deprecated(since="0.4.6", note="channel_on_drop is deprecated")]
-    /// Pack message into suitable envelope
-    fn pack<M>(msg: M, tx: Option<Sender<MessageResult<M>>>, _: bool) -> Envelope<A>
-        where A: Handler<M>,
-              M: ResponseType + Send + 'static,
-              M::Item: Send, M::Error: Send {
-        Self::pack_msg(msg, tx)
-    }
 }
 
 impl<A> ToEnvelope<A> for Context<A> where A: Actor<Context=Context<A>>
 {
-    fn pack_msg<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
+    fn pack<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
         where A: Handler<M>,
               M: ResponseType + 'static, M::Item: Send, M::Error: Send,
     {

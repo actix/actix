@@ -23,7 +23,6 @@ pub use self::sync_address::SyncAddress;
 pub use self::sync_message::{Request, RequestFut};
 pub(crate) use self::sync_channel::SyncAddressReceiver;
 
-pub use context::AsyncContextApi;
 
 pub enum SendError<T> {
     Full(T),
@@ -77,15 +76,15 @@ pub trait ActorAddress<A, T> where A: Actor {
 }
 
 impl<A> ActorAddress<A, Address<A>> for A
-    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
+    where A: Actor, A::Context: AsyncContext<A>
 {
     fn get(ctx: &mut A::Context) -> Address<A> {
-        ctx.unsync_address()
+        ctx.local_address()
     }
 }
 
 impl<A> ActorAddress<A, SyncAddress<A>> for A
-    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
+    where A: Actor, A::Context: AsyncContext<A>
 {
     fn get(ctx: &mut A::Context) -> SyncAddress<A> {
         ctx.sync_address()
@@ -93,10 +92,10 @@ impl<A> ActorAddress<A, SyncAddress<A>> for A
 }
 
 impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
-    where A: Actor, A::Context: AsyncContext<A> + AsyncContextApi<A>
+    where A: Actor, A::Context: AsyncContext<A>
 {
     fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>) {
-        (ctx.unsync_address(), ctx.sync_address())
+        (ctx.local_address(), ctx.sync_address())
     }
 }
 
