@@ -17,10 +17,16 @@ pub trait StreamHandler<I, E> where Self: Actor
     /// Method is called when stream get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
 
-    /// Method is called when stream finishes.
+    /// Method is called when stream emits error.
     ///
-    /// Error indicates if stream finished with error.
-    fn finished(&mut self, error: Option<E>, ctx: &mut Self::Context) {}
+    /// If this method returns `false` stream processing continues otherwise
+    /// stream processing stops.
+    fn error(&mut self, err: E, ctx: &mut Self::Context) -> bool {
+        true
+    }
+
+    /// Method is called when stream finishes.
+    fn finished(&mut self, ctx: &mut Self::Context) {}
 
     /// This method is similar to `add_future` but works with streams.
     ///
@@ -48,7 +54,7 @@ pub trait StreamHandler<I, E> where Self: Actor
     /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
     ///     }
     ///
-    ///     fn finished(&mut self, error: Option<io::Error>, ctx: &mut Self::Context) {
+    ///     fn finished(&mut self, ctx: &mut Self::Context) {
     ///         println!("finished");
     ///     }
     /// }
@@ -119,11 +125,13 @@ impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
                     }
                 }
                 Err(err) => {
-                    A::finished(act, Some(err), ctx);
-                    return Ok(Async::Ready(()))
+                    if A::error(act, err, ctx) {
+                        A::finished(act, ctx);
+                        return Ok(Async::Ready(()))
+                    }
                 },
                 Ok(Async::Ready(None)) => {
-                    A::finished(act, None, ctx);
+                    A::finished(act, ctx);
                     return Ok(Async::Ready(()))
                 }
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
