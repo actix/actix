@@ -1,13 +1,16 @@
+use std::time::Duration;
 use std::marker::PhantomData;
 
 use futures::{Async, Future, Poll};
-use futures::unsync::oneshot::{Canceled, Receiver};
+use futures::unsync::oneshot::Receiver;
+use tokio_core::reactor::Timeout;
 
+use arbiter::Arbiter;
 use actor::{Actor, AsyncContext};
 use fut::ActorFuture;
-use handler::{Handler, ResponseType};
+use handler::{Handler, MessageResult, ResponseType};
 
-use super::SendError;
+use super::{SendError, MailboxError};
 use super::local_channel::LocalAddrSender;
 
 
@@ -21,6 +24,7 @@ pub struct LocalRequest<A, B, M>
     rx: Option<Receiver<Result<M::Item, M::Error>>>,
     info: Option<(LocalAddrSender<A>, M)>,
     act: PhantomData<B>,
+    timeout: Option<Timeout>,
 }
 
 impl<A, B, M> LocalRequest<A, B, M>
@@ -30,7 +34,25 @@ impl<A, B, M> LocalRequest<A, B, M>
 {
     pub(crate) fn new(rx: Option<Receiver<Result<M::Item, M::Error>>>,
                       info: Option<(LocalAddrSender<A>, M)>) -> LocalRequest<A, B, M> {
-        LocalRequest{rx: rx, info: info, act: PhantomData}
+        LocalRequest{rx: rx, info: info, act: PhantomData, timeout: None}
+    }
+
+    /// Set message delivery timeout
+    pub fn timeout(mut self, dur: Duration) -> Self {
+        self.timeout = Some(Timeout::new(dur, Arbiter::handle()).unwrap());
+        self
+    }
+
+    fn poll_timeout(&mut self) -> Poll<MessageResult<M>, MailboxError> {
+        if let Some(ref mut timeout) = self.timeout {
+            match timeout.poll() {
+                Ok(Async::Ready(())) => Err(MailboxError::Timeout),
+                Ok(Async::NotReady) => Ok(Async::NotReady),
+                Err(_) => unreachable!()
+            }
+        } else {
+            Ok(Async::NotReady)
+        }
     }
 }
 
@@ -38,8 +60,8 @@ impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
           B: Actor, B::Context: AsyncContext<B>,
 {
-    type Item = Result<M::Item, M::Error>;
-    type Error = Canceled;
+    type Item = MessageResult<M>;
+    type Error = MailboxError;
     type Actor = B;
 
     fn poll(&mut self, _: &mut B, _: &mut B::Context) -> Poll<Self::Item, Self::Error> {
@@ -49,16 +71,23 @@ impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
                 Ok(rx) => self.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
                     self.info = Some((sender, msg));
-                    return Ok(Async::NotReady)
+                    return self.poll_timeout();
                 }
-                Err(SendError::Closed(_)) => return Err(Canceled),
+                Err(SendError::Closed(_)) => return Err(MailboxError::Dropped),
             }
         }
 
-        if let Some(ref mut rx) = self.rx {
-            rx.poll()
+        if let Some(mut rx) = self.rx.take() {
+            match rx.poll() {
+                Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
+                Ok(Async::NotReady) => {
+                    self.rx = Some(rx);
+                    self.poll_timeout()
+                }
+                Err(_) => Err(MailboxError::Dropped),
+            }
         } else {
-            Err(Canceled)
+            Err(MailboxError::Dropped)
         }
     }
 }
@@ -70,6 +99,7 @@ pub struct LocalFutRequest<A, M>
 {
     rx: Option<Receiver<Result<M::Item, M::Error>>>,
     info: Option<(LocalAddrSender<A>, M)>,
+    timeout: Option<Timeout>,
 }
 
 impl<A, M> LocalFutRequest<A, M>
@@ -77,15 +107,33 @@ impl<A, M> LocalFutRequest<A, M>
 {
     pub(crate) fn new(rx: Option<Receiver<Result<M::Item, M::Error>>>,
                       info: Option<(LocalAddrSender<A>, M)>) -> LocalFutRequest<A, M> {
-        LocalFutRequest{rx: rx, info: info}
+        LocalFutRequest{rx: rx, info: info, timeout: None}
+    }
+
+    /// Set message delivery timeout
+    pub fn timeout(mut self, dur: Duration) -> Self {
+        self.timeout = Some(Timeout::new(dur, Arbiter::handle()).unwrap());
+        self
+    }
+
+    fn poll_timeout(&mut self) -> Poll<MessageResult<M>, MailboxError> {
+        if let Some(ref mut timeout) = self.timeout {
+            match timeout.poll() {
+                Ok(Async::Ready(())) => Err(MailboxError::Timeout),
+                Ok(Async::NotReady) => Ok(Async::NotReady),
+                Err(_) => unreachable!()
+            }
+        } else {
+            Ok(Async::NotReady)
+        }
     }
 }
 
 impl<A, M> Future for LocalFutRequest<A, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
 {
-    type Item = Result<M::Item, M::Error>;
-    type Error = Canceled;
+    type Item = MessageResult<M>;
+    type Error = MailboxError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         // send message
@@ -94,16 +142,23 @@ impl<A, M> Future for LocalFutRequest<A, M>
                 Ok(rx) => self.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
                     self.info = Some((sender, msg));
-                    return Ok(Async::NotReady)
+                    return self.poll_timeout();
                 },
-                Err(_) => return Err(Canceled),
+                Err(_) => return Err(MailboxError::Dropped),
             }
         }
 
-        if let Some(ref mut rx) = self.rx {
-            rx.poll()
+        if let Some(mut rx) = self.rx.take() {
+            match rx.poll() {
+                Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
+                Ok(Async::NotReady) => {
+                    self.rx = Some(rx);
+                    self.poll_timeout()
+                }
+                Err(_) => Err(MailboxError::Dropped),
+            }
         } else {
-            Err(Canceled)
+            Err(MailboxError::Dropped)
         }
     }
 }

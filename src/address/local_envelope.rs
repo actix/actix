@@ -15,8 +15,7 @@ pub struct LocalEnvelope<A>{
 
 impl<A> LocalEnvelope<A> where A: Actor {
 
-    pub(crate) fn new<M>(msg: M, tx: Option<Sender<Result<M::Item, M::Error>>>,
-                         cancel_on_drop: bool) -> Self
+    pub(crate) fn new<M>(msg: M, tx: Option<Sender<Result<M::Item, M::Error>>>) -> Self
         where M: ResponseType + 'static,
               A: Actor + Handler<M>, A::Context: AsyncContext<A>
     {
@@ -24,8 +23,7 @@ impl<A> LocalEnvelope<A> where A: Actor {
             env: Box::new(
                 InnerLocalEnvelope{msg: Some(msg),
                                    tx: tx,
-                                   act: PhantomData,
-                                   cancel_on_drop: cancel_on_drop}),
+                                   act: PhantomData}),
             act: PhantomData}
     }
 }
@@ -34,7 +32,6 @@ struct InnerLocalEnvelope<A, M> where M: ResponseType {
     msg: Option<M>,
     act: PhantomData<A>,
     tx: Option<Sender<Result<M::Item, M::Error>>>,
-    cancel_on_drop: bool,
 }
 
 impl<A, M> EnvelopeProxy for InnerLocalEnvelope<A, M>
@@ -46,7 +43,7 @@ impl<A, M> EnvelopeProxy for InnerLocalEnvelope<A, M>
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
     {
         let tx = self.tx.take();
-        if tx.is_some() && self.cancel_on_drop && tx.as_ref().unwrap().is_canceled() {
+        if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
             return
         }
         if let Some(msg) = self.msg.take() {
@@ -83,7 +80,14 @@ impl<A, M> ActorFuture for EnvelopFuture<A, M>
                 }
                 Ok(Async::Ready(()))
             },
-            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Ok(Async::NotReady) => {
+                if let Some(ref tx) = self.tx {
+                    if tx.is_canceled() {
+                        return Ok(Async::Ready(()))
+                    }
+                }
+                Ok(Async::NotReady)
+            }
             Err(err) => {
                 if let Some(tx) = self.tx.take() {
                     let _ = tx.send(Err(err));

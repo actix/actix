@@ -73,7 +73,7 @@ pub use actor::{Actor, ActorState, Supervised,
 pub use handler::{Handler,
                   Response, ResponseType, MessageResult, ResponseFuture};
 pub use arbiter::Arbiter;
-pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope};
+pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope, MailboxError};
 pub use context::Context;
 pub use stream::StreamHandler;
 pub use framed::{FramedHandler, FramedCell};

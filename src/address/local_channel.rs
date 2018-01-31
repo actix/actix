@@ -54,7 +54,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         };
         let mut shared = shared.borrow_mut();
 
-        shared.buffer.push_back(LocalEnvelope::new(msg, None, false));
+        shared.buffer.push_back(LocalEnvelope::new(msg, None));
         if let Some(task) = shared.blocked_recv.take() {
             drop(shared);
             task.notify();
@@ -77,7 +77,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         let mut shared = shared.borrow_mut();
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
-            shared.buffer.push_back(LocalEnvelope::new(msg, None, false));
+            shared.buffer.push_back(LocalEnvelope::new(msg, None));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -106,7 +106,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
             let (tx, rx) = channel();
-            shared.buffer.push_back(LocalEnvelope::new(msg, Some(tx), true));
+            shared.buffer.push_back(LocalEnvelope::new(msg, Some(tx)));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();

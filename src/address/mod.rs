@@ -30,6 +30,14 @@ pub enum SendError<T> {
     Closed(T),
 }
 
+#[derive(Fail, Debug)]
+pub enum MailboxError {
+    #[fail(display="Mailbox has dropped")]
+    Dropped,
+    #[fail(display="Message delivery timed out")]
+    Timeout,
+}
+
 impl<T> SendError<T> {
     pub fn into_inner(self) -> T {
         match self {

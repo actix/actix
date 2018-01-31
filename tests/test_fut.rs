@@ -25,7 +25,7 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle()).unwrap()
+        Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle()).unwrap()
             .then(|_| {
                 Arbiter::system().send(SystemExit(0));
                 Ok::<_, Error>(())
@@ -62,8 +62,8 @@ impl Actor for MyStreamActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let s = futures_ordered(
-            vec![Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle()),
-                 Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle())]);
+            vec![Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle()),
+                 Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle())]);
 
         s.and_then(|f| f)
             .map_err(|_| Error::Generic)
