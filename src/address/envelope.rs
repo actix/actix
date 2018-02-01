@@ -1,11 +1,9 @@
 use std::marker::PhantomData;
-use futures::{Async, Poll};
 use futures::sync::oneshot::Sender;
 
-use fut::ActorFuture;
 use actor::{Actor, AsyncContext};
 use context::Context;
-use handler::{Handler, Response, ResponseType, IntoResponse, MessageResult};
+use handler::{Handler, ResponseType, MessageResult, MessageResponse};
 
 /// Converter trait, packs message to suitable envelope
 pub trait ToEnvelope<A: Actor> {
@@ -88,62 +86,7 @@ impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
 
         if let Some(msg) = self.msg.take() {
             let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
-            let f: EnvelopFuture<Self::Actor, _> = EnvelopFuture {
-                msg: PhantomData, fut: fut.into_response(), tx: tx};
-            ctx.spawn(f);
-        }
-    }
-}
-
-impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType + Send + 'static,
-{
-    fn from(env: RemoteEnvelope<A, M>) -> Self {
-        Envelope::new(env)
-    }
-}
-
-pub(crate) struct EnvelopFuture<A, M> where A: Actor, M: ResponseType {
-    msg: PhantomData<M>,
-    fut: Response<A, M>,
-    tx: Option<Sender<Result<M::Item, M::Error>>>,
-}
-
-impl<A, M> ActorFuture for EnvelopFuture<A, M>
-    where A: Actor + Handler<M>,
-          M: ResponseType,
-{
-    type Item = ();
-    type Error = ();
-    type Actor = A;
-
-    fn poll(&mut self,
-            act: &mut A,
-            ctx: &mut <Self::Actor as Actor>::Context) -> Poll<Self::Item, Self::Error>
-    {
-        match self.fut.poll_response(act, ctx) {
-            Ok(Async::Ready(val)) => {
-                if let Some(tx) = self.tx.take() {
-                    let _ = tx.send(Ok(val));
-                }
-                Ok(Async::Ready(()))
-            },
-            Ok(Async::NotReady) => {
-                if let Some(ref tx) = self.tx {
-                    if tx.is_canceled() {
-                        return Ok(Async::Ready(()))
-                    }
-                }
-                Ok(Async::NotReady)
-            }
-            Err(err) => {
-                if let Some(tx) = self.tx.take() {
-                    let _ = tx.send(Err(err));
-                }
-                Err(())
-            }
+            fut.handle(ctx, tx)
         }
     }
 }

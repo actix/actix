@@ -70,8 +70,7 @@ pub mod utils;
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler,
-                  Response, ResponseType, MessageResult, ResponseFuture};
+pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
 pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope, MailboxError};
 pub use context::Context;
@@ -107,7 +106,7 @@ pub mod prelude {
     pub use framed::{FramedCell, FramedHandler};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
-    pub use handler::{Handler, Response, ResponseType, MessageResult, ResponseFuture};
+    pub use handler::{Handler, ResponseType, MessageResult, ResponseFuture, ResponseActFuture};
     pub use system::System;
     pub use sync::{SyncContext, SyncArbiter};
     pub use supervisor::Supervisor;
@@ -137,7 +136,7 @@ pub mod dev {
     pub use prelude::actix::*;
 
     pub use contextimpl::ContextImpl;
-    pub use handler::IntoResponse;
+    pub use handler::{MessageResponse, ResponseChannel};
     pub use address::{ActorAddress, SendError,
                       Envelope, ToEnvelope, RemoteEnvelope, Request,
                       LocalRequest, LocalFutRequest};

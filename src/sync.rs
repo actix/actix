@@ -72,22 +72,20 @@
 //!     sys.run();
 //! }
 //! ```
-use std;
-use std::thread;
+use std::{mem, thread};
 use std::sync::Arc;
 use std::marker::PhantomData;
 
 use crossbeam_channel as channel;
 use futures::{Async, Future, Poll, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
-use tokio_core::reactor::Core;
 
 use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
 use address::{sync_channel, SyncAddress, SyncAddressReceiver,
               Envelope, EnvelopeProxy, ToEnvelope};
 use context::Context;
-use handler::{Handler, Response, ResponseType, IntoResponse, MessageResult};
+use handler::{Handler, ResponseType, MessageResponse, MessageResult};
 
 
 /// Sync arbiter
@@ -178,7 +176,6 @@ enum SyncContextProtocol<A> where A: Actor<Context=SyncContext<A>> {
 /// Sync actor execution context
 pub struct SyncContext<A> where A: Actor<Context=SyncContext<A>> {
     act: A,
-    core: Option<Core>,
     queue: channel::Receiver<SyncContextProtocol<A>>,
     stopping: bool,
     state: ActorState,
@@ -191,7 +188,6 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
            queue: channel::Receiver<SyncContextProtocol<A>>) -> Self {
         SyncContext {
             act: factory(),
-            core: None,
             queue: queue,
             stopping: false,
             state: ActorState::Started,
@@ -201,7 +197,7 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
 
     fn run(&mut self) {
         let ctx: &mut SyncContext<A> = unsafe {
-            std::mem::transmute(self as &mut SyncContext<A>)
+            mem::transmute(self as &mut SyncContext<A>)
         };
 
         // started
@@ -288,57 +284,15 @@ impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
 {
     type Actor = A;
 
-    fn handle(&mut self, act: &mut A, ctx: &mut A::Context)
-    {
+    fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
         let tx = self.tx.take();
         if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
             return
         }
 
         if let Some(msg) = self.msg.take() {
-            let mut response = <A as Handler<M>>::handle(act, msg, ctx).into_response();
-
-            let result = if !response.is_async() {
-                response.result().unwrap()
-            } else {
-                if ctx.core.is_none() {
-                    ctx.core = Some(Core::new().unwrap());
-                }
-
-                let ctx_ptr = ctx as *mut _;
-                let core = ctx.core.as_mut().unwrap();
-                core.run(ResponseFuture{
-                    fut: response,
-                    act: act as *mut _,
-                    ctx: ctx_ptr})
-            };
-
-            if let Some(tx) = tx {
-                let _ = tx.send(result);
-            }
+            let mut response = <A as Handler<M>>::handle(act, msg, ctx);
+            response.handle(ctx, tx)
         }
-    }
-}
-
-
-struct ResponseFuture<A, M> where A: Actor<Context=SyncContext<A>>, M: ResponseType {
-    fut: Response<A, M>,
-    act: *mut A,
-    ctx: *mut SyncContext<A>
-}
-
-
-impl<A, M> Future for ResponseFuture<A, M>
-    where A: Actor<Context=SyncContext<A>>,
-          M: ResponseType
-{
-    type Item = M::Item;
-    type Error = M::Error;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let act = unsafe{ &mut *self.act };
-        let ctx = unsafe{ &mut *self.ctx };
-
-        self.fut.poll_response(act, ctx)
     }
 }

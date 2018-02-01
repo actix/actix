@@ -4,7 +4,7 @@ use futures::{future, Future, Stream};
 use fut::ActorFuture;
 use arbiter::Arbiter;
 use address::{Address, SyncAddress, ActorAddress, ToEnvelope};
-use handler::{Handler, Response, ResponseType};
+use handler::{Handler, ResponseType};
 use context::Context;
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorMessageStreamItem};
@@ -151,18 +151,6 @@ pub trait Actor: Sized + 'static {
             future::ok(())
         });
         addr
-    }
-
-    /// Create static response.
-    fn reply<M>(val: Result<M::Item, M::Error>) -> Response<Self, M> where M: ResponseType {
-        Response::reply(val)
-    }
-
-    /// Create async response process.
-    fn async_reply<T, M>(fut: T) -> Response<Self, M>
-        where M: ResponseType,
-              T: ActorFuture<Item=M::Item, Error=M::Error, Actor=Self> + Sized + 'static {
-        Response::async_reply(fut)
     }
 }
 

@@ -139,7 +139,7 @@ impl Default for Connector {
 }
 
 impl Handler<Resolve> for Connector {
-    type Result = ResponseFuture<Self, Resolve>;
+    type Result = ResponseActFuture<Self, Resolve>;
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
         Box::new(Resolver::new(msg.name, msg.port.unwrap_or(0), &self.resolver))
@@ -147,7 +147,7 @@ impl Handler<Resolve> for Connector {
 }
 
 impl Handler<Connect> for Connector {
-    type Result = ResponseFuture<Self, Connect>;
+    type Result = ResponseActFuture<Self, Connect>;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         Box::new(

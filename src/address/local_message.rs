@@ -154,7 +154,7 @@ impl<A, M> Future for LocalFutRequest<A, M>
                 Ok(Async::NotReady) => {
                     self.rx = Some(rx);
                     self.poll_timeout()
-                }
+                },
                 Err(_) => Err(MailboxError::Closed),
             }
         } else {
