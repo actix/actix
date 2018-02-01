@@ -32,6 +32,7 @@ pub struct Envelope<A>(Box<EnvelopeProxy<Actor=A>>);
 
 impl<A> Envelope<A> where A: Actor {
 
+    /// Create envelope object
     pub(crate) fn new<T>(envelop: T) -> Self
         where T: EnvelopeProxy<Actor=A> + Sized + 'static
     {
@@ -58,6 +59,16 @@ pub struct RemoteEnvelope<A, M> where M: ResponseType {
     act: PhantomData<A>,
     msg: Option<M>,
     tx: Option<Sender<MessageResult<M>>>,
+}
+
+impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
+    where A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>,
+          M: ResponseType + Send + 'static,
+{
+    fn from(env: RemoteEnvelope<A, M>) -> Self {
+        Envelope::new(env)
+    }
 }
 
 impl<A, M> RemoteEnvelope<A, M> where A: Actor, M: ResponseType {
