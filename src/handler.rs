@@ -135,12 +135,67 @@ impl<A, M> MessageResponse<A, M> for ResponseFuture<M>
     where A: Actor, M: ResponseType, A::Context: AsyncContext<A>
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        Arbiter::handle().spawn(
-            self.then(move |res| {
-                if let Some(tx) = tx {
-                    tx.send(res);
-                }
-                Ok(())
-            }));
+        Arbiter::handle().spawn(self.then(move |res| {
+            tx.map(|tx| tx.send(res));
+            Ok(())
+        }));
+    }
+}
+
+
+enum ResponseTypeItem<A, M> where A: Actor, M: ResponseType {
+    Result(MessageResult<M>),
+    Fut(Box<Future<Item=M::Item, Error=M::Error>>),
+    AFut(Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>),
+}
+
+/// Helper type for representing different type of message responses
+pub struct Response<A, M> where A: Actor, M: ResponseType {
+    item: ResponseTypeItem<A, M>,
+}
+
+impl<A, M> Response<A, M> where A: Actor, M: ResponseType {
+
+    /// Create async response
+    pub fn fut<T>(fut: T) -> Self
+        where T: Future<Item=M::Item, Error=M::Error> + 'static
+    {
+        Response {item: ResponseTypeItem::Fut(Box::new(fut))}
+    }
+
+    /// Create response
+    pub fn reply(val: MessageResult<M>) -> Self {
+        Response {item: ResponseTypeItem::Result(val)}
+    }
+
+    /// Create async response
+    pub fn async_reply<T>(fut: T) -> Self
+        where T: ActorFuture<Item=M::Item, Error=M::Error, Actor=A> + 'static
+    {
+        Response {item: ResponseTypeItem::AFut(Box::new(fut))}
+    }
+}
+
+impl<A, M> MessageResponse<A, M> for Response<A, M>
+    where A: Actor, M: ResponseType, A::Context: AsyncContext<A>
+{
+    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+        match self.item {
+            ResponseTypeItem::Fut(fut) => {
+                Arbiter::handle().spawn(fut.then(move |res| {
+                    tx.map(|tx| tx.send(res));
+                    Ok(())
+                }));
+            },
+            ResponseTypeItem::AFut(fut) => {
+                ctx.spawn(fut.then(move |res, _, _| {
+                    tx.map(|tx| tx.send(res));
+                    fut::ok(())
+                }));
+            },
+            ResponseTypeItem::Result(res) => {
+                tx.map(|tx| tx.send(res));
+            },
+        }
     }
 }
