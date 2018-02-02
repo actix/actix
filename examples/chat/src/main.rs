@@ -52,9 +52,8 @@ impl Handler<TcpConnect> for Server {
         // For each incoming connection we create `ChatSession` actor
         // with out chat server address.
         let server = self.chat.clone();
-        let _: () = ChatSession::create_with(msg.0.framed(ChatCodec), |_, framed| {
-            ChatSession::new(server, framed)
-        });
+        let _: () = ChatSession::create(
+            |ctx| ChatSession::new(server, ctx.add_framed(msg.0.framed(ChatCodec))));
     }
 }
 

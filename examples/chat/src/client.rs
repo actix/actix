@@ -27,9 +27,9 @@ fn main() {
     Arbiter::handle().spawn(
         TcpStream::connect(&addr, Arbiter::handle())
             .and_then(|stream| {
-                let addr: SyncAddress<_> = ChatClient::create_with(
-                    stream.framed(codec::ClientChatCodec),
-                    |_, framed| ChatClient{framed: framed});
+                let addr: SyncAddress<_> = ChatClient::create(|ctx| {
+                    let framed = ctx.add_framed(stream.framed(codec::ClientChatCodec));
+                    ChatClient{framed: framed}});
 
                 // start console loop
                 thread::spawn(move|| {
@@ -122,26 +122,24 @@ impl Handler<ClientCommand> for ChatClient
 }
 
 /// Server communication
-impl FramedHandler<TcpStream, codec::ClientChatCodec> for ChatClient {
+impl StreamHandler<codec::ChatResponse, FramedError<codec::ClientChatCodec>> for ChatClient {
 
-    fn handle(&mut self, msg: io::Result<codec::ChatResponse>, _: &mut Context<Self>) {
-        if let Ok(msg) = msg {
-            match msg {
-                codec::ChatResponse::Message(ref msg) => {
-                    println!("message: {}", msg);
-                }
-                codec::ChatResponse::Joined(ref msg) => {
-                    println!("!!! joined: {}", msg);
-                }
-                codec::ChatResponse::Rooms(rooms) => {
-                    println!("\n!!! Available rooms:");
-                    for room in rooms {
-                        println!("{}", room);
-                    }
-                    println!();
-                }
-                _ => (),
+    fn handle(&mut self, msg: codec::ChatResponse, _: &mut Context<Self>) {
+        match msg {
+            codec::ChatResponse::Message(ref msg) => {
+                println!("message: {}", msg);
             }
+            codec::ChatResponse::Joined(ref msg) => {
+                println!("!!! joined: {}", msg);
+            }
+            codec::ChatResponse::Rooms(rooms) => {
+                println!("\n!!! Available rooms:");
+                for room in rooms {
+                    println!("{}", room);
+                }
+                println!();
+            }
+            _ => (),
         }
     }
 }
