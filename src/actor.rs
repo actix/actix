@@ -4,8 +4,8 @@ use futures::{future, Future, Stream};
 use fut::ActorFuture;
 use arbiter::Arbiter;
 use address::{Address, SyncAddress, ActorAddress, ToEnvelope};
-use handler::{Handler, ResponseType};
 use context::Context;
+use handler::{Handler, ResponseType};
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorMessageStreamItem};
 use utils::TimerFunc;

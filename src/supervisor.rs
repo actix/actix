@@ -1,8 +1,8 @@
 use futures::{Future, Async, Poll};
 
-use actor::{Actor, Supervised, AsyncContext};
+use actor::{Actor, Supervised};
 use arbiter::Arbiter;
-use address::{sync_channel, Address, SyncAddress};
+use address::{sync_channel, ActorAddress, SyncAddress};
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::Execute;
@@ -53,7 +53,7 @@ use msgs::Execute;
 /// fn main() {
 ///     let sys = System::new("test");
 ///
-///     let addr = actix::Supervisor::start(|_| MyActor);
+///     let addr: Address<_> = actix::Supervisor::start(|_| MyActor);
 ///
 ///     addr.send(Die);
 ///     sys.run();
@@ -66,13 +66,37 @@ pub struct Supervisor<A> where A: Supervised + Actor<Context=Context<A>> {
 impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor in current Arbiter.
-    pub fn start<F>(f: F) -> Address<A>
-        where F: FnOnce(&mut A::Context) -> A + 'static
+    ///
+    /// Type of returned addres depeneds on variable type. For example to get `SyncAddress`
+    /// of newly created actor, use explicitly `SyncAddress` type as type of a variable.
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate actix;
+    /// # use actix::prelude::*;
+    /// struct MyActor;
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    /// }
+    ///
+    /// # impl actix::Supervised for MyActor {}
+    /// # fn main() {
+    /// #    let sys = System::new("test");
+    /// // Get `Address` of a MyActor actor
+    /// let addr1: Address<_> = actix::Supervisor::start(|_| MyActor);
+    ///
+    /// // Get `SyncAddress` of a MyActor actor
+    /// let addr2: SyncAddress<_> = actix::Supervisor::start(|_| MyActor);
+    /// # }
+    /// ```
+    pub fn start<Addr, F>(f: F) -> Addr
+        where F: FnOnce(&mut A::Context) -> A + 'static,
+              A: Actor<Context=Context<A>> + ActorAddress<A, Addr>
     {
         // create actor
         let mut ctx = Context::new(None);
         let act = f(&mut ctx);
-        let addr = ctx.address();
+        let addr =  <A as ActorAddress<A, Addr>>::get(&mut ctx);
         ctx.set_actor(act);
 
         // create supervisor
@@ -81,8 +105,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
         addr
     }
 
-    /// Start new supervised actor in arbiter's thread. Depends on `lazy` argument
-    /// actor could be started immediately or on first incoming message.
+    /// Start new supervised actor in arbiter's thread.
     pub fn start_in<F>(addr: &SyncAddress<Arbiter>, f: F) -> SyncAddress<A>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static

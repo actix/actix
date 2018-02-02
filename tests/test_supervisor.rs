@@ -53,7 +53,7 @@ fn test_supervisor_restart() {
     let restarts2 = Arc::clone(&restarts);
     let messages2 = Arc::clone(&messages);
 
-    let addr = actix::Supervisor::start(
+    let addr: Address<_> = actix::Supervisor::start(
         move |_| MyActor(starts2, restarts2, messages2));
     addr.send(Die);
     addr.send(Die);
