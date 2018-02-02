@@ -4,7 +4,6 @@ use futures::{Async, Poll, Stream};
 use fut::ActorFuture;
 use actor::{Actor, ActorState, ActorContext, AsyncContext, SpawnHandle};
 
-
 /// Stream handler
 ///
 /// `StreamHandler` is an extension of a `Handler` with stream specific methods.

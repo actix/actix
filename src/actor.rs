@@ -1,5 +1,7 @@
 use std::time::Duration;
 use futures::{future, Future, Stream};
+use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
@@ -9,6 +11,8 @@ use handler::{Handler, ResponseType};
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorMessageStreamItem};
 use utils::TimerFunc;
+use stream::StreamHandler;
+use framed::{FramedWrapper, FramedCell, FramedError};
 
 
 #[allow(unused_variables)]
@@ -368,6 +372,18 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         where F: FnOnce(&mut A, &mut A::Context) + 'static
     {
         self.spawn(TimerFunc::new(dur, f))
+    }
+
+    /// Add framed object to current context and return
+    /// wrapper for write part of the framed object.
+    fn add_framed<Io, Codec>(&mut self, framed: Framed<Io, Codec>) -> FramedCell<Io, Codec>
+        where Io: AsyncRead + AsyncWrite + 'static,
+              Codec: Encoder + Decoder + 'static,
+              A: StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
+    {
+        let (wrp, cell) = FramedWrapper::new(framed);
+        self.spawn(wrp);
+        cell
     }
 }
 

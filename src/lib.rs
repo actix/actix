@@ -75,8 +75,8 @@ pub use handler::{Handler, Response, ResponseType,
 pub use arbiter::Arbiter;
 pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope, MailboxError};
 pub use context::Context;
+pub use framed::{FramedCell, FramedError};
 pub use stream::StreamHandler;
-pub use framed::{FramedHandler, FramedCell};
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
@@ -104,7 +104,7 @@ pub mod prelude {
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress, SendError, MailboxError};
     pub use context::{Context, ContextFutureSpawner};
-    pub use framed::{FramedCell, FramedHandler};
+    pub use framed::{FramedCell, FramedError};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
     pub use handler::{Handler, Response, ResponseType,
