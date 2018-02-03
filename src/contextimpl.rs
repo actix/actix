@@ -238,12 +238,17 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
         'outer: loop {
             self.flags.remove(ContextFlags::MODIFIED);
 
-            // check wait futures
+            // check wait futures. order does matter
+            // ctx.wait() always add to the back of the list
+            // and we always have to check most recent future
             while !self.wait.is_empty() && !self.stopping() {
-                match self.wait[0].poll(act, ctx) {
-                    Async::Ready(_) => { self.wait.swap_remove(0); },
-                    Async::NotReady => return Ok(Async::NotReady),
+                if let Some(item) = self.wait.last_mut() {
+                    match item.poll(act, ctx) {
+                        Async::Ready(_) => (),
+                        Async::NotReady => return Ok(Async::NotReady),
+                    }
                 }
+                self.wait.pop();
             }
 
             // process mailbox
