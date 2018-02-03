@@ -34,6 +34,7 @@ fn test_resolver() {
 
 
 #[test]
+#[cfg(unix)]
 fn test_signal() {
     let sys = System::new("test");
     let _: SyncAddress<_> = signal::DefaultSignalsHandler::start_default();
@@ -46,6 +47,7 @@ fn test_signal() {
 }
 
 #[test]
+#[cfg(unix)]
 fn test_signal_term() {
     let sys = System::new("test");
     let _: SyncAddress<_> = signal::DefaultSignalsHandler::start_default();
@@ -58,6 +60,7 @@ fn test_signal_term() {
 }
 
 #[test]
+#[cfg(unix)]
 fn test_signal_int() {
     let sys = System::new("test");
     let _: SyncAddress<_> = signal::DefaultSignalsHandler::start_default();
