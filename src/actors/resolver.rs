@@ -123,6 +123,8 @@ impl Supervised for Connector {}
 impl actix::ArbiterService for Connector {}
 
 impl Default for Connector {
+
+    #[cfg(any(unix, target_os = "windows"))]
     fn default() -> Connector {
         let resolver = match ResolverFuture::from_system_conf(Arbiter::handle()) {
             Ok(resolver) => resolver,
@@ -134,6 +136,15 @@ impl Default for Connector {
                     Arbiter::handle())
             }
         };
+        Connector{resolver: resolver}
+    }
+
+    #[cfg(not(any(unix, target_os = "windows")))]
+    fn default() -> Connector {
+        let resolver = ResolverFuture::new(
+            ResolverConfig::default(),
+            ResolverOpts::default(),
+            Arbiter::handle());
         Connector{resolver: resolver}
     }
 }
