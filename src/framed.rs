@@ -10,7 +10,7 @@ use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
-use actor::{Actor, ActorState, ActorContext, AsyncContext};
+use actor::{Actor, AsyncContext};
 use utils::Drain;
 use stream::StreamHandler;
 
@@ -29,19 +29,15 @@ bitflags! {
     }
 }
 
-/// Framed object wrapper
-pub(crate) struct FramedWrapper<A, Io, Codec>
-    where A: StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
-         Io: AsyncRead + AsyncWrite + 'static, Codec: Encoder + Decoder + 'static
+/// Framed type wrapper, that simplify handling framed objects with actor
+pub struct FramedReader<Io, Codec>
+    where Io: AsyncRead + AsyncWrite, Codec: Encoder + Decoder
 {
-    marker: PhantomData<A>,
     inner: Rc<UnsafeCell<InnerActorFramedCell<Io, Codec>>>,
 }
 
-/// Wrapper for a framed object
-///
-/// `FramedCell` instance can be used only within same context.
-pub struct FramedCell<Io, Codec>
+/// Framed sink type wrapper, that simplify handling framed objects with actor
+pub struct FramedWriter<Io, Codec>
     where Io: AsyncRead + AsyncWrite, Codec: Encoder + Decoder
 {
     inner: Rc<UnsafeCell<InnerActorFramedCell<Io, Codec>>>,
@@ -49,7 +45,7 @@ pub struct FramedCell<Io, Codec>
 
 pub(crate) struct FramedDrain<A, Io, Codec>
     where A: StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
-          Io: AsyncRead + AsyncWrite + 'static, Codec: Encoder + Decoder + 'static,
+          Io: AsyncRead + AsyncWrite, Codec: Encoder + Decoder,
 {
     tx: Option<UnsyncSender<()>>,
     inner: Rc<UnsafeCell<InnerActorFramedCell<Io, Codec>>>,
@@ -65,11 +61,10 @@ struct InnerActorFramedCell<Io, Codec>
     error: Option<<Codec as Encoder>::Error>,
 }
 
-impl<A, Io, Codec> FramedWrapper<A, Io, Codec>
-    where A: StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
-          Io: AsyncRead + AsyncWrite + 'static, Codec: Encoder + Decoder + 'static
+impl<Io, Codec> FramedReader<Io, Codec>
+    where Io: AsyncRead + AsyncWrite + 'static, Codec: Encoder + Decoder + 'static
 {
-    pub fn new(framed: Framed<Io, Codec>) -> (FramedWrapper<A, Io, Codec>, FramedCell<Io, Codec>)
+    pub fn wrap(framed: Framed<Io, Codec>) -> (FramedReader<Io, Codec>, FramedWriter<Io, Codec>)
     {
         let inner = Rc::new(UnsafeCell::new(
             InnerActorFramedCell {
@@ -79,12 +74,11 @@ impl<A, Io, Codec> FramedWrapper<A, Io, Codec>
                 error: None,
             }));
 
-        (FramedWrapper{inner: Rc::clone(&inner), marker: PhantomData},
-         FramedCell{inner: inner})
+        (FramedReader{inner: Rc::clone(&inner)}, FramedWriter{inner: inner})
     }
 }
 
-impl<Io, Codec> FramedCell<Io, Codec>
+impl<Io, Codec> FramedWriter<Io, Codec>
     where Io: AsyncRead + AsyncWrite + 'static, Codec: Encoder + Decoder + 'static
 {
     #[inline]
@@ -97,12 +91,9 @@ impl<Io, Codec> FramedCell<Io, Codec>
         unsafe{ &mut *self.inner.get() }
     }
 
-    #[inline]
-    pub fn framed(&mut self) -> &mut Framed<Io, Codec> {
-        self.as_mut().framed.as_mut().unwrap()
-    }
-
-    /// Close frame object
+    /// Gracefully close framed object
+    ///
+    /// Close process is asynchronous.
     pub fn close(&mut self) {
         self.as_mut().flags.insert(FramedFlags::CLOSING);
     }
@@ -147,69 +138,49 @@ impl<Io, Codec> FramedCell<Io, Codec>
         Drain::new(rx)
     }
 
-    /// Get inner framed object
+    /// Take inner framed object
     pub fn take(&mut self) -> Option<Framed<Io, Codec>> {
         self.as_mut().framed.take()
     }
 }
 
-impl<A, Io, Codec> ActorFuture for FramedWrapper<A, Io, Codec>
-    where A: StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
-          A::Context: AsyncContext<A>,
-          Io: AsyncRead + AsyncWrite + 'static,
-          Codec: Encoder + Decoder + 'static,
+impl<Io, Codec> Stream for FramedReader<Io, Codec>
+    where Io: AsyncRead + AsyncWrite, Codec: Encoder + Decoder,
 {
-    type Item = ();
-    type Error = ();
-    type Actor = A;
+    type Item = <Codec as Decoder>::Item;
+    type Error = FramedError<Codec>;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         let inner = unsafe{ &mut *self.inner.get() };
 
+        // error from `send()`
         if let Some(err) = inner.error.take() {
             inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-            if A::error(act, FramedError::SinkError(err), ctx) {
-                A::finished(act, ctx);
-                return Ok(Async::Ready(()))
-            }
+            return Err(FramedError::SinkError(err));
         }
 
+        // get framed object, remove lifetime
         let framed: &mut Framed<Io, Codec> = if let Some(ref mut framed) = inner.framed {
             unsafe { mem::transmute(framed) }
         } else {
-            return Ok(Async::Ready(()));
+            return Ok(Async::Ready(None));
         };
 
-        loop {
-            let mut not_ready = true;
-
-            // check framed stream
-            if !inner.flags.intersects(FramedFlags::CLOSING | FramedFlags::STREAM_CLOSED) {
-                while !ctx.waiting() {
-                    match framed.poll() {
-                        Ok(Async::Ready(Some(msg))) => {
-                            not_ready = false;
-                            A::handle(act, msg, ctx);
-                        }
-                        Ok(Async::Ready(None)) => {
-                            inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                            A::finished(act, ctx);
-                            break
-                        }
-                        Ok(Async::NotReady) => break,
-                        Err(err) => {
-                            inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                            if A::error(act, FramedError::StreamError(err), ctx) {
-                                A::finished(act, ctx);
-                                return Ok(Async::Ready(()))
-                            }
-                            break
-                        }
-                    }
+        // check framed stream
+        if !inner.flags.intersects(FramedFlags::CLOSING | FramedFlags::STREAM_CLOSED) {
+            match framed.poll() {
+                Ok(Async::NotReady) => (),
+                Ok(Async::Ready(Some(msg))) => return Ok(Async::Ready(Some(msg))),
+                Ok(Async::Ready(None)) => {
+                    inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                }
+                Err(err) => {
+                    inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                    return Err(FramedError::StreamError(err));
                 }
             }
 
-            if !inner.flags.contains(FramedFlags::SINK_CLOSED) {
+            while !inner.flags.contains(FramedFlags::SINK_CLOSED) {
                 // send sink items
                 loop {
                     if let Some(msg) = inner.sink_items.pop_front() {
@@ -223,12 +194,9 @@ impl<A, Io, Codec> ActorFuture for FramedWrapper<A, Io, Codec>
                                 continue
                             }
                             Err(err) => {
-                                inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
-                                if A::error(act, FramedError::SinkError(err), ctx) {
-                                    A::finished(act, ctx);
-                                    return Ok(Async::Ready(()))
-                                }
-                                break
+                                inner.flags |=
+                                    FramedFlags::SINK_CLOSED | FramedFlags::STREAM_CLOSED;
+                                return Err(FramedError::SinkError(err));
                             }
                         }
                     }
@@ -239,42 +207,33 @@ impl<A, Io, Codec> ActorFuture for FramedWrapper<A, Io, Codec>
                 if !inner.flags.contains(FramedFlags::SINK_FLUSHED) {
                     match framed.poll_complete() {
                         Ok(Async::Ready(_)) => {
-                            not_ready = false;
                             inner.flags |= FramedFlags::SINK_FLUSHED;
+                            continue
                         }
-                        Ok(Async::NotReady) => (),
+                        Ok(Async::NotReady) => break,
                         Err(err) => {
                             inner.flags |= FramedFlags::SINK_CLOSED | FramedFlags::SINK_FLUSHED;
-                            if A::error(act, FramedError::SinkError(err), ctx) {
-                                A::finished(act, ctx);
-                                return Ok(Async::Ready(()))
-                            }
+                            return Err(FramedError::SinkError(err));
                         }
                     }
                 }
-
-                // close framed object, if closing and we dont need to flush any data
-                if inner.flags.contains(FramedFlags::CLOSING | FramedFlags::SINK_FLUSHED) &&
-                    inner.sink_items.is_empty() {
-                        inner.flags |= FramedFlags::SINK_CLOSED;
-                    }
+                break
             }
+
+            // close framed object, if closing and we dont need to flush any data
+            if inner.flags.contains(FramedFlags::CLOSING | FramedFlags::SINK_FLUSHED) &&
+                inner.sink_items.is_empty() {
+                    inner.flags |= FramedFlags::SINK_CLOSED;
+                }
 
             // are we done
-            if not_ready {
-                if inner.flags.contains(
-                    FramedFlags::STREAM_CLOSED | FramedFlags::SINK_CLOSED)
-                {
-                    ctx.stop();
-                    return Ok(Async::Ready(()))
-                } else if ctx.state() == ActorState::Stopping {
-                    let _ = framed.get_mut().shutdown();
-                }
-                return Ok(Async::NotReady)
+            if inner.flags.contains(FramedFlags::STREAM_CLOSED | FramedFlags::SINK_CLOSED) {
+                Ok(Async::Ready(None))
+            } else {
+                Ok(Async::NotReady)
             }
-            if ctx.waiting() {
-                return Ok(Async::NotReady)
-            }
+        } else {
+            Ok(Async::NotReady)
         }
     }
 }
@@ -282,8 +241,8 @@ impl<A, Io, Codec> ActorFuture for FramedWrapper<A, Io, Codec>
 impl<A, Io, Codec> ActorFuture for FramedDrain<A, Io, Codec>
     where A: StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
           A::Context: AsyncContext<A>,
-          Io: AsyncRead + AsyncWrite + 'static,
-          Codec: Encoder + Decoder + 'static,
+          Io: AsyncRead + AsyncWrite,
+          Codec: Encoder + Decoder,
 {
     type Item = ();
     type Error = ();
@@ -496,12 +455,13 @@ mod tests {
         }
     }
 
-    fn create_ctx(buf: Buffer) -> (Context<TestActor>, FramedCell<Buffer, TestCodec>) {
+    fn create_ctx(buf: Buffer) -> (Context<TestActor>, FramedWriter<Buffer, TestCodec>) {
         let act = TestActor::new();
         let mut ctx = Context::new(None);
-        let cell = ctx.add_framed(buf.framed(TestCodec));
+        let (rx, tx) = FramedReader::wrap(buf.framed(TestCodec));
+        TestActor::add_stream(rx, &mut ctx);
         ctx.set_actor(act);
-        (ctx, cell)
+        (ctx, tx)
     }
 
     #[test]

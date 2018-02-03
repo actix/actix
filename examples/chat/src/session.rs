@@ -27,7 +27,7 @@ pub struct ChatSession {
     /// joined room
     room: String,
     /// Framed wrapper
-    framed: FramedCell<TcpStream, ChatCodec>,
+    framed: FramedWriter<TcpStream, ChatCodec>,
 }
 
 impl Actor for ChatSession {
@@ -112,7 +112,7 @@ impl Handler<Message> for ChatSession {
 impl ChatSession {
 
     pub fn new(addr: Address<ChatServer>,
-               framed: FramedCell<TcpStream, ChatCodec>) -> ChatSession {
+               framed: FramedWriter<TcpStream, ChatCodec>) -> ChatSession {
         ChatSession {id: 0,
                      addr: addr,
                      hb: Instant::now(),

@@ -28,8 +28,10 @@ fn main() {
         TcpStream::connect(&addr, Arbiter::handle())
             .and_then(|stream| {
                 let addr: SyncAddress<_> = ChatClient::create(|ctx| {
-                    let framed = ctx.add_framed(stream.framed(codec::ClientChatCodec));
-                    ChatClient{framed: framed}});
+                    let (reader, writer) =
+                        FramedReader::wrap(stream.framed(codec::ClientChatCodec));
+                    ChatClient::add_stream(reader, ctx);
+                    ChatClient{framed: writer}});
 
                 // start console loop
                 thread::spawn(move|| {
@@ -58,7 +60,7 @@ fn main() {
 
 
 struct ChatClient {
-    framed: FramedCell<TcpStream, codec::ClientChatCodec>,
+    framed: FramedWriter<TcpStream, codec::ClientChatCodec>,
 }
 
 #[derive(Message)]
