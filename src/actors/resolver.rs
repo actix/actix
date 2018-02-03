@@ -124,7 +124,7 @@ impl actix::ArbiterService for Connector {}
 
 impl Default for Connector {
 
-    #[cfg(any(unix, target_os = "windows"))]
+    #[cfg(unix)]
     fn default() -> Connector {
         let resolver = match ResolverFuture::from_system_conf(Arbiter::handle()) {
             Ok(resolver) => resolver,
@@ -139,7 +139,7 @@ impl Default for Connector {
         Connector{resolver: resolver}
     }
 
-    #[cfg(not(any(unix, target_os = "windows")))]
+    #[cfg(not(unix))]
     fn default() -> Connector {
         let resolver = ResolverFuture::new(
             ResolverConfig::default(),
