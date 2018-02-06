@@ -32,24 +32,6 @@ impl<T> Default for Condition<T> where T: Clone {
     }
 }
 
-pub struct Drain(oneshot::Receiver<()>);
-
-impl Drain {
-    pub(crate) fn new(rx: oneshot::Receiver<()>) -> Drain {
-        Drain(rx)
-    }
-}
-
-#[doc(hidden)]
-impl Future for Drain {
-    type Item = ();
-    type Error = ();
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        self.0.poll().map_err(|_| ())
-    }
-}
-
 pub(crate)
 struct TimerFunc<A> where A: Actor {
     f: Option<Box<TimerFuncBox<A>>>,

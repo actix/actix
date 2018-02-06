@@ -5,13 +5,11 @@ use std::cell::UnsafeCell;
 use std::collections::VecDeque;
 
 use futures::{Async, AsyncSink, Poll, Sink, Stream};
-use futures::unsync::oneshot::{channel, Sender as UnsyncSender};
 use tokio_io::{AsyncRead, AsyncWrite};
 use tokio_io::codec::{Framed, Encoder, Decoder};
 
 use fut::ActorFuture;
 use actor::{Actor, AsyncContext};
-use utils::Drain;
 use stream::StreamHandler;
 
 pub enum FramedError<Codec: Encoder + Decoder> {
@@ -43,11 +41,15 @@ pub struct FramedWriter<Io, Codec>
     inner: Rc<UnsafeCell<InnerActorFramedCell<Io, Codec>>>,
 }
 
-pub(crate) struct FramedDrain<A, Io, Codec>
+
+/// Sink drain future
+///
+/// This future resolves when sink is drained.
+#[must_use = "futures do nothing unless polled"]
+pub struct FramedDrain<A, Io, Codec>
     where A: StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
           Io: AsyncRead + AsyncWrite, Codec: Encoder + Decoder,
 {
-    tx: Option<UnsyncSender<()>>,
     inner: Rc<UnsafeCell<InnerActorFramedCell<Io, Codec>>>,
     marker: PhantomData<A>,
 }
@@ -124,18 +126,11 @@ impl<Io, Codec> FramedWriter<Io, Codec>
     ///
     /// Returns future. It resolves when sink is drained.
     /// All other actor activities are paused until framed object get drained.
-    pub fn drain<A, T>(&mut self, ctx: &mut T) -> Drain
-        where A: Actor<Context=T> + StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
-              T: AsyncContext<A>
+    pub fn drain<A>(&mut self) -> FramedDrain<A, Io, Codec>
+        where A: Actor + StreamHandler<<Codec as Decoder>::Item, FramedError<Codec>>,
+              A::Context: AsyncContext<A>
     {
-        let (tx, rx) = channel();
-
-        let drain = FramedDrain{tx: Some(tx),
-                                inner: Rc::clone(&self.inner),
-                                marker: PhantomData};
-        ctx.wait(drain);
-
-        Drain::new(rx)
+        FramedDrain{inner: Rc::clone(&self.inner), marker: PhantomData}
     }
 
     /// Take inner framed object
@@ -300,10 +295,6 @@ impl<A, Io, Codec> ActorFuture for FramedDrain<A, Io, Codec>
                 inner.sink_items.is_empty() {
                     inner.flags |= FramedFlags::SINK_CLOSED;
                 }
-        }
-
-        if let Some(tx) = self.tx.take() {
-            let _ = tx.send(());
         }
         Ok(Async::Ready(()))
     }
@@ -482,7 +473,8 @@ mod tests {
         cell.send(Bytes::from_static(b"22"));
 
         // drain
-        let _ = cell.drain(&mut ctx);
+        let drain = cell.drain();
+        AsyncContext::wait(&mut ctx, drain);
 
         // new data in framed, actor is paused
         cell.as_mut().framed.as_mut().unwrap().get_mut().feed_data("bb");
@@ -525,7 +517,8 @@ mod tests {
         cell.send(Bytes::from_static(b"22"));
 
         // drain
-        let _ = cell.drain(&mut ctx);
+        let drain = cell.drain();
+        AsyncContext::wait(&mut ctx, drain);
 
         // new data in framed, actor is paused
         cell.as_mut().framed.as_mut().unwrap().get_mut().feed_data("bb");
