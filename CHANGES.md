@@ -16,6 +16,8 @@
 
 * Add `Sink` implementation for `Subscriber`
 
+* Add `actix::io` helper types for `AsyncWrite` related types
+
 
 ## 0.4.5 (2018-01-23)
 

@@ -1,7 +1,9 @@
 //! `ClientSession` is an actor, it manages peer tcp connection and
 //! proxies commands from peer to `ChatServer`.
+use std::io;
 use std::time::{Instant, Duration};
 use tokio_core::net::TcpStream;
+use tokio_io::io::WriteHalf;
 use actix::prelude::*;
 
 use server::{self, ChatServer};
@@ -27,7 +29,7 @@ pub struct ChatSession {
     /// joined room
     room: String,
     /// Framed wrapper
-    framed: FramedWriter<TcpStream, ChatCodec>,
+    framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>,
 }
 
 impl Actor for ChatSession {
@@ -57,8 +59,10 @@ impl Actor for ChatSession {
     }
 }
 
+impl actix::io::WriteHandler<io::Error> for ChatSession {}
+
 /// To use `Framed` with an actor, we have to implement `StreamHandler` trait
-impl StreamHandler<ChatRequest, FramedError<ChatCodec>> for ChatSession {
+impl StreamHandler<ChatRequest, io::Error> for ChatSession {
 
     /// This is main event loop for client requests
     fn handle(&mut self, msg: ChatRequest, ctx: &mut Self::Context) {
@@ -69,7 +73,7 @@ impl StreamHandler<ChatRequest, FramedError<ChatCodec>> for ChatSession {
                 self.addr.call(self, server::ListRooms).then(|res, act, _| {
                     match res {
                         Ok(Ok(rooms)) =>
-                            act.framed.send(ChatResponse::Rooms(rooms)),
+                            act.framed.write(ChatResponse::Rooms(rooms)),
                         _ => println!("Something is wrong"),
                     }
                     actix::fut::ok(())
@@ -81,7 +85,7 @@ impl StreamHandler<ChatRequest, FramedError<ChatCodec>> for ChatSession {
                 println!("Join to room: {}", name);
                 self.room = name.clone();
                 self.addr.send(server::Join{id: self.id, name: name.clone()});
-                self.framed.send(ChatResponse::Joined(name));
+                self.framed.write(ChatResponse::Joined(name));
             },
             ChatRequest::Message(message) => {
                 // send message to chat server
@@ -104,7 +108,7 @@ impl Handler<Message> for ChatSession {
 
     fn handle(&mut self, msg: Message, _: &mut Self::Context) {
         // send message to peer
-        self.framed.send(ChatResponse::Message(msg.0));
+        self.framed.write(ChatResponse::Message(msg.0));
     }
 }
 
@@ -112,7 +116,8 @@ impl Handler<Message> for ChatSession {
 impl ChatSession {
 
     pub fn new(addr: Address<ChatServer>,
-               framed: FramedWriter<TcpStream, ChatCodec>) -> ChatSession {
+               framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>) -> ChatSession
+    {
         ChatSession {id: 0,
                      addr: addr,
                      hb: Instant::now(),
@@ -137,7 +142,7 @@ impl ChatSession {
                 ctx.stop();
             }
 
-            act.framed.send(ChatResponse::Ping);
+            act.framed.write(ChatResponse::Ping);
             act.hb(ctx);
         });
     }

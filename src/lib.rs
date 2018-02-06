@@ -52,7 +52,6 @@ mod context;
 mod contextimpl;
 mod contextitems;
 mod handler;
-mod framed;
 mod stream;
 mod registry;
 mod system;
@@ -61,6 +60,7 @@ mod supervisor;
 mod address;
 mod mailbox;
 
+pub mod io;
 pub mod fut;
 pub mod actors;
 pub mod msgs;
@@ -75,7 +75,6 @@ pub use handler::{Handler, Response, ResponseType,
 pub use arbiter::Arbiter;
 pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope, MailboxError};
 pub use context::Context;
-pub use framed::{FramedReader, FramedWriter, FramedError};
 pub use stream::StreamHandler;
 pub use sync::{SyncContext, SyncArbiter};
 pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
@@ -104,7 +103,6 @@ pub mod prelude {
     pub use arbiter::Arbiter;
     pub use address::{Address, SyncAddress, SendError, MailboxError};
     pub use context::{Context, ContextFutureSpawner};
-    pub use framed::{FramedReader, FramedWriter, FramedError};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
     pub use handler::{Handler, Response, ResponseType,
@@ -117,6 +115,7 @@ pub mod prelude {
         pub use prelude::*;
         pub use fut;
         pub use msgs;
+        pub use io;
         pub use address::{Subscriber, ActorAddress};
         pub use registry::{ArbiterService, SystemService};
         pub use utils::Condition;

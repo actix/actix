@@ -15,6 +15,7 @@ use std::net;
 use std::str::FromStr;
 use futures::Stream;
 use tokio_io::AsyncRead;
+use tokio_io::codec::FramedRead;
 use tokio_core::net::{TcpListener, TcpStream};
 use actix::prelude::*;
 
@@ -54,9 +55,9 @@ impl Handler<TcpConnect> for Server {
         let server = self.chat.clone();
         let _: () = ChatSession::create(
             move |ctx| {
-                let (reader, writer) = FramedReader::wrap(msg.0.framed(ChatCodec));
-                ChatSession::add_stream(reader, ctx);
-                ChatSession::new(server, writer)
+                let (r, w) = msg.0.split();
+                ChatSession::add_stream(FramedRead::new(r, ChatCodec), ctx);
+                ChatSession::new(server, actix::io::FramedWrite::new(w, ChatCodec, ctx))
             });
     }
 }
