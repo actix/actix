@@ -73,7 +73,7 @@ pub use actor::{Actor, ActorState, Supervised,
 pub use handler::{Handler, Response, ResponseType,
                   MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
-pub use address::{Address, ActorAddress, SyncAddress, Subscriber, ToEnvelope, MailboxError};
+pub use address::{Address, ActorAddress, SyncAddress, Subscriber, MailboxError};
 pub use context::Context;
 pub use stream::StreamHandler;
 pub use sync::{SyncContext, SyncArbiter};
@@ -85,7 +85,7 @@ pub use supervisor::Supervisor;
 pub use context::ContextFutureSpawner;
 
 pub mod prelude {
-//! The `actix` prelude
+    //! The `actix` prelude
 //!
 //! The purpose of this module is to alleviate imports of many common actix traits
 //! by adding a glob import to the top of actix heavy modules:

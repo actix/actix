@@ -106,9 +106,9 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E>
     }
 
     /// Set write buffer capacity
-    pub fn set_buffer_capacity(&mut self, low: usize, high: usize) {
-        self.as_mut().low = low;
-        self.as_mut().high = high;
+    pub fn set_buffer_capacity(&mut self, low_watermark: usize, high_watermark: usize) {
+        self.as_mut().low = low_watermark;
+        self.as_mut().high = high_watermark;
     }
 
     /// Send item to a sink.
