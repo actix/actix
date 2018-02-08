@@ -271,10 +271,10 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
         writer
     }
 
-    pub fn from_buffer<A>(io: T, encoder: U, buf: BytesMut, ctx: &mut A::Context)
-                          -> FramedWrite<T, U>
-        where A: Actor + WriteHandler<U::Error>,
-              A::Context: AsyncContext<A>,
+    pub fn from_buffer<A, C>(io: T, encoder: U, buf: BytesMut, ctx: &mut C)
+                             -> FramedWrite<T, U>
+        where A: Actor<Context=C> + WriteHandler<U::Error>,
+              C: AsyncContext<A>,
               U::Error: 'static,
               T: 'static
     {

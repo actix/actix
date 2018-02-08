@@ -31,10 +31,9 @@ fn main() {
             .and_then(|stream| {
                 let addr: SyncAddress<_> = ChatClient::create(|ctx| {
                     let (r, w) = stream.split();
-                    ChatClient::add_stream(FramedRead::new(r, codec::ClientChatCodec), ctx);
-                    ChatClient{
-                        framed: actix::io::FramedWrite::new(
-                            w, codec::ClientChatCodec, ctx)}});
+                    ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
+                    ChatClient{framed: actix::io::FramedWrite::new(
+                        w, codec::ClientChatCodec, ctx)}});
 
                 // start console loop
                 thread::spawn(move|| {

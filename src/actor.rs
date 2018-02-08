@@ -6,6 +6,7 @@ use arbiter::Arbiter;
 use address::{Address, SyncAddress, ActorAddress, ToEnvelope};
 use context::Context;
 use handler::{Handler, ResponseType};
+use stream::StreamHandler;
 use contextitems::{ActorFutureItem, ActorMessageItem,
                    ActorDelayedMessageItem, ActorMessageStreamItem};
 use utils::TimerFunc;
@@ -335,6 +336,58 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
         } else {
             self.spawn(ActorMessageStreamItem::new(fut));
         }
+    }
+
+    /// This method is similar to `add_future` but works with streams.
+    ///
+    /// Information to consider. Actor wont receive next item from a stream
+    /// until `Response` future resolves to a result. `Self::reply` resolves immediately.
+    ///
+    /// This method is similar to `add_stream` but it skips result error.
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate actix;
+    /// # extern crate futures;
+    /// # use std::io;
+    /// use actix::prelude::*;
+    /// use futures::stream::once;
+    ///
+    /// #[derive(Message)]
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl StreamHandler<Ping, io::Error> for MyActor {
+    ///
+    ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
+    ///         println!("PING");
+    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
+    ///     }
+    ///
+    ///     fn finished(&mut self, ctx: &mut Self::Context) {
+    ///         println!("finished");
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    ///
+    ///    fn started(&mut self, ctx: &mut Context<Self>) {
+    ///        // add stream
+    ///        ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
+    ///    }
+    /// }
+    /// # fn main() {
+    /// #    let sys = System::new("example");
+    /// #    let addr: Address<_> = MyActor.start();
+    /// #    sys.run();
+    /// # }
+    /// ```
+    fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
+        where S: Stream + 'static,
+              A: StreamHandler<S::Item, S::Error>,
+    {
+        <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
     }
 
     /// Send message `msg` to self.
