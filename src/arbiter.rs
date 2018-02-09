@@ -68,6 +68,7 @@ impl Arbiter {
             HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
+            REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
 
             // system
             SYS.with(|cell| *cell.borrow_mut() = Some(sys));
