@@ -71,7 +71,7 @@ fn test_subscriber_call() {
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: Address<_> = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone().into_subscriber();
+    let addr2 = addr.clone().subscriber();
     addr.send(Ping(0));
 
     Arbiter::handle().spawn(
@@ -123,14 +123,12 @@ fn test_sync_subscriber_call() {
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: SyncAddress<_> = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone();
-    let addr3 = addr.clone();
+    let addr2 = addr.clone().subscriber();
     addr.send(Ping(0));
 
     Arbiter::handle().spawn(
-        addr2.into_subscriber()
-            .call(Ping(1))
-            .then(|_| addr3.into_subscriber().call(Ping(2)).then(|_| {
+        addr2.call(Ping(1))
+            .then(move |_| addr2.call(Ping(2)).then(|_| {
                 Arbiter::system().send(actix::msgs::SystemExit(0));
                 Ok(())
             }))

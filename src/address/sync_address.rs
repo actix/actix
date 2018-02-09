@@ -87,11 +87,20 @@ impl<A> SyncAddress<A> where A: Actor {
     }
 
     /// Convert address to a `Subscriber` for specific message type
-    pub fn into_subscriber<M>(self) -> SyncSubscriber<M>
+    pub fn subscriber<M>(self) -> SyncSubscriber<M>
         where A: Handler<M>, A::Context: ToEnvelope<A>,
-              M: ResponseType + Send + 'static,
-              M::Item: Send, M::Error: Send {
+              M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send
+    {
         SyncSubscriber{tx: self.tx.into_sender()}
+    }
+}
+
+impl<A, M> From<SyncAddress<A>> for SyncSubscriber<M>
+    where A: Actor + Handler<M>, A::Context: ToEnvelope<A>,
+          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send
+{
+    fn from(addr: SyncAddress<A>) -> SyncSubscriber<M> {
+        SyncSubscriber{tx: addr.tx.into_sender()}
     }
 }
 

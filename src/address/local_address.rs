@@ -81,10 +81,18 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 
     /// Get `Subscriber` for specific message type
-    pub fn into_subscriber<M>(self) -> Subscriber<M>
+    pub fn subscriber<M>(self) -> Subscriber<M>
         where A: Handler<M>, M: ResponseType + 'static
     {
         Subscriber(self.tx.into_sender())
+    }
+}
+
+impl<A, M> From<Address<A>> for Subscriber<M>
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static
+{
+    fn from(addr: Address<A>) -> Subscriber<M> {
+        Subscriber(addr.tx.into_sender())
     }
 }
 
