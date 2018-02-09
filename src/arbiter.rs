@@ -122,7 +122,7 @@ impl Arbiter {
     pub fn name() -> String {
         NAME.with(|cell| match *cell.borrow() {
             Some(ref name) => name.clone(),
-            None => panic!("Arbiter is not running"),
+            None => "Arbiter is not running".into(),
         })
     }
 
@@ -178,7 +178,7 @@ impl Arbiter {
     pub fn registry() -> &'static Registry {
         REG.with(|cell| match *cell.borrow() {
             Some(ref reg) => unsafe{std::mem::transmute(reg)},
-            None => panic!("System is not running"),
+            None => panic!("System is not running: {}", Arbiter::name()),
         })
     }
 
