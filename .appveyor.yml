@@ -44,5 +44,6 @@ build: false
 
 # Equivalent to Travis' `script` phase
 test_script:
+  - set RUST_BACKTRACE=1
   - cargo build
   - cargo test
