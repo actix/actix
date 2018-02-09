@@ -15,7 +15,7 @@
 //! * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
 //! * Actor supervision.
 //! * Typed messages (No `Any` type). Generic messages are allowed.
-//! * Minimum supported Rust version: 1.20 or later
+//! * Minimum supported Rust version: 1.21 or later
 
 #[macro_use]
 extern crate log;
