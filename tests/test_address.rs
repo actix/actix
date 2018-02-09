@@ -5,7 +5,7 @@ extern crate tokio_core;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
-use futures::{future, Future, Sink};
+use futures::{future, Future};
 use tokio_core::reactor::Timeout;
 use actix::prelude::*;
 
@@ -66,18 +66,17 @@ fn test_address() {
 }
 
 #[test]
-fn test_subscriber_sink() {
+fn test_subscriber_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: Address<_> = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone();
+    let addr2 = addr.clone().into_subscriber();
     addr.send(Ping(0));
 
     Arbiter::handle().spawn(
-        addr2.into_subscriber()
-            .send(Ping(1))
-            .then(|addr| addr.unwrap().send(Ping(2)).then(|_| {
+        addr2.call(Ping(1))
+            .then(move |_| addr2.call(Ping(2)).then(|_| {
                 Arbiter::system().send(actix::msgs::SystemExit(0));
                 Ok(())
             }))
@@ -119,18 +118,19 @@ fn test_sync_address() {
 }
 
 #[test]
-fn test_sync_subscriber_sink() {
+fn test_sync_subscriber_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: SyncAddress<_> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
+    let addr3 = addr.clone();
     addr.send(Ping(0));
 
     Arbiter::handle().spawn(
         addr2.into_subscriber()
-            .send(Ping(1))
-            .then(|addr| addr.unwrap().send(Ping(2)).then(|_| {
+            .call(Ping(1))
+            .then(|_| addr3.into_subscriber().call(Ping(2)).then(|_| {
                 Arbiter::system().send(actix::msgs::SystemExit(0));
                 Ok(())
             }))

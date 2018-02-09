@@ -105,12 +105,6 @@ impl<A> Context<A> where A: Actor<Context=Self> {
         self.inner.restart(ctx)
     }
 
-    #[cfg(test)]
-    #[inline]
-    pub(crate) fn actor(&mut self) -> &mut A {
-        self.inner.actor()
-    }
-
     #[inline]
     pub(crate) fn set_actor(&mut self, act: A) {
         self.inner.set_actor(act)

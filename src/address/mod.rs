@@ -1,5 +1,4 @@
-use std::{mem, fmt};
-use futures::{Async, AsyncSink, Poll, Sink, StartSend};
+use std::fmt;
 
 mod envelope;
 mod queue;
@@ -14,13 +13,13 @@ mod local_envelope;
 use actor::{Actor, AsyncContext};
 
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope, RemoteEnvelope};
-pub use self::local_address::Address;
-pub use self::local_message::{LocalRequest, LocalFutRequest};
+pub use self::local_address::{Address, Subscriber};
+pub use self::local_message::{LocalRequest, LocalFutRequest, LocalSubscriberRequest};
 pub(crate) use self::local_envelope::LocalEnvelope;
 pub(crate) use self::local_channel::LocalAddrReceiver;
 
-pub use self::sync_address::SyncAddress;
-pub use self::sync_message::{Request, RequestFut};
+pub use self::sync_address::{SyncAddress, SyncSubscriber};
+pub use self::sync_message::{Request, RequestFut, SyncSubscriberRequest};
 pub(crate) use self::sync_channel::SyncAddressReceiver;
 
 
@@ -103,95 +102,5 @@ impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
 impl<A> ActorAddress<A, ()> for A where A: Actor {
     fn get(_: &mut A::Context) -> () {
         ()
-    }
-}
-
-/// Subscriber trait describes ability of actor to receive one specific message
-///
-/// You can get subscriber with `Address::subscriber()` or
-/// `Address::subscriber()` methods. Both methods returns boxed trait object.
-///
-/// It is possible to use `Clone::clone()` method to get cloned subscriber.
-pub trait Subscriber<M: 'static> {
-
-    /// Send message
-    fn send(&self, msg: M) -> Result<(), SendError<M>>;
-
-    /// Try send message
-    ///
-    /// This method fails if actor's mailbox is full or closed. This method
-    /// register current task in receivers queue.
-    fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
-
-    #[doc(hidden)]
-    /// Create boxed clone of the current subscriber
-    fn boxed(&self) -> Box<Subscriber<M>>;
-}
-
-/// Convenience impl to allow boxed Subscriber objects to be cloned using `Clone.clone()`.
-impl<M: 'static> Clone for Box<Subscriber<M>> {
-    fn clone(&self) -> Box<Subscriber<M>> {
-        self.boxed()
-    }
-}
-
-impl<M: 'static> fmt::Debug for Box<Subscriber<M>> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Subscriber<_>")
-    }
-}
-
-/// Convenience impl to allow boxed Subscriber objects to be cloned using `Clone.clone()`.
-impl<M: 'static> Clone for Box<Subscriber<M> + Send> {
-    fn clone(&self) -> Box<Subscriber<M> + Send> {
-        // simplify ergonomics of `+Send` subscriber, otherwise
-        // it would require new trait with custom `.boxed()` method.
-        unsafe { mem::transmute(self.boxed()) }
-    }
-}
-
-impl<M: 'static> fmt::Debug for Box<Subscriber<M> + Send> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Subscriber<_> + Send")
-    }
-}
-
-impl<M: 'static> Sink for Box<Subscriber<M>> {
-    type SinkItem = M;
-    type SinkError = M;
-
-    fn start_send(&mut self, msg: M) -> StartSend<M, M> {
-        match self.try_send(msg) {
-            Ok(()) => Ok(AsyncSink::Ready),
-            Err(err) => Err(err.into_inner()),
-        }
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), M> {
-        Ok(Async::Ready(()))
-    }
-
-    fn close(&mut self) -> Poll<(), M> {
-        Ok(Async::Ready(()))
-    }
-}
-
-impl<M: 'static> Sink for Box<Subscriber<M> + Send> {
-    type SinkItem = M;
-    type SinkError = M;
-
-    fn start_send(&mut self, msg: M) -> StartSend<M, M> {
-        match self.try_send(msg) {
-            Ok(()) => Ok(AsyncSink::Ready),
-            Err(err) => Err(err.into_inner()),
-        }
-    }
-
-    fn poll_complete(&mut self) -> Poll<(), M> {
-        Ok(Async::Ready(()))
-    }
-
-    fn close(&mut self) -> Poll<(), M> {
-        Ok(Async::Ready(()))
     }
 }

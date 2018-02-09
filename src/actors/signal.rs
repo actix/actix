@@ -100,7 +100,7 @@ impl ResponseType for Signal {
 
 /// An actor implementation of Unix signal handling
 pub struct ProcessSignals {
-    subscribers: Vec<Box<actix::Subscriber<Signal>>>,
+    subscribers: Vec<SyncSubscriber<Signal>>,
 }
 
 impl Default for ProcessSignals {
@@ -176,7 +176,7 @@ impl Handler<SignalType> for ProcessSignals {
 }
 
 /// Subscribe to process signals.
-pub struct Subscribe(pub Box<actix::Subscriber<Signal> + Send>);
+pub struct Subscribe(pub SyncSubscriber<Signal>);
 
 impl actix::ResponseType for Subscribe {
     type Item = ();

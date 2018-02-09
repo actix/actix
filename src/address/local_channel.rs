@@ -16,8 +16,18 @@ use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, MessageResult, ResponseType};
-use super::{SendError, LocalEnvelope};
+use super::{SendError, LocalEnvelope,};
 
+
+pub(crate) trait LocalSender<M: ResponseType + 'static> {
+    fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
+
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
+
+    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>;
+
+    fn boxed(&self) -> Box<LocalSender<M>>;
+}
 
 struct Shared<A: Actor> {
     buffer: VecDeque<LocalEnvelope<A>>,
@@ -116,6 +126,31 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
             shared.blocked_senders.push_back(task::current());
             Err(SendError::Full(msg))
         }
+    }
+
+    /// Get `Sender` for a specific message type
+    pub fn into_sender<M>(self) -> Box<LocalSender<M>>
+        where A: Handler<M>, M: ResponseType + 'static {
+        Box::new(self)
+    }
+}
+
+impl<A, M> LocalSender<M> for LocalAddrSender<A>
+    where A: Actor + Handler<M>,
+          A::Context: AsyncContext<A>,
+          M: ResponseType + 'static
+{
+    fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.do_send(msg)
+    }
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.try_send(msg, true)
+    }
+    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
+        self.send(msg)
+    }
+    fn boxed(&self) -> Box<LocalSender<M>> {
+        Box::new(self.clone())
     }
 }
 

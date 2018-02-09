@@ -18,6 +18,19 @@ use super::queue::{Queue, PopResult};
 use super::envelope::{Envelope, ToEnvelope};
 
 
+pub(crate) trait SyncSender<M>
+    where M::Item: Send, M::Error: Send,
+          M: ResponseType + Send + 'static
+{
+    fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
+
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
+
+    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>;
+
+    fn boxed(&self) -> Box<SyncSender<M>>;
+}
+
 /// The transmission end of a channel which is used to send values.
 ///
 /// This is created by the `channel` method.
@@ -189,7 +202,7 @@ impl<A: Actor> AddressSender<A> {
     ///
     /// This function, must be called from inside of a task.
     pub fn send<M>(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>
-        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<A>,
+        where A: Handler<M>, A::Context: ToEnvelope<A>,
               M::Item: Send, M::Error: Send,
               M: ResponseType + Send + 'static,
     {
@@ -407,6 +420,34 @@ impl<A: Actor> AddressSender<A> {
         } else {
             Async::Ready(())
         }
+    }
+
+    /// Get `Sender` for a specific message type
+    pub(crate) fn into_sender<M>(self) -> Box<SyncSender<M>>
+        where A: Handler<M>, A::Context: ToEnvelope<A>,
+              M::Item: Send, M::Error: Send,
+              M: ResponseType + Send + 'static
+    {
+        Box::new(self)
+    }
+}
+
+impl<A, M> SyncSender<M> for AddressSender<A>
+    where A: Handler<M>, A::Context: ToEnvelope<A>,
+          M::Item: Send, M::Error: Send,
+          M: ResponseType + Send + 'static,
+{
+    fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.do_send(msg)
+    }
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.try_send(msg, true)
+    }
+    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
+        self.send(msg)
+    }
+    fn boxed(&self) -> Box<SyncSender<M>> {
+        Box::new(self.clone())
     }
 }
 

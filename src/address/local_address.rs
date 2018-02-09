@@ -1,9 +1,9 @@
 use actor::{Actor, AsyncContext};
-use address::{SendError, Subscriber};
 use handler::{Handler, ResponseType};
 
-use super::local_channel::LocalAddrSender;
-use super::local_message::{LocalRequest, LocalFutRequest};
+use super::SendError;
+use super::local_channel::{LocalSender, LocalAddrSender};
+use super::local_message::{LocalRequest, LocalFutRequest, LocalSubscriberRequest};
 
 
 /// Local address of the actor
@@ -81,28 +81,52 @@ impl<A> Address<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 
     /// Get `Subscriber` for specific message type
-    pub fn into_subscriber<M>(self) -> Box<Subscriber<M>>
+    pub fn into_subscriber<M>(self) -> Subscriber<M>
         where A: Handler<M>, M: ResponseType + 'static
     {
-        Box::new(self)
+        Subscriber(self.tx.into_sender())
     }
 }
 
-impl<A, M> Subscriber<M> for Address<A>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType + 'static
-{
-    fn send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.tx.do_send(msg)
+/// `Subscriber` type allows to send one specific message to an actor.
+///
+/// You can get subscriber with `Address::into_subscriber::<M>()` method.
+/// It is possible to use `Clone::clone()` method to get cloned subscriber.
+pub struct Subscriber<M: ResponseType+'static>(Box<LocalSender<M>>);
+
+impl<M: ResponseType + 'static> Subscriber<M> {
+    /// Send message
+    ///
+    /// Sends message even if actor's mailbox is full
+    pub fn send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.0.do_send(msg)
     }
 
-    fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.tx.try_send(msg, true)
+    /// Try send message
+    ///
+    /// This method fails if actor's mailbox is full or closed. This method
+    /// register current task in receivers queue.
+    pub fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.0.try_send(msg)
     }
 
-    #[doc(hidden)]
-    fn boxed(&self) -> Box<Subscriber<M>> {
-        Box::new(self.clone())
+    /// Send message and asynchronously wait for response.
+    ///
+    /// Communication channel to the actor is bounded. if returned `Receiver`
+    /// object get dropped, message cancels.
+    pub fn call(&self, msg: M) -> LocalSubscriberRequest<M> {
+        match self.0.send(msg) {
+            Ok(rx) => LocalSubscriberRequest::new(Some(rx), None),
+            Err(SendError::Full(msg)) =>
+                LocalSubscriberRequest::new(None, Some((self.0.boxed(), msg))),
+            Err(SendError::Closed(_)) =>
+                LocalSubscriberRequest::new(None, None),
+        }
+    }
+}
+
+impl<M: ResponseType + 'static> Clone for Subscriber<M> {
+    fn clone(&self) -> Subscriber<M> {
+        Subscriber(self.0.boxed())
     }
 }

@@ -11,7 +11,7 @@ use fut::ActorFuture;
 use handler::{Handler, MessageResult, ResponseType};
 
 use super::{SendError, MailboxError};
-use super::local_channel::LocalAddrSender;
+use super::local_channel::{LocalAddrSender, LocalSender};
 
 
 /// `LocalRequest` is a `Future` which represents asynchronous message sending process.
@@ -131,6 +131,74 @@ impl<A, M> LocalFutRequest<A, M>
 
 impl<A, M> Future for LocalFutRequest<A, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
+{
+    type Item = MessageResult<M>;
+    type Error = MailboxError;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        // send message
+        if let Some((sender, msg)) = self.info.take() {
+            match sender.send(msg) {
+                Ok(rx) => self.rx = Some(rx),
+                Err(SendError::Full(msg)) => {
+                    self.info = Some((sender, msg));
+                    return self.poll_timeout();
+                },
+                Err(_) => return Err(MailboxError::Closed),
+            }
+        }
+
+        if let Some(mut rx) = self.rx.take() {
+            match rx.poll() {
+                Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
+                Ok(Async::NotReady) => {
+                    self.rx = Some(rx);
+                    self.poll_timeout()
+                },
+                Err(_) => Err(MailboxError::Closed),
+            }
+        } else {
+            Err(MailboxError::Closed)
+        }
+    }
+}
+
+/// `LocalSunscriberRequest` is a `Future` which represents asynchronous message sending process.
+#[must_use = "future do nothing unless polled"]
+pub struct LocalSubscriberRequest<M> where M: ResponseType + 'static,
+{
+    rx: Option<Receiver<MessageResult<M>>>,
+    info: Option<(Box<LocalSender<M>>, M)>,
+    timeout: Option<Timeout>,
+}
+
+impl<M> LocalSubscriberRequest<M> where M: ResponseType + 'static,
+{
+    pub(crate) fn new(rx: Option<Receiver<MessageResult<M>>>,
+                      info: Option<(Box<LocalSender<M>>, M)>) -> LocalSubscriberRequest<M> {
+        LocalSubscriberRequest{rx: rx, info: info, timeout: None}
+    }
+
+    /// Set message delivery timeout
+    pub fn timeout(mut self, dur: Duration) -> Self {
+        self.timeout = Some(Timeout::new(dur, Arbiter::handle()).unwrap());
+        self
+    }
+
+    fn poll_timeout(&mut self) -> Poll<MessageResult<M>, MailboxError> {
+        if let Some(ref mut timeout) = self.timeout {
+            match timeout.poll() {
+                Ok(Async::Ready(())) => Err(MailboxError::Timeout),
+                Ok(Async::NotReady) => Ok(Async::NotReady),
+                Err(_) => unreachable!()
+            }
+        } else {
+            Ok(Async::NotReady)
+        }
+    }
+}
+
+impl<M> Future for LocalSubscriberRequest<M> where M: ResponseType + 'static,
 {
     type Item = MessageResult<M>;
     type Error = MailboxError;
