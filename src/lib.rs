@@ -53,7 +53,6 @@ mod contextimpl;
 mod contextitems;
 mod handler;
 mod stream;
-mod registry;
 mod system;
 mod supervisor;
 
@@ -66,6 +65,7 @@ pub mod actors;
 pub mod msgs;
 pub mod sync;
 pub mod utils;
+pub mod registry;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, Supervised,
@@ -78,7 +78,6 @@ pub use address::{Address, ActorAddress, SyncAddress,
 pub use context::Context;
 pub use stream::StreamHandler;
 pub use sync::{SyncContext, SyncArbiter};
-pub use registry::{Registry, SystemRegistry, ArbiterService, SystemService};
 pub use system::{System, SystemRunner};
 pub use supervisor::Supervisor;
 

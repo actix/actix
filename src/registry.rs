@@ -1,3 +1,8 @@
+//! Actors registry
+//!
+//! Actor can register itself as a service. Service can be defined as
+//! `ArbiterService` which is unique per arbiter or `SystemService` which is
+//! unique per system.
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
