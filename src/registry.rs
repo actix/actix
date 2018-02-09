@@ -38,7 +38,7 @@ use supervisor::Supervisor;
 /// }
 /// impl actix::Supervised for MyActor1 {}
 ///
-/// impl actix::ArbiterService for MyActor1 {
+/// impl ArbiterService for MyActor1 {
 ///    fn service_started(&mut self, ctx: &mut Context<Self>) {
 ///       println!("Service started");
 ///    }
