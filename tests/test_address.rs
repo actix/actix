@@ -92,7 +92,7 @@ fn test_sync_address() {
     let count = Arc::new(AtomicUsize::new(0));
     let arbiter = Arbiter::new("sync-test");
 
-    let addr: Addr<Sync<_>> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Syn<_>> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     let addr3 = addr.clone();
     addr.send(Ping(1));
@@ -122,7 +122,7 @@ fn test_sync_subscriber_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: Addr<Sync<_>> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Syn<_>> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().subscriber();
     addr.send(Ping(0));
 
@@ -207,7 +207,7 @@ fn test_message_timeout() {
 fn test_sync_message_timeout() {
     let sys = System::new("test");
 
-    let addr: Addr<Sync<_>> = TimeoutActor.start();
+    let addr: Addr<Syn<_>> = TimeoutActor.start();
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
@@ -270,7 +270,7 @@ fn test_call_message_timeout() {
 }
 
 
-struct TimeoutActor3(Addr<Sync<TimeoutActor>>, Arc<AtomicUsize>);
+struct TimeoutActor3(Addr<Syn<TimeoutActor>>, Arc<AtomicUsize>);
 
 impl Actor for TimeoutActor3 {
     type Context = Context<Self>;
@@ -297,7 +297,7 @@ impl Actor for TimeoutActor3 {
 #[test]
 fn test_sync_call_message_timeout() {
     let sys = System::new("test");
-    let addr: Addr<Sync<_>> = TimeoutActor.start();
+    let addr: Addr<Syn<_>> = TimeoutActor.start();
 
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);

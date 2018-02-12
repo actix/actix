@@ -37,7 +37,7 @@ fn test_resolver() {
 #[cfg(unix)]
 fn test_signal() {
     let sys = System::new("test");
-    let _: Addr<Sync<_>> = signal::DefaultSignalsHandler::start_default();
+    let _: Addr<Syn<_>> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
         sig.send(signal::SignalType::Quit);
@@ -50,7 +50,7 @@ fn test_signal() {
 #[cfg(unix)]
 fn test_signal_term() {
     let sys = System::new("test");
-    let _: Addr<Sync<_>> = signal::DefaultSignalsHandler::start_default();
+    let _: Addr<Syn<_>> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
         sig.send(signal::SignalType::Term);
@@ -63,7 +63,7 @@ fn test_signal_term() {
 #[cfg(unix)]
 fn test_signal_int() {
     let sys = System::new("test");
-    let _: Addr<Sync<_>> = signal::DefaultSignalsHandler::start_default();
+    let _: Addr<Syn<_>> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
         sig.send(signal::SignalType::Hup);

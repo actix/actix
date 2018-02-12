@@ -4,7 +4,7 @@ use futures::sync::oneshot::Sender;
 use actor::{Actor, AsyncContext};
 use context::Context;
 use handler::{Handler, ResponseType, MessageResult, MessageResponse};
-use super::{Sync, MessageDestination};
+use super::{Syn, MessageDestination};
 use super::DestinationSender;
 
 
@@ -18,12 +18,12 @@ pub trait ToEnvelope<T: MessageDestination<M>, M: ResponseType + 'static>
     fn pack(msg: M, tx: Option<T::ResultSender>) -> T;
 }
 
-impl<A, M> ToEnvelope<Sync<A>, M> for Context<A>
+impl<A, M> ToEnvelope<Syn<A>, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>,
           M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
 {
-    fn pack(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Sync<A> {
-        Sync::new(Box::new(
+    fn pack(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Syn<A> {
+        Syn::new(Box::new(
             RemoteEnvelope{msg: Some(msg),
                            tx: tx,
                            act: PhantomData}))

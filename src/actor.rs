@@ -3,7 +3,7 @@ use futures::{future, Future, Stream};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use address::{Addr, ActorAddress, Sync, Unsync};
+use address::{Addr, ActorAddress, Syn, Unsync};
 use context::Context;
 use handler::{Handler, ResponseType};
 use stream::StreamHandler;
@@ -23,7 +23,7 @@ use utils::TimerFunc;
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
 /// non thread safe [`Addr<Unsync<A>>`](struct.Addr.html) or thread safe address
-/// [`Addr<Sync<A>>`](struct.Addr.html)
+/// [`Addr<Syn<A>>`](struct.Addr.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
@@ -217,7 +217,7 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
 
     #[doc(hidden)]
     /// Return `SyncAddress` of the context
-    fn sync_address(&mut self) -> Addr<Sync<A>>;
+    fn sync_address(&mut self) -> Addr<Syn<A>>;
 
     #[doc(hidden)]
     /// Return `Addr<Unsync<_>>` of the context

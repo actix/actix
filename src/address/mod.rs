@@ -22,7 +22,7 @@ pub use self::unsync::{Unsync, Subscriber};
 pub(crate) use self::unsync_channel::UnsyncAddrReceiver;
 pub use self::unsync_message::UnsyncSubscriberRequest;
 
-pub use self::sync::Sync;
+pub use self::sync::Syn;
 pub use self::sync_address::SyncSubscriber;
 pub use self::message::{Request, RequestFut, SyncSubscriberRequest};
 pub(crate) use self::sync_channel::SyncAddressReceiver;
@@ -88,18 +88,18 @@ impl<A> ActorAddress<A, Addr<Unsync<A>>> for A
     }
 }
 
-impl<A> ActorAddress<A, Addr<Sync<A>>> for A
+impl<A> ActorAddress<A, Addr<Syn<A>>> for A
     where A: Actor, A::Context: AsyncContext<A>
 {
-    fn get(ctx: &mut A::Context) -> Addr<Sync<A>> {
+    fn get(ctx: &mut A::Context) -> Addr<Syn<A>> {
         ctx.sync_address()
     }
 }
 
-impl<A> ActorAddress<A, (Addr<Unsync<A>>, Addr<Sync<A>>)> for A
+impl<A> ActorAddress<A, (Addr<Unsync<A>>, Addr<Syn<A>>)> for A
     where A: Actor, A::Context: AsyncContext<A>
 {
-    fn get(ctx: &mut A::Context) -> (Addr<Unsync<A>>, Addr<Sync<A>>) {
+    fn get(ctx: &mut A::Context) -> (Addr<Unsync<A>>, Addr<Syn<A>>) {
         (ctx.unsync_address(), ctx.sync_address())
     }
 }

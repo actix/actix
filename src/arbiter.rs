@@ -6,7 +6,7 @@ use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Addr, Sync, Unsync};
+use address::{sync_channel, Addr, Syn, Unsync};
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::{Execute, StartActor, StopArbiter};
@@ -20,8 +20,8 @@ thread_local!(
     static ADDR: RefCell<Option<Addr<Unsync<Arbiter>>>> = RefCell::new(None);
     static REG: RefCell<Option<Registry>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
-    static SYS: RefCell<Option<Addr<Sync<System>>>> = RefCell::new(None);
-    static SYSARB: RefCell<Option<Addr<Sync<Arbiter>>>> = RefCell::new(None);
+    static SYS: RefCell<Option<Addr<Syn<System>>>> = RefCell::new(None);
+    static SYSARB: RefCell<Option<Addr<Syn<Arbiter>>>> = RefCell::new(None);
     static SYSNAME: RefCell<Option<String>> = RefCell::new(None);
     static SYSREG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
 );
@@ -50,7 +50,7 @@ impl Arbiter {
 
     /// Spawn new thread and run event loop in spawned thread.
     /// Returns address of newly created arbiter.
-    pub fn new<T: Into<String>>(name: T) -> Addr<Sync<Arbiter>> {
+    pub fn new<T: Into<String>>(name: T) -> Addr<Syn<Arbiter>> {
         let (tx, rx) = std::sync::mpsc::channel();
 
         let id = Uuid::new_v4();
@@ -114,7 +114,7 @@ impl Arbiter {
         core
     }
 
-    pub(crate) fn set_system(addr: Addr<Sync<System>>, name: String) {
+    pub(crate) fn set_system(addr: Addr<Syn<System>>, name: String) {
         SYS.with(|cell| *cell.borrow_mut() = Some(addr));
         SYSNAME.with(|cell| *cell.borrow_mut() = Some(name));
     }
@@ -136,7 +136,7 @@ impl Arbiter {
     }
 
     /// This function returns system address,
-    pub fn system() -> Addr<Sync<System>> {
+    pub fn system() -> Addr<Syn<System>> {
         SYS.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("System is not running"),
@@ -144,7 +144,7 @@ impl Arbiter {
     }
 
     /// This function returns system address,
-    pub fn system_arbiter() -> Addr<Sync<Arbiter>> {
+    pub fn system_arbiter() -> Addr<Syn<Arbiter>> {
         SYSARB.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("System is not running"),
@@ -184,8 +184,8 @@ impl Arbiter {
     }
 
     /// Start new arbiter and then start actor in created arbiter.
-    /// Returns `Addr<Sync<A>>` of created actor.
-    pub fn start<A, F>(f: F) -> Addr<Sync<A>>
+    /// Returns `Addr<Syn<A>>` of created actor.
+    pub fn start<A, F>(f: F) -> Addr<Syn<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut A::Context) -> A + Send + 'static
     {
@@ -227,9 +227,9 @@ impl Handler<StopArbiter> for Arbiter {
 }
 
 impl<A> Handler<StartActor<A>> for Arbiter where A: Actor<Context=Context<A>> {
-    type Result = Addr<Sync<A>>;
+    type Result = Addr<Syn<A>>;
 
-    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Addr<Sync<A>> {
+    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Addr<Syn<A>> {
         msg.call()
     }
 }

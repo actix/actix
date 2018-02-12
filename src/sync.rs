@@ -72,7 +72,7 @@
 //!     sys.run();
 //! }
 //! ```
-use std::{marker, mem, thread};
+use std::{mem, thread};
 use std::sync::Arc;
 use std::marker::PhantomData;
 
@@ -83,7 +83,7 @@ use futures::sync::oneshot::Sender as SyncSender;
 use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
 use address::sync_channel;
-use address::{Addr, Sync, SyncAddressReceiver, EnvelopeProxy, ToEnvelope};
+use address::{Addr, Syn, SyncAddressReceiver, EnvelopeProxy, ToEnvelope};
 use context::Context;
 use handler::{Handler, ResponseType, MessageResponse, MessageResult};
 
@@ -99,8 +99,8 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of the started actor.
-    pub fn start<F>(threads: usize, factory: F) -> Addr<Sync<A>>
-        where F: Fn() -> A + Send + marker::Sync + 'static
+    pub fn start<F>(threads: usize, factory: F) -> Addr<Syn<A>>
+        where F: Fn() -> A + Send + Sync + 'static
     {
         let factory = Arc::new(factory);
         let (sender, receiver) = channel::unbounded();
@@ -156,19 +156,19 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
     }
 }
 
-impl<A, M> ToEnvelope<Sync<A>, M> for SyncContext<A>
+impl<A, M> ToEnvelope<Syn<A>, M> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
-          M: ResponseType + marker::Send + 'static,
-          M::Item: marker::Send, M::Error: marker::Send
+          M: ResponseType + Send + 'static,
+          M::Item: Send, M::Error: Send
 {
-    fn pack(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Sync<A> {
-        Sync::new(Box::new(SyncEnvelope::new(msg, tx)))
+    fn pack(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Syn<A> {
+        Syn::new(Box::new(SyncEnvelope::new(msg, tx)))
     }
 }
 
 enum SyncContextProtocol<A> where A: Actor<Context=SyncContext<A>> {
     Stop,
-    Envelope(Sync<A>),
+    Envelope(Syn<A>),
 }
 
 /// Sync actor execution context

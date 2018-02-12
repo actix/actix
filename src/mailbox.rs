@@ -1,7 +1,7 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Addr, Sync, SyncAddressReceiver, Unsync, UnsyncAddrReceiver};
+use address::{sync_channel, Addr, Syn, SyncAddressReceiver, Unsync, UnsyncAddrReceiver};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -58,7 +58,7 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
             self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
     }
 
-    pub fn remote_address(&mut self) -> Addr<Sync<A>> {
+    pub fn remote_address(&mut self) -> Addr<Syn<A>> {
         if self.sync_msgs.is_none() {
             let (tx, rx) = sync_channel::channel(self.unsync_msgs.capacity());
             self.sync_msgs = Some(rx);

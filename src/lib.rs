@@ -73,7 +73,7 @@ pub use actor::{Actor, ActorState, Supervised,
 pub use handler::{Handler, Response, ResponseType,
                   MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
-pub use address::{Addr, Sync, Unsync, ActorAddress,
+pub use address::{Addr, Syn, Unsync, ActorAddress,
                   Subscriber, SyncSubscriber, MailboxError};
 pub use context::Context;
 pub use stream::StreamHandler;
@@ -88,8 +88,8 @@ pub use context::ContextFutureSpawner;
 #[deprecated(since="0.5", note="Use Addr<Unsync<T>>")]
 pub type Address<T> = Addr<Unsync<T>>;
 #[doc(hidden)]
-#[deprecated(since="0.5", note="Use Addr<Sync<T>>")]
-pub type SyncAddress<T> = Addr<Sync<T>>;
+#[deprecated(since="0.5", note="Use Addr<Syn<T>>")]
+pub type SyncAddress<T> = Addr<Syn<T>>;
 
 pub mod prelude {
 //! The `actix` prelude
@@ -109,13 +109,13 @@ pub mod prelude {
     #[deprecated(since="0.5", note="Use Addr<Unsync<T>>")]
     pub type Address<T> = Addr<Unsync<T>>;
     #[doc(hidden)]
-    #[deprecated(since="0.5", note="Use Addr<Sync<T>>")]
-    pub type SyncAddress<T> = Addr<Sync<T>>;
+    #[deprecated(since="0.5", note="Use Addr<Syn<T>>")]
+    pub type SyncAddress<T> = Addr<Syn<T>>;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
-    pub use address::{Addr, Sync, Unsync,
+    pub use address::{Addr, Syn, Unsync,
                       SendError, Subscriber, SyncSubscriber, MailboxError};
     pub use context::{Context, ContextFutureSpawner};
     pub use registry::{ArbiterService, SystemService};
