@@ -15,7 +15,7 @@ mod unsync_message;
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
 
-pub use self::envelope::{EnvelopeProxy, ToEnvelope, RemoteEnvelope};
+pub use self::envelope::{EnvelopeProxy, ToEnvelope, SyncEnvelope};
 
 pub use self::unsync::{Unsync, Subscriber};
 pub(crate) use self::unsync_channel::UnsyncAddrReceiver;

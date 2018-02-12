@@ -1,11 +1,9 @@
 use std::rc::Rc;
 use std::marker::PhantomData;
-
 use futures::unsync::oneshot::{Receiver, Sender};
 
 use actor::{Actor, AsyncContext};
-use handler::{Handler, Message, MessageResponse};
-use context::Context;
+use handler::{Handler, Message};
 
 use super::ToEnvelope;
 use super::message::{Request, RequestFut};
@@ -24,16 +22,12 @@ pub struct Unsync<A: Actor> {
 }
 
 impl<A: Actor> Unsync<A> {
-    pub fn new<M>(msg: M, tx: Option<Sender<M::Result>>) -> Unsync<A>
+    pub(crate) fn new<M>(proxy: Box<EnvelopeProxy<Actor=A>>) -> Unsync<A>
         where M: Message + 'static,
               A: Handler<M>, A::Context: AsyncContext<A>
     {
-        Unsync {
-            proxy: Box::new(
-                InnerLocalEnvelope{msg: Some(msg),
-                                   tx: tx,
-                                   act: PhantomData}),
-            act: PhantomData}
+        Unsync { proxy: proxy,
+                 act: PhantomData}
     }
 
     pub fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
@@ -97,38 +91,6 @@ impl<A: Actor, B: Actor, M> ActorMessageDestination<M, B> for Unsync<A>
             Err(SendError::Full(msg)) => Request::new(None, Some((tx.clone(), msg))),
             Err(SendError::Closed(_)) => Request::new(None, None)
         }
-    }
-}
-
-struct InnerLocalEnvelope<A, M> where M: Message {
-    msg: Option<M>,
-    act: PhantomData<A>,
-    tx: Option<Sender<M::Result>>,
-}
-
-impl<A, M> EnvelopeProxy for InnerLocalEnvelope<A, M>
-    where M: Message + 'static,
-          A: Actor + Handler<M>, A::Context: AsyncContext<A>
-{
-    type Actor = A;
-
-    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context)
-    {
-        let tx = self.tx.take();
-        if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
-            return
-        }
-        if let Some(msg) = self.msg.take() {
-            <Self::Actor as Handler<M>>::handle(act, msg, ctx).handle(ctx, tx)
-        }
-    }
-}
-
-impl<A, M: Message + 'static> ToEnvelope<Unsync<A>, M> for Context<A>
-    where A: Actor<Context=Context<A>> + Handler<M>
-{
-    fn pack(msg: M, tx: Option<Sender<M::Result>>) -> Unsync<A> {
-        Unsync::new(msg, tx)
     }
 }
 

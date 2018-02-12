@@ -23,13 +23,14 @@ pub trait Handler<M> where Self: Actor, M: Message {
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
 }
 
-/// Message response type
+/// Message type
 pub trait Message {
 
     /// The type of value that this message will resolved with if it is successful.
     type Result: 'static;
 }
 
+/// Helper type that implements `MessageResponse` trait
 pub struct MessageResult<M: Message>(pub M::Result);
 
 /// A specialized actor future for async message handler
