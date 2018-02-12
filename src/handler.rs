@@ -96,8 +96,8 @@ impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for Result<I, E>
     }
 }
 
-impl<A, M, B> MessageResponse<A, M> for Addr<Syn<B>>
-    where A: Actor, M: Message<Result=Addr<Syn<B>>>,
+impl<A, M, B> MessageResponse<A, M> for Addr<Syn, B>
+    where A: Actor, M: Message<Result=Addr<Syn, B>>,
           B: Actor<Context=Context<B>>
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {

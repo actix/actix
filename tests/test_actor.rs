@@ -151,7 +151,7 @@ fn test_restart_sync_actor() {
     let stopped1 = Arc::clone(&stopped);
     let msgs1 = Arc::clone(&msgs);
 
-    let addr: Addr<Syn<_>> = SyncArbiter::start(1, move || MySyncActor {
+    let addr: Addr<Syn, _> = SyncArbiter::start(1, move || MySyncActor {
         started: Arc::clone(&started1),
         stopping: Arc::clone(&stopping1),
         stopped: Arc::clone(&stopped1),
@@ -160,7 +160,7 @@ fn test_restart_sync_actor() {
     addr.send(Num(2));
 
     Arbiter::handle().spawn_fn(move || {
-        addr.call_fut(Num(4))
+        addr.call(Num(4))
             .then(move |_| {
                 Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle()).unwrap()
                     .then(move |_| {

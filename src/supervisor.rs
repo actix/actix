@@ -53,7 +53,7 @@ use msgs::Execute;
 /// fn main() {
 ///     let sys = System::new("test");
 ///
-///     let addr: Addr<Unsync<_>> = actix::Supervisor::start(|_| MyActor);
+///     let addr: Addr<Unsync, _> = actix::Supervisor::start(|_| MyActor);
 ///
 ///     addr.send(Die);
 ///     sys.run();
@@ -67,8 +67,8 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor in current Arbiter.
     ///
-    /// Type of returned addres depeneds on variable type. For example to get `Addr<Syn<_>>`
-    /// of newly created actor, use explicitly `Addr<Syn<_>>` type as type of a variable.
+    /// Type of returned addres depeneds on variable type. For example to get `Addr<Syn, _>`
+    /// of newly created actor, use explicitly `Addr<Syn, _>` type as type of a variable.
     ///
     /// ```rust
     /// # #[macro_use] extern crate actix;
@@ -82,11 +82,11 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     /// # impl actix::Supervised for MyActor {}
     /// # fn main() {
     /// #    let sys = System::new("test");
-    /// // Get `Addr<Unsync<_>>` of a MyActor actor
-    /// let addr1: Addr<Unsync<_>> = actix::Supervisor::start(|_| MyActor);
+    /// // Get `Addr<Unsync, _>` of a MyActor actor
+    /// let addr1: Addr<Unsync, _> = actix::Supervisor::start(|_| MyActor);
     ///
-    /// // Get `Addr<Syn<_>>` of a MyActor actor
-    /// let addr2: Addr<Syn<_>> = actix::Supervisor::start(|_| MyActor);
+    /// // Get `Addr<Syn, _>` of a MyActor actor
+    /// let addr2: Addr<Syn, _> = actix::Supervisor::start(|_| MyActor);
     /// # }
     /// ```
     pub fn start<Addr, F>(f: F) -> Addr
@@ -106,7 +106,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in<F>(addr: &Addr<Syn<Arbiter>>, f: F) -> Addr<Syn<A>>
+    pub fn start_in<F>(addr: &Addr<Syn, Arbiter>, f: F) -> Addr<Syn, A>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {

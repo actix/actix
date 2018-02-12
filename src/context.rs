@@ -55,13 +55,13 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
 
     #[doc(hidden)]
     #[inline]
-    fn unsync_address(&mut self) -> Addr<Unsync<A>> {
+    fn unsync_address(&mut self) -> Addr<Unsync, A> {
         self.inner.unsync_address()
     }
 
     #[doc(hidden)]
     #[inline]
-    fn sync_address(&mut self) -> Addr<Syn<A>> {
+    fn sync_address(&mut self) -> Addr<Syn, A> {
         self.inner.sync_address()
     }
 }

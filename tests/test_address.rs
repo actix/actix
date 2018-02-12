@@ -45,7 +45,7 @@ fn test_address() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: Addr<Unsync<_>> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     addr.send(Ping(0));
 
@@ -69,7 +69,7 @@ fn test_subscriber_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: Addr<Unsync<_>> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().subscriber();
     addr.send(Ping(0));
 
@@ -91,7 +91,7 @@ fn test_sync_address() {
     let count = Arc::new(AtomicUsize::new(0));
     let arbiter = Arbiter::new("sync-test");
 
-    let addr: Addr<Syn<_>> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Syn, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     let addr3 = addr.clone();
     addr.send(Ping(1));
@@ -121,7 +121,7 @@ fn test_sync_subscriber_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: Addr<Syn<_>> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Syn, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().subscriber();
     addr.send(Ping(0));
 
@@ -141,10 +141,10 @@ fn test_sync_subscriber_call() {
 fn test_error_result() {
     let sys = System::new("test");
 
-    let addr: Addr<Unsync<_>> = MyActor3.start();
+    let addr: Addr<Unsync, _> = MyActor3.start();
 
     Arbiter::handle().spawn_fn(move || {
-        addr.call_fut(Ping(0)).then(|res| {
+        addr.call(Ping(0)).then(|res| {
             match res {
                 Ok(_) => (),
                 _ => panic!("Should not happen"),
@@ -177,13 +177,13 @@ impl Handler<Ping> for TimeoutActor {
 fn test_message_timeout() {
     let sys = System::new("test");
 
-    let addr: Addr<Unsync<_>> = TimeoutActor.start();
+    let addr: Addr<Unsync, _> = TimeoutActor.start();
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
     Arbiter::handle().spawn_fn(move || {
         addr.send(Ping(0));
-        addr.call_fut(Ping(0))
+        addr.call(Ping(0))
             .timeout(Duration::new(0, 1_000))
             .then(move |res| {
                 match res {
@@ -206,13 +206,13 @@ fn test_message_timeout() {
 fn test_sync_message_timeout() {
     let sys = System::new("test");
 
-    let addr: Addr<Syn<_>> = TimeoutActor.start();
+    let addr: Addr<Syn, _> = TimeoutActor.start();
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
     Arbiter::handle().spawn_fn(move || {
         addr.send(Ping(0));
-        addr.call_fut(Ping(0))
+        addr.call(Ping(0))
             .timeout(Duration::new(0, 1_000))
             .then(move |res| {
                 match res {
@@ -231,15 +231,16 @@ fn test_sync_message_timeout() {
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
-struct TimeoutActor2(Addr<Unsync<TimeoutActor>>, Arc<AtomicUsize>);
+struct TimeoutActor2(Addr<Unsync, TimeoutActor>, Arc<AtomicUsize>);
 
 impl Actor for TimeoutActor2 {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.0.send(Ping(0));
-        self.0.call(self, Ping(0))
+        self.0.call(Ping(0))
             .timeout(Duration::new(0, 1_000))
+            .into_actor(self)
             .then(move |res, act, _| {
                 match res {
                     Ok(_) => panic!("Should not happen"),
@@ -258,26 +259,27 @@ impl Actor for TimeoutActor2 {
 #[test]
 fn test_call_message_timeout() {
     let sys = System::new("test");
-    let addr: Addr<Unsync<_>> = TimeoutActor.start();
+    let addr: Addr<Unsync, _> = TimeoutActor.start();
 
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
-    let _addr2: Addr<Unsync<_>> = TimeoutActor2(addr, count2).start();
+    let _addr2: Addr<Unsync, _> = TimeoutActor2(addr, count2).start();
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
 
-struct TimeoutActor3(Addr<Syn<TimeoutActor>>, Arc<AtomicUsize>);
+struct TimeoutActor3(Addr<Syn, TimeoutActor>, Arc<AtomicUsize>);
 
 impl Actor for TimeoutActor3 {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.0.send(Ping(0));
-        self.0.call(self, Ping(0))
+        self.0.call(Ping(0))
             .timeout(Duration::new(0, 1_000))
+            .into_actor(self)
             .then(move |res, act, _| {
                 match res {
                     Ok(_) => panic!("Should not happen"),
@@ -296,11 +298,11 @@ impl Actor for TimeoutActor3 {
 #[test]
 fn test_sync_call_message_timeout() {
     let sys = System::new("test");
-    let addr: Addr<Syn<_>> = TimeoutActor.start();
+    let addr: Addr<Syn, _> = TimeoutActor.start();
 
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
-    let _addr2: Addr<Unsync<_>> = TimeoutActor3(addr, count2).start();
+    let _addr2: Addr<Unsync, _> = TimeoutActor3(addr, count2).start();
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 1);

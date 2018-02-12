@@ -82,7 +82,7 @@ use futures::sync::oneshot::Sender as SyncSender;
 use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
 use address::sync_channel;
-use address::{Addr, Syn, SyncAddressReceiver, EnvelopeProxy, ToEnvelope};
+use address::{Addr, Syn, SyncEnvelope, SyncAddressReceiver, EnvelopeProxy, ToEnvelope};
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
 
@@ -98,7 +98,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of the started actor.
-    pub fn start<F>(threads: usize, factory: F) -> Addr<Syn<A>>
+    pub fn start<F>(threads: usize, factory: F) -> Addr<Syn, A>
         where F: Fn() -> A + Send + Sync + 'static
     {
         let factory = Arc::new(factory);
@@ -155,18 +155,18 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
     }
 }
 
-impl<A, M> ToEnvelope<Syn<A>, M> for SyncContext<A>
+impl<A, M> ToEnvelope<Syn, A, M> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
           M: Message + Send + 'static, M::Result: Send,
 {
-    fn pack(msg: M, tx: Option<SyncSender<M::Result>>) -> Syn<A> {
-        Syn::new(Box::new(SyncEnvelope::new(msg, tx)))
+    fn pack(msg: M, tx: Option<SyncSender<M::Result>>) -> SyncEnvelope<A> {
+        SyncEnvelope::with_proxy(Box::new(SyncContextEnvelope::new(msg, tx)))
     }
 }
 
 enum SyncContextProtocol<A> where A: Actor<Context=SyncContext<A>> {
     Stop,
-    Envelope(Syn<A>),
+    Envelope(SyncEnvelope<A>),
 }
 
 /// Sync actor execution context
@@ -254,30 +254,30 @@ impl<A> ActorContext for SyncContext<A> where A: Actor<Context=Self>
     }
 }
 
-pub(crate) struct SyncEnvelope<A, M>
-    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: Message,
+pub(crate) struct SyncContextEnvelope<A, M>
+    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: Message + Send,
 {
     msg: Option<M>,
     tx: Option<SyncSender<M::Result>>,
     actor: PhantomData<A>,
 }
 
-unsafe impl<A, M> Send for SyncEnvelope<A, M>
-    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: Message {}
+unsafe impl<A, M> Send for SyncContextEnvelope<A, M>
+    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: Message + Send {}
 
-impl<A, M> SyncEnvelope<A, M>
+impl<A, M> SyncContextEnvelope<A, M>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
           M: Message + Send, M::Result: Send
 {
     pub fn new(msg: M, tx: Option<SyncSender<M::Result>>) -> Self {
-        SyncEnvelope{msg: Some(msg),
-                     tx: tx,
-                     actor: PhantomData}
+        SyncContextEnvelope{msg: Some(msg),
+                            tx: tx,
+                            actor: PhantomData}
     }
 }
 
-impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
-    where M: Message + 'static,
+impl<A, M> EnvelopeProxy for SyncContextEnvelope<A, M>
+    where M: Message + Send + 'static,
           A: Actor<Context=SyncContext<A>> + Handler<M>,
 {
     type Actor = A;

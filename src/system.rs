@@ -52,7 +52,7 @@ use msgs::{SystemExit, StopArbiter};
 /// ```
 pub struct System {
     stop: Option<Sender<i32>>,
-    arbiters: HashMap<String, Addr<Syn<Arbiter>>>,
+    arbiters: HashMap<String, Addr<Syn, Arbiter>>,
 }
 
 impl Actor for System {
@@ -130,7 +130,7 @@ impl Handler<SystemExit> for System {
 }
 
 /// Register Arbiter within system
-pub(crate) struct RegisterArbiter(pub String, pub Addr<Syn<Arbiter>>);
+pub(crate) struct RegisterArbiter(pub String, pub Addr<Syn, Arbiter>);
 
 #[doc(hidden)]
 impl Message for RegisterArbiter {

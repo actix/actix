@@ -9,13 +9,12 @@ use super::{DestinationSender, MessageDestination, Syn, Unsync};
 
 
 /// Converter trait, packs message to suitable envelope
-pub trait ToEnvelope<T: MessageDestination<M>, M: Message + 'static>
-    where T::Actor: Actor + Handler<M>,
-          T::Transport: DestinationSender<T, M>,
-         <T::Actor as Actor>::Context: ToEnvelope<T, M>,
+pub trait ToEnvelope<T: MessageDestination<A, M>, A, M: Message + 'static>
+    where T::Transport: DestinationSender<T, A, M>,
+          A: Actor + Handler<M>, A::Context: ToEnvelope<T, A, M>,
 {
     /// Pack message into suitable envelope
-    fn pack(msg: M, tx: Option<T::ResultSender>) -> T;
+    fn pack(msg: M, tx: Option<T::ResultSender>) -> T::Envelope;
 }
 
 pub trait EnvelopeProxy {
@@ -26,52 +25,61 @@ pub trait EnvelopeProxy {
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
 }
 
-impl<A, M> ToEnvelope<Syn<A>, M> for Context<A>
+impl<A, M> ToEnvelope<Syn, A, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>,
           M: Message + Send + 'static, M::Result: Send,
 {
-    fn pack(msg: M, tx: Option<SyncSender<M::Result>>) -> Syn<A> {
-        Syn::new(Box::new(
-            SyncEnvelope{msg: Some(msg),
-                         tx: tx,
-                         act: PhantomData}))
+    fn pack(msg: M, tx: Option<SyncSender<M::Result>>) -> SyncEnvelope<A> {
+        SyncEnvelope::new(msg, tx)
     }
 }
 
-impl<T, A, M: Message + 'static> ToEnvelope<Unsync<A>, M> for T
-    where A: Actor<Context=T> + Handler<M>, T: AsyncContext<A>
+impl<T, A, M> ToEnvelope<Unsync, A, M> for T
+    where A: Actor<Context=T> + Handler<M>, M: Message + 'static, T: AsyncContext<A>
 {
-    fn pack(msg: M, tx: Option<UnsyncSender<M::Result>>) -> Unsync<A> {
-        Unsync::new(
-            Box::new(
-                UnsyncEnvelope{msg: Some(msg),
-                               tx: tx,
-                               act: PhantomData}))
+    fn pack(msg: M, tx: Option<UnsyncSender<M::Result>>) -> UnsyncEnvelope<A> {
+        UnsyncEnvelope::new(msg, tx)
     }
 }
 
-pub struct SyncEnvelope<A, M> where M: Message {
+pub struct SyncEnvelope<A: Actor>(Box<EnvelopeProxy<Actor=A> + Send>);
+
+unsafe impl<A: Actor> Send for SyncEnvelope<A> {}
+
+impl<A: Actor> SyncEnvelope<A> {
+
+    pub fn new<M>(msg: M, tx: Option<SyncSender<M::Result>>) -> SyncEnvelope<A>
+        where A: Handler<M>, A::Context: AsyncContext<A>,
+              M: Message + Send + 'static, M::Result: Send
+    {
+        SyncEnvelope(Box::new(SyncEnvelopeProxy{msg: Some(msg),
+                                                tx: tx,
+                                                act: PhantomData}))
+    }
+
+    pub fn with_proxy(proxy: Box<EnvelopeProxy<Actor=A> + Send>) -> SyncEnvelope<A> {
+        SyncEnvelope(proxy)
+    }
+}
+
+impl<A: Actor> EnvelopeProxy for SyncEnvelope<A> {
+    type Actor = A;
+
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context) {
+        self.0.handle(act, ctx)
+    }
+}
+
+pub struct SyncEnvelopeProxy<A, M> where M: Message + Send {
     act: PhantomData<A>,
     msg: Option<M>,
     tx: Option<SyncSender<M::Result>>,
 }
 
-unsafe impl<A, M: Message> Send for SyncEnvelope<A, M> {}
+unsafe impl<A, M: Message + Send> Send for SyncEnvelopeProxy<A, M> {}
 
-impl<A, M> SyncEnvelope<A, M> where A: Actor, M: Message {
-
-    pub fn envelope(msg: M, tx: Option<SyncSender<M::Result>>) -> SyncEnvelope<A, M>
-        where A: Handler<M>,
-              M: Send + 'static, M::Result: Send
-    {
-        SyncEnvelope{msg: Some(msg),
-                     tx: tx,
-                     act: PhantomData}
-    }
-}
-
-impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
-    where M: Message + 'static,
+impl<A, M> EnvelopeProxy for SyncEnvelopeProxy<A, M>
+    where M: Message + Send + 'static,
           A: Actor + Handler<M>, A::Context: AsyncContext<A>
 {
     type Actor = A;
@@ -89,13 +97,36 @@ impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
     }
 }
 
-struct UnsyncEnvelope<A, M> where M: Message {
+pub struct UnsyncEnvelope<A: Actor>(Box<EnvelopeProxy<Actor=A>>);
+
+impl<A: Actor> UnsyncEnvelope<A> {
+
+    pub fn new<M>(msg: M, tx: Option<UnsyncSender<M::Result>>) -> UnsyncEnvelope<A>
+        where A: Handler<M>, A::Context: AsyncContext<A>,
+              M: Message + 'static
+    {
+        UnsyncEnvelope(Box::new(UnsyncEnvelopeProxy{msg: Some(msg),
+                                                    tx: tx,
+                                                    act: PhantomData}))
+    }
+}
+
+impl<A: Actor> EnvelopeProxy for UnsyncEnvelope<A> {
+    type Actor = A;
+
+    #[inline]
+    fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context) {
+        self.0.handle(act, ctx)
+    }
+}
+
+struct UnsyncEnvelopeProxy<A, M> where M: Message {
     msg: Option<M>,
     act: PhantomData<A>,
     tx: Option<UnsyncSender<M::Result>>,
 }
 
-impl<A, M> EnvelopeProxy for UnsyncEnvelope<A, M>
+impl<A, M> EnvelopeProxy for UnsyncEnvelopeProxy<A, M>
     where M: Message + 'static,
           A: Actor + Handler<M>, A::Context: AsyncContext<A>
 {

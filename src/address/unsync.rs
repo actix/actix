@@ -1,44 +1,24 @@
-use std::rc::Rc;
-use std::marker::PhantomData;
 use futures::unsync::oneshot::{Receiver, Sender};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
 
 use super::ToEnvelope;
-use super::message::{Request, RequestFut};
-use super::envelope::EnvelopeProxy;
+use super::message::Request;
+use super::envelope::UnsyncEnvelope;
 use super::unsync_channel::{UnsyncSender, UnsyncAddrSender};
 use super::UnsyncSubscriberRequest;
-use super::{Destination, MessageDestination, ActorMessageDestination, SendError};
+use super::{Destination, MessageDestination, SendError};
 
 
 /// Unsync destination of the actor
 ///
 /// Actor has to run in the same thread as owner of the address.
-pub struct Unsync<A: Actor> {
-    act: PhantomData<Rc<A>>,
-    proxy: Box<EnvelopeProxy<Actor=A>>,
-}
+pub struct Unsync;
 
-impl<A: Actor> Unsync<A> {
-    pub(crate) fn new<M>(proxy: Box<EnvelopeProxy<Actor=A>>) -> Unsync<A>
-        where M: Message + 'static,
-              A: Handler<M>, A::Context: AsyncContext<A>
-    {
-        Unsync { proxy: proxy,
-                 act: PhantomData}
-    }
-
-    pub fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
-        self.proxy.handle(act, ctx)
-    }
-}
-
-impl<A: Actor> Destination for Unsync<A>
+impl<A: Actor> Destination<A> for Unsync
     where A::Context: AsyncContext<A>
 {
-    type Actor = A;
     type Transport = UnsyncAddrSender<A>;
 
     /// Indicates if actor is still alive
@@ -47,11 +27,12 @@ impl<A: Actor> Destination for Unsync<A>
     }
 }
 
-impl<M, A: Actor> MessageDestination<M> for Unsync<A>
+impl<A, M> MessageDestination<A, M> for Unsync
     where M: Message + 'static,
-          A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, M>
+          A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, A, M>
 {
-    type Future = RequestFut<Unsync<A>, M>;
+    type Envelope = UnsyncEnvelope<A>;
+    type Future = Request<Unsync, A, M>;
     type Subscriber = Subscriber<M>;
     type ResultSender = Sender<M::Result>;
     type ResultReceiver = Receiver<M::Result>;
@@ -64,33 +45,17 @@ impl<M, A: Actor> MessageDestination<M> for Unsync<A>
         tx.try_send(msg, false)
     }
 
-    fn call_fut(tx: &Self::Transport, msg: M) -> Self::Future {
+    fn call(tx: &Self::Transport, msg: M) -> Self::Future {
         match tx.send(msg) {
-            Ok(rx) => RequestFut::new(Some(rx), None),
-            Err(SendError::Full(msg)) => RequestFut::new(None, Some((tx.clone(), msg))),
-            Err(SendError::Closed(_)) => RequestFut::new(None, None),
+            Ok(rx) => Request::new(Some(rx), None),
+            Err(SendError::Full(msg)) => Request::new(None, Some((tx.clone(), msg))),
+            Err(SendError::Closed(_)) => Request::new(None, None),
         }
     }
 
     /// Get `Subscriber` for specific message type
     fn subscriber(tx: Self::Transport) -> Subscriber<M> {
         Subscriber(tx.into_sender())
-    }
-}
-
-impl<A: Actor, B: Actor, M> ActorMessageDestination<M, B> for Unsync<A>
-    where M: Message + 'static,
-          A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, M>,
-          B::Context: AsyncContext<B>,
-{
-    type ActFuture = Request<Self, B, M>;
-
-    fn call(tx: &Self::Transport, _: &B, msg: M) -> Self::ActFuture {
-        match tx.send(msg) {
-            Ok(rx) => Request::new(Some(rx), None),
-            Err(SendError::Full(msg)) => Request::new(None, Some((tx.clone(), msg))),
-            Err(SendError::Closed(_)) => Request::new(None, None)
-        }
     }
 }
 

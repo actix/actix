@@ -49,7 +49,7 @@ fn test_start_actor_message() {
     let arbiter = Arbiter::new("test2");
 
     Arbiter::handle().spawn(
-        arbiter.call_fut(
+        arbiter.call(
             actix::msgs::StartActor::new(move |_| {
                 MyActor(act_count)
             })).then(|res| {

@@ -14,7 +14,7 @@ use handler::{Handler, Message};
 
 use super::{SendError, Syn, DestinationSender};
 use super::queue::{Queue, PopResult};
-use super::envelope::ToEnvelope;
+use super::envelope::{ToEnvelope, SyncEnvelope};
 
 
 pub(crate) trait SyncSender<M>
@@ -70,7 +70,7 @@ struct Inner<A: Actor> {
     state: AtomicUsize,
 
     // Atomic, FIFO queue used to send messages to the receiver
-    message_queue: Queue<Syn<A>>,
+    message_queue: Queue<SyncEnvelope<A>>,
 
     // Atomic, FIFO queue used to send parked task handles to the receiver.
     parked_queue: Queue<Arc<Mutex<SenderTask>>>,
@@ -185,9 +185,9 @@ pub fn channel<A: Actor>(buffer: usize) -> (SyncAddressSender<A>, SyncAddressRec
     (tx, rx)
 }
 
-impl<A, M> DestinationSender<Syn<A>, M> for SyncAddressSender<A>
+impl<A, M> DestinationSender<Syn, A, M> for SyncAddressSender<A>
     where A: Actor + Handler<M>,
-          A::Context: ToEnvelope<Syn<A>, M>,
+          A::Context: ToEnvelope<Syn, A, M>,
           M: Message + Send + 'static, M::Result: Send,
 {
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
@@ -213,7 +213,7 @@ impl<A: Actor> SyncAddressSender<A> {
     ///
     /// This function, must be called from inside of a task.
     pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
-        where A: Handler<M>, A::Context: ToEnvelope<Syn<A>, M>,
+        where A: Handler<M>, A::Context: ToEnvelope<Syn, A, M>,
               M::Result: Send,
               M: Message + Send + 'static,
     {
@@ -241,7 +241,7 @@ impl<A: Actor> SyncAddressSender<A> {
             Err(SendError::Full(msg))
         } else {
             let (tx, rx) = sync_channel();
-            let env = <A::Context as ToEnvelope<Syn<A>, M>>::pack(msg, Some(tx));
+            let env = <A::Context as ToEnvelope<Syn, A, M>>::pack(msg, Some(tx));
             self.queue_push_and_signal(env);
             Ok(rx)
         }
@@ -249,7 +249,7 @@ impl<A: Actor> SyncAddressSender<A> {
 
     /// Attempts to send a message on this `Sender<A>` without blocking.
     pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
-        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn<A>, M>,
+        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn, A, M>,
               M::Result: Send,
               M: Message + Send + 'static,
     {
@@ -269,7 +269,7 @@ impl<A: Actor> SyncAddressSender<A> {
             }
             Err(SendError::Full(msg))
         } else {
-            let env = <A::Context as ToEnvelope<Syn<A>, M>>::pack(msg, None);
+            let env = <A::Context as ToEnvelope<Syn, A, M>>::pack(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
         }
@@ -279,21 +279,21 @@ impl<A: Actor> SyncAddressSender<A> {
     ///
     /// This function does not park current task.
     pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn<A>, M>,
+        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn, A, M>,
               M::Result: Send,
               M: Message + Send + 'static,
     {
         if self.inc_num_messages_force().is_none() {
             Err(SendError::Closed(msg))
         } else {
-            let env = <A::Context as ToEnvelope<Syn<A>, M>>::pack(msg, None);
+            let env = <A::Context as ToEnvelope<Syn, A, M>>::pack(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
         }
     }
 
     // Push message to the queue and signal to the receiver
-    fn queue_push_and_signal(&self, msg: Syn<A>) {
+    fn queue_push_and_signal(&self, msg: SyncEnvelope<A>) {
         // Push the message onto the message queue
         self.inner.message_queue.push(msg);
 
@@ -435,7 +435,7 @@ impl<A: Actor> SyncAddressSender<A> {
 
     /// Get `Sender` for a specific message type
     pub(crate) fn into_sender<M>(self) -> Box<SyncSender<M>>
-        where A: Handler<M>, A::Context: ToEnvelope<Syn<A>, M>,
+        where A: Handler<M>, A::Context: ToEnvelope<Syn, A, M>,
               M::Result: Send,
               M: Message + Send + 'static
     {
@@ -444,7 +444,7 @@ impl<A: Actor> SyncAddressSender<A> {
 }
 
 impl<A, M> SyncSender<M> for SyncAddressSender<A>
-    where A: Handler<M>, A::Context: ToEnvelope<Syn<A>, M>,
+    where A: Handler<M>, A::Context: ToEnvelope<Syn, A, M>,
           M::Result: Send,
           M: Message + Send + 'static,
 {
@@ -572,7 +572,7 @@ impl<A: Actor> SyncAddressReceiver<A> {
         }
     }
 
-    fn next_message(&mut self) -> Async<Option<Syn<A>>> {
+    fn next_message(&mut self) -> Async<Option<SyncEnvelope<A>>> {
         // Pop off a message
         loop {
             match unsafe { self.inner.message_queue.pop() } {
@@ -654,7 +654,7 @@ impl<A: Actor> SyncAddressReceiver<A> {
 }
 
 impl<A: Actor> Stream for SyncAddressReceiver<A> {
-    type Item = Syn<A>;
+    type Item = SyncEnvelope<A>;
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
@@ -799,7 +799,7 @@ mod tests {
             let (s1, mut recv) = channel::<Act>(1);
             let s2 = recv.sender();
 
-            let arb: Addr<Syn<_>> = Arbiter::new("s1");
+            let arb: Addr<Syn, _> = Arbiter::new("s1");
             arb.send(actix::msgs::Execute::new(move || -> Result<(), ()> {
                 let _ = s1.send(Ping);
                 Ok(())

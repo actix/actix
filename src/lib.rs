@@ -86,10 +86,10 @@ pub use context::ContextFutureSpawner;
 
 #[doc(hidden)]
 #[deprecated(since="0.5.0", note="Use Addr<Unsync<T>>")]
-pub type Address<T> = Addr<Unsync<T>>;
+pub type Address<T> = Addr<Unsync, T>;
 #[doc(hidden)]
 #[deprecated(since="0.5.0", note="Use Addr<Syn<T>>")]
-pub type SyncAddress<T> = Addr<Syn<T>>;
+pub type SyncAddress<T> = Addr<Syn, T>;
 
 pub mod prelude {
 //! The `actix` prelude
@@ -107,10 +107,10 @@ pub mod prelude {
 
     #[doc(hidden)]
     #[deprecated(since="0.5.0", note="Use Addr<Unsync<T>>")]
-    pub type Address<T> = Addr<Unsync<T>>;
+    pub type Address<T> = Addr<Unsync, T>;
     #[doc(hidden)]
     #[deprecated(since="0.5.0", note="Use Addr<Syn<T>>")]
-    pub type SyncAddress<T> = Addr<Syn<T>>;
+    pub type SyncAddress<T> = Addr<Syn, T>;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext, Supervised, SpawnHandle};
@@ -154,6 +154,6 @@ pub mod dev {
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
     pub use address::{ActorAddress, ToEnvelope, SyncEnvelope,
-                      Request, RequestFut, SyncSubscriberRequest, UnsyncSubscriberRequest};
-    pub use address::{Destination, MessageDestination, ActorMessageDestination};
+                      Request, SyncSubscriberRequest, UnsyncSubscriberRequest};
+    pub use address::{Destination, MessageDestination};
 }

@@ -46,7 +46,7 @@ fn test_fut_timeout() {
     let sys = System::new("test");
     let timeout = Arc::new(AtomicBool::new(false));
 
-    let _addr: Addr<Unsync<_>> = MyActor {timeout: Arc::clone(&timeout)}.start();
+    let _addr: Addr<Unsync, _> = MyActor {timeout: Arc::clone(&timeout)}.start();
 
     sys.run();
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
@@ -84,7 +84,7 @@ fn test_stream_timeout() {
     let sys = System::new("test");
     let timeout = Arc::new(AtomicBool::new(false));
 
-    let _addr: Addr<Unsync<_>> = MyStreamActor {timeout: Arc::clone(&timeout)}.start();
+    let _addr: Addr<Unsync, _> = MyStreamActor {timeout: Arc::clone(&timeout)}.start();
 
     sys.run();
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");

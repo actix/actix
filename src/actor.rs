@@ -21,8 +21,8 @@ use utils::TimerFunc;
 ///
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
-/// non thread safe [`Addr<Unsync<A>>`](struct.Addr.html) or thread safe address
-/// [`Addr<Syn<A>>`](struct.Addr.html)
+/// non thread safe [`Addr<Unsync, A>`](struct.Addr.html) or thread safe address
+/// [`Addr<Syn, A>`](struct.Addr.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
@@ -100,7 +100,7 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: Addr<Unsync<_>> = MyActor.start();
+    /// let addr: Addr<Unsync, _> = MyActor.start();
     /// ```
     fn start<Addr>(self) -> Addr
         where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
@@ -133,7 +133,7 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: Addr<Unsync<_>> = MyActor::create(|ctx: &mut Context<MyActor>| {
+    /// let addr: Addr<Unsync, _> = MyActor::create(|ctx: &mut Context<MyActor>| {
     ///     MyActor{val: 10}
     /// });
     /// ```
@@ -216,11 +216,11 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
 
     #[doc(hidden)]
     /// Return `SyncAddress` of the context
-    fn sync_address(&mut self) -> Addr<Syn<A>>;
+    fn sync_address(&mut self) -> Addr<Syn, A>;
 
     #[doc(hidden)]
     /// Return `Addr<Unsync<_>>` of the context
-    fn unsync_address(&mut self) -> Addr<Unsync<A>>;
+    fn unsync_address(&mut self) -> Addr<Unsync, A>;
 
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
@@ -281,7 +281,7 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
+    /// #    let addr: Addr<Unsync, _> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```
@@ -324,7 +324,7 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
+    /// #    let addr: Addr<Unsync, _> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```

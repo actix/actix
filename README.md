@@ -56,7 +56,7 @@ the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
 
 ```rust
 extern crate actix;
-use actix::{msgs, Actor, Address, Arbiter, Context, System};
+use actix::{msgs, Actor, Addr, Arbiter, Context, Syn, System};
 
 struct MyActor;
 
@@ -72,7 +72,7 @@ impl Actor for MyActor {
 fn main() {
     let system = System::new("test");
 
-    let addr: Address<_> = MyActor.start();
+    let addr: Addr<Syn, _> = MyActor.start();
 
     system.run();
 }
@@ -127,10 +127,7 @@ fn main() {
 
     let addr: Address<_> = Summator.start();
 
-    // Address<A>::call() returns an ActorFuture object, so we need to wait for a result.
-    // ActorFuture makes sense within Actor execution context, but we can use
-    // Address<A>::call_fut() which return simple Future object.
-    let res = addr.call_fut(Sum(10, 5));
+    let res = addr.call(Sum(10, 5));  // <- send message and get future for result
     
     system.handle().spawn(res.then(|res| {
         match res {
@@ -146,12 +143,12 @@ fn main() {
 }
 ```
 
-All communications with actors go through an `Address` object. You can `send` a message
+All communications with actors go through an `Addr` object. You can `send` a message
 without waiting for a response, or `call` an actor with specific message. The `Message`
 trait defines the result type for a message. There are different types of addresses.
-[`Unsync<T>`](https://actix.github.io/actix/actix/struct.Unsync.html) is an address
+[`Unsync`](https://actix.github.io/actix/actix/struct.Unsync.html) is an address
 of an actor that runs in the same arbiter (event loop). If an actor is running in a different
-thread, [`Syn<A>`](https://actix.github.io/actix/actix/struct.Syn.html)
+thread, [`Syn`](https://actix.github.io/actix/actix/struct.Syn.html)
 has to be used.
 
 ### Actor state and subscription for specific messages
@@ -206,10 +203,10 @@ fn main() {
 
     // To get a Subscriber object, we need to use a different builder method
     // which will allow postponing actor creation
-    let _: Address<_> = Game::create(|ctx| {
+    let _: Addr<Unsync, _> = Game::create(|ctx| {
         // now we can get an address of the first actor and create the second actor
-        let addr: Address<_> = ctx.address();
-        let addr2: Address<_> = Game{counter: 0, addr: addr.subscriber()}.start();
+        let addr: Addr<Unsync, _> = ctx.address();
+        let addr2: Addr<Unsync, _> = Game{counter: 0, addr: addr.subscriber()}.start();
         
         // let's start pings
         addr2.send(Ping{id: 10});

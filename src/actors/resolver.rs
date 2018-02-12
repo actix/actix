@@ -13,9 +13,9 @@
 //!     let sys = System::new("test");
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: Addr<Unsync<_>> = actors::Connector::from_registry();
+//!         let resolver: Addr<Unsync, _> = actors::Connector::from_registry();
 //!
-//!         resolver.call_fut(
+//!         resolver.call(
 //!             actors::Resolve::host("localhost"))       // <- resolve "localhost"
 //!                 .then(|addrs| {
 //!                     println!("RESULT: {:?}", addrs);
@@ -25,9 +25,9 @@
 //!    });
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: Addr<Unsync<_>> = actors::Connector::from_registry();
+//!         let resolver: Addr<Unsync, _> = actors::Connector::from_registry();
 //!
-//!         resolver.call_fut(
+//!         resolver.call(
 //!             actors::Connect::host("localhost:5000"))  // <- connect to a "localhost"
 //!                 .then(|stream| {
 //!                     println!("RESULT: {:?}", stream);

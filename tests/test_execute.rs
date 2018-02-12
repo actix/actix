@@ -14,7 +14,7 @@ fn test_execute() {
     let addr = Arbiter::new("exec-test");
 
     Arbiter::handle().spawn(
-        addr.call_fut(Execute::new(|| {
+        addr.call(Execute::new(|| {
             Ok(Arbiter::name())
         })).then(|res: Result<Result<_, ()>, _>| {
             Arbiter::system().send(SystemExit(0));

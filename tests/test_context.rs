@@ -77,7 +77,7 @@ impl Handler<TimeoutMessage> for MyActor {
 fn test_add_timeout() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync<_>> = MyActor{op: Op::Timeout}.start();
+    let _addr: Addr<Unsync, _> = MyActor{op: Op::Timeout}.start();
 
     sys.run();
 }
@@ -87,7 +87,7 @@ fn test_add_timeout() {
 fn test_add_timeout_cancel() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync<_>> = MyActor{op: Op::Cancel}.start();
+    let _addr: Addr<Unsync, _> = MyActor{op: Op::Cancel}.start();
 
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
@@ -105,7 +105,7 @@ fn test_add_timeout_cancel() {
 fn test_add_timeout_stop() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync<_>> = MyActor{op: Op::TimeoutStop}.start();
+    let _addr: Addr<Unsync, _> = MyActor{op: Op::TimeoutStop}.start();
 
     sys.run();
 }
@@ -114,7 +114,7 @@ fn test_add_timeout_stop() {
 fn test_run_after() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync<_>> = MyActor{op: Op::RunAfter}.start();
+    let _addr: Addr<Unsync, _> = MyActor{op: Op::RunAfter}.start();
 
     sys.run();
 }
@@ -123,7 +123,7 @@ fn test_run_after() {
 fn test_run_after_stop() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync<_>> = MyActor{op: Op::RunAfterStop}.start();
+    let _addr: Addr<Unsync, _> = MyActor{op: Op::RunAfterStop}.start();
 
     sys.run();
 }
@@ -159,7 +159,7 @@ fn test_wait_context() {
     let sys = System::new("test");
 
     let m = Arc::new(AtomicUsize::new(0));
-    let addr: Addr<Unsync<_>> = ContextWait{cnt: Arc::clone(&m)}.start();
+    let addr: Addr<Unsync, _> = ContextWait{cnt: Arc::clone(&m)}.start();
     addr.send(Ping);
     addr.send(Ping);
     addr.send(Ping);
@@ -175,7 +175,7 @@ fn test_message_stream_wait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync<_>> = ContextWait::create(move |ctx| {
+    let _addr: Addr<Unsync, _> = ContextWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -195,7 +195,7 @@ fn test_stream_wait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync<_>> = ContextWait::create(move |ctx| {
+    let _addr: Addr<Unsync, _> = ContextWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -231,7 +231,7 @@ fn test_nowait_context() {
     let sys = System::new("test");
 
     let m = Arc::new(AtomicUsize::new(0));
-    let addr: Addr<Unsync<_>> = ContextNoWait{cnt: Arc::clone(&m)}.start();
+    let addr: Addr<Unsync, _> = ContextNoWait{cnt: Arc::clone(&m)}.start();
     addr.send(Ping);
     addr.send(Ping);
     addr.send(Ping);
@@ -246,7 +246,7 @@ fn test_message_stream_nowait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync<_>> = ContextNoWait::create(move |ctx| {
+    let _addr: Addr<Unsync, _> = ContextNoWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -266,7 +266,7 @@ fn test_stream_nowait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync<_>> = ContextNoWait::create(move |ctx| {
+    let _addr: Addr<Unsync, _> = ContextNoWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -303,7 +303,7 @@ fn test_current_context_handle() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    let _addr: Addr<Unsync<_>> = ContextHandle::create(move |ctx| {
+    let _addr: Addr<Unsync, _> = ContextHandle::create(move |ctx| {
         h2.store(
             ContextHandle::add_stream(
                 once::<Ping, ()>(Ok(Ping)), ctx).into_usize(), Ordering::Relaxed);

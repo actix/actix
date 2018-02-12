@@ -25,8 +25,8 @@ impl Handler<Sum> for SumActor {
 #[test]
 pub fn response_derive_one() {
     let system = System::new("test");
-    let addr: Addr<Unsync<_>> = SumActor.start();
-    let res = addr.call_fut(Sum(10, 5));
+    let addr: Addr<Unsync, _> = SumActor.start();
+    let res = addr.call(Sum(10, 5));
     
     system.handle().spawn(res.then(|res| {
         match res {

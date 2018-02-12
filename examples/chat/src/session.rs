@@ -19,7 +19,7 @@ pub struct ChatSession {
     /// unique session id
     id: usize,
     /// this is address of chat server
-    addr: Addr<Unsync<ChatServer>>,
+    addr: Addr<Unsync, ChatServer>,
     /// Client must send ping at least once per 10 seconds, otherwise we drop connection.
     hb: Instant,
     /// joined room
@@ -38,7 +38,8 @@ impl Actor for ChatSession {
         // register self in chat server. `AsyncContext::wait` register
         // future within context, but context waits until this future resolves
         // before processing any other events.
-        self.addr.call(self, server::Connect{addr: ctx.address()})
+        self.addr.call(server::Connect{addr: ctx.address()})
+            .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
                     Ok(res) => act.id = res,
@@ -67,13 +68,15 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
             ChatRequest::List => {
                 // Send ListRooms message to chat server and wait for response
                 println!("List rooms");
-                self.addr.call(self, server::ListRooms).then(|res, act, _| {
-                    match res {
-                        Ok(rooms) => act.framed.write(ChatResponse::Rooms(rooms)),
-                        _ => println!("Something is wrong"),
-                    }
-                    actix::fut::ok(())
-                }).wait(ctx)
+                self.addr.call(server::ListRooms)
+                    .into_actor(self)     // <- create actor compatible future
+                    .then(|res, act, _| {
+                        match res {
+                            Ok(rooms) => act.framed.write(ChatResponse::Rooms(rooms)),
+                            _ => println!("Something is wrong"),
+                        }
+                        actix::fut::ok(())
+                    }).wait(ctx)
                 // .wait(ctx) pauses all events in context,
                 // so actor wont receive any new messages until it get list of rooms back
             },
@@ -111,7 +114,7 @@ impl Handler<Message> for ChatSession {
 /// Helper methods
 impl ChatSession {
 
-    pub fn new(addr: Addr<Unsync<ChatServer>>,
+    pub fn new(addr: Addr<Unsync, ChatServer>,
                framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>) -> ChatSession
     {
         ChatSession {id: 0,

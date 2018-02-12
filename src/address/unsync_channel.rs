@@ -17,6 +17,7 @@ use futures::unsync::oneshot::{channel, Receiver};
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
 use super::{SendError, Unsync, DestinationSender, ToEnvelope};
+use super::envelope::UnsyncEnvelope;
 
 
 pub trait UnsyncSender<M: Message + 'static> {
@@ -30,7 +31,7 @@ pub trait UnsyncSender<M: Message + 'static> {
 }
 
 struct Shared<A: Actor> {
-    buffer: VecDeque<Unsync<A>>,
+    buffer: VecDeque<UnsyncEnvelope<A>>,
     capacity: usize,
     blocked_senders: VecDeque<Task>,
     blocked_recv: Option<Task>,
@@ -43,10 +44,9 @@ pub struct UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     shared: Weak<RefCell<Shared<A>>>,
 }
 
-
-impl<A, M> DestinationSender<Unsync<A>, M> for UnsyncAddrSender<A>
+impl<A, M> DestinationSender<Unsync, A, M> for UnsyncAddrSender<A>
     where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A> + ToEnvelope<Unsync<A>, M>,
+          A::Context: AsyncContext<A> + ToEnvelope<Unsync, A, M>,
           M: Message + 'static,
 {
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
@@ -76,7 +76,7 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         let mut shared = shared.borrow_mut();
 
         shared.buffer.push_back(
-            <A::Context as ToEnvelope<Unsync<A>, M>>::pack(msg, None));
+            <A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, None));
         if let Some(task) = shared.blocked_recv.take() {
             drop(shared);
             task.notify();
@@ -100,7 +100,7 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
             shared.buffer.push_back(
-            <A::Context as ToEnvelope<Unsync<A>, M>>::pack(msg, None));
+            <A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, None));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -130,7 +130,7 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
             let (tx, rx) = channel();
             shared.buffer.push_back(
-                <A::Context as ToEnvelope<Unsync<A>, M>>::pack(msg, Some(tx)));
+                <A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, Some(tx)));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -251,7 +251,7 @@ impl<A> UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
 }
 
 impl<A> Stream for UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
-    type Item = Unsync<A>;
+    type Item = UnsyncEnvelope<A>;
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {

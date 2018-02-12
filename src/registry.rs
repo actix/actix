@@ -92,7 +92,7 @@ pub trait ArbiterService: Actor<Context=Context<Self>> + Supervised + Default {
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 
     /// Get actor's address from arbiter registry
-    fn from_registry() -> Addr<Unsync<Self>> {
+    fn from_registry() -> Addr<Unsync, Self> {
         Arbiter::registry().get::<Self>()
     }
 }
@@ -105,7 +105,7 @@ pub trait SystemService: Actor<Context=Context<Self>> + Supervised + Default {
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 
     /// Get actor's address from system registry
-    fn from_registry() -> Addr<Syn<Self>> {
+    fn from_registry() -> Addr<Syn, Self> {
         Arbiter::system_registry().get::<Self>()
     }
 }
@@ -119,14 +119,14 @@ impl Registry {
     /// Query registry for specific actor. Returns address of the actor.
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
-    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Addr<Unsync<A>> {
+    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Addr<Unsync, A> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<Addr<Unsync<A>>>() {
+            if let Some(addr) = addr.downcast_ref::<Addr<Unsync, A>>() {
                 return addr.clone()
             }
         }
-        let addr: Addr<Unsync<A>> = Supervisor::start(|ctx| {
+        let addr: Addr<Unsync, A> = Supervisor::start(|ctx| {
             let mut act = A::default();
             act.service_started(ctx);
             act
@@ -155,11 +155,11 @@ impl SystemRegistry {
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
-    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> Addr<Syn<A>> {
+    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> Addr<Syn,A> {
         {
             if let Ok(hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
-                    match addr.downcast_ref::<Addr<Syn<A>>>() {
+                    match addr.downcast_ref::<Addr<Syn, A>>() {
                         Some(addr) => {
                             return addr.clone()
                         },

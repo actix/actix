@@ -23,8 +23,8 @@ impl Handler<Empty> for EmptyActor {
 #[cfg_attr(feature="cargo-clippy", allow(unit_cmp))]
 fn response_derive_empty() {
     let system = System::new("test");
-    let addr: Addr<Unsync<_>> = EmptyActor.start();
-    let res = addr.call_fut(Empty);
+    let addr: Addr<Unsync, _> = EmptyActor.start();
+    let res = addr.call(Empty);
     
     system.handle().spawn(res.then(|res| {
         match res {

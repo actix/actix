@@ -167,13 +167,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     }
 
     #[inline]
-    pub fn unsync_address(&mut self) -> Addr<Unsync<A>> {
+    pub fn unsync_address(&mut self) -> Addr<Unsync, A> {
         self.modify();
         self.mailbox.unsync_address()
     }
 
     #[inline]
-    pub fn sync_address(&mut self) -> Addr<Syn<A>> {
+    pub fn sync_address(&mut self) -> Addr<Syn, A> {
         self.modify();
         self.mailbox.remote_address()
     }

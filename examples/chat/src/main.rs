@@ -31,7 +31,7 @@ use session::ChatSession;
 /// Define tcp server that will accept incoming tcp connection and create
 /// chat actors.
 struct Server {
-    chat: Addr<Unsync<ChatServer>>,
+    chat: Addr<Unsync, ChatServer>,
 }
 
 /// Make actor from `Server`
@@ -67,7 +67,7 @@ fn main() {
     let sys = actix::System::new("chat-server");
 
     // Start chat server actor
-    let server: Addr<Unsync<_>> = ChatServer::default().start();
+    let server: Addr<Unsync, _> = ChatServer::default().start();
 
     // Create server listener
     let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
