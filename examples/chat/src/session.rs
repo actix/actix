@@ -11,19 +11,15 @@ use codec::{ChatRequest, ChatResponse, ChatCodec};
 
 
 /// Chat server sends this messages to session
+#[derive(Message)]
 pub struct Message(pub String);
-
-impl ResponseType for Message {
-    type Item = ();
-    type Error = ();
-}
 
 /// `ChatSession` actor is responsible for tcp peer communications.
 pub struct ChatSession {
     /// unique session id
     id: usize,
     /// this is address of chat server
-    addr: Address<ChatServer>,
+    addr: Addr<Unsync<ChatServer>>,
     /// Client must send ping at least once per 10 seconds, otherwise we drop connection.
     hb: Instant,
     /// joined room
@@ -42,14 +38,15 @@ impl Actor for ChatSession {
         // register self in chat server. `AsyncContext::wait` register
         // future within context, but context waits until this future resolves
         // before processing any other events.
-        self.addr.call(self, server::Connect{addr: ctx.address()}).then(|res, act, ctx| {
-            match res {
-                Ok(Ok(res)) => act.id = res,
-                // something is wrong with chat server
-                _ => ctx.stop(),
-            }
-            actix::fut::ok(())
-        }).wait(ctx);
+        self.addr.call(self, server::Connect{addr: ctx.address()})
+            .then(|res, act, ctx| {
+                match res {
+                    Ok(res) => act.id = res,
+                    // something is wrong with chat server
+                    _ => ctx.stop(),
+                }
+                actix::fut::ok(())
+            }).wait(ctx);
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> bool {
@@ -72,8 +69,7 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
                 println!("List rooms");
                 self.addr.call(self, server::ListRooms).then(|res, act, _| {
                     match res {
-                        Ok(Ok(rooms)) =>
-                            act.framed.write(ChatResponse::Rooms(rooms)),
+                        Ok(rooms) => act.framed.write(ChatResponse::Rooms(rooms)),
                         _ => println!("Something is wrong"),
                     }
                     actix::fut::ok(())
@@ -115,7 +111,7 @@ impl Handler<Message> for ChatSession {
 /// Helper methods
 impl ChatSession {
 
-    pub fn new(addr: Address<ChatServer>,
+    pub fn new(addr: Addr<Unsync<ChatServer>>,
                framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>) -> ChatSession
     {
         ChatSession {id: 0,

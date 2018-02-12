@@ -29,7 +29,7 @@ fn main() {
     Arbiter::handle().spawn(
         TcpStream::connect(&addr, Arbiter::handle())
             .and_then(|stream| {
-                let addr: SyncAddress<_> = ChatClient::create(|ctx| {
+                let addr: Addr<Syn<_>> = ChatClient::create(|ctx| {
                     let (r, w) = stream.split();
                     ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
                     ChatClient{framed: actix::io::FramedWrite::new(

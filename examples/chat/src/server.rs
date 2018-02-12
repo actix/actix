@@ -13,15 +13,14 @@ use session;
 
 /// New chat session is created
 pub struct Connect {
-    pub addr: Address<session::ChatSession>,
+    pub addr: Addr<Unsync<session::ChatSession>>,
 }
 
 /// Response type for Connect message
 ///
 /// Chat server returns unique session id
-impl ResponseType for Connect {
-    type Item = usize;
-    type Error = ();
+impl actix::Message for Connect {
+    type Result = usize;
 }
 
 
@@ -45,9 +44,8 @@ pub struct Message {
 /// List of available rooms
 pub struct ListRooms;
 
-impl ResponseType for ListRooms {
-    type Item = Vec<String>;
-    type Error = ();
+impl actix::Message for ListRooms {
+    type Result = Vec<String>;
 }
 
 /// Join room, if room does not exists create new one.
@@ -62,7 +60,7 @@ pub struct Join {
 /// `ChatServer` manages chat rooms and responsible for coordinating chat session.
 /// implementation is super primitive
 pub struct ChatServer {
-    sessions: HashMap<usize, Address<session::ChatSession>>,
+    sessions: HashMap<usize, Addr<Unsync<session::ChatSession>>>,
     rooms: HashMap<String, HashSet<usize>>,
     rng: RefCell<ThreadRng>,
 }
@@ -107,7 +105,7 @@ impl Actor for ChatServer {
 ///
 /// Register new session and assign unique id to this session
 impl Handler<Connect> for ChatServer {
-    type Result = MessageResult<Connect>;
+    type Result = usize;
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         println!("Someone joined");
@@ -123,7 +121,7 @@ impl Handler<Connect> for ChatServer {
         self.rooms.get_mut(&"Main".to_owned()).unwrap().insert(id);
 
         // send id back
-        Ok(id)
+        id
     }
 }
 
@@ -172,7 +170,7 @@ impl Handler<ListRooms> for ChatServer {
             rooms.push(key.to_owned())
         }
 
-        Ok(rooms)
+        MessageResult(rooms)
     }
 }
 

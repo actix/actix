@@ -66,7 +66,7 @@ impl<T, B, M> ActorFuture for Request<T, B, M>
           T::Actor: Handler<M>,
           T::Transport: DestinationSender<T, M>,
           B: Actor, B::Context: AsyncContext<B>,
-          M: Message + Send + 'static, M::Result: Send,
+          M: Message + 'static,
          <T::Actor as Actor>::Context: ToEnvelope<T, M>,
 {
     type Item = M::Result;

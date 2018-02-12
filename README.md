@@ -102,9 +102,8 @@ use actix::*;
 struct Sum(usize, usize);
 
 // we have to define the response type for `Sum` message
-impl ResponseType for Sum {
-    type Item = usize;
-    type Error = ();
+impl Message for Sum {
+    type Result = usize;
 }
 
 // Actor definition
@@ -116,10 +115,10 @@ impl Actor for Summator {
 
 // now we need to define `MessageHandler` for the `Sum` message.
 impl Handler<Sum> for Summator {
-    type Result = Result<usize, ()>;   // <- Message response type
+    type Result = usize;   // <- Message response type
 
     fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Self::Result {
-        Ok(msg.0 + msg.1)
+        msg.0 + msg.1
     }
 }
 
@@ -135,7 +134,7 @@ fn main() {
     
     system.handle().spawn(res.then(|res| {
         match res {
-            Ok(Ok(result)) => println!("SUM: {}", result),
+            Ok(result) => println!("SUM: {}", result),
             _ => println!("Something wrong"),
         }
         
@@ -148,12 +147,11 @@ fn main() {
 ```
 
 All communications with actors go through an `Address` object. You can `send` a message
-without waiting for a response, or `call` an actor with specific message. The `ResponseType`
-trait defines the response type for a message, `Item` and `Error` for value and error respectively.
-There are different types of addresses.
-[`Address<A>`](https://actix.github.io/actix/actix/struct.Address.html) is an address
+without waiting for a response, or `call` an actor with specific message. The `Message`
+trait defines the result type for a message. There are different types of addresses.
+[`Unsync<T>`](https://actix.github.io/actix/actix/struct.Unsync.html) is an address
 of an actor that runs in the same arbiter (event loop). If an actor is running in a different
-thread, [`SyncAddress<A>`](https://actix.github.io/actix/actix/struct.SyncAddress.html)
+thread, [`Syn<A>`](https://actix.github.io/actix/actix/struct.Syn.html)
 has to be used.
 
 ### Actor state and subscription for specific messages
