@@ -7,7 +7,6 @@ mod message;
 
 mod sync;
 pub(crate) mod sync_channel;
-mod sync_address;
 
 mod unsync;
 mod unsync_channel;
@@ -22,8 +21,7 @@ pub use self::unsync::{Unsync, Subscriber};
 pub(crate) use self::unsync_channel::UnsyncAddrReceiver;
 pub use self::unsync_message::UnsyncSubscriberRequest;
 
-pub use self::sync::Syn;
-pub use self::sync_address::SyncSubscriber;
+pub use self::sync::{Syn, SyncSubscriber};
 pub use self::message::{Request, RequestFut, SyncSubscriberRequest};
 pub(crate) use self::sync_channel::SyncAddressReceiver;
 
