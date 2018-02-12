@@ -10,7 +10,7 @@ use handler::{MessageResult, ResponseType};
 use super::{SendError, MailboxError};
 use super::unsync_channel::UnsyncSender;
 
-/// `UnsyncSunscriberRequest` is a `Future` which represents asynchronous message sending process.
+/// `UnsyncSubscriberRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
 pub struct UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
 {
