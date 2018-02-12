@@ -84,10 +84,15 @@ pub use supervisor::Supervisor;
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;
 
-// pub type Address<T> = Addr<Unsync<T>>;
+#[doc(hidden)]
+#[deprecated(since="0.5", note="Use Addr<Unsync<T>>")]
+pub type Address<T> = Addr<Unsync<T>>;
+#[doc(hidden)]
+#[deprecated(since="0.5", note="Use Addr<Sync<T>>")]
+pub type SyncAddress<T> = Addr<Sync<T>>;
 
 pub mod prelude {
-    //! The `actix` prelude
+//! The `actix` prelude
 //!
 //! The purpose of this module is to alleviate imports of many common actix traits
 //! by adding a glob import to the top of actix heavy modules:
@@ -100,7 +105,12 @@ pub mod prelude {
     #[doc(hidden)]
     pub use actix_derive::*;
 
-    // pub type Address<T> = Addr<Unsync<T>>;
+    #[doc(hidden)]
+    #[deprecated(since="0.5", note="Use Addr<Unsync<T>>")]
+    pub type Address<T> = Addr<Unsync<T>>;
+    #[doc(hidden)]
+    #[deprecated(since="0.5", note="Use Addr<Sync<T>>")]
+    pub type SyncAddress<T> = Addr<Sync<T>>;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext, Supervised, SpawnHandle};
