@@ -5,7 +5,7 @@ use tokio_core::reactor::Handle;
 use fut::ActorFuture;
 use actor::{Actor, Supervised,
             ActorState, ActorContext, AsyncContext, SpawnHandle};
-use address::{Address, SyncAddress, SyncAddressReceiver};
+use address::{SyncAddress, SyncAddressReceiver, Addr, Unsync};
 use contextimpl::ContextImpl;
 
 /// Actor execution context
@@ -55,7 +55,7 @@ impl<A> AsyncContext<A> for Context<A> where A: Actor<Context=Self> {
 
     #[doc(hidden)]
     #[inline]
-    fn local_address(&mut self) -> Address<A> {
+    fn unsync_address(&mut self) -> Addr<Unsync<A>> {
         self.inner.unsync_address()
     }
 

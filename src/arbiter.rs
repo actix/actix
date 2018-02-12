@@ -6,7 +6,7 @@ use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Address, SyncAddress};
+use address::{sync_channel, Addr, SyncAddress, Unsync};
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::{Execute, StartActor, StopArbiter};
@@ -17,7 +17,7 @@ use system::{System, RegisterArbiter, UnregisterArbiter};
 thread_local!(
     static HND: RefCell<Option<Handle>> = RefCell::new(None);
     static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
-    static ADDR: RefCell<Option<Address<Arbiter>>> = RefCell::new(None);
+    static ADDR: RefCell<Option<Addr<Unsync<Arbiter>>>> = RefCell::new(None);
     static REG: RefCell<Option<Registry>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
     static SYS: RefCell<Option<SyncAddress<System>>> = RefCell::new(None);
@@ -128,7 +128,7 @@ impl Arbiter {
     }
 
     /// Returns current arbiter's address
-    pub fn arbiter() -> Address<Arbiter> {
+    pub fn arbiter() -> Addr<Unsync<Arbiter>> {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("Arbiter is not running"),

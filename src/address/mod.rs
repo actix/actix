@@ -5,18 +5,19 @@ mod queue;
 pub(crate) mod sync_channel;
 mod sync_address;
 mod sync_message;
-mod local_address;
-mod local_channel;
-mod local_message;
-mod local_envelope;
+
+mod unsync;
+mod unsync_channel;
+mod unsync_message;
 
 use actor::{Actor, AsyncContext};
+use handler::{Handler, ResponseType};
 
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope, RemoteEnvelope};
-pub use self::local_address::{Address, Subscriber};
-pub use self::local_message::{LocalRequest, LocalFutRequest, LocalSubscriberRequest};
-pub(crate) use self::local_envelope::LocalEnvelope;
-pub(crate) use self::local_channel::LocalAddrReceiver;
+
+pub use self::unsync::{Unsync, Subscriber};
+pub(crate) use self::unsync_channel::UnsyncAddrReceiver;
+pub use self::unsync_message::{UnsyncRequest, UnsyncFutRequest, UnsyncSubscriberRequest};
 
 pub use self::sync_address::{SyncAddress, SyncSubscriber};
 pub use self::sync_message::{Request, RequestFut, SyncSubscriberRequest};
@@ -75,11 +76,11 @@ pub trait ActorAddress<A, T> where A: Actor {
     fn get(ctx: &mut A::Context) -> T;
 }
 
-impl<A> ActorAddress<A, Address<A>> for A
+impl<A> ActorAddress<A, Addr<Unsync<A>>> for A
     where A: Actor, A::Context: AsyncContext<A>
 {
-    fn get(ctx: &mut A::Context) -> Address<A> {
-        ctx.local_address()
+    fn get(ctx: &mut A::Context) -> Addr<Unsync<A>> {
+        ctx.unsync_address()
     }
 }
 
@@ -91,16 +92,135 @@ impl<A> ActorAddress<A, SyncAddress<A>> for A
     }
 }
 
-impl<A> ActorAddress<A, (Address<A>, SyncAddress<A>)> for A
+impl<A> ActorAddress<A, (Addr<Unsync<A>>, SyncAddress<A>)> for A
     where A: Actor, A::Context: AsyncContext<A>
 {
-    fn get(ctx: &mut A::Context) -> (Address<A>, SyncAddress<A>) {
-        (ctx.local_address(), ctx.sync_address())
+    fn get(ctx: &mut A::Context) -> (Addr<Unsync<A>>, SyncAddress<A>) {
+        (ctx.unsync_address(), ctx.sync_address())
     }
 }
 
 impl<A> ActorAddress<A, ()> for A where A: Actor {
     fn get(_: &mut A::Context) -> () {
         ()
+    }
+}
+
+pub trait Destination: Sized {
+    type Actor;
+    type Transport: Clone;
+
+    /// Indicates if destination is still alive
+    fn connected(tx: &Self::Transport) -> bool;
+}
+
+#[allow(unused_variables)]
+pub trait MessageDestination<M>: Destination
+    where Self::Actor: Handler<M>,
+          M: ResponseType + 'static,
+{
+    type Future;
+    type ResultTransport;
+
+    fn send(tx: &Self::Transport, msg: M);
+
+    fn try_send(tx: &Self::Transport, msg: M) -> Result<(), SendError<M>>;
+
+    fn call_fut(tx: &Self::Transport, msg: M) -> Self::Future;
+
+    fn subscriber(tx: Self::Transport) -> Subscriber<M>;
+}
+
+#[allow(unused_variables)]
+pub trait ActorMessageDestination<M, B>: MessageDestination<M>
+    where Self::Actor: Handler<M>,
+          M: ResponseType + 'static,
+          B: Actor,
+{
+    type ActFuture;
+
+    fn call(tx: &Self::Transport, act: &B, msg: M) -> Self::ActFuture;
+}
+
+pub trait ToEnv<T: MessageDestination<M>, M: ResponseType + 'static>
+    where T::Actor: Actor + Handler<M>
+{
+    /// Pack message into suitable envelope
+    fn pack(msg: M, tx: Option<T::ResultTransport>) -> T;
+}
+
+/// Address of the actor
+pub struct Addr<T: Destination> {
+    tx: T::Transport,
+}
+
+impl<T: Destination> Addr<T> {
+    pub fn new(tx: T::Transport) -> Addr<T> {
+        Addr{tx: tx}
+    }
+
+    /// Indicates if actor is still alive
+    pub fn connected(&self) -> bool {
+        T::connected(&self.tx)
+    }
+
+    /// Send message `M` to the actor `A`
+    ///
+    /// This method ignores receiver capacity, it silently fails if mailbox is closed.
+    pub fn send<M>(&self, msg: M)
+        where T: MessageDestination<M>, T::Actor: Handler<M>, M: ResponseType + 'static,
+             <T::Actor as Actor>::Context: ToEnv<T, M>,
+    {
+        T::send(&self.tx, msg)
+    }
+
+    /// Try to send message `M` to the actor `A`
+    ///
+    /// This function fails if receiver is full or closed.
+    pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
+        where T: MessageDestination<M>, T::Actor: Handler<M>, M: ResponseType + 'static,
+             <T::Actor as Actor>::Context: ToEnv<T, M>,
+    {
+        T::try_send(&self.tx, msg)
+    }
+
+    /// Send message to the actor `A` and asynchronously wait for response.
+    ///
+    /// Communication channel to the actor is bounded.
+    ///
+    /// if returned `Future` object get dropped, message cancels.
+    pub fn call_fut<M>(&self, msg: M) -> T::Future
+        where T: MessageDestination<M>, T::Actor: Handler<M>, M: ResponseType + 'static,
+             <T::Actor as Actor>::Context: ToEnv<T, M>,
+    {
+        T::call_fut(&self.tx, msg)
+    }
+
+    /// Send message to actor `A` and asynchronously wait for response.
+    ///
+    /// Communication channel to the actor is bounded.
+    ///
+    /// if returned `Future` object get dropped, message cancels.
+    pub fn call<M, B>(&self, act: &B, msg: M) -> T::ActFuture
+        where T: ActorMessageDestination<M, B>,
+              T::Actor: Handler<M>,
+              M: ResponseType + 'static,
+              B: Actor,
+             <T::Actor as Actor>::Context: ToEnv<T, M>,
+    {
+        T::call(&self.tx, act, msg)
+    }
+
+    /// Get `Subscriber` for specific message type
+    pub fn subscriber<M>(self) -> Subscriber<M>
+        where T: MessageDestination<M>, T::Actor: Handler<M>, M: ResponseType + 'static,
+    {
+        T::subscriber(self.tx)
+    }
+}
+
+impl<T: Destination> Clone for Addr<T> {
+    fn clone(&self) -> Addr<T> {
+        Addr{tx: self.tx.clone()}
     }
 }

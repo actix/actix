@@ -46,7 +46,7 @@ fn test_address() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Unsync<_>> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     addr.send(Ping(0));
 
@@ -70,7 +70,7 @@ fn test_subscriber_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: Address<_> = MyActor(Arc::clone(&count)).start();
+    let addr: Addr<Unsync<_>> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().subscriber();
     addr.send(Ping(0));
 
@@ -142,7 +142,7 @@ fn test_sync_subscriber_call() {
 fn test_error_result() {
     let sys = System::new("test");
 
-    let addr: Address<_> = MyActor3.start();
+    let addr: Addr<Unsync<_>> = MyActor3.start();
 
     Arbiter::handle().spawn_fn(move || {
         addr.call_fut(Ping(0)).then(|res| {
@@ -178,7 +178,7 @@ impl Handler<Ping> for TimeoutActor {
 fn test_message_timeout() {
     let sys = System::new("test");
 
-    let addr: Address<_> = TimeoutActor.start();
+    let addr: Addr<Unsync<_>> = TimeoutActor.start();
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
@@ -232,7 +232,7 @@ fn test_sync_message_timeout() {
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
-struct TimeoutActor2(Address<TimeoutActor>, Arc<AtomicUsize>);
+struct TimeoutActor2(Addr<Unsync<TimeoutActor>>, Arc<AtomicUsize>);
 
 impl Actor for TimeoutActor2 {
     type Context = Context<Self>;
@@ -259,11 +259,11 @@ impl Actor for TimeoutActor2 {
 #[test]
 fn test_call_message_timeout() {
     let sys = System::new("test");
-    let addr: Address<_> = TimeoutActor.start();
+    let addr: Addr<Unsync<_>> = TimeoutActor.start();
 
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
-    let _addr2: Address<_> = TimeoutActor2(addr, count2).start();
+    let _addr2: Addr<Unsync<_>> = TimeoutActor2(addr, count2).start();
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 1);
@@ -301,7 +301,7 @@ fn test_sync_call_message_timeout() {
 
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
-    let _addr2: Address<_> = TimeoutActor3(addr, count2).start();
+    let _addr2: Addr<Unsync<_>> = TimeoutActor3(addr, count2).start();
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 1);

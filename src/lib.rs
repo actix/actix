@@ -73,7 +73,7 @@ pub use actor::{Actor, ActorState, Supervised,
 pub use handler::{Handler, Response, ResponseType,
                   MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
-pub use address::{Address, ActorAddress, SyncAddress,
+pub use address::{Addr, Unsync, ActorAddress, SyncAddress,
                   Subscriber, SyncSubscriber, MailboxError};
 pub use context::Context;
 pub use stream::StreamHandler;
@@ -83,6 +83,8 @@ pub use supervisor::Supervisor;
 
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;
+
+// pub type Address<T> = Addr<Unsync<T>>;
 
 pub mod prelude {
     //! The `actix` prelude
@@ -98,11 +100,13 @@ pub mod prelude {
     #[doc(hidden)]
     pub use actix_derive::*;
 
+    // pub type Address<T> = Addr<Unsync<T>>;
+
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
-    pub use address::{Address, SyncAddress, SendError,
-                      Subscriber, SyncSubscriber, MailboxError};
+    pub use address::{Addr, SyncAddress, SendError,
+                      Subscriber, SyncSubscriber, MailboxError, Unsync};
     pub use context::{Context, ContextFutureSpawner};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
@@ -142,5 +146,6 @@ pub mod dev {
     pub use address::{ActorAddress, SendError,
                       Envelope, ToEnvelope, RemoteEnvelope,
                       Request, RequestFut, SyncSubscriberRequest,
-                      LocalRequest, LocalFutRequest, LocalSubscriberRequest};
+                      UnsyncRequest, UnsyncFutRequest, UnsyncSubscriberRequest};
+    pub use address::{Destination, MessageDestination, ActorMessageDestination};
 }

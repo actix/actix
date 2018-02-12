@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 
 use fut::ActorFuture;
 use actor::{Actor, AsyncContext, ActorState, SpawnHandle, Supervised};
-use address::{Address, SyncAddress, SyncAddressReceiver};
+use address::{Addr, SyncAddress, SyncAddressReceiver, Unsync};
 use contextitems::ActorWaitItem;
 use mailbox::Mailbox;
 
@@ -167,9 +167,9 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     }
 
     #[inline]
-    pub fn unsync_address(&mut self) -> Address<A> {
+    pub fn unsync_address(&mut self) -> Addr<Unsync<A>> {
         self.modify();
-        self.mailbox.local_address()
+        self.mailbox.unsync_address()
     }
 
     #[inline]

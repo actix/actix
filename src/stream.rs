@@ -66,7 +66,7 @@ pub trait StreamHandler<I, E> where Self: Actor
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Address<_> = MyActor.start();
+    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```

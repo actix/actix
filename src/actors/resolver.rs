@@ -13,7 +13,7 @@
 //!     let sys = System::new("test");
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: Address<_> = actors::Connector::from_registry();
+//!         let resolver: Addr<Unsync<_>> = actors::Connector::from_registry();
 //!
 //!         resolver.call_fut(
 //!             actors::Resolve::host("localhost"))       // <- resolve "localhost"
@@ -25,7 +25,7 @@
 //!    });
 //!
 //!     Arbiter::handle().spawn({
-//!         let resolver: Address<_> = actors::Connector::from_registry();
+//!         let resolver: Addr<Unsync<_>> = actors::Connector::from_registry();
 //!
 //!         resolver.call_fut(
 //!             actors::Connect::host("localhost:5000"))  // <- connect to a "localhost"

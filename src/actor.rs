@@ -3,7 +3,7 @@ use futures::{future, Future, Stream};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use address::{Address, SyncAddress, ActorAddress, ToEnvelope};
+use address::{Addr, SyncAddress, ActorAddress, ToEnvelope, Unsync};
 use context::Context;
 use handler::{Handler, ResponseType};
 use stream::StreamHandler;
@@ -22,7 +22,7 @@ use utils::TimerFunc;
 ///
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
-/// non thread safe [`Address<A>`](struct.Address.html) or thread safe address
+/// non thread safe [`Addr<Unsync<A>>`](struct.Addr.html) or thread safe address
 /// [`SyncAddress<A>`](struct.SyncAddress.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
@@ -101,7 +101,7 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: Address<_> = MyActor.start();
+    /// let addr: Addr<Unsync<_>> = MyActor.start();
     /// ```
     fn start<Addr>(self) -> Addr
         where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
@@ -134,7 +134,7 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: Address<_> = MyActor::create(|ctx: &mut Context<MyActor>| {
+    /// let addr: Addr<Unsync<_>> = MyActor::create(|ctx: &mut Context<MyActor>| {
     ///     MyActor{val: 10}
     /// });
     /// ```
@@ -220,8 +220,8 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     fn sync_address(&mut self) -> SyncAddress<A>;
 
     #[doc(hidden)]
-    /// Return `Address` of the context
-    fn local_address(&mut self) -> Address<A>;
+    /// Return `Addr<Unsync<_>>` of the context
+    fn unsync_address(&mut self) -> Addr<Unsync<A>>;
 
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
@@ -274,7 +274,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Address<_> = MyActor.start();
+    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```
@@ -322,7 +322,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Address<_> = MyActor.start();
+    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```
@@ -379,7 +379,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Address<_> = MyActor.start();
+    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```

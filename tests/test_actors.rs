@@ -10,7 +10,7 @@ fn test_resolver() {
     let sys = System::new("test");
 
     Arbiter::handle().spawn({
-        let resolver: Address<_> = Arbiter::registry().get::<actors::Connector>();
+        let resolver: Addr<Unsync<_>> = Arbiter::registry().get::<actors::Connector>();
         resolver.call_fut(
             actors::Resolve::host("localhost"))
             .then(|_| {
@@ -20,7 +20,7 @@ fn test_resolver() {
     });
 
     Arbiter::handle().spawn({
-        let resolver: Address<_> = Arbiter::registry().get::<actors::Connector>();
+        let resolver: Addr<Unsync<_>> = Arbiter::registry().get::<actors::Connector>();
 
         resolver.call_fut(
             actors::Connect::host("localhost:5000"))

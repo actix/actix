@@ -11,30 +11,30 @@ use fut::ActorFuture;
 use handler::{Handler, MessageResult, ResponseType};
 
 use super::{SendError, MailboxError};
-use super::local_channel::{LocalAddrSender, LocalSender};
+use super::unsync_channel::{UnsyncAddrSender, UnsyncSender};
 
 
 /// `LocalRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct LocalRequest<A, B, M>
+pub struct UnsyncRequest<A, B, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A> ,
           B: Actor, B::Context: AsyncContext<B>,
           M: ResponseType + 'static
 {
     rx: Option<Receiver<Result<M::Item, M::Error>>>,
-    info: Option<(LocalAddrSender<A>, M)>,
+    info: Option<(UnsyncAddrSender<A>, M)>,
     act: PhantomData<B>,
     timeout: Option<Timeout>,
 }
 
-impl<A, B, M> LocalRequest<A, B, M>
+impl<A, B, M> UnsyncRequest<A, B, M>
     where A: Actor + Handler<M>, M: ResponseType + 'static,
           A::Context: AsyncContext<A>,
           B: Actor, B::Context: AsyncContext<B>
 {
     pub(crate) fn new(rx: Option<Receiver<Result<M::Item, M::Error>>>,
-                      info: Option<(LocalAddrSender<A>, M)>) -> LocalRequest<A, B, M> {
-        LocalRequest{rx: rx, info: info, act: PhantomData, timeout: None}
+                      info: Option<(UnsyncAddrSender<A>, M)>) -> UnsyncRequest<A, B, M> {
+        UnsyncRequest{rx: rx, info: info, act: PhantomData, timeout: None}
     }
 
     /// Set message delivery timeout
@@ -56,7 +56,7 @@ impl<A, B, M> LocalRequest<A, B, M>
     }
 }
 
-impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
+impl<A, B, M> ActorFuture for UnsyncRequest<A, B, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
           B: Actor, B::Context: AsyncContext<B>,
 {
@@ -92,22 +92,22 @@ impl<A, B, M> ActorFuture for LocalRequest<A, B, M>
     }
 }
 
-/// `LocalFutRequest` is a `Future` which represents asynchronous message sending process.
+/// `UnsyncFutRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct LocalFutRequest<A, M>
+pub struct UnsyncFutRequest<A, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
 {
     rx: Option<Receiver<Result<M::Item, M::Error>>>,
-    info: Option<(LocalAddrSender<A>, M)>,
+    info: Option<(UnsyncAddrSender<A>, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<A, M> LocalFutRequest<A, M>
+impl<A, M> UnsyncFutRequest<A, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
 {
     pub(crate) fn new(rx: Option<Receiver<Result<M::Item, M::Error>>>,
-                      info: Option<(LocalAddrSender<A>, M)>) -> LocalFutRequest<A, M> {
-        LocalFutRequest{rx: rx, info: info, timeout: None}
+                      info: Option<(UnsyncAddrSender<A>, M)>) -> UnsyncFutRequest<A, M> {
+        UnsyncFutRequest{rx: rx, info: info, timeout: None}
     }
 
     /// Set message delivery timeout
@@ -129,7 +129,7 @@ impl<A, M> LocalFutRequest<A, M>
     }
 }
 
-impl<A, M> Future for LocalFutRequest<A, M>
+impl<A, M> Future for UnsyncFutRequest<A, M>
     where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
 {
     type Item = MessageResult<M>;
@@ -163,20 +163,20 @@ impl<A, M> Future for LocalFutRequest<A, M>
     }
 }
 
-/// `LocalSunscriberRequest` is a `Future` which represents asynchronous message sending process.
+/// `UnsyncSunscriberRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct LocalSubscriberRequest<M> where M: ResponseType + 'static,
+pub struct UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
 {
     rx: Option<Receiver<MessageResult<M>>>,
-    info: Option<(Box<LocalSender<M>>, M)>,
+    info: Option<(Box<UnsyncSender<M>>, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<M> LocalSubscriberRequest<M> where M: ResponseType + 'static,
+impl<M> UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
 {
     pub(crate) fn new(rx: Option<Receiver<MessageResult<M>>>,
-                      info: Option<(Box<LocalSender<M>>, M)>) -> LocalSubscriberRequest<M> {
-        LocalSubscriberRequest{rx: rx, info: info, timeout: None}
+                      info: Option<(Box<UnsyncSender<M>>, M)>) -> UnsyncSubscriberRequest<M> {
+        UnsyncSubscriberRequest{rx: rx, info: info, timeout: None}
     }
 
     /// Set message delivery timeout
@@ -198,7 +198,7 @@ impl<M> LocalSubscriberRequest<M> where M: ResponseType + 'static,
     }
 }
 
-impl<M> Future for LocalSubscriberRequest<M> where M: ResponseType + 'static,
+impl<M> Future for UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
 {
     type Item = MessageResult<M>;
     type Error = MailboxError;

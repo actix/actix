@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 
 use actor::{Actor, Supervised};
 use arbiter::Arbiter;
-use address::{Address, SyncAddress};
+use address::{Addr, Unsync, SyncAddress};
 use context::Context;
 use supervisor::Supervisor;
 
@@ -92,7 +92,7 @@ pub trait ArbiterService: Actor<Context=Context<Self>> + Supervised + Default {
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 
     /// Get actor's address from arbiter registry
-    fn from_registry() -> Address<Self> {
+    fn from_registry() -> Addr<Unsync<Self>> {
         Arbiter::registry().get::<Self>()
     }
 }
@@ -119,14 +119,14 @@ impl Registry {
     /// Query registry for specific actor. Returns address of the actor.
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
-    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Address<A> {
+    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Addr<Unsync<A>> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<Address<A>>() {
+            if let Some(addr) = addr.downcast_ref::<Addr<Unsync<A>>>() {
                 return addr.clone()
             }
         }
-        let addr: Address<_> = Supervisor::start(|ctx| {
+        let addr: Addr<Unsync<A>> = Supervisor::start(|ctx| {
             let mut act = A::default();
             act.service_started(ctx);
             act

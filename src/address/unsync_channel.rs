@@ -16,21 +16,21 @@ use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, MessageResult, ResponseType};
-use super::{SendError, LocalEnvelope,};
+use super::{SendError, Unsync};
 
 
-pub(crate) trait LocalSender<M: ResponseType + 'static> {
+pub trait UnsyncSender<M: ResponseType + 'static> {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
 
     fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
 
     fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>;
 
-    fn boxed(&self) -> Box<LocalSender<M>>;
+    fn boxed(&self) -> Box<UnsyncSender<M>>;
 }
 
 struct Shared<A: Actor> {
-    buffer: VecDeque<LocalEnvelope<A>>,
+    buffer: VecDeque<Unsync<A>>,
     capacity: usize,
     blocked_senders: VecDeque<Task>,
     blocked_recv: Option<Task>,
@@ -39,11 +39,11 @@ struct Shared<A: Actor> {
 /// The transmission end of a channel.
 ///
 /// This is created by the `channel` function.
-pub(crate) struct LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     shared: Weak<RefCell<Shared<A>>>,
 }
 
-impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     pub fn connected(&self) -> bool {
         match self.shared.upgrade() {
             Some(_) => true,
@@ -64,7 +64,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         };
         let mut shared = shared.borrow_mut();
 
-        shared.buffer.push_back(LocalEnvelope::new(msg, None));
+        shared.buffer.push_back(Unsync::new(msg, None));
         if let Some(task) = shared.blocked_recv.take() {
             drop(shared);
             task.notify();
@@ -87,7 +87,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         let mut shared = shared.borrow_mut();
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
-            shared.buffer.push_back(LocalEnvelope::new(msg, None));
+            shared.buffer.push_back(Unsync::new(msg, None));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -116,7 +116,7 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
             let (tx, rx) = channel();
-            shared.buffer.push_back(LocalEnvelope::new(msg, Some(tx)));
+            shared.buffer.push_back(Unsync::new(msg, Some(tx)));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -129,13 +129,13 @@ impl<A> LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 
     /// Get `Sender` for a specific message type
-    pub fn into_sender<M>(self) -> Box<LocalSender<M>>
+    pub fn into_sender<M>(self) -> Box<UnsyncSender<M>>
         where A: Handler<M>, M: ResponseType + 'static {
         Box::new(self)
     }
 }
 
-impl<A, M> LocalSender<M> for LocalAddrSender<A>
+impl<A, M> UnsyncSender<M> for UnsyncAddrSender<A>
     where A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
           M: ResponseType + 'static
@@ -149,18 +149,18 @@ impl<A, M> LocalSender<M> for LocalAddrSender<A>
     fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
         self.send(msg)
     }
-    fn boxed(&self) -> Box<LocalSender<M>> {
+    fn boxed(&self) -> Box<UnsyncSender<M>> {
         Box::new(self.clone())
     }
 }
 
-impl<A> Clone for LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Clone for UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     fn clone(&self) -> Self {
-        LocalAddrSender { shared: Weak::clone(&self.shared) }
+        UnsyncAddrSender { shared: Weak::clone(&self.shared) }
     }
 }
 
-impl<A> Drop for LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Drop for UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     fn drop(&mut self) {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -179,11 +179,11 @@ impl<A> Drop for LocalAddrSender<A> where A: Actor, A::Context: AsyncContext<A> 
 /// The receiving end of a channel which implements the `Stream` trait.
 ///
 /// This is created by the `channel` function.
-pub(crate) struct LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
+pub(crate) struct UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
     state: Rc<RefCell<Shared<A>>>,
 }
 
-impl<A> LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
 
     /// Creates a bounded in-memory channel with buffered storage.
     ///
@@ -191,8 +191,8 @@ impl<A> LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
     /// traits which can be used to communicate a stream of values between tasks
     /// with backpressure. The channel capacity is exactly `cap`. On average,
     /// sending a message through this channel performs no dynamic allocation.
-    pub fn new(cap: usize) -> LocalAddrReceiver<A> {
-        LocalAddrReceiver {
+    pub fn new(cap: usize) -> UnsyncAddrReceiver<A> {
+        UnsyncAddrReceiver {
             state: Rc::new(RefCell::new(Shared {
                 buffer: VecDeque::new(),
                 capacity: cap,
@@ -207,8 +207,8 @@ impl<A> LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 
     /// Get the sender half
-    pub fn sender(&mut self) -> LocalAddrSender<A> {
-        LocalAddrSender{shared: Rc::downgrade(&self.state)}
+    pub fn sender(&mut self) -> UnsyncAddrSender<A> {
+        UnsyncAddrSender{shared: Rc::downgrade(&self.state)}
     }
 
     /// Get channel capacity
@@ -236,8 +236,8 @@ impl<A> LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
     }
 }
 
-impl<A> Stream for LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
-    type Item = LocalEnvelope<A>;
+impl<A> Stream for UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
+    type Item = Unsync<A>;
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
@@ -261,7 +261,7 @@ impl<A> Stream for LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext
     }
 }
 
-impl<A> Drop for LocalAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Drop for UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
     fn drop(&mut self) {
         for task in &self.state.borrow().blocked_senders {
             task.notify();
@@ -295,7 +295,7 @@ mod tests {
         let sys = System::new("test");
 
         Arbiter::handle().spawn_fn(move || {
-            let mut recv = LocalAddrReceiver::<Act>::new(1);
+            let mut recv = UnsyncAddrReceiver::<Act>::new(1);
             assert_eq!(recv.capacity(), 1);
 
             let s1 = recv.sender();

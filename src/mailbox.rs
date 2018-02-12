@@ -1,7 +1,7 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Address, LocalAddrReceiver, SyncAddress, SyncAddressReceiver};
+use address::{sync_channel, Addr, SyncAddress, SyncAddressReceiver, Unsync, UnsyncAddrReceiver};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -12,7 +12,7 @@ pub const DEFAULT_CAPACITY: usize = 16;
 
 pub(crate) struct Mailbox<A> where A: Actor, A::Context: AsyncContext<A> {
     sync_msgs: Option<SyncAddressReceiver<A>>,
-    unsync_msgs: LocalAddrReceiver<A>,
+    unsync_msgs: UnsyncAddrReceiver<A>,
 }
 
 impl<A> Default for Mailbox<A> where A: Actor, A::Context: AsyncContext<A> {
@@ -21,7 +21,7 @@ impl<A> Default for Mailbox<A> where A: Actor, A::Context: AsyncContext<A> {
     fn default() -> Self {
         Mailbox {
             sync_msgs: None,
-            unsync_msgs: LocalAddrReceiver::new(DEFAULT_CAPACITY) }
+            unsync_msgs: UnsyncAddrReceiver::new(DEFAULT_CAPACITY) }
     }
 }
 
@@ -40,7 +40,7 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
     pub fn new(rx: SyncAddressReceiver<A>) -> Self {
         Mailbox {
             sync_msgs: Some(rx),
-            unsync_msgs: LocalAddrReceiver::new(16) }
+            unsync_msgs: UnsyncAddrReceiver::new(16) }
     }
 
     pub fn capacity(&self) -> usize {
@@ -72,8 +72,8 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
     }
 
     #[inline]
-    pub fn local_address(&mut self) -> Address<A> {
-        Address::new(self.unsync_msgs.sender())
+    pub fn unsync_address(&mut self) -> Addr<Unsync<A>> {
+        Addr::new(self.unsync_msgs.sender())
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
@@ -88,7 +88,7 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
                 match self.unsync_msgs.poll() {
                     Ok(Async::Ready(Some(mut msg))) => {
                         not_ready = false;
-                        msg.env.handle(act, ctx);
+                        msg.handle(act, ctx);
                     }
                     Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
                 }

@@ -53,7 +53,7 @@ use msgs::Execute;
 /// fn main() {
 ///     let sys = System::new("test");
 ///
-///     let addr: Address<_> = actix::Supervisor::start(|_| MyActor);
+///     let addr: Addr<Unsync<_>> = actix::Supervisor::start(|_| MyActor);
 ///
 ///     addr.send(Die);
 ///     sys.run();
@@ -82,8 +82,8 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     /// # impl actix::Supervised for MyActor {}
     /// # fn main() {
     /// #    let sys = System::new("test");
-    /// // Get `Address` of a MyActor actor
-    /// let addr1: Address<_> = actix::Supervisor::start(|_| MyActor);
+    /// // Get `Addr<Unsync<_>>` of a MyActor actor
+    /// let addr1: Addr<Unsync<_>> = actix::Supervisor::start(|_| MyActor);
     ///
     /// // Get `SyncAddress` of a MyActor actor
     /// let addr2: SyncAddress<_> = actix::Supervisor::start(|_| MyActor);
