@@ -67,7 +67,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor in current Arbiter.
     ///
-    /// Type of returned addres depeneds on variable type. For example to get `Addr<Syn<_>>`
+    /// Type of returned address depends on variable type. For example to get `Addr<Syn<_>>`
     /// of newly created actor, use explicitly `Addr<Syn<_>>` type as type of a variable.
     ///
     /// ```rust
