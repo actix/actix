@@ -12,9 +12,8 @@ use tokio_core::reactor::Timeout;
 #[derive(Debug)]
 struct Num(usize);
 
-impl ResponseType for Num {
-    type Item = ();
-    type Error = ();
+impl Message for Num {
+    type Result = ();
 }
 
 struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>, bool);
@@ -176,40 +175,4 @@ fn test_restart_sync_actor() {
     assert_eq!(stopping.load(Ordering::Relaxed), 2);
     assert_eq!(stopped.load(Ordering::Relaxed), 2);
     assert_eq!(msgs.load(Ordering::Relaxed), 6);
-}
-
-
-struct MyActor2(Arc<AtomicUsize>);
-
-impl Actor for MyActor2 {
-    type Context = Context<Self>;
-}
-
-impl Handler<Result<Num, ()>> for MyActor2 {
-    type Result = ();
-
-    fn handle(&mut self, msg: Result<Num, ()>, _: &mut Self::Context) {
-        self.0.fetch_add(msg.unwrap().0, Ordering::Relaxed);
-        Arbiter::system().send(actix::msgs::SystemExit(0));
-    }
-}
-
-#[test]
-fn test_add_future() {
-    let sys = System::new("test");
-    let count = Arc::new(AtomicUsize::new(0));
-    let act_count = Arc::clone(&count);
-
-    MyActor2::create::<(), _>(move |ctx| {
-        let act = MyActor2(act_count);
-
-        ctx.add_future(
-            Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
-                .map(|_| Num(10))
-                .map_err(|_| ()));
-        act
-    });
-
-    sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 10);
 }

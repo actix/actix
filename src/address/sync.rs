@@ -1,7 +1,7 @@
 use futures::sync::oneshot::{Sender, Receiver};
 
 use actor::Actor;
-use handler::{Handler, MessageResult, ResponseType};
+use handler::{Handler, Message};
 
 use super::envelope::{ToEnvelope, EnvelopeProxy};
 use super::sync_channel::{SyncSender, SyncAddressSender};
@@ -20,7 +20,7 @@ unsafe impl<A: Actor> Send for Syn<A> {}
 impl<A: Actor> Syn<A> {
     pub fn new<M>(proxy: Box<EnvelopeProxy<Actor=A> + Send>) -> Syn<A>
         where A: Handler<M>,
-              M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+              M: Message + Send + 'static, M::Result: Send,
     {
         Syn{proxy: proxy}
     }
@@ -43,12 +43,12 @@ impl<A: Actor> Destination for Syn<A>
 
 impl<M, A: Actor> MessageDestination<M> for Syn<A>
     where A: Handler<M>, A::Context: ToEnvelope<Self, M>,
-          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+          M: Message + Send + 'static, M::Result: Send,
 {
     type Future = RequestFut<Syn<A>, M>;
     type Subscriber = SyncSubscriber<M>;
-    type ResultSender = Sender<MessageResult<M>>;
-    type ResultReceiver = Receiver<MessageResult<M>>;
+    type ResultSender = Sender<M::Result>;
+    type ResultReceiver = Receiver<M::Result>;
 
     fn send(tx: &Self::Transport, msg: M) {
         let _ = tx.do_send(msg);
@@ -77,7 +77,7 @@ impl<M, A: Actor> MessageDestination<M> for Syn<A>
 impl<A: Actor, B: Actor, M> ActorMessageDestination<M, B> for Syn<A>
     where A: Handler<M>, A::Context: ToEnvelope<Self, M>,
           Self::Transport: DestinationSender<Self, M>,
-          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+          M: Message + Send + 'static, M::Result: Send,
 {
     type ActFuture = Request<Self, B, M>;
 
@@ -95,18 +95,16 @@ impl<A: Actor, B: Actor, M> ActorMessageDestination<M, B> for Syn<A>
 /// You can get subscriber with `SyncAddress::into_subscriber::<M>()` method.
 /// It is possible to use `Clone::clone()` method to get cloned subscriber.
 pub struct SyncSubscriber<M>
-    where M: ResponseType + Send + 'static,
-          M::Item: Send, M::Error: Send,
+    where M: Message + Send + 'static, M::Result: Send,
 {
     pub(crate) tx: Box<SyncSender<M>>
 }
 
 unsafe impl<M> Send for SyncSubscriber<M>
-    where M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send {}
+    where M: Message + Send + 'static, M::Result: Send {}
 
 impl<M> SyncSubscriber<M>
-    where M: ResponseType + Send + 'static,
-          M::Item: Send, M::Error: Send
+    where M: Message + Send + 'static, M::Result: Send,
 {
 
     /// Send message
@@ -140,8 +138,7 @@ impl<M> SyncSubscriber<M>
 }
 
 impl<M> Clone for SyncSubscriber<M>
-    where M: ResponseType + Send + 'static,
-          M::Item: Send, M::Error: Send
+    where M: Message + Send + 'static, M::Result: Send,
 {
     fn clone(&self) -> SyncSubscriber<M> {
         SyncSubscriber{tx: self.tx.boxed()}

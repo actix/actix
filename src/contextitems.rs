@@ -6,7 +6,7 @@ use tokio_core::reactor::Timeout;
 use fut::ActorFuture;
 use arbiter::Arbiter;
 use actor::{Actor, ActorContext, AsyncContext};
-use handler::{Handler, MessageResponse, ResponseType};
+use handler::{Handler, MessageResponse, Message};
 
 
 pub(crate) struct ActorWaitItem<A: Actor>(Box<ActorFuture<Item=(), Error=(), Actor=A>>);
@@ -32,57 +32,15 @@ impl<A> ActorWaitItem<A> where A: Actor, A::Context: ActorContext + AsyncContext
     }
 }
 
-
 pub(crate)
-struct ActorFutureItem<A, M, F, E> where M: ResponseType, F: Future<Item=M, Error=E> {
-    fut: F,
-    act: PhantomData<A>,
-}
-
-impl<A, M, F, E> ActorFutureItem<A, M, F, E>
-    where M: ResponseType + 'static,
-          F: Future<Item=M, Error=E>
-{
-    pub fn new(fut: F) -> Self {
-        ActorFutureItem{fut: fut, act: PhantomData}
-    }
-}
-
-impl<A, M, F, E: 'static> ActorFuture for ActorFutureItem<A, M, F, E>
-    where A: Actor + Handler<Result<M, E>>, A::Context: AsyncContext<A>,
-          M: ResponseType + 'static,
-          F: Future<Item=M, Error=E>,
-{
-    type Item = ();
-    type Error = ();
-    type Actor = A;
-
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        match self.fut.poll() {
-            Ok(Async::Ready(msg)) => {
-                let fut = <A as Handler<Result<M, E>>>::handle(act, Ok(msg), ctx);
-                fut.handle::<()>(ctx, None);
-                Ok(Async::Ready(()))
-            },
-            Err(err) => {
-                let fut = <A as Handler<Result<M, E>>>::handle(act, Err(err), ctx);
-                fut.handle::<()>(ctx, None);
-                Ok(Async::Ready(()))
-            },
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-        }
-    }
-}
-
-pub(crate)
-struct ActorDelayedMessageItem<A, M> where A: Actor, M: ResponseType {
+struct ActorDelayedMessageItem<A, M> where A: Actor, M: Message {
     msg: Option<M>,
     timeout: Timeout,
     act: PhantomData<A>,
     m: PhantomData<M>,
 }
 
-impl<A, M> ActorDelayedMessageItem<A, M> where A: Actor, M: ResponseType {
+impl<A, M> ActorDelayedMessageItem<A, M> where A: Actor, M: Message {
     pub fn new(msg: M, timeout: Duration) -> Self {
         ActorDelayedMessageItem {
             msg: Some(msg),
@@ -94,7 +52,7 @@ impl<A, M> ActorDelayedMessageItem<A, M> where A: Actor, M: ResponseType {
 }
 
 impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
-    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType + 'static,
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: Message + 'static,
 {
     type Item = ();
     type Error = ();
@@ -114,19 +72,19 @@ impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
 }
 
 pub(crate)
-struct ActorMessageItem<A, M> where A: Actor, M: ResponseType {
+struct ActorMessageItem<A, M> where A: Actor, M: Message {
     msg: Option<M>,
     act: PhantomData<A>,
 }
 
-impl<A, M> ActorMessageItem<A, M> where A: Actor, M: ResponseType {
+impl<A, M> ActorMessageItem<A, M> where A: Actor, M: Message {
     pub fn new(msg: M) -> Self {
         ActorMessageItem{msg: Some(msg), act: PhantomData}
     }
 }
 
 impl<A, M: 'static> ActorFuture for ActorMessageItem<A, M>
-    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: ResponseType
+    where A: Actor + Handler<M>, A::Context: AsyncContext<A>, M: Message
 {
     type Item = ();
     type Error = ();
@@ -140,13 +98,13 @@ impl<A, M: 'static> ActorFuture for ActorMessageItem<A, M>
 }
 
 pub(crate)
-struct ActorMessageStreamItem<A, M, S> where A: Actor, M: ResponseType {
+struct ActorMessageStreamItem<A, M, S> where A: Actor, M: Message {
     stream: S,
     act: PhantomData<A>,
     msg: PhantomData<M>,
 }
 
-impl<A, M, S> ActorMessageStreamItem<A, M, S> where A: Actor, M: ResponseType {
+impl<A, M, S> ActorMessageStreamItem<A, M, S> where A: Actor, M: Message {
     pub fn new(st: S) -> Self {
         ActorMessageStreamItem { stream: st, act: PhantomData, msg: PhantomData }
     }
@@ -155,7 +113,7 @@ impl<A, M, S> ActorMessageStreamItem<A, M, S> where A: Actor, M: ResponseType {
 impl<A, M: 'static, S> ActorFuture for ActorMessageStreamItem<A, M, S>
     where S: Stream<Item=M, Error=()>,
           A: Actor + Handler<M>, A::Context: AsyncContext<A>,
-          M: ResponseType
+          M: Message
 {
     type Item = ();
     type Error = ();

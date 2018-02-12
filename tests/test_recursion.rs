@@ -38,9 +38,8 @@ impl Drop for TrackableItem {
     }
 }
 
-impl ResponseType for Count {
-    type Item = TrackableItem;
-    type Error = ();
+impl Message for Count {
+    type Result = TrackableItem;
 }
 
 impl Actor for CounterActor {
@@ -58,7 +57,7 @@ impl Handler<Count> for CounterActor {
         let my_address: Addr<Unsync<CounterActor>> = ctx.address();
 
         my_address.send(Count(msg.0 + 1));
-        Ok(TrackableItem::new())
+        MessageResult(TrackableItem::new())
     }
 }
 

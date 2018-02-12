@@ -15,7 +15,7 @@ use context::Context;
 ///
 /// `M` is a message which can be handled by the actor.
 #[allow(unused_variables)]
-pub trait Handler<M> where Self: Actor, M: ResponseType {
+pub trait Handler<M> where Self: Actor, M: Message {
     /// The type of value that this handle will return
     type Result: MessageResponse<Self, M>;
 
@@ -24,80 +24,69 @@ pub trait Handler<M> where Self: Actor, M: ResponseType {
 }
 
 /// Message response type
-pub trait ResponseType {
+pub trait Message {
 
     /// The type of value that this message will resolved with if it is successful.
-    type Item: 'static;
-
-    /// The type of error that this message will resolve with if it fails in a normal fashion.
-    type Error: 'static;
+    type Result: 'static;
 }
 
-impl<I, E> ResponseType for Result<I, E> where I: ResponseType {
-    type Item = <I as ResponseType>::Item;
-    type Error = ();
-}
-
-/// A specialized [`Result`](https://doc.rust-lang.org/std/result/enum.Result.html)
-/// for message result responses
-pub type MessageResult<M: ResponseType> = Result<M::Item, M::Error>;
+pub struct MessageResult<M: Message>(pub M::Result);
 
 /// A specialized actor future for async message handler
-pub type ResponseActFuture<A, M: ResponseType> =
-    Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>;
+pub type ResponseActFuture<A, I, E> = Box<ActorFuture<Item=I, Error=E, Actor=A>>;
 
 /// A specialized future for async message handler
-pub type ResponseFuture<M: ResponseType> = Box<Future<Item=M::Item, Error=M::Error>>;
+pub type ResponseFuture<I, E> = Box<Future<Item=I, Error=E>>;
 
 /// Trait defines message response channel
-pub trait ResponseChannel<M: ResponseType>: 'static {
+pub trait ResponseChannel<M: Message>: 'static {
 
     fn is_canceled(&self) -> bool;
 
-    fn send(self, response: MessageResult<M>);
+    fn send(self, response: M::Result);
 }
 
-/// Trait define message response
-pub trait MessageResponse<A: Actor, M: ResponseType> {
+/// Trait which defines message response
+pub trait MessageResponse<A: Actor, M: Message> {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>);
 }
 
-impl<M: ResponseType + 'static> ResponseChannel<M> for SyncSender<MessageResult<M>> {
+impl<M: Message + 'static> ResponseChannel<M> for SyncSender<M::Result> {
     fn is_canceled(&self) -> bool {
         SyncSender::is_canceled(self)
     }
 
-    fn send(self, response: MessageResult<M>) {
+    fn send(self, response: M::Result) {
         let _ = SyncSender::send(self, response);
     }
 }
 
-impl<M: ResponseType + 'static> ResponseChannel<M> for UnsyncSender<MessageResult<M>> {
+impl<M: Message + 'static> ResponseChannel<M> for UnsyncSender<M::Result> {
     fn is_canceled(&self) -> bool {
         UnsyncSender::is_canceled(self)
     }
 
-    fn send(self, response: MessageResult<M>) {
+    fn send(self, response: M::Result) {
         let _ = UnsyncSender::send(self, response);
     }
 }
 
-impl<M: ResponseType + 'static> ResponseChannel<M> for () {
+impl<M: Message + 'static> ResponseChannel<M> for () {
     fn is_canceled(&self) -> bool {true}
-    fn send(self, _: MessageResult<M>) {}
+    fn send(self, _: M::Result) {}
 }
 
-impl<A, M> MessageResponse<A, M> for () where A: Actor, M: ResponseType<Item=(), Error=()>
+impl<A, M> MessageResponse<A, M> for MessageResult<M> where A: Actor, M: Message
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
-            tx.send(Ok(()));
+            tx.send(self.0);
         }
     }
 }
 
-impl<A, M> MessageResponse<A, M> for Result<M::Item, M::Error>
-    where A: Actor, M: ResponseType,
+impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for Result<I, E>
+    where A: Actor, M: Message<Result=Result<I, E>>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -107,18 +96,18 @@ impl<A, M> MessageResponse<A, M> for Result<M::Item, M::Error>
 }
 
 impl<A, M, B> MessageResponse<A, M> for Addr<Syn<B>>
-    where A: Actor, M: ResponseType<Item=Addr<Syn<B>>, Error=()>,
+    where A: Actor, M: Message<Result=Addr<Syn<B>>>,
           B: Actor<Context=Context<B>>
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
-            tx.send(Ok(self));
+            tx.send(self);
         }
     }
 }
 
-impl<A, M> MessageResponse<A, M> for ResponseActFuture<A, M>
-    where A: Actor, M: ResponseType, A::Context: AsyncContext<A>
+impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseActFuture<A, I, E>
+    where A: Actor, M: Message<Result=Result<I, E>>, A::Context: AsyncContext<A>
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         ctx.spawn(
@@ -131,8 +120,8 @@ impl<A, M> MessageResponse<A, M> for ResponseActFuture<A, M>
     }
 }
 
-impl<A, M> MessageResponse<A, M> for ResponseFuture<M>
-    where A: Actor, M: ResponseType, A::Context: AsyncContext<A>
+impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<I, E>
+    where A: Actor, M: Message<Result=Result<I, E>>, A::Context: AsyncContext<A>
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         Arbiter::handle().spawn(self.then(move |res| {
@@ -142,55 +131,41 @@ impl<A, M> MessageResponse<A, M> for ResponseFuture<M>
     }
 }
 
-
-enum ResponseTypeItem<A, M> where A: Actor, M: ResponseType {
-    Result(MessageResult<M>),
-    Fut(Box<Future<Item=M::Item, Error=M::Error>>),
-    AFut(Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>),
+enum ResponseTypeItem<I, E> {
+    Result(Result<I, E>),
+    Fut(Box<Future<Item=I, Error=E>>),
+    //AFut(Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>),
 }
 
 /// Helper type for representing different type of message responses
-pub struct Response<A, M> where A: Actor, M: ResponseType {
-    item: ResponseTypeItem<A, M>,
+pub struct Response<I, E> {
+    item: ResponseTypeItem<I, E>,
 }
 
-impl<A, M> Response<A, M> where A: Actor, M: ResponseType {
+impl<I, E> Response<I, E> {
 
     /// Create async response
-    pub fn fut<T>(fut: T) -> Self
-        where T: Future<Item=M::Item, Error=M::Error> + 'static
+    pub fn async<T>(fut: T) -> Self
+        where T: Future<Item=I, Error=E> + 'static
     {
         Response {item: ResponseTypeItem::Fut(Box::new(fut))}
     }
 
     /// Create response
-    pub fn reply(val: MessageResult<M>) -> Self {
+    pub fn reply(val: Result<I, E>) -> Self {
         Response {item: ResponseTypeItem::Result(val)}
-    }
-
-    /// Create async response
-    pub fn async_reply<T>(fut: T) -> Self
-        where T: ActorFuture<Item=M::Item, Error=M::Error, Actor=A> + 'static
-    {
-        Response {item: ResponseTypeItem::AFut(Box::new(fut))}
     }
 }
 
-impl<A, M> MessageResponse<A, M> for Response<A, M>
-    where A: Actor, M: ResponseType, A::Context: AsyncContext<A>
+impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for Response<I, E>
+    where A: Actor, M: Message<Result=Result<I, E>>, A::Context: AsyncContext<A>
 {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         match self.item {
             ResponseTypeItem::Fut(fut) => {
                 Arbiter::handle().spawn(fut.then(move |res| {
                     tx.map(|tx| tx.send(res));
                     Ok(())
-                }));
-            },
-            ResponseTypeItem::AFut(fut) => {
-                ctx.spawn(fut.then(move |res, _, _| {
-                    tx.map(|tx| tx.send(res));
-                    fut::ok(())
                 }));
             },
             ResponseTypeItem::Result(res) => {
@@ -199,3 +174,75 @@ impl<A, M> MessageResponse<A, M> for Response<A, M>
         }
     }
 }
+
+enum ActorResponseTypeItem<A, I, E> {
+    Result(Result<I, E>),
+    Fut(Box<ActorFuture<Item=I, Error=E, Actor=A>>),
+}
+
+/// Helper type for representing different type of message responses
+pub struct ActorResponse<A, I, E> {
+    item: ActorResponseTypeItem<A, I, E>,
+}
+
+impl<A: Actor, I, E> ActorResponse<A, I, E> {
+
+    /// Create response
+    pub fn reply(val: Result<I, E>) -> Self {
+        ActorResponse {item: ActorResponseTypeItem::Result(val)}
+    }
+
+    /// Create async response
+    pub fn async<T>(fut: T) -> Self
+        where T: ActorFuture<Item=I, Error=E, Actor=A> + 'static
+    {
+        ActorResponse {item: ActorResponseTypeItem::Fut(Box::new(fut))}
+    }
+}
+
+impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ActorResponse<A, I, E>
+    where A: Actor, M: Message<Result=Result<I, E>>, A::Context: AsyncContext<A>
+{
+    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+        match self.item {
+            ActorResponseTypeItem::Fut(fut) => {
+                ctx.spawn(fut.then(move |res, _, _| {
+                    tx.map(|tx| tx.send(res));
+                    fut::ok(())
+                }));
+            },
+            ActorResponseTypeItem::Result(res) => {
+                tx.map(|tx| tx.send(res));
+            },
+        }
+    }
+}
+
+macro_rules! SIMPLE_RESULT {
+    ($type:ty) => {
+        impl<A, M> MessageResponse<A, M> for $type where A: Actor, M: Message<Result=$type>
+        {
+            fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
+                if let Some(tx) = tx {
+                    tx.send(self);
+                }
+            }
+        }
+    }
+}
+
+SIMPLE_RESULT!(());
+SIMPLE_RESULT!(u8);
+SIMPLE_RESULT!(u16);
+SIMPLE_RESULT!(u32);
+SIMPLE_RESULT!(u64);
+SIMPLE_RESULT!(usize);
+SIMPLE_RESULT!(i8);
+SIMPLE_RESULT!(i16);
+SIMPLE_RESULT!(i32);
+SIMPLE_RESULT!(i64);
+SIMPLE_RESULT!(isize);
+SIMPLE_RESULT!(f32);
+SIMPLE_RESULT!(f64);
+SIMPLE_RESULT!(String);
+SIMPLE_RESULT!(bool);

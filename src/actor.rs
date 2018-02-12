@@ -1,14 +1,13 @@
 use std::time::Duration;
-use futures::{future, Future, Stream};
+use futures::{future, Stream};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
 use address::{Addr, ActorAddress, Syn, Unsync};
 use context::Context;
-use handler::{Handler, ResponseType};
+use handler::{Handler, Message};
 use stream::StreamHandler;
-use contextitems::{ActorFutureItem, ActorMessageItem,
-                   ActorDelayedMessageItem, ActorMessageStreamItem};
+use contextitems::{ActorMessageItem, ActorDelayedMessageItem, ActorMessageStreamItem};
 use utils::TimerFunc;
 
 
@@ -241,107 +240,10 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     /// Cancel future. idx is a value returned by `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
 
-    /// This method allow to handle Future in similar way as normal actor messages.
-    ///
-    /// ```rust
-    /// # #[macro_use] extern crate actix;
-    /// # extern crate futures;
-    /// use std::io;
-    /// use actix::prelude::*;
-    /// use futures::future;
-    ///
-    /// #[derive(Message)]
-    /// struct Ping;
-    ///
-    /// struct MyActor;
-    ///
-    /// impl Handler<Result<Ping, io::Error>> for MyActor {
-    ///     type Result = ();
-    ///
-    ///     fn handle(&mut self, msg: Result<Ping, io::Error>, ctx: &mut Context<MyActor>) {
-    ///         println!("PING");
-    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
-    ///     }
-    /// }
-    ///
-    /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
-    ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        // send `Ping` to self.
-    ///        ctx.add_future(future::result::<Ping, io::Error>(Ok(Ping)));
-    ///    }
-    /// }
-    /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
-    /// #    sys.run();
-    /// # }
-    /// ```
-    fn add_future<F>(&mut self, fut: F)
-        where F: Future + 'static,
-              F::Item: ResponseType,
-              A: Handler<Result<F::Item, F::Error>>
-    {
-        if self.state() == ActorState::Stopped {
-            error!("Context::add_future called for stopped actor.");
-        } else {
-            self.spawn(ActorFutureItem::new(fut));
-        }
-    }
-
-    /// This method is similar to `add_stream` but it skips result error.
-    ///
-    /// ```rust
-    /// # #[macro_use] extern crate actix;
-    /// # extern crate futures;
-    /// use actix::prelude::*;
-    /// use futures::stream::once;
-    ///
-    /// #[derive(Message)]
-    /// struct Ping;
-    ///
-    /// struct MyActor;
-    ///
-    /// impl Handler<Ping> for MyActor {
-    ///     type Result = ();
-    ///
-    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
-    ///         println!("PING");
-    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
-    ///     }
-    /// }
-    ///
-    /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
-    ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        // add messages stream
-    ///        ctx.add_message_stream(once(Ok(Ping)));
-    ///    }
-    /// }
-    /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
-    /// #    sys.run();
-    /// # }
-    /// ```
-    fn add_message_stream<S>(&mut self, fut: S)
-        where S: Stream<Error=()> + 'static,
-              S::Item: ResponseType,
-              A: Handler<S::Item>
-    {
-        if self.state() == ActorState::Stopped {
-            error!("Context::add_message_stream called for stopped actor.");
-        } else {
-            self.spawn(ActorMessageStreamItem::new(fut));
-        }
-    }
-
-    /// This method is similar to `add_future` but works with streams.
+    /// This method allow to handle `Stream` in similar way as normal actor messages.
     ///
     /// Information to consider. Actor wont receive next item from a stream
-    /// until `Response` future resolves to a result. `Self::reply` resolves immediately.
+    /// until `Response` future resolves to a result.
     ///
     /// This method is similar to `add_stream` but it skips result error.
     ///
@@ -390,9 +292,57 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
         <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
     }
 
+    /// This method is similar to `add_stream` but it skips stream errors.
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate actix;
+    /// # extern crate futures;
+    /// use actix::prelude::*;
+    /// use futures::stream::once;
+    ///
+    /// #[derive(Message)]
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl Handler<Ping> for MyActor {
+    ///     type Result = ();
+    ///
+    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
+    ///         println!("PING");
+    /// #       Arbiter::system().send(actix::msgs::SystemExit(0));
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    ///
+    ///    fn started(&mut self, ctx: &mut Context<Self>) {
+    ///        // add messages stream
+    ///        ctx.add_message_stream(once(Ok(Ping)));
+    ///    }
+    /// }
+    /// # fn main() {
+    /// #    let sys = System::new("example");
+    /// #    let addr: Addr<Unsync<_>> = MyActor.start();
+    /// #    sys.run();
+    /// # }
+    /// ```
+    fn add_message_stream<S>(&mut self, fut: S)
+        where S: Stream<Error=()> + 'static,
+              S::Item: Message,
+              A: Handler<S::Item>
+    {
+        if self.state() == ActorState::Stopped {
+            error!("Context::add_message_stream called for stopped actor.");
+        } else {
+            self.spawn(ActorMessageStreamItem::new(fut));
+        }
+    }
+
     /// Send message `msg` to self.
     fn notify<M>(&mut self, msg: M)
-        where A: Handler<M>, M: ResponseType + 'static
+        where A: Handler<M>, M: Message + 'static
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");
@@ -405,7 +355,7 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     /// which could be used for cancellation. Notification get cancelled
     /// if context's stop method get called.
     fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
-        where A: Handler<M>, M: ResponseType + 'static
+        where A: Handler<M>, M: Message + 'static
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");

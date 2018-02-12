@@ -85,17 +85,15 @@ pub enum SignalType {
     Child,
 }
 
-impl ResponseType for SignalType {
-    type Item = ();
-    type Error = ();
+impl Message for SignalType {
+    type Result = ();
 }
 
 /// Process signal message
 pub struct Signal(pub SignalType);
 
-impl ResponseType for Signal {
-    type Item = ();
-    type Error = ();
+impl Message for Signal {
+    type Result = ();
 }
 
 /// An actor implementation of Unix signal handling
@@ -178,9 +176,8 @@ impl Handler<SignalType> for ProcessSignals {
 /// Subscribe to process signals.
 pub struct Subscribe(pub SyncSubscriber<Signal>);
 
-impl actix::ResponseType for Subscribe {
-    type Item = ();
-    type Error = ();
+impl Message for Subscribe {
+    type Result = ();
 }
 
 /// Add subscriber for signals

@@ -6,7 +6,7 @@ use futures::sync::oneshot::{channel, Receiver, Sender};
 use actor::Actor;
 use address::{Addr, Syn};
 use arbiter::Arbiter;
-use handler::{Handler, ResponseType};
+use handler::{Handler, Message};
 use context::Context;
 use msgs::{SystemExit, StopArbiter};
 
@@ -133,9 +133,8 @@ impl Handler<SystemExit> for System {
 pub(crate) struct RegisterArbiter(pub String, pub Addr<Syn<Arbiter>>);
 
 #[doc(hidden)]
-impl ResponseType for RegisterArbiter {
-    type Item = ();
-    type Error = ();
+impl Message for RegisterArbiter {
+    type Result = ();
 }
 
 #[doc(hidden)]
@@ -151,9 +150,8 @@ impl Handler<RegisterArbiter> for System {
 pub(crate) struct UnregisterArbiter(pub String);
 
 #[doc(hidden)]
-impl ResponseType for UnregisterArbiter {
-    type Item = ();
-    type Error = ();
+impl Message for UnregisterArbiter {
+    type Result = ();
 }
 
 #[doc(hidden)]

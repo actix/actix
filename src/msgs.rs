@@ -3,30 +3,27 @@
 use actor::Actor;
 use address::{Addr, Syn};
 use context::Context;
-use handler::ResponseType;
+use handler::Message;
 
 /// Stop system execution
 pub struct SystemExit(pub i32);
 
-impl ResponseType for SystemExit {
-    type Item = ();
-    type Error = ();
+impl Message for SystemExit {
+    type Result = ();
 }
 
 /// Stop arbiter execution
 pub struct StopArbiter(pub i32);
 
-impl ResponseType for StopArbiter {
-    type Item = ();
-    type Error = ();
+impl Message for StopArbiter {
+    type Result = ();
 }
 
 /// Start actor in arbiter's thread
 pub struct StartActor<A: Actor>(Box<FnBox<A>>);
 
-impl<A: Actor> ResponseType for StartActor<A> {
-    type Item = Addr<Syn<A>>;
-    type Error = ();
+impl<A: Actor> Message for StartActor<A> {
+    type Result = Addr<Syn<A>>;
 }
 
 impl<A: Actor<Context=Context<A>>> StartActor<A>
@@ -81,9 +78,8 @@ impl<A: Actor, F: FnOnce() -> Addr<Syn<A>> + Send + 'static> FnBox<A> for F {
 pub struct Execute<I: Send + 'static = (), E: Send + 'static = ()>(Box<FnExec<I, E>>);
 
 /// Execute message response
-impl<I: Send, E: Send> ResponseType for Execute<I, E> {
-    type Item = I;
-    type Error = E;
+impl<I: Send, E: Send> Message for Execute<I, E> {
+    type Result = Result<I, E>;
 }
 
 impl<I, E> Execute<I, E>

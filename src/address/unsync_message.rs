@@ -5,23 +5,23 @@ use futures::unsync::oneshot::Receiver;
 use tokio_core::reactor::Timeout;
 
 use arbiter::Arbiter;
-use handler::{MessageResult, ResponseType};
+use handler::Message;
 
 use super::{SendError, MailboxError};
 use super::unsync_channel::UnsyncSender;
 
 /// `UnsyncSunscriberRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
+pub struct UnsyncSubscriberRequest<M> where M: Message + 'static,
 {
-    rx: Option<Receiver<MessageResult<M>>>,
+    rx: Option<Receiver<M::Result>>,
     info: Option<(Box<UnsyncSender<M>>, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<M> UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
+impl<M> UnsyncSubscriberRequest<M> where M: Message + 'static,
 {
-    pub(crate) fn new(rx: Option<Receiver<MessageResult<M>>>,
+    pub(crate) fn new(rx: Option<Receiver<M::Result>>,
                       info: Option<(Box<UnsyncSender<M>>, M)>) -> UnsyncSubscriberRequest<M> {
         UnsyncSubscriberRequest{rx: rx, info: info, timeout: None}
     }
@@ -32,7 +32,7 @@ impl<M> UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
         self
     }
 
-    fn poll_timeout(&mut self) -> Poll<MessageResult<M>, MailboxError> {
+    fn poll_timeout(&mut self) -> Poll<M::Result, MailboxError> {
         if let Some(ref mut timeout) = self.timeout {
             match timeout.poll() {
                 Ok(Async::Ready(())) => Err(MailboxError::Timeout),
@@ -45,9 +45,9 @@ impl<M> UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
     }
 }
 
-impl<M> Future for UnsyncSubscriberRequest<M> where M: ResponseType + 'static,
+impl<M> Future for UnsyncSubscriberRequest<M> where M: Message + 'static,
 {
-    type Item = MessageResult<M>;
+    type Item = M::Result;
     type Error = MailboxError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {

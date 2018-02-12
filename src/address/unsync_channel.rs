@@ -15,16 +15,16 @@ use futures::task::{self, Task};
 use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
-use handler::{Handler, MessageResult, ResponseType};
+use handler::{Handler, Message};
 use super::{SendError, Unsync, DestinationSender, ToEnvelope};
 
 
-pub trait UnsyncSender<M: ResponseType + 'static> {
+pub trait UnsyncSender<M: Message + 'static> {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
 
     fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
 
-    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>;
+    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
 
     fn boxed(&self) -> Box<UnsyncSender<M>>;
 }
@@ -47,9 +47,9 @@ pub struct UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 impl<A, M> DestinationSender<Unsync<A>, M> for UnsyncAddrSender<A>
     where A: Actor + Handler<M>,
           A::Context: AsyncContext<A> + ToEnvelope<Unsync<A>, M>,
-          M: ResponseType + 'static,
+          M: Message + 'static,
 {
-    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
+    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         UnsyncAddrSender::send(self, msg)
     }
 }
@@ -67,7 +67,7 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     ///
     /// This method does not register current task in recivers queue.
     pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where A: Handler<M>, M: ResponseType + 'static
+        where A: Handler<M>, M: Message + 'static
     {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -89,7 +89,7 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     /// This method may register current task in recivers queue depends on
     /// state of `park` parameter.
     pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
-        where A: Handler<M>, M: ResponseType + 'static
+        where A: Handler<M>, M: Message + 'static
     {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -116,8 +116,8 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     /// return message back.
     ///
     /// This method registers current task in recivers queue.
-    pub fn send<M>(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>
-        where A: Handler<M>, M: ResponseType + 'static
+    pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
+        where A: Handler<M>, M: Message + 'static
     {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -141,7 +141,7 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 
     /// Get `Sender` for a specific message type
     pub fn into_sender<M>(self) -> Box<UnsyncSender<M>>
-        where A: Handler<M>, M: ResponseType + 'static {
+        where A: Handler<M>, M: Message + 'static {
         Box::new(self)
     }
 }
@@ -149,7 +149,7 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 impl<A, M> UnsyncSender<M> for UnsyncAddrSender<A>
     where A: Actor + Handler<M>,
           A::Context: AsyncContext<A>,
-          M: ResponseType + 'static
+          M: Message + 'static
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.do_send(msg)
@@ -157,7 +157,7 @@ impl<A, M> UnsyncSender<M> for UnsyncAddrSender<A>
     fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.try_send(msg, true)
     }
-    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
+    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         self.send(msg)
     }
     fn boxed(&self) -> Box<UnsyncSender<M>> {
@@ -291,9 +291,8 @@ mod tests {
     }
 
     struct Ping;
-    impl ResponseType for Ping {
-        type Item = ();
-        type Error = ();
+    impl Message for Ping {
+        type Result = ();
     }
 
     impl Handler<Ping> for Act {

@@ -70,8 +70,8 @@ pub mod registry;
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, Supervised,
                 ActorContext, AsyncContext, SpawnHandle};
-pub use handler::{Handler, Response, ResponseType,
-                  MessageResult, ResponseFuture, ResponseActFuture};
+pub use handler::{Handler, Response, ActorResponse,
+                  Message, MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
 pub use address::{Addr, Syn, Unsync, ActorAddress,
                   Subscriber, SyncSubscriber, MailboxError};
@@ -85,10 +85,10 @@ pub use supervisor::Supervisor;
 pub use context::ContextFutureSpawner;
 
 #[doc(hidden)]
-#[deprecated(since="0.5", note="Use Addr<Unsync<T>>")]
+#[deprecated(since="0.5.0", note="Use Addr<Unsync<T>>")]
 pub type Address<T> = Addr<Unsync<T>>;
 #[doc(hidden)]
-#[deprecated(since="0.5", note="Use Addr<Syn<T>>")]
+#[deprecated(since="0.5.0", note="Use Addr<Syn<T>>")]
 pub type SyncAddress<T> = Addr<Syn<T>>;
 
 pub mod prelude {
@@ -106,10 +106,10 @@ pub mod prelude {
     pub use actix_derive::*;
 
     #[doc(hidden)]
-    #[deprecated(since="0.5", note="Use Addr<Unsync<T>>")]
+    #[deprecated(since="0.5.0", note="Use Addr<Unsync<T>>")]
     pub type Address<T> = Addr<Unsync<T>>;
     #[doc(hidden)]
-    #[deprecated(since="0.5", note="Use Addr<Syn<T>>")]
+    #[deprecated(since="0.5.0", note="Use Addr<Syn<T>>")]
     pub type SyncAddress<T> = Addr<Syn<T>>;
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
@@ -120,8 +120,8 @@ pub mod prelude {
     pub use context::{Context, ContextFutureSpawner};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
-    pub use handler::{Handler, Response, ResponseType,
-                      MessageResult, ResponseFuture, ResponseActFuture};
+    pub use handler::{Handler, Response, ActorResponse, Message, MessageResult,
+                      ResponseFuture, ResponseActFuture};
     pub use system::System;
     pub use sync::{SyncContext, SyncArbiter};
     pub use supervisor::Supervisor;

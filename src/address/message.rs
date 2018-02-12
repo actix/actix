@@ -8,7 +8,7 @@ use tokio_core::reactor::Timeout;
 use arbiter::Arbiter;
 use actor::{Actor, AsyncContext};
 use fut::ActorFuture;
-use handler::{Handler, ResponseType, MessageResult};
+use handler::{Handler, Message};
 
 use super::{ToEnvelope, SendError, MailboxError};
 use super::sync_channel::SyncSender;
@@ -23,7 +23,7 @@ pub struct Request<T, B, M>
           T::Transport: DestinationSender<T, M>,
          <T::Actor as Actor>::Context: ToEnvelope<T, M>,
           B: Actor,
-          M: ResponseType + 'static
+          M: Message + 'static
 {
     rx: Option<T::ResultReceiver>,
     info: Option<(T::Transport, M)>,
@@ -35,7 +35,7 @@ impl<T, B, M> Request<T, B, M>
     where T: MessageDestination<M>, <T::Actor as Actor>::Context: ToEnvelope<T, M>,
           T::Actor: Handler<M>,
           T::Transport: DestinationSender<T, M>,
-          B: Actor, M: ResponseType + 'static,
+          B: Actor, M: Message + 'static,
 {
     pub(crate) fn new(rx: Option<T::ResultReceiver>,
                       info: Option<(T::Transport, M)>) -> Request<T, B, M> {
@@ -48,7 +48,7 @@ impl<T, B, M> Request<T, B, M>
         self
     }
 
-    fn poll_timeout(&mut self) -> Poll<MessageResult<M>, MailboxError> {
+    fn poll_timeout(&mut self) -> Poll<M::Result, MailboxError> {
         if let Some(ref mut timeout) = self.timeout {
             match timeout.poll() {
                 Ok(Async::Ready(())) => Err(MailboxError::Timeout),
@@ -66,10 +66,10 @@ impl<T, B, M> ActorFuture for Request<T, B, M>
           T::Actor: Handler<M>,
           T::Transport: DestinationSender<T, M>,
           B: Actor, B::Context: AsyncContext<B>,
-          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+          M: Message + Send + 'static, M::Result: Send,
          <T::Actor as Actor>::Context: ToEnvelope<T, M>,
 {
-    type Item = MessageResult<M>;
+    type Item = M::Result;
     type Error = MailboxError;
     type Actor = B;
 
@@ -107,7 +107,7 @@ pub struct RequestFut<T, M>
           T::Actor: Handler<M>,
           T::Transport: DestinationSender<T, M>,
          <T::Actor as Actor>::Context: ToEnvelope<T, M>,
-          M: ResponseType + 'static,
+          M: Message + 'static,
 {
     rx: Option<T::ResultReceiver>,
     info: Option<(T::Transport, M)>,
@@ -119,7 +119,7 @@ impl<T, M> RequestFut<T, M>
           T::Actor: Handler<M>,
           T::Transport: DestinationSender<T, M>,
           <T::Actor as Actor>::Context: ToEnvelope<T, M>,
-          M: ResponseType + 'static,
+          M: Message + 'static,
 {
     pub(crate) fn new(rx: Option<T::ResultReceiver>,
                       info: Option<(T::Transport, M)>) -> RequestFut<T, M> {
@@ -132,7 +132,7 @@ impl<T, M> RequestFut<T, M>
         self
     }
 
-    fn poll_timeout(&mut self) -> Poll<MessageResult<M>, MailboxError> {
+    fn poll_timeout(&mut self) -> Poll<M::Result, MailboxError> {
         if let Some(ref mut timeout) = self.timeout {
             match timeout.poll() {
                 Ok(Async::Ready(())) => Err(MailboxError::Timeout),
@@ -150,9 +150,9 @@ impl<T, M> Future for RequestFut<T, M>
           T::Actor: Handler<M>,
           T::Transport: DestinationSender<T, M>,
          <T::Actor as Actor>::Context: ToEnvelope<T, M>,
-          M: ResponseType + 'static,
+          M: Message + 'static,
 {
-    type Item = MessageResult<M>;
+    type Item = M::Result;
     type Error = MailboxError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
@@ -185,17 +185,17 @@ impl<T, M> Future for RequestFut<T, M>
 /// `SubscriberRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
 pub struct SyncSubscriberRequest<M>
-    where M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send
+    where M: Message + Send + 'static, M::Result: Send,
 {
-    rx: Option<Receiver<MessageResult<M>>>,
+    rx: Option<Receiver<M::Result>>,
     info: Option<(Box<SyncSender<M>>, M)>,
     timeout: Option<Timeout>,
 }
 
 impl<M> SyncSubscriberRequest<M>
-    where M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send
+    where M: Message + Send + 'static, M::Result: Send,
 {
-    pub(crate) fn new(rx: Option<Receiver<MessageResult<M>>>,
+    pub(crate) fn new(rx: Option<Receiver<M::Result>>,
                       info: Option<(Box<SyncSender<M>>, M)>) -> SyncSubscriberRequest<M> {
         SyncSubscriberRequest{rx: rx, info: info, timeout: None}
     }
@@ -206,7 +206,7 @@ impl<M> SyncSubscriberRequest<M>
         self
     }
 
-    fn poll_timeout(&mut self) -> Poll<MessageResult<M>, MailboxError> {
+    fn poll_timeout(&mut self) -> Poll<M::Result, MailboxError> {
         if let Some(ref mut timeout) = self.timeout {
             match timeout.poll() {
                 Ok(Async::Ready(())) => Err(MailboxError::Timeout),
@@ -220,9 +220,9 @@ impl<M> SyncSubscriberRequest<M>
 }
 
 impl<M> Future for SyncSubscriberRequest<M>
-    where M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+    where M: Message + Send + 'static, M::Result: Send,
 {
-    type Item = Result<M::Item, M::Error>;
+    type Item = M::Result;
     type Error = MailboxError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {

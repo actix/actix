@@ -226,17 +226,6 @@ impl Handler<Ping> for ContextNoWait {
     }
 }
 
-impl Handler<Result<Ping, ()>> for ContextNoWait {
-    type Result = ();
-
-    fn handle(&mut self, _: Result<Ping, ()>, _: &mut Self::Context) {
-        let cnt = self.cnt.load(Ordering::Relaxed);
-        self.cnt.store(cnt+1, Ordering::Relaxed);
-
-        Arbiter::system().send(SystemExit(0));
-    }
-}
-
 #[test]
 fn test_nowait_context() {
     let sys = System::new("test");

@@ -3,13 +3,13 @@ use futures::sync::oneshot::Sender;
 
 use actor::{Actor, AsyncContext};
 use context::Context;
-use handler::{Handler, ResponseType, MessageResult, MessageResponse};
+use handler::{Handler, Message, MessageResponse};
 use super::{Syn, MessageDestination};
 use super::DestinationSender;
 
 
 /// Converter trait, packs message to suitable envelope
-pub trait ToEnvelope<T: MessageDestination<M>, M: ResponseType + 'static>
+pub trait ToEnvelope<T: MessageDestination<M>, M: Message + 'static>
     where T::Actor: Actor + Handler<M>,
           T::Transport: DestinationSender<T, M>,
          <T::Actor as Actor>::Context: ToEnvelope<T, M>,
@@ -20,9 +20,9 @@ pub trait ToEnvelope<T: MessageDestination<M>, M: ResponseType + 'static>
 
 impl<A, M> ToEnvelope<Syn<A>, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>,
-          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+          M: Message + Send + 'static, M::Result: Send,
 {
-    fn pack(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Syn<A> {
+    fn pack(msg: M, tx: Option<Sender<M::Result>>) -> Syn<A> {
         Syn::new(Box::new(
             RemoteEnvelope{msg: Some(msg),
                            tx: tx,
@@ -38,19 +38,19 @@ pub trait EnvelopeProxy {
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
 }
 
-pub struct RemoteEnvelope<A, M> where M: ResponseType {
+pub struct RemoteEnvelope<A, M> where M: Message {
     act: PhantomData<A>,
     msg: Option<M>,
-    tx: Option<Sender<MessageResult<M>>>,
+    tx: Option<Sender<M::Result>>,
 }
 
-unsafe impl<A, M: ResponseType> Send for RemoteEnvelope<A, M> {}
+unsafe impl<A, M: Message> Send for RemoteEnvelope<A, M> {}
 
-impl<A, M> RemoteEnvelope<A, M> where A: Actor, M: ResponseType {
+impl<A, M> RemoteEnvelope<A, M> where A: Actor, M: Message {
 
-    pub fn envelope(msg: M, tx: Option<Sender<MessageResult<M>>>) -> RemoteEnvelope<A, M>
+    pub fn envelope(msg: M, tx: Option<Sender<M::Result>>) -> RemoteEnvelope<A, M>
         where A: Handler<M>,
-              M: Send + 'static, M::Item: Send, M::Item: Send
+              M: Send + 'static, M::Result: Send
     {
         RemoteEnvelope{msg: Some(msg),
                        tx: tx,
@@ -59,7 +59,7 @@ impl<A, M> RemoteEnvelope<A, M> where A: Actor, M: ResponseType {
 }
 
 impl<A, M> EnvelopeProxy for RemoteEnvelope<A, M>
-    where M: ResponseType + 'static,
+    where M: Message + 'static,
           A: Actor + Handler<M>, A::Context: AsyncContext<A>
 {
     type Actor = A;

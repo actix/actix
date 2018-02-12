@@ -10,9 +10,8 @@ use actix::prelude::*;
 
 struct Fibonacci(pub u32);
 
-impl ResponseType for Fibonacci {
-    type Item = u64;
-    type Error = ();
+impl Message for Fibonacci {
+    type Result = Result<u64, ()>;
 }
 
 struct SyncActor {
@@ -36,7 +35,7 @@ impl Actor for SyncActor {
 }
 
 impl Handler<Fibonacci> for SyncActor {
-    type Result = MessageResult<Fibonacci>;
+    type Result = Result<u64, ()>;
 
     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
         let old = self.messages.fetch_add(1, Ordering::Relaxed);

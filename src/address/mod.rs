@@ -13,7 +13,7 @@ mod unsync_channel;
 mod unsync_message;
 
 use actor::{Actor, AsyncContext};
-use handler::{Handler, MessageResult, ResponseType};
+use handler::{Handler, Message};
 
 pub use self::envelope::{EnvelopeProxy, ToEnvelope, RemoteEnvelope};
 
@@ -109,7 +109,7 @@ impl<A> ActorAddress<A, ()> for A where A: Actor {
 }
 
 pub trait DestinationSender<T: MessageDestination<M>, M>
-    where M: ResponseType + 'static,
+    where M: Message + 'static,
           T::Actor: Handler<M>, <T::Actor as Actor>::Context: ToEnvelope<T, M>,
           T::Transport: DestinationSender<T, M>,
 {
@@ -127,13 +127,13 @@ pub trait Destination: Sized {
 #[allow(unused_variables)]
 pub trait MessageDestination<M>: Destination
     where Self::Actor: Handler<M>, <Self::Actor as Actor>::Context: ToEnvelope<Self, M>,
-          M: ResponseType + 'static,
+          M: Message + 'static,
           Self::Transport: DestinationSender<Self, M>,
 {
     type Future;
     type Subscriber;
     type ResultSender;
-    type ResultReceiver: Future<Item=MessageResult<M>>;
+    type ResultReceiver: Future<Item=M::Result>;
 
     fn send(tx: &Self::Transport, msg: M);
 
@@ -147,7 +147,7 @@ pub trait MessageDestination<M>: Destination
 #[allow(unused_variables)]
 pub trait ActorMessageDestination<M, B>: MessageDestination<M>
     where Self::Actor: Handler<M>,
-          M: ResponseType + 'static,
+          M: Message + 'static,
           B: Actor,
           Self::Transport: DestinationSender<Self, M>,
           <Self::Actor as Actor>::Context: ToEnvelope<Self, M>,
@@ -176,7 +176,7 @@ impl<T: Destination> Addr<T> {
     ///
     /// This method ignores receiver capacity, it silently fails if mailbox is closed.
     pub fn send<M>(&self, msg: M)
-        where T: MessageDestination<M>, T::Actor: Handler<M>, M: ResponseType + 'static,
+        where T: MessageDestination<M>, T::Actor: Handler<M>, M: Message + 'static,
               T::Transport: DestinationSender<T, M>,
              <T::Actor as Actor>::Context: ToEnvelope<T, M>,
     {
@@ -187,7 +187,7 @@ impl<T: Destination> Addr<T> {
     ///
     /// This function fails if receiver is full or closed.
     pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where T: MessageDestination<M>, T::Actor: Handler<M>, M: ResponseType + 'static,
+        where T: MessageDestination<M>, T::Actor: Handler<M>, M: Message + 'static,
               T::Transport: DestinationSender<T, M>,
              <T::Actor as Actor>::Context: ToEnvelope<T, M>,
     {
@@ -200,7 +200,7 @@ impl<T: Destination> Addr<T> {
     ///
     /// if returned `Future` object get dropped, message cancels.
     pub fn call_fut<M>(&self, msg: M) -> T::Future
-        where T: MessageDestination<M>, T::Actor: Handler<M>, M: ResponseType + 'static,
+        where T: MessageDestination<M>, T::Actor: Handler<M>, M: Message + 'static,
               T::Transport: DestinationSender<T, M>,
              <T::Actor as Actor>::Context: ToEnvelope<T, M>,
     {
@@ -216,7 +216,7 @@ impl<T: Destination> Addr<T> {
         where T: ActorMessageDestination<M, B>,
               T::Actor: Handler<M>,
               T::Transport: DestinationSender<T, M>,
-              M: ResponseType + 'static,
+              M: Message + 'static,
               B: Actor,
              <T::Actor as Actor>::Context: ToEnvelope<T, M>,
     {
@@ -229,7 +229,7 @@ impl<T: Destination> Addr<T> {
               T::Actor: Handler<M>,
              <T::Actor as Actor>::Context: ToEnvelope<T, M>,
               T::Transport: DestinationSender<T, M>,
-              M: ResponseType + 'static,
+              M: Message + 'static,
     {
         T::subscriber(self.tx)
     }

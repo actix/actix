@@ -10,7 +10,7 @@ use futures::{Async, Poll, Stream};
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
 
 use actor::Actor;
-use handler::{Handler, ResponseType, MessageResult};
+use handler::{Handler, Message};
 
 use super::{SendError, Syn, DestinationSender};
 use super::queue::{Queue, PopResult};
@@ -18,14 +18,14 @@ use super::envelope::ToEnvelope;
 
 
 pub(crate) trait SyncSender<M>
-    where M::Item: Send, M::Error: Send,
-          M: ResponseType + Send + 'static
+    where M::Result: Send,
+          M: Message + Send + 'static
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
 
     fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
 
-    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>;
+    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
 
     fn boxed(&self) -> Box<SyncSender<M>>;
 }
@@ -188,9 +188,9 @@ pub fn channel<A: Actor>(buffer: usize) -> (SyncAddressSender<A>, SyncAddressRec
 impl<A, M> DestinationSender<Syn<A>, M> for SyncAddressSender<A>
     where A: Actor + Handler<M>,
           A::Context: ToEnvelope<Syn<A>, M>,
-          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+          M: Message + Send + 'static, M::Result: Send,
 {
-    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
+    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         SyncAddressSender::send(self, msg)
     }
 }
@@ -212,10 +212,10 @@ impl<A: Actor> SyncAddressSender<A> {
     /// Attempts to send a message on this `Sender<A>` with blocking.
     ///
     /// This function, must be called from inside of a task.
-    pub fn send<M>(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>>
+    pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
         where A: Handler<M>, A::Context: ToEnvelope<Syn<A>, M>,
-              M::Item: Send, M::Error: Send,
-              M: ResponseType + Send + 'static,
+              M::Result: Send,
+              M: Message + Send + 'static,
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false).is_ready() {
@@ -250,8 +250,8 @@ impl<A: Actor> SyncAddressSender<A> {
     /// Attempts to send a message on this `Sender<A>` without blocking.
     pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
         where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn<A>, M>,
-              M::Item: Send, M::Error: Send,
-              M: ResponseType + Send + 'static,
+              M::Result: Send,
+              M: Message + Send + 'static,
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false).is_ready() {
@@ -280,8 +280,8 @@ impl<A: Actor> SyncAddressSender<A> {
     /// This function does not park current task.
     pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
         where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn<A>, M>,
-              M::Item: Send, M::Error: Send,
-              M: ResponseType + Send + 'static,
+              M::Result: Send,
+              M: Message + Send + 'static,
     {
         if self.inc_num_messages_force().is_none() {
             Err(SendError::Closed(msg))
@@ -436,8 +436,8 @@ impl<A: Actor> SyncAddressSender<A> {
     /// Get `Sender` for a specific message type
     pub(crate) fn into_sender<M>(self) -> Box<SyncSender<M>>
         where A: Handler<M>, A::Context: ToEnvelope<Syn<A>, M>,
-              M::Item: Send, M::Error: Send,
-              M: ResponseType + Send + 'static
+              M::Result: Send,
+              M: Message + Send + 'static
     {
         Box::new(self)
     }
@@ -445,8 +445,8 @@ impl<A: Actor> SyncAddressSender<A> {
 
 impl<A, M> SyncSender<M> for SyncAddressSender<A>
     where A: Handler<M>, A::Context: ToEnvelope<Syn<A>, M>,
-          M::Item: Send, M::Error: Send,
-          M: ResponseType + Send + 'static,
+          M::Result: Send,
+          M: Message + Send + 'static,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.do_send(msg)
@@ -454,7 +454,7 @@ impl<A, M> SyncSender<M> for SyncAddressSender<A>
     fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.try_send(msg, true)
     }
-    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
+    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         self.send(msg)
     }
     fn boxed(&self) -> Box<SyncSender<M>> {
@@ -782,9 +782,8 @@ mod tests {
     }
 
     struct Ping;
-    impl ResponseType for Ping {
-        type Item = ();
-        type Error = ();
+    impl Message for Ping {
+        type Result = ();
     }
 
     impl Handler<Ping> for Act {

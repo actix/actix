@@ -33,11 +33,10 @@ impl Actor for MyActor3 {
 }
 
 impl actix::Handler<Ping> for MyActor3 {
-    type Result = MessageResult<Ping>;
+    type Result = ();
 
     fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor3>) -> Self::Result {
         Arbiter::system().send(actix::msgs::SystemExit(0));
-        Err(())
     }
 }
 
@@ -147,7 +146,7 @@ fn test_error_result() {
     Arbiter::handle().spawn_fn(move || {
         addr.call_fut(Ping(0)).then(|res| {
             match res {
-                Ok(Err(_)) => (),
+                Ok(_) => (),
                 _ => panic!("Should not happen"),
             }
             futures::future::result(Ok(()))
@@ -188,7 +187,7 @@ fn test_message_timeout() {
             .timeout(Duration::new(0, 1_000))
             .then(move |res| {
                 match res {
-                    Ok(Err(_)) => panic!("Should not happen"),
+                    Ok(_) => panic!("Should not happen"),
                     Err(MailboxError::Timeout) => {
                         count2.fetch_add(1, Ordering::Relaxed);
                     },
@@ -217,7 +216,7 @@ fn test_sync_message_timeout() {
             .timeout(Duration::new(0, 1_000))
             .then(move |res| {
                 match res {
-                    Ok(Err(_)) => panic!("Should not happen"),
+                    Ok(_) => panic!("Should not happen"),
                     Err(MailboxError::Timeout) => {
                         count2.fetch_add(1, Ordering::Relaxed);
                     },
@@ -243,7 +242,7 @@ impl Actor for TimeoutActor2 {
             .timeout(Duration::new(0, 1_000))
             .then(move |res, act, _| {
                 match res {
-                    Ok(Err(_)) => panic!("Should not happen"),
+                    Ok(_) => panic!("Should not happen"),
                     Err(MailboxError::Timeout) => {
                         act.1.fetch_add(1, Ordering::Relaxed);
                     },
@@ -281,7 +280,7 @@ impl Actor for TimeoutActor3 {
             .timeout(Duration::new(0, 1_000))
             .then(move |res, act, _| {
                 match res {
-                    Ok(Err(_)) => panic!("Should not happen"),
+                    Ok(_) => panic!("Should not happen"),
                     Err(MailboxError::Timeout) => {
                         act.1.fetch_add(1, Ordering::Relaxed);
                     },

@@ -11,9 +11,8 @@ use actix::prelude::*;
 
 struct Die;
 
-impl ResponseType for Die {
-    type Item = ();
-    type Error = ();
+impl Message for Die {
+    type Result = ();
 }
 
 

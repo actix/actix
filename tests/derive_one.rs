@@ -15,10 +15,10 @@ impl Actor for SumActor {
 }
 
 impl Handler<Sum> for SumActor {
-    type Result = MessageResult<Sum>;
+    type Result = usize;
 
     fn handle(&mut self, message: Sum, _context: &mut Context<Self>) -> Self::Result {
-        Ok(message.0 + message.1)
+        message.0 + message.1
     }
 }
 
@@ -30,7 +30,7 @@ pub fn response_derive_one() {
     
     system.handle().spawn(res.then(|res| {
         match res {
-            Ok(Ok(result)) => assert!(result == 10 + 5),
+            Ok(result) => assert!(result == 10 + 5),
             _ => panic!("Something went wrong"),
         }
         

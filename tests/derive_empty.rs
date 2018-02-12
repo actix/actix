@@ -28,7 +28,7 @@ fn response_derive_empty() {
     
     system.handle().spawn(res.then(|res| {
         match res {
-            Ok(Ok(result)) => assert!(result == ()),
+            Ok(result) => assert!(result == ()),
             _ => panic!("Something went wrong"),
         }
         

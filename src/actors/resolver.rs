@@ -67,9 +67,8 @@ impl Resolve {
     }
 }
 
-impl ResponseType for Resolve {
-    type Item = VecDeque<SocketAddr>;
-    type Error = ConnectorError;
+impl Message for Resolve {
+    type Result = Result<VecDeque<SocketAddr>, ConnectorError>;
 }
 
 pub struct Connect {
@@ -86,9 +85,8 @@ impl Connect {
     }
 }
 
-impl ResponseType for Connect {
-    type Item = TcpStream;
-    type Error = ConnectorError;
+impl Message for Connect {
+    type Result = Result<TcpStream, ConnectorError>;
 }
 
 #[derive(Fail, Debug)]
@@ -150,7 +148,7 @@ impl Default for Connector {
 }
 
 impl Handler<Resolve> for Connector {
-    type Result = ResponseActFuture<Self, Resolve>;
+    type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ConnectorError>;
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
         Box::new(Resolver::new(msg.name, msg.port.unwrap_or(0), &self.resolver))
@@ -158,7 +156,7 @@ impl Handler<Resolve> for Connector {
 }
 
 impl Handler<Connect> for Connector {
-    type Result = ResponseActFuture<Self, Connect>;
+    type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         Box::new(

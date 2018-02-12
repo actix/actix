@@ -2,6 +2,8 @@
 
 ## 0.5.0 (2018-01-..)
 
+* Address is generic over actor destination
+
 * Drop FramedContext
 
 * Make rules of actor stopping more strict

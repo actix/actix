@@ -18,9 +18,8 @@
 //!
 //! struct Fibonacci(pub u32);
 //!
-//! impl ResponseType for Fibonacci {
-//!     type Item = u64;
-//!     type Error = ();
+//! impl Message for Fibonacci {
+//!     type Result = Result<u64, ()>;
 //! }
 //!
 //! struct SyncActor;
@@ -30,7 +29,7 @@
 //! }
 //!
 //! impl Handler<Fibonacci> for SyncActor {
-//!     type Result = MessageResult<Fibonacci>;
+//!     type Result = Result<u64, ()>;
 //!
 //!     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
 //!         if msg.0 == 0 {
@@ -85,7 +84,7 @@ use arbiter::Arbiter;
 use address::sync_channel;
 use address::{Addr, Syn, SyncAddressReceiver, EnvelopeProxy, ToEnvelope};
 use context::Context;
-use handler::{Handler, ResponseType, MessageResponse, MessageResult};
+use handler::{Handler, Message, MessageResponse};
 
 
 /// Sync arbiter
@@ -158,10 +157,9 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
 
 impl<A, M> ToEnvelope<Syn<A>, M> for SyncContext<A>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
-          M: ResponseType + Send + 'static,
-          M::Item: Send, M::Error: Send
+          M: Message + Send + 'static, M::Result: Send,
 {
-    fn pack(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Syn<A> {
+    fn pack(msg: M, tx: Option<SyncSender<M::Result>>) -> Syn<A> {
         Syn::new(Box::new(SyncEnvelope::new(msg, tx)))
     }
 }
@@ -257,21 +255,21 @@ impl<A> ActorContext for SyncContext<A> where A: Actor<Context=Self>
 }
 
 pub(crate) struct SyncEnvelope<A, M>
-    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: ResponseType,
+    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: Message,
 {
     msg: Option<M>,
-    tx: Option<SyncSender<MessageResult<M>>>,
+    tx: Option<SyncSender<M::Result>>,
     actor: PhantomData<A>,
 }
 
 unsafe impl<A, M> Send for SyncEnvelope<A, M>
-    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: ResponseType {}
+    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: Message {}
 
 impl<A, M> SyncEnvelope<A, M>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
-          M: ResponseType + Send, M::Item: Send, M::Error: Send,
+          M: Message + Send, M::Result: Send
 {
-    pub fn new(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Self {
+    pub fn new(msg: M, tx: Option<SyncSender<M::Result>>) -> Self {
         SyncEnvelope{msg: Some(msg),
                      tx: tx,
                      actor: PhantomData}
@@ -279,7 +277,7 @@ impl<A, M> SyncEnvelope<A, M>
 }
 
 impl<A, M> EnvelopeProxy for SyncEnvelope<A, M>
-    where M: ResponseType + 'static,
+    where M: Message + 'static,
           A: Actor<Context=SyncContext<A>> + Handler<M>,
 {
     type Actor = A;

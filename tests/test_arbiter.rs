@@ -53,7 +53,7 @@ fn test_start_actor_message() {
             actix::msgs::StartActor::new(move |_| {
                 MyActor(act_count)
             })).then(|res| {
-                res.unwrap().unwrap().send(Ping(1));
+                res.unwrap().send(Ping(1));
                 Ok(())
             }));
 

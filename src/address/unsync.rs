@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use futures::unsync::oneshot::{Receiver, Sender};
 
 use actor::{Actor, AsyncContext};
-use handler::{Handler, MessageResult, MessageResponse, ResponseType};
+use handler::{Handler, Message, MessageResponse};
 use context::Context;
 
 use super::ToEnvelope;
@@ -24,8 +24,8 @@ pub struct Unsync<A: Actor> {
 }
 
 impl<A: Actor> Unsync<A> {
-    pub fn new<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Unsync<A>
-        where M: ResponseType + 'static,
+    pub fn new<M>(msg: M, tx: Option<Sender<M::Result>>) -> Unsync<A>
+        where M: Message + 'static,
               A: Handler<M>, A::Context: AsyncContext<A>
     {
         Unsync {
@@ -54,13 +54,13 @@ impl<A: Actor> Destination for Unsync<A>
 }
 
 impl<M, A: Actor> MessageDestination<M> for Unsync<A>
-    where M: ResponseType + 'static,
+    where M: Message + 'static,
           A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, M>
 {
     type Future = RequestFut<Unsync<A>, M>;
     type Subscriber = Subscriber<M>;
-    type ResultSender = Sender<MessageResult<M>>;
-    type ResultReceiver = Receiver<MessageResult<M>>;
+    type ResultSender = Sender<M::Result>;
+    type ResultReceiver = Receiver<M::Result>;
 
     fn send(tx: &Self::Transport, msg: M) {
         let _ = tx.do_send(msg);
@@ -85,7 +85,7 @@ impl<M, A: Actor> MessageDestination<M> for Unsync<A>
 }
 
 impl<A: Actor, B: Actor, M> ActorMessageDestination<M, B> for Unsync<A>
-    where M: ResponseType + 'static,
+    where M: Message + 'static,
           A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, M>,
           B::Context: AsyncContext<B>,
 {
@@ -100,14 +100,14 @@ impl<A: Actor, B: Actor, M> ActorMessageDestination<M, B> for Unsync<A>
     }
 }
 
-struct InnerLocalEnvelope<A, M> where M: ResponseType {
+struct InnerLocalEnvelope<A, M> where M: Message {
     msg: Option<M>,
     act: PhantomData<A>,
-    tx: Option<Sender<Result<M::Item, M::Error>>>,
+    tx: Option<Sender<M::Result>>,
 }
 
 impl<A, M> EnvelopeProxy for InnerLocalEnvelope<A, M>
-    where M: ResponseType + 'static,
+    where M: Message + 'static,
           A: Actor + Handler<M>, A::Context: AsyncContext<A>
 {
     type Actor = A;
@@ -124,10 +124,10 @@ impl<A, M> EnvelopeProxy for InnerLocalEnvelope<A, M>
     }
 }
 
-impl<A, M: ResponseType + 'static> ToEnvelope<Unsync<A>, M> for Context<A>
+impl<A, M: Message + 'static> ToEnvelope<Unsync<A>, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>
 {
-    fn pack(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Unsync<A> {
+    fn pack(msg: M, tx: Option<Sender<M::Result>>) -> Unsync<A> {
         Unsync::new(msg, tx)
     }
 }
@@ -136,9 +136,9 @@ impl<A, M: ResponseType + 'static> ToEnvelope<Unsync<A>, M> for Context<A>
 ///
 /// You can get subscriber with `Address::into_subscriber::<M>()` method.
 /// It is possible to use `Clone::clone()` method to get cloned subscriber.
-pub struct Subscriber<M: ResponseType+'static>(pub(crate) Box<UnsyncSender<M>>);
+pub struct Subscriber<M: Message+'static>(pub(crate) Box<UnsyncSender<M>>);
 
-impl<M: ResponseType + 'static> Subscriber<M> {
+impl<M: Message + 'static> Subscriber<M> {
     /// Send message
     ///
     /// Sends message even if actor's mailbox is full
@@ -169,7 +169,7 @@ impl<M: ResponseType + 'static> Subscriber<M> {
     }
 }
 
-impl<M: ResponseType + 'static> Clone for Subscriber<M> {
+impl<M: Message + 'static> Clone for Subscriber<M> {
     fn clone(&self) -> Subscriber<M> {
         Subscriber(self.0.boxed())
     }
