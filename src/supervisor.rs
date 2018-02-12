@@ -2,7 +2,7 @@ use futures::{Future, Async, Poll};
 
 use actor::{Actor, Supervised};
 use arbiter::Arbiter;
-use address::{sync_channel, ActorAddress, SyncAddress};
+use address::{sync_channel, ActorAddress, Addr, Sync};
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::Execute;
@@ -67,8 +67,8 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor in current Arbiter.
     ///
-    /// Type of returned addres depeneds on variable type. For example to get `SyncAddress`
-    /// of newly created actor, use explicitly `SyncAddress` type as type of a variable.
+    /// Type of returned addres depeneds on variable type. For example to get `Addr<Sync<_>>`
+    /// of newly created actor, use explicitly `Addr<Sync<_>>` type as type of a variable.
     ///
     /// ```rust
     /// # #[macro_use] extern crate actix;
@@ -85,8 +85,8 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     /// // Get `Addr<Unsync<_>>` of a MyActor actor
     /// let addr1: Addr<Unsync<_>> = actix::Supervisor::start(|_| MyActor);
     ///
-    /// // Get `SyncAddress` of a MyActor actor
-    /// let addr2: SyncAddress<_> = actix::Supervisor::start(|_| MyActor);
+    /// // Get `Addr<Sync<_>>` of a MyActor actor
+    /// let addr2: Addr<Sync<_>> = actix::Supervisor::start(|_| MyActor);
     /// # }
     /// ```
     pub fn start<Addr, F>(f: F) -> Addr
@@ -106,7 +106,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in<F>(addr: &SyncAddress<Arbiter>, f: F) -> SyncAddress<A>
+    pub fn start_in<F>(addr: &Addr<Sync<Arbiter>>, f: F) -> Addr<Sync<A>>
         where A: Actor<Context=Context<A>>,
               F: FnOnce(&mut Context<A>) -> A + Send + 'static
     {
@@ -120,7 +120,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             Ok(())
         }));
 
-        SyncAddress::new(tx)
+        Addr::new(tx)
     }
 }
 

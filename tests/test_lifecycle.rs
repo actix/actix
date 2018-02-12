@@ -112,7 +112,7 @@ fn test_active_sync_address() {
     let stopping = Arc::new(AtomicBool::new(false));
     let stopped = Arc::new(AtomicBool::new(false));
 
-    let _addr: SyncAddress<_> = MyActor{
+    let _addr: Addr<Sync<_>> = MyActor{
         started: Arc::clone(&started),
         stopping: Arc::clone(&stopping),
         stopped: Arc::clone(&stopped),
@@ -182,7 +182,7 @@ fn test_stop_after_drop_sync_address() {
     let stopping = Arc::new(AtomicBool::new(false));
     let stopped = Arc::new(AtomicBool::new(false));
 
-    let addr: SyncAddress<_> = MyActor{
+    let addr: Addr<Sync<_>> = MyActor{
         started: Arc::clone(&started),
         stopping: Arc::clone(&stopping),
         stopped: Arc::clone(&stopped),
@@ -224,7 +224,7 @@ fn test_stop_after_drop_sync_actor() {
     let stopping1 = Arc::clone(&stopping);
     let stopped1 = Arc::clone(&stopped);
 
-    let addr: SyncAddress<_> = SyncArbiter::start(1, move || MySyncActor {
+    let addr: Addr<Sync<_>> = SyncArbiter::start(1, move || MySyncActor {
         started: Arc::clone(&started1),
         stopping: Arc::clone(&stopping1),
         stopped: Arc::clone(&stopped1),

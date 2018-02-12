@@ -1,16 +1,17 @@
 use std::rc::Rc;
 use std::marker::PhantomData;
 
-use futures::unsync::oneshot::Sender;
+use futures::unsync::oneshot::{Receiver, Sender};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, MessageResult, MessageResponse, ResponseType};
 use context::Context;
 
-use super::ToEnv;
+use super::ToEnvelope;
+use super::message::{Request, RequestFut};
 use super::envelope::EnvelopeProxy;
 use super::unsync_channel::{UnsyncSender, UnsyncAddrSender};
-use super::{UnsyncRequest, UnsyncFutRequest, UnsyncSubscriberRequest};
+use super::UnsyncSubscriberRequest;
 use super::{Destination, MessageDestination, ActorMessageDestination, SendError};
 
 
@@ -54,10 +55,12 @@ impl<A: Actor> Destination for Unsync<A>
 
 impl<M, A: Actor> MessageDestination<M> for Unsync<A>
     where M: ResponseType + 'static,
-          A: Handler<M>, A::Context: AsyncContext<A> + ToEnv<Self, M>
+          A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, M>
 {
-    type Future = UnsyncFutRequest<A, M>;
-    type ResultTransport = Sender<MessageResult<M>>;
+    type Future = RequestFut<Unsync<A>, M>;
+    type Subscriber = Subscriber<M>;
+    type ResultSender = Sender<MessageResult<M>>;
+    type ResultReceiver = Receiver<MessageResult<M>>;
 
     fn send(tx: &Self::Transport, msg: M) {
         let _ = tx.do_send(msg);
@@ -69,11 +72,9 @@ impl<M, A: Actor> MessageDestination<M> for Unsync<A>
 
     fn call_fut(tx: &Self::Transport, msg: M) -> Self::Future {
         match tx.send(msg) {
-            Ok(rx) => UnsyncFutRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) =>
-                UnsyncFutRequest::new(None, Some((tx.clone(), msg))),
-            Err(SendError::Closed(_)) =>
-                UnsyncFutRequest::new(None, None),
+            Ok(rx) => RequestFut::new(Some(rx), None),
+            Err(SendError::Full(msg)) => RequestFut::new(None, Some((tx.clone(), msg))),
+            Err(SendError::Closed(_)) => RequestFut::new(None, None),
         }
     }
 
@@ -85,16 +86,16 @@ impl<M, A: Actor> MessageDestination<M> for Unsync<A>
 
 impl<A: Actor, B: Actor, M> ActorMessageDestination<M, B> for Unsync<A>
     where M: ResponseType + 'static,
-          A: Handler<M>, A::Context: AsyncContext<A> + ToEnv<Self, M>,
+          A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, M>,
           B::Context: AsyncContext<B>,
 {
-    type ActFuture = UnsyncRequest<A, B, M>;
+    type ActFuture = Request<Self, B, M>;
 
     fn call(tx: &Self::Transport, _: &B, msg: M) -> Self::ActFuture {
         match tx.send(msg) {
-            Ok(rx) => UnsyncRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) => UnsyncRequest::new(None, Some((tx.clone(), msg))),
-            Err(SendError::Closed(_)) => UnsyncRequest::new(None, None)
+            Ok(rx) => Request::new(Some(rx), None),
+            Err(SendError::Full(msg)) => Request::new(None, Some((tx.clone(), msg))),
+            Err(SendError::Closed(_)) => Request::new(None, None)
         }
     }
 }
@@ -123,7 +124,7 @@ impl<A, M> EnvelopeProxy for InnerLocalEnvelope<A, M>
     }
 }
 
-impl<A, M: ResponseType + 'static> ToEnv<Unsync<A>, M> for Context<A>
+impl<A, M: ResponseType + 'static> ToEnvelope<Unsync<A>, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>
 {
     fn pack(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Unsync<A> {

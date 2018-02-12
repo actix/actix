@@ -1,9 +1,9 @@
-use actor::Actor;
-use handler::{Handler, ResponseType};
+use handler::ResponseType;
 
-use super::{Request, RequestFut, SendError, ToEnvelope, SyncSubscriberRequest};
-use super::sync_channel::{SyncSender, AddressSender};
+use super::{SendError, SyncSubscriberRequest};
+use super::sync_channel::SyncSender;
 
+/*
 /// `Send` address of the actor. Actor can run in different thread
 pub struct SyncAddress<A> where A: Actor {
     tx: AddressSender<A>
@@ -102,7 +102,7 @@ impl<A, M> From<SyncAddress<A>> for SyncSubscriber<M>
     fn from(addr: SyncAddress<A>) -> SyncSubscriber<M> {
         SyncSubscriber{tx: addr.tx.into_sender()}
     }
-}
+}*/
 
 /// `SyncSubscriber` type allows to send one specific message to an actor.
 ///
@@ -112,7 +112,7 @@ pub struct SyncSubscriber<M>
     where M: ResponseType + Send + 'static,
           M::Item: Send, M::Error: Send,
 {
-    tx: Box<SyncSender<M>>
+    pub(crate) tx: Box<SyncSender<M>>
 }
 
 unsafe impl<M> Send for SyncSubscriber<M>

@@ -10,23 +10,35 @@ use actor::{Actor, AsyncContext};
 use fut::ActorFuture;
 use handler::{Handler, ResponseType, MessageResult};
 
-use super::{SendError, MailboxError};
-use super::sync_channel::{AddressSender, SyncSender};
+use super::{ToEnvelope, SendError, MailboxError};
+use super::sync_channel::SyncSender;
+use super::{MessageDestination, DestinationSender};
 
 
 /// `Request` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct Request<A, B, M> where A: Actor, B: Actor, M: ResponseType {
-    rx: Option<Receiver<MessageResult<M>>>,
-    info: Option<(AddressSender<A>, M)>,
+pub struct Request<T, B, M>
+    where T: MessageDestination<M>,
+          T::Actor: Handler<M>,
+          T::Transport: DestinationSender<T, M>,
+         <T::Actor as Actor>::Context: ToEnvelope<T, M>,
+          B: Actor,
+          M: ResponseType + 'static
+{
+    rx: Option<T::ResultReceiver>,
+    info: Option<(T::Transport, M)>,
     act: PhantomData<B>,
     timeout: Option<Timeout>,
 }
 
-impl<A, B, M> Request<A, B, M> where A: Actor, B: Actor, M: ResponseType
+impl<T, B, M> Request<T, B, M>
+    where T: MessageDestination<M>, <T::Actor as Actor>::Context: ToEnvelope<T, M>,
+          T::Actor: Handler<M>,
+          T::Transport: DestinationSender<T, M>,
+          B: Actor, M: ResponseType + 'static,
 {
-    pub(crate) fn new(rx: Option<Receiver<MessageResult<M>>>,
-                      info: Option<(AddressSender<A>, M)>) -> Request<A, B, M> {
+    pub(crate) fn new(rx: Option<T::ResultReceiver>,
+                      info: Option<(T::Transport, M)>) -> Request<T, B, M> {
         Request{rx: rx, info: info, act: PhantomData, timeout: None}
     }
 
@@ -49,9 +61,13 @@ impl<A, B, M> Request<A, B, M> where A: Actor, B: Actor, M: ResponseType
     }
 }
 
-impl<A, B, M> ActorFuture for Request<A, B, M>
-    where A: Actor + Handler<M>, B: Actor, B::Context: AsyncContext<B>,
+impl<T, B, M> ActorFuture for Request<T, B, M>
+    where T: MessageDestination<M>,
+          T::Actor: Handler<M>,
+          T::Transport: DestinationSender<T, M>,
+          B: Actor, B::Context: AsyncContext<B>,
           M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+         <T::Actor as Actor>::Context: ToEnvelope<T, M>,
 {
     type Item = MessageResult<M>;
     type Error = MailboxError;
@@ -86,16 +102,27 @@ impl<A, B, M> ActorFuture for Request<A, B, M>
 
 /// `RequestFut` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct RequestFut<A, M> where A: Actor, M: ResponseType {
-    rx: Option<Receiver<MessageResult<M>>>,
-    info: Option<(AddressSender<A>, M)>,
+pub struct RequestFut<T, M>
+    where T: MessageDestination<M>,
+          T::Actor: Handler<M>,
+          T::Transport: DestinationSender<T, M>,
+         <T::Actor as Actor>::Context: ToEnvelope<T, M>,
+          M: ResponseType + 'static,
+{
+    rx: Option<T::ResultReceiver>,
+    info: Option<(T::Transport, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<A, M> RequestFut<A, M> where A: Actor, M: ResponseType
+impl<T, M> RequestFut<T, M>
+    where T: MessageDestination<M>,
+          T::Actor: Handler<M>,
+          T::Transport: DestinationSender<T, M>,
+          <T::Actor as Actor>::Context: ToEnvelope<T, M>,
+          M: ResponseType + 'static,
 {
-    pub(crate) fn new(rx: Option<Receiver<MessageResult<M>>>,
-                      info: Option<(AddressSender<A>, M)>) -> RequestFut<A, M> {
+    pub(crate) fn new(rx: Option<T::ResultReceiver>,
+                      info: Option<(T::Transport, M)>) -> RequestFut<T, M> {
         RequestFut{rx: rx, info: info, timeout: None}
     }
 
@@ -118,11 +145,14 @@ impl<A, M> RequestFut<A, M> where A: Actor, M: ResponseType
     }
 }
 
-impl<A, M> Future for RequestFut<A, M>
-    where A: Actor + Handler<M>,
-          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
+impl<T, M> Future for RequestFut<T, M>
+    where T: MessageDestination<M>,
+          T::Actor: Handler<M>,
+          T::Transport: DestinationSender<T, M>,
+         <T::Actor as Actor>::Context: ToEnvelope<T, M>,
+          M: ResponseType + 'static,
 {
-    type Item = Result<M::Item, M::Error>;
+    type Item = MessageResult<M>;
     type Error = MailboxError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {

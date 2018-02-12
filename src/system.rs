@@ -4,7 +4,7 @@ use futures::Future;
 use futures::sync::oneshot::{channel, Receiver, Sender};
 
 use actor::Actor;
-use address::SyncAddress;
+use address::{Addr, Sync};
 use arbiter::Arbiter;
 use handler::{Handler, ResponseType};
 use context::Context;
@@ -52,7 +52,7 @@ use msgs::{SystemExit, StopArbiter};
 /// ```
 pub struct System {
     stop: Option<Sender<i32>>,
-    arbiters: HashMap<String, SyncAddress<Arbiter>>,
+    arbiters: HashMap<String, Addr<Sync<Arbiter>>>,
 }
 
 impl Actor for System {
@@ -130,7 +130,7 @@ impl Handler<SystemExit> for System {
 }
 
 /// Register Arbiter within system
-pub(crate) struct RegisterArbiter(pub String, pub SyncAddress<Arbiter>);
+pub(crate) struct RegisterArbiter(pub String, pub Addr<Sync<Arbiter>>);
 
 #[doc(hidden)]
 impl ResponseType for RegisterArbiter {

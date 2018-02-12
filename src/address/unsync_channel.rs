@@ -16,7 +16,7 @@ use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, MessageResult, ResponseType};
-use super::{SendError, Unsync};
+use super::{SendError, Unsync, DestinationSender, ToEnvelope};
 
 
 pub trait UnsyncSender<M: ResponseType + 'static> {
@@ -41,6 +41,17 @@ struct Shared<A: Actor> {
 /// This is created by the `channel` function.
 pub struct UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     shared: Weak<RefCell<Shared<A>>>,
+}
+
+
+impl<A, M> DestinationSender<Unsync<A>, M> for UnsyncAddrSender<A>
+    where A: Actor + Handler<M>,
+          A::Context: AsyncContext<A> + ToEnvelope<Unsync<A>, M>,
+          M: ResponseType + 'static,
+{
+    fn send(&self, msg: M) -> Result<Receiver<MessageResult<M>>, SendError<M>> {
+        UnsyncAddrSender::send(self, msg)
+    }
 }
 
 impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {

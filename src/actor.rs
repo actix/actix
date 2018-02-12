@@ -3,7 +3,7 @@ use futures::{future, Future, Stream};
 
 use fut::ActorFuture;
 use arbiter::Arbiter;
-use address::{Addr, SyncAddress, ActorAddress, ToEnvelope, Unsync};
+use address::{Addr, ActorAddress, Sync, Unsync};
 use context::Context;
 use handler::{Handler, ResponseType};
 use stream::StreamHandler;
@@ -23,7 +23,7 @@ use utils::TimerFunc;
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
 /// non thread safe [`Addr<Unsync<A>>`](struct.Addr.html) or thread safe address
-/// [`SyncAddress<A>`](struct.SyncAddress.html)
+/// [`Addr<Sync<A>>`](struct.Addr.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message could be
@@ -66,7 +66,7 @@ use utils::TimerFunc;
 pub trait Actor: Sized + 'static {
 
     /// Actor execution context type
-    type Context: ActorContext + ToEnvelope<Self>;
+    type Context: ActorContext;
 
     /// Method is called when actor get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
@@ -208,7 +208,7 @@ pub trait ActorContext: Sized {
 }
 
 /// Asynchronous execution context
-pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=Self>
+pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
 {
     /// Get actor address
     fn address<Address>(&mut self) -> Address where A: ActorAddress<A, Address> {
@@ -217,7 +217,7 @@ pub trait AsyncContext<A>: ActorContext + ToEnvelope<A> where A: Actor<Context=S
 
     #[doc(hidden)]
     /// Return `SyncAddress` of the context
-    fn sync_address(&mut self) -> SyncAddress<A>;
+    fn sync_address(&mut self) -> Addr<Sync<A>>;
 
     #[doc(hidden)]
     /// Return `Addr<Unsync<_>>` of the context

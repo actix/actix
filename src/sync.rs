@@ -72,7 +72,7 @@
 //!     sys.run();
 //! }
 //! ```
-use std::{mem, thread};
+use std::{marker, mem, thread};
 use std::sync::Arc;
 use std::marker::PhantomData;
 
@@ -82,8 +82,8 @@ use futures::sync::oneshot::Sender as SyncSender;
 
 use actor::{Actor, ActorContext, ActorState};
 use arbiter::Arbiter;
-use address::{sync_channel, SyncAddress, SyncAddressReceiver,
-              Envelope, EnvelopeProxy, ToEnvelope};
+use address::sync_channel;
+use address::{Addr, Sync, SyncAddressReceiver, EnvelopeProxy, ToEnvelope};
 use context::Context;
 use handler::{Handler, ResponseType, MessageResponse, MessageResult};
 
@@ -99,8 +99,8 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of the started actor.
-    pub fn start<F>(threads: usize, factory: F) -> SyncAddress<A>
-        where F: Sync + Send + Fn() -> A + 'static
+    pub fn start<F>(threads: usize, factory: F) -> Addr<Sync<A>>
+        where F: Fn() -> A + Send + marker::Sync + 'static
     {
         let factory = Arc::new(factory);
         let (sender, receiver) = channel::unbounded();
@@ -118,7 +118,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
         Arbiter::handle().spawn(
             SyncArbiter{queue: sender, msgs: rx, threads: threads});
 
-        SyncAddress::new(tx)
+        Addr::new(tx)
     }
 }
 
@@ -156,21 +156,19 @@ impl<A> Future for SyncArbiter<A> where A: Actor<Context=SyncContext<A>>
     }
 }
 
-impl<A> ToEnvelope<A> for SyncContext<A>
-    where A: Actor<Context=SyncContext<A>>,
+impl<A, M> ToEnvelope<Sync<A>, M> for SyncContext<A>
+    where A: Actor<Context=SyncContext<A>> + Handler<M>,
+          M: ResponseType + marker::Send + 'static,
+          M::Item: marker::Send, M::Error: marker::Send
 {
-    fn pack<M>(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Envelope<A>
-        where A: Handler<M>,
-              M: ResponseType + Send + 'static,
-              M::Item: Send, M::Error: Send
-    {
-        Envelope::new(SyncEnvelope::new(msg, tx))
+    fn pack(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Sync<A> {
+        Sync::new(Box::new(SyncEnvelope::new(msg, tx)))
     }
 }
 
 enum SyncContextProtocol<A> where A: Actor<Context=SyncContext<A>> {
     Stop,
-    Envelope(Envelope<A>),
+    Envelope(Sync<A>),
 }
 
 /// Sync actor execution context
@@ -179,13 +177,12 @@ pub struct SyncContext<A> where A: Actor<Context=SyncContext<A>> {
     queue: channel::Receiver<SyncContextProtocol<A>>,
     stopping: bool,
     state: ActorState,
-    factory: Arc<Fn() -> A + Send + Sync>,
+    factory: Arc<Fn() -> A>,
 }
 
 impl<A> SyncContext<A> where A: Actor<Context=Self> {
     /// Create new SyncContext
-    fn new(factory: Arc<Fn() -> A+Send+Sync>,
-           queue: channel::Receiver<SyncContextProtocol<A>>) -> Self {
+    fn new(factory: Arc<Fn() -> A>, queue: channel::Receiver<SyncContextProtocol<A>>) -> Self {
         SyncContext {
             act: factory(),
             queue: queue,
@@ -263,15 +260,18 @@ pub(crate) struct SyncEnvelope<A, M>
     where A: Actor<Context=SyncContext<A>> + Handler<M>, M: ResponseType,
 {
     msg: Option<M>,
-    tx: Option<SyncSender<Result<M::Item, M::Error>>>,
+    tx: Option<SyncSender<MessageResult<M>>>,
     actor: PhantomData<A>,
 }
 
-impl<A, M>  SyncEnvelope<A, M>
+unsafe impl<A, M> Send for SyncEnvelope<A, M>
+    where A: Actor<Context=SyncContext<A>> + Handler<M>, M: ResponseType {}
+
+impl<A, M> SyncEnvelope<A, M>
     where A: Actor<Context=SyncContext<A>> + Handler<M>,
-          M: ResponseType,
+          M: ResponseType + Send, M::Item: Send, M::Error: Send,
 {
-    pub fn new(msg: M, tx: Option<SyncSender<Result<M::Item, M::Error>>>) -> Self {
+    pub fn new(msg: M, tx: Option<SyncSender<MessageResult<M>>>) -> Self {
         SyncEnvelope{msg: Some(msg),
                      tx: tx,
                      actor: PhantomData}

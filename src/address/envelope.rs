@@ -4,48 +4,31 @@ use futures::sync::oneshot::Sender;
 use actor::{Actor, AsyncContext};
 use context::Context;
 use handler::{Handler, ResponseType, MessageResult, MessageResponse};
+use super::{Sync, MessageDestination};
+use super::DestinationSender;
+
 
 /// Converter trait, packs message to suitable envelope
-pub trait ToEnvelope<A: Actor> {
-
+pub trait ToEnvelope<T: MessageDestination<M>, M: ResponseType + 'static>
+    where T::Actor: Actor + Handler<M>,
+          T::Transport: DestinationSender<T, M>,
+         <T::Actor as Actor>::Context: ToEnvelope<T, M>,
+{
     /// Pack message into suitable envelope
-    fn pack<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
-        where A: Handler<M>,
-              M: ResponseType + Send + 'static,
-              M::Item: Send, M::Error: Send;
+    fn pack(msg: M, tx: Option<T::ResultSender>) -> T;
 }
 
-impl<A> ToEnvelope<A> for Context<A> where A: Actor<Context=Context<A>>
+impl<A, M> ToEnvelope<Sync<A>, M> for Context<A>
+    where A: Actor<Context=Context<A>> + Handler<M>,
+          M: ResponseType + Send + 'static, M::Item: Send, M::Error: Send,
 {
-    fn pack<M>(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Envelope<A>
-        where A: Handler<M>,
-              M: ResponseType + 'static, M::Item: Send, M::Error: Send,
-    {
-        Envelope(Box::new(
+    fn pack(msg: M, tx: Option<Sender<MessageResult<M>>>) -> Sync<A> {
+        Sync::new(Box::new(
             RemoteEnvelope{msg: Some(msg),
                            tx: tx,
                            act: PhantomData}))
     }
 }
-
-pub struct Envelope<A>(Box<EnvelopeProxy<Actor=A>>);
-
-impl<A> Envelope<A> where A: Actor {
-
-    /// Create envelope object
-    pub(crate) fn new<T>(envelop: T) -> Self
-        where T: EnvelopeProxy<Actor=A> + Sized + 'static
-    {
-        Envelope(Box::new(envelop))
-    }
-
-    pub(crate) fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
-        self.0.handle(act, ctx)
-    }
-}
-
-// This is not safe! Local envelope could be send to different thread!
-unsafe impl<T> Send for Envelope<T> {}
 
 pub trait EnvelopeProxy {
 
@@ -61,15 +44,7 @@ pub struct RemoteEnvelope<A, M> where M: ResponseType {
     tx: Option<Sender<MessageResult<M>>>,
 }
 
-impl<A, M> From<RemoteEnvelope<A, M>> for Envelope<A>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: ResponseType + Send + 'static,
-{
-    fn from(env: RemoteEnvelope<A, M>) -> Self {
-        Envelope::new(env)
-    }
-}
+unsafe impl<A, M: ResponseType> Send for RemoteEnvelope<A, M> {}
 
 impl<A, M> RemoteEnvelope<A, M> where A: Actor, M: ResponseType {
 

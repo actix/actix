@@ -5,7 +5,7 @@ use futures::unsync::oneshot::Sender as UnsyncSender;
 use arbiter::Arbiter;
 use fut::{self, ActorFuture};
 use actor::{Actor, AsyncContext};
-use address::SyncAddress;
+use address::{Addr, Sync};
 use context::Context;
 
 /// Message handler
@@ -106,8 +106,8 @@ impl<A, M> MessageResponse<A, M> for Result<M::Item, M::Error>
     }
 }
 
-impl<A, M, B> MessageResponse<A, M> for SyncAddress<B>
-    where A: Actor, M: ResponseType<Item=SyncAddress<B>, Error=()>,
+impl<A, M, B> MessageResponse<A, M> for Addr<Sync<B>>
+    where A: Actor, M: ResponseType<Item=Addr<Sync<B>>, Error=()>,
           B: Actor<Context=Context<B>>
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
