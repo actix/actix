@@ -11,10 +11,10 @@ fn test_resolver() {
 
     Arbiter::handle().spawn({
         let resolver: Addr<Unsync, _> = Arbiter::registry().get::<actors::Connector>();
-        resolver.call(
+        resolver.send(
             actors::Resolve::host("localhost"))
             .then(|_| {
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 Ok::<_, ()>(())
             })
     });
@@ -22,7 +22,7 @@ fn test_resolver() {
     Arbiter::handle().spawn({
         let resolver: Addr<Unsync,_> = Arbiter::registry().get::<actors::Connector>();
 
-        resolver.call(
+        resolver.send(
             actors::Connect::host("localhost:5000"))
             .then(|_| {
                 Ok::<_, ()>(())
@@ -40,7 +40,7 @@ fn test_signal() {
     let _: Addr<Syn, _> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
-        sig.send(signal::SignalType::Quit);
+        sig.do_send(signal::SignalType::Quit);
         Ok(())
     });
     sys.run();
@@ -53,7 +53,7 @@ fn test_signal_term() {
     let _: Addr<Syn, _> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
-        sig.send(signal::SignalType::Term);
+        sig.do_send(signal::SignalType::Term);
         Ok(())
     });
     sys.run();
@@ -66,8 +66,8 @@ fn test_signal_int() {
     let _: Addr<Syn, _> = signal::DefaultSignalsHandler::start_default();
     Arbiter::handle().spawn_fn(move || {
         let sig = Arbiter::system_registry().get::<signal::ProcessSignals>();
-        sig.send(signal::SignalType::Hup);
-        sig.send(signal::SignalType::Int);
+        sig.do_send(signal::SignalType::Hup);
+        sig.do_send(signal::SignalType::Int);
         Ok(())
     });
     sys.run();

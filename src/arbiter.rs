@@ -41,7 +41,7 @@ impl Actor for Arbiter {
 
     fn started(&mut self, ctx: &mut Context<Self>) {
         // register arbiter within system
-        Arbiter::system().send(
+        Arbiter::system().do_send(
             RegisterArbiter(self.id.simple().to_string(), ctx.address()));
     }
 }
@@ -91,7 +91,7 @@ impl Arbiter {
             }
 
             // unregister arbiter
-            Arbiter::system().send(
+            Arbiter::system().do_send(
                 UnregisterArbiter(id.simple().to_string()));
         });
 
@@ -195,7 +195,7 @@ impl Arbiter {
         let addr = Arbiter::new("actor");
 
         // create actor
-        addr.send::<Execute>(
+        addr.do_send::<Execute>(
             Execute::new(move || {
                 let mut ctx = Context::with_receiver(None, srx);
                 let act = f(&mut ctx);

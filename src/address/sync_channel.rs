@@ -808,13 +808,13 @@ mod tests {
             let s2 = recv.sender();
 
             let arb: Addr<Syn, _> = Arbiter::new("s1");
-            arb.send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+            arb.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
                 let _ = s1.send(Ping);
                 Ok(())
             }));
             thread::sleep(time::Duration::from_millis(100));
             let arb2 = Arbiter::new("s1");
-            arb2.send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+            arb2.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
                 let _ = s2.send(Ping);
                 Ok(())
             }));
@@ -849,7 +849,7 @@ mod tests {
             };
             assert!(p.is_none());
 
-            Arbiter::system().send(actix::msgs::SystemExit(0));
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
             Ok(())
         });
 

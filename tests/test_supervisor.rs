@@ -54,13 +54,13 @@ fn test_supervisor_restart() {
 
     let addr: Addr<Unsync, _> = actix::Supervisor::start(
         move |_| MyActor(starts2, restarts2, messages2));
-    addr.send(Die);
-    addr.send(Die);
+    addr.do_send(Die);
+    addr.do_send(Die);
 
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100_000), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     );

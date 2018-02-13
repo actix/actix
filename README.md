@@ -65,7 +65,7 @@ impl Actor for MyActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
        println!("I am alive!");
-       Arbiter::system().send(msgs::SystemExit(0));
+       Arbiter::system().do_send(msgs::SystemExit(0));
     }
 }
 
@@ -127,7 +127,7 @@ fn main() {
 
     let addr: Address<_> = Summator.start();
 
-    let res = addr.call(Sum(10, 5));  // <- send message and get future for result
+    let res = addr.send(Sum(10, 5));  // <- send message and get future for result
     
     system.handle().spawn(res.then(|res| {
         match res {
@@ -135,7 +135,7 @@ fn main() {
             _ => println!("Something wrong"),
         }
         
-        Arbiter::system().send(msgs::SystemExit(0));
+        Arbiter::system().do_send(msgs::SystemExit(0));
         future::result(Ok(()))
     }));
 
@@ -186,13 +186,13 @@ impl Game {
         self.counter += 1;
         
         if self.counter > 10 {
-            Arbiter::system().send(msgs::SystemExit(0));
+            Arbiter::system().do_send(msgs::SystemExit(0));
         } else {
             println!("Ping received {:?}", id);
             
             // wait 100 nanos
             ctx.run_later(Duration::new(0, 100), move |act, _| {
-                act.addr.send(Ping{id: id + 1});
+                act.addr.do_send(Ping{id: id + 1});
             });
         }
     }
@@ -209,7 +209,7 @@ fn main() {
         let addr2: Addr<Unsync, _> = Game{counter: 0, addr: addr.subscriber()}.start();
         
         // let's start pings
-        addr2.send(Ping{id: 10});
+        addr2.do_send(Ping{id: 10});
         
         // now we can finally create first actor
         Game{counter: 0, addr: addr2.subscriber()}

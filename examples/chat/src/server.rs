@@ -86,7 +86,7 @@ impl ChatServer {
             for id in sessions {
                 if *id != skip_id {
                     if let Some(addr) = self.sessions.get(id) {
-                        addr.send(session::Message(message.to_owned()))
+                        addr.do_send(session::Message(message.to_owned()))
                     }
                 }
             }

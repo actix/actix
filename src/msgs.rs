@@ -66,7 +66,7 @@ impl<A: Actor, F: FnOnce() -> Addr<Syn, A> + Send + 'static> FnBox<A> for F {
 ///    type Context = Context<Self>;
 ///
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
-///        self.addr.send(actix::msgs::Execute::new(|| -> Result<(), ()> {
+///        self.addr.do_send(actix::msgs::Execute::new(|| -> Result<(), ()> {
 ///            // do something
 ///            // ...
 ///            Ok(())

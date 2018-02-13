@@ -337,7 +337,7 @@ mod tests {
             let _ = s2.send(Ping);
             assert_eq!(recv.state.borrow().buffer.len(), 2);
 
-            Arbiter::system().send(actix::msgs::SystemExit(0));
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
             Ok(())
         });
 

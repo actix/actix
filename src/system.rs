@@ -33,7 +33,7 @@ use msgs::{SystemExit, StopArbiter};
 ///    fn started(&mut self, ctx: &mut Context<Self>) {
 ///        ctx.run_later(self.dur, |act, ctx| {
 ///            // send `SystemExit` to `System` actor.
-///            Arbiter::system().send(actix::msgs::SystemExit(0));
+///            Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///        });
 ///    }
 /// }
@@ -120,7 +120,7 @@ impl Handler<SystemExit> for System {
     {
         // stop arbiters
         for addr in self.arbiters.values() {
-            addr.send(StopArbiter(msg.0));
+            addr.do_send(StopArbiter(msg.0));
         }
         // stop event loop
         if let Some(stop) = self.stop.take() {

@@ -30,7 +30,7 @@ impl<A: Actor, M> MessageDestination<A, M> for Syn
     type ResultSender = Sender<M::Result>;
     type ResultReceiver = Receiver<M::Result>;
 
-    fn send(tx: &Self::Transport, msg: M) {
+    fn do_send(tx: &Self::Transport, msg: M) {
         let _ = tx.do_send(msg);
     }
 
@@ -38,7 +38,7 @@ impl<A: Actor, M> MessageDestination<A, M> for Syn
         tx.try_send(msg, false)
     }
 
-    fn call(tx: &Self::Transport, msg: M) -> Request<Self, A, M> {
+    fn send(tx: &Self::Transport, msg: M) -> Request<Self, A, M> {
         match tx.send(msg) {
             Ok(rx) => Request::new(Some(rx), None),
             Err(SendError::Full(msg)) => Request::new(None, Some((tx.clone(), msg))),
@@ -46,7 +46,6 @@ impl<A: Actor, M> MessageDestination<A, M> for Syn
         }
     }
 
-    /// Get `Subscriber` for specific message type
     fn recipient(tx: Self::Transport) -> Recipient<Self, M> {
         Recipient::new(tx.into_sender())
     }
@@ -59,7 +58,7 @@ impl<M> MessageRecipient<M> for Syn
     type Envelope = SyncMessageEnvelope<M>;
     type ResultReceiver = Receiver<M::Result>;
 
-    fn send(tx: &Self::Transport, msg: M) -> Result<(), SendError<M>> {
+    fn do_send(tx: &Self::Transport, msg: M) -> Result<(), SendError<M>> {
         tx.do_send(msg)
     }
 
@@ -67,7 +66,7 @@ impl<M> MessageRecipient<M> for Syn
         tx.try_send(msg)
     }
 
-    fn call(tx: &Self::Transport, msg: M) -> RecipientRequest<Self, M> {
+    fn send(tx: &Self::Transport, msg: M) -> RecipientRequest<Self, M> {
         match tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),
             Err(SendError::Full(msg)) =>

@@ -27,14 +27,14 @@ impl Actor for MyActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 Ok::<_, Error>(())
             })
             .into_actor(self)
             .timeout(Duration::new(0, 100), Error::Timeout)
             .map_err(|e, act, _| if e == Error::Timeout {
                 act.timeout.store(true, Ordering::Relaxed);
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 ()
             })
             .wait(ctx)
@@ -71,7 +71,7 @@ impl Actor for MyStreamActor {
             .timeout(Duration::new(0, 100), Error::Timeout)
             .map_err(|e, act, _| if e == Error::Timeout {
                 act.timeout.store(true, Ordering::Relaxed);
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 ()
             })
             .finish()

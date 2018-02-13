@@ -51,7 +51,7 @@ impl actix::Handler<Ping> for MyActor3 {
     type Result = ();
 
     fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor3>) -> Self::Result {
-        Arbiter::system().send(actix::msgs::SystemExit(0));
+        Arbiter::system().do_send(actix::msgs::SystemExit(0));
     }
 }
 
@@ -62,15 +62,15 @@ fn test_address() {
 
     let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
-    addr.send(Ping(0));
+    addr.do_send(Ping(0));
 
     Arbiter::handle().spawn_fn(move || {
-        addr2.send(Ping(1));
+        addr2.do_send(Ping(1));
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
-                addr2.send(Ping(2));
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                addr2.do_send(Ping(2));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
     });
@@ -86,12 +86,12 @@ fn test_subscriber_call() {
 
     let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().recipient();
-    addr.send(UnsyncPing(0, PhantomData));
+    addr.do_send(UnsyncPing(0, PhantomData));
 
     Arbiter::handle().spawn(
-        addr2.call(Ping(1))
-            .then(move |_| addr2.call(Ping(2)).then(|_| {
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+        addr2.send(Ping(1))
+            .then(move |_| addr2.send(Ping(2)).then(|_| {
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 Ok(())
             }))
     );
@@ -109,20 +109,20 @@ fn test_sync_address() {
     let addr: Addr<Syn, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     let addr3 = addr.clone();
-    addr.send(Ping(1));
+    addr.do_send(Ping(1));
 
-    arbiter.send(actix::msgs::Execute::new(move || -> Result<(), ()> {
-        addr3.send(Ping(2));
-        Arbiter::system().send(actix::msgs::SystemExit(0));
+    arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+        addr3.do_send(Ping(2));
+        Arbiter::system().do_send(actix::msgs::SystemExit(0));
         Ok(())
     }));
     
     Arbiter::handle().spawn_fn(move || {
-        addr2.send(Ping(3));
+        addr2.do_send(Ping(3));
 
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
-                addr2.send(Ping(4));
+                addr2.do_send(Ping(4));
                 future::result(Ok(()))
             })
     });
@@ -138,12 +138,12 @@ fn test_sync_subscriber_call() {
 
     let addr: Addr<Syn, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().recipient();
-    addr.send(Ping(0));
+    addr.do_send(Ping(0));
 
     Arbiter::handle().spawn(
-        addr2.call(Ping(1))
-            .then(move |_| addr2.call(Ping(2)).then(|_| {
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+        addr2.send(Ping(1))
+            .then(move |_| addr2.send(Ping(2)).then(|_| {
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 Ok(())
             }))
     );
@@ -159,7 +159,7 @@ fn test_error_result() {
     let addr: Addr<Unsync, _> = MyActor3.start();
 
     Arbiter::handle().spawn_fn(move || {
-        addr.call(Ping(0)).then(|res| {
+        addr.send(Ping(0)).then(|res| {
             match res {
                 Ok(_) => (),
                 _ => panic!("Should not happen"),
@@ -197,8 +197,8 @@ fn test_message_timeout() {
     let count2 = Arc::clone(&count);
 
     Arbiter::handle().spawn_fn(move || {
-        addr.send(Ping(0));
-        addr.call(Ping(0))
+        addr.do_send(Ping(0));
+        addr.send(Ping(0))
             .timeout(Duration::new(0, 1_000))
             .then(move |res| {
                 match res {
@@ -208,7 +208,7 @@ fn test_message_timeout() {
                     },
                     _ => panic!("Should not happen"),
                 }
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 futures::future::result(Ok(()))
             })
     });
@@ -226,8 +226,8 @@ fn test_sync_message_timeout() {
     let count2 = Arc::clone(&count);
 
     Arbiter::handle().spawn_fn(move || {
-        addr.send(Ping(0));
-        addr.call(Ping(0))
+        addr.do_send(Ping(0));
+        addr.send(Ping(0))
             .timeout(Duration::new(0, 1_000))
             .then(move |res| {
                 match res {
@@ -237,7 +237,7 @@ fn test_sync_message_timeout() {
                     },
                     _ => panic!("Should not happen"),
                 }
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 futures::future::result(Ok(()))
             })
     });
@@ -252,8 +252,8 @@ impl Actor for TimeoutActor2 {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.0.send(Ping(0));
-        self.0.call(Ping(0))
+        self.0.do_send(Ping(0));
+        self.0.send(Ping(0))
             .timeout(Duration::new(0, 1_000))
             .into_actor(self)
             .then(move |res, act, _| {
@@ -264,7 +264,7 @@ impl Actor for TimeoutActor2 {
                     },
                     _ => panic!("Should not happen"),
                 }
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 actix::fut::ok(())
             })
             .wait(ctx)
@@ -291,8 +291,8 @@ impl Actor for TimeoutActor3 {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.0.send(Ping(0));
-        self.0.call(Ping(0))
+        self.0.do_send(Ping(0));
+        self.0.send(Ping(0))
             .timeout(Duration::new(0, 1_000))
             .into_actor(self)
             .then(move |res, act, _| {
@@ -303,7 +303,7 @@ impl Actor for TimeoutActor3 {
                     },
                     _ => panic!("Should not happen"),
                 }
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 actix::fut::ok(())
             })
             .wait(ctx)

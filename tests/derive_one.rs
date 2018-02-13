@@ -26,15 +26,15 @@ impl Handler<Sum> for SumActor {
 pub fn response_derive_one() {
     let system = System::new("test");
     let addr: Addr<Unsync, _> = SumActor.start();
-    let res = addr.call(Sum(10, 5));
-    
+    let res = addr.send(Sum(10, 5));
+
     system.handle().spawn(res.then(|res| {
         match res {
             Ok(result) => assert!(result == 10 + 5),
             _ => panic!("Something went wrong"),
         }
-        
-        Arbiter::system().send(actix::msgs::SystemExit(0));
+
+        Arbiter::system().do_send(actix::msgs::SystemExit(0));
         future::result(Ok(()))
     }));
 

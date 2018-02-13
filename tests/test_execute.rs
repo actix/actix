@@ -14,10 +14,10 @@ fn test_execute() {
     let addr = Arbiter::new("exec-test");
 
     Arbiter::handle().spawn(
-        addr.call(Execute::new(|| {
+        addr.send(Execute::new(|| {
             Ok(Arbiter::name())
         })).then(|res: Result<Result<_, ()>, _>| {
-            Arbiter::system().send(SystemExit(0));
+            Arbiter::system().do_send(SystemExit(0));
 
             match res {
                 Ok(Ok(name)) => assert_ne!(name, "test"),
@@ -36,11 +36,11 @@ fn test_system_execute() {
 
     let addr = Arbiter::new("exec-test");
 
-    addr.send(Execute::new(
+    addr.do_send(Execute::new(
         || -> Result<(), ()> {
             Arbiter::handle().spawn_fn(|| {
-                Arbiter::system_arbiter().send(Execute::new(|| -> Result<(), ()> {
-                    Arbiter::system().send(SystemExit(0));
+                Arbiter::system_arbiter().do_send(Execute::new(|| -> Result<(), ()> {
+                    Arbiter::system().do_send(SystemExit(0));
 
                     assert_eq!(Arbiter::name(), "test");
                     Ok(())

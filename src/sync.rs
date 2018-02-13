@@ -60,11 +60,11 @@
 //!
 //!     // send 5 messages
 //!     for n in 5..10 {
-//!         addr.send(Fibonacci(n));
+//!         addr.do_send(Fibonacci(n));
 //!     }
 //!
 //!     Arbiter::handle().spawn_fn(|| {
-//! #        Arbiter::system().send(actix::msgs::SystemExit(0));
+//! #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!         futures::future::result(Ok(()))
 //!     });
 //!

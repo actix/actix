@@ -44,7 +44,7 @@ fn main() {
                             return
                         }
 
-                        addr.send(ClientCommand(cmd));
+                        addr.do_send(ClientCommand(cmd));
                     }
                 });
 
@@ -80,7 +80,7 @@ impl Actor for ChatClient {
         println!("Disconnected");
 
         // Stop application on disconnect
-        Arbiter::system().send(actix::msgs::SystemExit(0));
+        Arbiter::system().do_send(actix::msgs::SystemExit(0));
 
         true
     }

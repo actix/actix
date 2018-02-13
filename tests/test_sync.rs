@@ -40,7 +40,7 @@ impl Handler<Fibonacci> for SyncActor {
     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
         let old = self.messages.fetch_add(1, Ordering::Relaxed);
         if old == 4 {
-            self.addr.send(actix::msgs::SystemExit(0));
+            self.addr.do_send(actix::msgs::SystemExit(0));
         }
 
         if msg.0 == 0 {
@@ -92,7 +92,7 @@ fn test_sync() {
 
     Arbiter::handle().spawn_fn(move || {
         for n in 5..10 {
-            addr.send(Fibonacci(n));
+            addr.do_send(Fibonacci(n));
         }
         future::result(Ok(()))
     });

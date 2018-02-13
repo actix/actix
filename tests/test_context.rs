@@ -42,7 +42,7 @@ impl Actor for MyActor {
             },
             Op::RunAfter => {
                 ctx.run_later(Duration::new(0, 100), |_, _| {
-                    Arbiter::system().send(SystemExit(0));
+                    Arbiter::system().do_send(SystemExit(0));
                 });
             }
             Op::RunAfterStop => {
@@ -55,7 +55,7 @@ impl Actor for MyActor {
     }
 
     fn stopped(&mut self, _: &mut Context<MyActor>) {
-        Arbiter::system().send(SystemExit(0));
+        Arbiter::system().do_send(SystemExit(0));
     }
 }
 
@@ -69,7 +69,7 @@ impl Handler<TimeoutMessage> for MyActor {
         if self.op != Op::Timeout {
             assert!(false, "should not happen {:?}", self.op);
         }
-        Arbiter::system().send(SystemExit(0));
+        Arbiter::system().do_send(SystemExit(0));
     }
 }
 
@@ -92,7 +92,7 @@ fn test_add_timeout_cancel() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -150,7 +150,7 @@ impl Handler<Ping> for ContextWait {
             .into_actor(self)
             .wait(ctx);
 
-        Arbiter::system().send(SystemExit(0));
+        Arbiter::system().do_send(SystemExit(0));
     }
 }
 
@@ -160,9 +160,9 @@ fn test_wait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let addr: Addr<Unsync, _> = ContextWait{cnt: Arc::clone(&m)}.start();
-    addr.send(Ping);
-    addr.send(Ping);
-    addr.send(Ping);
+    addr.do_send(Ping);
+    addr.do_send(Ping);
+    addr.do_send(Ping);
 
     sys.run();
 
@@ -222,7 +222,7 @@ impl Handler<Ping> for ContextNoWait {
         let cnt = self.cnt.load(Ordering::Relaxed);
         self.cnt.store(cnt+1, Ordering::Relaxed);
 
-        Arbiter::system().send(SystemExit(0));
+        Arbiter::system().do_send(SystemExit(0));
     }
 }
 
@@ -232,9 +232,9 @@ fn test_nowait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let addr: Addr<Unsync, _> = ContextNoWait{cnt: Arc::clone(&m)}.start();
-    addr.send(Ping);
-    addr.send(Ping);
-    addr.send(Ping);
+    addr.do_send(Ping);
+    addr.do_send(Ping);
+    addr.do_send(Ping);
     sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
@@ -291,7 +291,7 @@ fn test_notify() {
         ctx.notify(Ping);
         ContextNoWait{cnt: Arc::clone(&m)}
     });
-    addr.send(Ping);
+    addr.do_send(Ping);
 
     sys.run();
     assert_eq!(m2.load(Ordering::Relaxed), 3);
@@ -307,7 +307,7 @@ impl StreamHandler<Ping, ()> for ContextHandle {
 
     fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
         self.h.store(ctx.handle().into_usize(), Ordering::Relaxed);
-        Arbiter::system().send(SystemExit(0));
+        Arbiter::system().do_send(SystemExit(0));
     }
 }
 

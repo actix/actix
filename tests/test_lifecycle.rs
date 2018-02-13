@@ -93,7 +93,7 @@ fn test_active_address() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -122,7 +122,7 @@ fn test_active_sync_address() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -162,7 +162,7 @@ fn test_stop_after_drop_address() {
                 drop(addr);
                 Timeout::new(Duration::new(0, 10_000), Arbiter::handle()).unwrap()
                     .then(|_| {
-                        Arbiter::system().send(SystemExit(0));
+                        Arbiter::system().do_send(SystemExit(0));
                         future::result(Ok(()))
                     })
             })
@@ -201,7 +201,7 @@ fn test_stop_after_drop_sync_address() {
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(move |_| {
                 drop(addr);
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 future::result(Ok(()))
             })
     });
@@ -244,7 +244,7 @@ fn test_stop_after_drop_sync_actor() {
 
                 Timeout::new(Duration::from_secs(2), Arbiter::handle()).unwrap()
                     .then(move |_| {
-                        Arbiter::system().send(SystemExit(0));
+                        Arbiter::system().do_send(SystemExit(0));
                         future::result(Ok(()))
                     })
             })
@@ -274,7 +274,7 @@ fn test_stop() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 future::result(Ok(()))
             })
     );
@@ -303,7 +303,7 @@ fn test_stop_restore_after_stopping() {
     Arbiter::handle().spawn(
         Timeout::new(Duration::new(0, 100), Arbiter::handle()).unwrap()
             .then(|_| {
-                Arbiter::system().send(SystemExit(0));
+                Arbiter::system().do_send(SystemExit(0));
                 future::result(Ok(()))
             })
     );

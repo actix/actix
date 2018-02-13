@@ -25,18 +25,18 @@
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
-//!                 Arbiter::system().send(actix::msgs::SystemExit(0));
+//!                 Arbiter::system().notify(actix::msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
 //!             },
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
-//!                 Arbiter::system().send(actix::msgs::SystemExit(0));
+//!                 Arbiter::system().notify(actix::msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
-//!                 Arbiter::system().send(actix::msgs::SystemExit(0));
+//!                 Arbiter::system().notify(actix::msgs::SystemExit(0));
 //!             }
 //!             _ => (),
 //!         }
@@ -53,7 +53,7 @@
 //!    // send SIGTERM
 //!    std::thread::spawn(move || {
 //!       // emulate SIGNTERM
-//!       addr.send(signal::Signal(signal::SignalType::Term));
+//!       addr.notify(signal::Signal(signal::SignalType::Term));
 //!    });
 //!
 //!    // Run system, this function blocks until system runs
@@ -166,7 +166,7 @@ impl Handler<SignalType> for ProcessSignals {
     fn handle(&mut self, sig: SignalType, _: &mut Self::Context) {
         let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
         for subscr in subscribers {
-            if subscr.send(Signal(sig)).is_ok() {
+            if subscr.do_send(Signal(sig)).is_ok() {
                 self.subscribers.push(subscr);
             }
         }
@@ -205,7 +205,7 @@ impl Actor for DefaultSignalsHandler {
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = Arbiter::system_registry().get::<ProcessSignals>();
         let slf: Addr<Syn, _> = ctx.address();
-        addr.call(Subscribe(slf.recipient()))
+        addr.send(Subscribe(slf.recipient()))
             .map(|_| ())
             .map_err(|_| ())
             .into_actor(self)
@@ -222,18 +222,18 @@ impl actix::Handler<Signal> for DefaultSignalsHandler {
         match msg.0 {
             SignalType::Int => {
                 info!("SIGINT received, exiting");
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
             }
             SignalType::Hup => {
                 info!("SIGHUP received, reloading");
             }
             SignalType::Term => {
                 info!("SIGTERM received, stopping");
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
             }
             SignalType::Quit => {
                 info!("SIGQUIT received, exiting");
-                Arbiter::system().send(actix::msgs::SystemExit(0));
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
             }
             _ => (),
         }

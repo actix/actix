@@ -49,7 +49,7 @@ use supervisor::Supervisor;
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
 ///       println!("ping");
-/// #     Arbiter::system().send(actix::msgs::SystemExit(0));
+/// #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///    }
 /// }
 ///
@@ -60,7 +60,7 @@ use supervisor::Supervisor;
 ///
 ///    fn started(&mut self, _: &mut Context<Self>) {
 ///       let act = Arbiter::registry().get::<MyActor1>();
-///       act.send(Ping);
+///       act.do_send(Ping);
 ///    }
 /// }
 ///

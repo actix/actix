@@ -22,7 +22,7 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn stopping(&mut self, _: &mut Self::Context) -> bool {
-        Arbiter::system().send(actix::msgs::SystemExit(0));
+        Arbiter::system().do_send(actix::msgs::SystemExit(0));
         true
     }
 }
@@ -157,14 +157,14 @@ fn test_restart_sync_actor() {
         stopped: Arc::clone(&stopped1),
         msgs: Arc::clone(&msgs1),
         stop: started1.load(Ordering::Relaxed) == 0});
-    addr.send(Num(2));
+    addr.do_send(Num(2));
 
     Arbiter::handle().spawn_fn(move || {
-        addr.call(Num(4))
+        addr.send(Num(4))
             .then(move |_| {
                 Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle()).unwrap()
                     .then(move |_| {
-                        Arbiter::system().send(actix::msgs::SystemExit(0));
+                        Arbiter::system().do_send(actix::msgs::SystemExit(0));
                         future::result(Ok(()))
                     })
             })

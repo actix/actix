@@ -46,7 +46,7 @@ use msgs::Execute;
 ///
 ///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
 ///         ctx.stop();
-/// #       Arbiter::system().send(actix::msgs::SystemExit(0));
+/// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///     }
 /// }
 ///
@@ -55,7 +55,7 @@ use msgs::Execute;
 ///
 ///     let addr: Addr<Unsync, _> = actix::Supervisor::start(|_| MyActor);
 ///
-///     addr.send(Die);
+///     addr.do_send(Die);
 ///     sys.run();
 /// }
 /// ```
@@ -112,7 +112,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     {
         let (tx, rx) = sync_channel::channel(DEFAULT_CAPACITY);
 
-        addr.send(Execute::new(move || -> Result<(), ()> {
+        addr.do_send(Execute::new(move || -> Result<(), ()> {
             let mut ctx = Context::with_receiver(None, rx);
             let act = f(&mut ctx);
             ctx.set_actor(act);

@@ -24,15 +24,15 @@ impl Handler<Empty> for EmptyActor {
 fn response_derive_empty() {
     let system = System::new("test");
     let addr: Addr<Unsync, _> = EmptyActor.start();
-    let res = addr.call(Empty);
-    
+    let res = addr.send(Empty);
+
     system.handle().spawn(res.then(|res| {
         match res {
             Ok(result) => assert!(result == ()),
             _ => panic!("Something went wrong"),
         }
-        
-        Arbiter::system().send(msgs::SystemExit(0));
+
+        Arbiter::system().do_send(msgs::SystemExit(0));
         future::result(Ok(()))
     }));
 
