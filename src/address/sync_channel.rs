@@ -17,7 +17,7 @@ use super::queue::{Queue, PopResult};
 use super::envelope::{ToEnvelope, SyncEnvelope};
 
 
-pub trait SyncSender<M>
+pub trait SyncSender<M>: Send
     where M::Result: Send,
           M: Message + Send + 'static
 {
