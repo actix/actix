@@ -183,6 +183,7 @@ pub struct Addr<T: Destination<A>, A> {
 }
 
 unsafe impl<A: Actor> Send for Addr<Syn, A> {}
+unsafe impl<A: Actor> Sync for Addr<Syn, A> {}
 
 impl<T: Destination<A>, A> Addr<T, A> {
     pub fn new(tx: T::Transport) -> Addr<T, A> {
