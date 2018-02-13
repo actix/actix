@@ -13,7 +13,7 @@ use msgs::Execute;
 /// creates new execution context and restarts actor lifecycle. Supervisor does not
 /// does not re-create actor, it just calls `restarting()` method.
 ///
-/// Supervisor has same livecycle as actor. In situation when all addresses to supervisor
+/// Supervisor has same lifecycle as actor. In situation when all addresses to supervisor
 /// get dropped and actor does not execute anything, supervisor terminates.
 ///
 /// `Supervisor` can not guarantee that actor successfully process incoming message.
@@ -67,7 +67,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 {
     /// Start new supervised actor in current Arbiter.
     ///
-    /// Type of returned addres depeneds on variable type. For example to get `Addr<Syn, _>`
+    /// Type of returned address depends on variable type. For example to get `Addr<Syn, _>`
     /// of newly created actor, use explicitly `Addr<Syn, _>` type as type of a variable.
     ///
     /// ```rust

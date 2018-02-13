@@ -30,7 +30,7 @@ pub enum SendError<T> {
 }
 
 #[derive(Fail)]
-/// Set of error that can occure during message delivery process
+/// Set of error that can occurred during message delivery process
 pub enum MailboxError {
     #[fail(display="Mailbox has closed")]
     Closed,
