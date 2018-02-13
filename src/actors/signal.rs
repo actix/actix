@@ -25,18 +25,18 @@
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
-//!                 Arbiter::system().notify(actix::msgs::SystemExit(0));
+//!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
 //!             },
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
-//!                 Arbiter::system().notify(actix::msgs::SystemExit(0));
+//!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!             },
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
-//!                 Arbiter::system().notify(actix::msgs::SystemExit(0));
+//!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!             }
 //!             _ => (),
 //!         }
@@ -53,7 +53,7 @@
 //!    // send SIGTERM
 //!    std::thread::spawn(move || {
 //!       // emulate SIGNTERM
-//!       addr.notify(signal::Signal(signal::SignalType::Term));
+//!       addr.do_send(signal::Signal(signal::SignalType::Term));
 //!    });
 //!
 //!    // Run system, this function blocks until system runs
