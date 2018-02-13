@@ -5,12 +5,13 @@ use futures::unsync::oneshot::Sender as UnsyncSender;
 use actor::{Actor, AsyncContext};
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
-use super::{DestinationSender, MessageDestination, Syn, Unsync};
+use super::{Syn, Unsync,
+            MessageDestination, MessageDestinationTransport};
 
 
 /// Converter trait, packs message to suitable envelope
 pub trait ToEnvelope<T: MessageDestination<A, M>, A, M: Message + 'static>
-    where T::Transport: DestinationSender<T, A, M>,
+    where T::Transport: MessageDestinationTransport<T, A, M>,
           A: Actor + Handler<M>, A::Context: ToEnvelope<T, A, M>,
 {
     /// Pack message into suitable envelope

@@ -89,6 +89,12 @@ impl Message for Connect {
     type Result = Result<TcpStream, ConnectorError>;
 }
 
+pub struct ConnectAddr(pub SocketAddr);
+
+impl Message for ConnectAddr {
+    type Result = Result<TcpStream, ConnectorError>;
+}
+
 #[derive(Fail, Debug)]
 pub enum ConnectorError {
     /// Failed to resolve the hostname
@@ -162,6 +168,16 @@ impl Handler<Connect> for Connector {
         Box::new(
             Resolver::new(msg.name, msg.port.unwrap_or(0), &self.resolver)
                 .and_then(|addrs, _, _| TcpConnector::new(addrs)))
+    }
+}
+
+impl Handler<ConnectAddr> for Connector {
+    type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
+
+    fn handle(&mut self, msg: ConnectAddr, _: &mut Self::Context) -> Self::Result {
+        let mut v = VecDeque::new();
+        v.push_back(msg.0);
+        Box::new(TcpConnector::new(v))
     }
 }
 

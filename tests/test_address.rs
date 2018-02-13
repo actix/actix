@@ -85,7 +85,7 @@ fn test_subscriber_call() {
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone().subscriber();
+    let addr2 = addr.clone().recipient();
     addr.send(UnsyncPing(0, PhantomData));
 
     Arbiter::handle().spawn(
@@ -137,7 +137,7 @@ fn test_sync_subscriber_call() {
     let count = Arc::new(AtomicUsize::new(0));
 
     let addr: Addr<Syn, _> = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone().subscriber();
+    let addr2 = addr.clone().recipient();
     addr.send(Ping(0));
 
     Arbiter::handle().spawn(

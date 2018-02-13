@@ -8,15 +8,16 @@ use arbiter::Arbiter;
 use handler::{Handler, Message};
 
 use super::{ToEnvelope, SendError, MailboxError};
-use super::{DestinationSender, MessageDestination, MessageSubscriber, MessageSubscriberSender};
+use super::{MessageDestination, MessageDestinationTransport,
+            MessageRecipient, MessageRecipientTransport};
 
 
 /// `Request` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
 pub struct Request<T, A, M>
     where T: MessageDestination<A, M>,
+          T::Transport: MessageDestinationTransport<T, A, M>,
           A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
-          T::Transport: DestinationSender<T, A, M>,
           M: Message + 'static,
 {
     rx: Option<T::ResultReceiver>,
@@ -27,7 +28,7 @@ pub struct Request<T, A, M>
 
 impl<T, A, M> Request<T, A, M>
     where T: MessageDestination<A, M>,
-          T::Transport: DestinationSender<T, A, M>,
+          T::Transport: MessageDestinationTransport<T, A, M>,
           A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
           M: Message + 'static,
 {
@@ -57,9 +58,8 @@ impl<T, A, M> Request<T, A, M>
 
 impl<T, A, M> Future for Request<T, A, M>
     where T: MessageDestination<A, M>,
-          T::Transport: DestinationSender<T, A, M>,
-          A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
-          M: Message + 'static,
+          T::Transport: MessageDestinationTransport<T, A, M>,
+          A: Handler<M>, A::Context: ToEnvelope<T, A, M>, M: Message + 'static,
 {
     type Item = M::Result;
     type Error = MailboxError;
@@ -91,22 +91,22 @@ impl<T, A, M> Future for Request<T, A, M>
     }
 }
 
-/// `SubscriberRequest` is a `Future` which represents asynchronous message sending process.
+/// `RecipientRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct SubscriberRequest<T, M>
-    where T: MessageSubscriber<M>, M: Message + 'static
+pub struct RecipientRequest<T, M>
+    where T: MessageRecipient<M>, M: Message + 'static
 {
     rx: Option<T::ResultReceiver>,
     info: Option<(T::Transport, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<T, M> SubscriberRequest<T, M>
-    where T: MessageSubscriber<M>, M: Message + 'static
+impl<T, M> RecipientRequest<T, M> where T: MessageRecipient<M>, M: Message + 'static
 {
-    pub(crate) fn new(rx: Option<T::ResultReceiver>,
-                      info: Option<(T::Transport, M)>) -> SubscriberRequest<T, M> {
-        SubscriberRequest{rx: rx, info: info, timeout: None}
+    pub fn new(rx: Option<T::ResultReceiver>, info: Option<(T::Transport, M)>)
+               -> RecipientRequest<T, M>
+    {
+        RecipientRequest{rx: rx, info: info, timeout: None}
     }
 
     /// Set message delivery timeout
@@ -128,8 +128,7 @@ impl<T, M> SubscriberRequest<T, M>
     }
 }
 
-impl<T, M> Future for SubscriberRequest<T, M>
-    where T: MessageSubscriber<M>, M: Message + 'static
+impl<T, M> Future for RecipientRequest<T, M> where T: MessageRecipient<M>, M: Message + 'static
 {
     type Item = M::Result;
     type Error = MailboxError;

@@ -98,7 +98,7 @@ impl Message for Signal {
 
 /// An actor implementation of Unix signal handling
 pub struct ProcessSignals {
-    subscribers: Vec<Subscriber<Syn, Signal>>,
+    subscribers: Vec<Recipient<Syn, Signal>>,
 }
 
 impl Default for ProcessSignals {
@@ -174,7 +174,7 @@ impl Handler<SignalType> for ProcessSignals {
 }
 
 /// Subscribe to process signals.
-pub struct Subscribe(pub Subscriber<Syn, Signal>);
+pub struct Subscribe(pub Recipient<Syn, Signal>);
 
 impl Message for Subscribe {
     type Result = ();
@@ -205,7 +205,7 @@ impl Actor for DefaultSignalsHandler {
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = Arbiter::system_registry().get::<ProcessSignals>();
         let slf: Addr<Syn, _> = ctx.address();
-        addr.call(Subscribe(slf.subscriber()))
+        addr.call(Subscribe(slf.recipient()))
             .map(|_| ())
             .map_err(|_| ())
             .into_actor(self)

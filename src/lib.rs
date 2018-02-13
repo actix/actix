@@ -73,7 +73,7 @@ pub use actor::{Actor, ActorState, Supervised,
 pub use handler::{Handler, Response, ActorResponse,
                   Message, MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
-pub use address::{Addr, Syn, Unsync, ActorAddress, Subscriber, MailboxError};
+pub use address::{Addr, Syn, Unsync, ActorAddress, Recipient, MailboxError};
 pub use context::Context;
 pub use stream::StreamHandler;
 pub use sync::{SyncContext, SyncArbiter};
@@ -115,7 +115,7 @@ pub mod prelude {
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext,
                     ErrorAction, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
-    pub use address::{Addr, Syn, Unsync, SendError, Subscriber, MailboxError};
+    pub use address::{Addr, Syn, Unsync, SendError, Recipient, MailboxError};
     pub use context::{Context, ContextFutureSpawner};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
@@ -152,6 +152,7 @@ pub mod dev {
 
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
-    pub use address::{ActorAddress, ToEnvelope, SyncEnvelope, Request, SubscriberRequest};
-    pub use address::{Destination, MessageDestination};
+    pub use address::{ActorAddress, ToEnvelope, SyncEnvelope, Request, RecipientRequest};
+    pub use address::{Destination, MessageDestination, MessageDestinationTransport,
+                      MessageRecipient, MessageRecipientTransport};
 }

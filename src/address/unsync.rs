@@ -3,11 +3,10 @@ use futures::unsync::oneshot::{Receiver, Sender};
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
 
-use super::ToEnvelope;
-use super::message::{Request, SubscriberRequest};
-use super::envelope::{UnsyncEnvelope, MessageEnvelope};
+use super::{Request, Recipient, RecipientRequest};
+use super::{ToEnvelope, UnsyncEnvelope, MessageEnvelope};
+use super::{Destination, MessageDestination, MessageRecipient, SendError};
 use super::unsync_channel::{UnsyncSender, UnsyncAddrSender};
-use super::{Subscriber, Destination, MessageDestination, MessageSubscriber, SendError};
 
 
 /// Unsync destination of the actor
@@ -51,12 +50,12 @@ impl<A, M> MessageDestination<A, M> for Unsync
     }
 
     /// Get `Subscriber` for specific message type
-    fn subscriber(tx: Self::Transport) -> Subscriber<Self, M> {
-        Subscriber::new(tx.into_sender())
+    fn recipient(tx: Self::Transport) -> Recipient<Self, M> {
+        Recipient::new(tx.into_sender())
     }
 }
 
-impl<M> MessageSubscriber<M> for Unsync where M: Message + 'static
+impl<M> MessageRecipient<M> for Unsync where M: Message + 'static
 {
     type Envelope = MessageEnvelope<M>;
     type Transport = Box<UnsyncSender<M>>;
@@ -70,13 +69,13 @@ impl<M> MessageSubscriber<M> for Unsync where M: Message + 'static
         tx.try_send(msg)
     }
 
-    fn call(tx: &Self::Transport, msg: M) -> SubscriberRequest<Self, M> {
+    fn call(tx: &Self::Transport, msg: M) -> RecipientRequest<Self, M> {
         match tx.send(msg) {
-            Ok(rx) => SubscriberRequest::new(Some(rx), None),
+            Ok(rx) => RecipientRequest::new(Some(rx), None),
             Err(SendError::Full(msg)) =>
-                SubscriberRequest::new(None, Some((tx.boxed(), msg))),
+                RecipientRequest::new(None, Some((tx.boxed(), msg))),
             Err(SendError::Closed(_)) =>
-                SubscriberRequest::new(None, None),
+                RecipientRequest::new(None, None),
         }
     }
 

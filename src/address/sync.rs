@@ -5,8 +5,8 @@ use handler::{Handler, Message};
 
 use super::envelope::{ToEnvelope, SyncEnvelope, SyncMessageEnvelope};
 use super::sync_channel::{SyncSender, SyncAddressSender};
-use super::{Request, SubscriberRequest};
-use super::{Subscriber, Destination, MessageDestination, MessageSubscriber, SendError};
+use super::{Request, Recipient, RecipientRequest};
+use super::{Destination, MessageDestination, MessageRecipient, SendError};
 
 
 /// Sync destination of the actor. Actor can run in different thread
@@ -47,12 +47,12 @@ impl<A: Actor, M> MessageDestination<A, M> for Syn
     }
 
     /// Get `Subscriber` for specific message type
-    fn subscriber(tx: Self::Transport) -> Subscriber<Self, M> {
-        Subscriber::new(tx.into_sender())
+    fn recipient(tx: Self::Transport) -> Recipient<Self, M> {
+        Recipient::new(tx.into_sender())
     }
 }
 
-impl<M> MessageSubscriber<M> for Syn
+impl<M> MessageRecipient<M> for Syn
     where M: Message + Send + 'static, M::Result: Send
 {
     type Transport = Box<SyncSender<M>>;
@@ -67,13 +67,13 @@ impl<M> MessageSubscriber<M> for Syn
         tx.try_send(msg)
     }
 
-    fn call(tx: &Self::Transport, msg: M) -> SubscriberRequest<Self, M> {
+    fn call(tx: &Self::Transport, msg: M) -> RecipientRequest<Self, M> {
         match tx.send(msg) {
-            Ok(rx) => SubscriberRequest::new(Some(rx), None),
+            Ok(rx) => RecipientRequest::new(Some(rx), None),
             Err(SendError::Full(msg)) =>
-                SubscriberRequest::new(None, Some((tx.boxed(), msg))),
+                RecipientRequest::new(None, Some((tx.boxed(), msg))),
             Err(SendError::Closed(_)) =>
-                SubscriberRequest::new(None, None),
+                RecipientRequest::new(None, None),
         }
     }
 
