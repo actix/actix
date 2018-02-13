@@ -47,10 +47,10 @@ use utils::TimerFunc;
 ///
 /// * `Context::stop` get called by actor itself
 /// * all addresses to the actor get dropped
-/// * no events objects are registered in context.
+/// * no evented objects are registered in context.
 ///
 /// Actor could restore from `stopping` state to `running` state by creating new
-/// address or adding event object, like future or stream, in `Actor::stopping` method.
+/// address or adding evented object, like future or stream, in `Actor::stopping` method.
 ///
 /// If actor changed state to a `stopping` state because of `Context::stop()` get called
 /// then context immediately stops processing incoming messages and calls
@@ -72,7 +72,7 @@ pub trait Actor: Sized + 'static {
 
     /// Method is called after an actor is in `Actor::Stopping` state. There could be several
     /// reasons for stopping. `Context::stop` get called by the actor itself.
-    /// All addresses to current actor get dropped and no more events objects
+    /// All addresses to current actor get dropped and no more evented objects
     /// left in the context.
     ///
     /// Actor could restore from stopping state by returning `false` value.
