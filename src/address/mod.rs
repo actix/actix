@@ -261,6 +261,8 @@ pub struct Subscriber<T: MessageSubscriber<M>, M: Message + 'static> {
 
 unsafe impl<M> Send for Subscriber<Syn, M>
     where M: Message + Send + 'static, M::Result: Send {}
+unsafe impl<M> Sync for Subscriber<Syn, M>
+    where M: Message + Send + 'static, M::Result: Send {}
 
 impl<T, M> Subscriber<T, M>
     where T: MessageSubscriber<M>, M: Message + 'static
