@@ -280,6 +280,23 @@ fn test_stream_nowait_context() {
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
 
+#[test]
+fn test_notify() {
+    let sys = System::new("test");
+
+    let m = Arc::new(AtomicUsize::new(0));
+    let m2 = Arc::clone(&m);
+    let addr: Addr<Unsync, _> = ContextNoWait::create(move |ctx| {
+        ctx.notify(Ping);
+        ctx.notify(Ping);
+        ContextNoWait{cnt: Arc::clone(&m)}
+    });
+    addr.send(Ping);
+
+    sys.run();
+    assert_eq!(m2.load(Ordering::Relaxed), 3);
+}
+
 
 struct ContextHandle {h: Arc<AtomicUsize>}
 impl Actor for ContextHandle {
@@ -308,6 +325,25 @@ fn test_current_context_handle() {
             ContextHandle::add_stream(
                 once::<Ping, ()>(Ok(Ping)), ctx).into_usize(), Ordering::Relaxed);
 
+        ContextHandle{h: m2}
+    });
+    sys.run();
+
+    assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
+}
+
+#[test]
+fn test_start_from_context() {
+    let sys = System::new("test");
+
+    let h = Arc::new(AtomicUsize::new(0));
+    let h2 = Arc::clone(&h);
+    let m = Arc::new(AtomicUsize::new(0));
+    let m2 = Arc::clone(&m);
+
+    let _addr: Addr<Unsync, _> = ContextHandle::create(move |ctx| {
+        h2.store(ctx.add_stream(
+            once::<Ping, ()>(Ok(Ping))).into_usize(), Ordering::Relaxed);
         ContextHandle{h: m2}
     });
     sys.run();
