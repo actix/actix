@@ -16,7 +16,7 @@ impl Message for Num {
     type Result = ();
 }
 
-struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>, bool);
+struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>, ErrorAction);
 
 impl Actor for MyActor {
     type Context = actix::Context<Self>;
@@ -33,7 +33,7 @@ impl StreamHandler<Num, ()> for MyActor {
         self.0.fetch_add(msg.0, Ordering::Relaxed);
     }
 
-    fn error(&mut self, _: (), _: &mut Context<MyActor>) -> bool {
+    fn error(&mut self, _: (), _: &mut Context<MyActor>) -> ErrorAction {
         self.0.fetch_add(1, Ordering::Relaxed);
         self.2
     }
@@ -54,7 +54,7 @@ fn test_stream() {
     let act_err = Arc::clone(&err);
     MyActor::create::<(), _>(move |ctx| {
         MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
-        MyActor(act_count, act_err, true)
+        MyActor(act_count, act_err, ErrorAction::Stop)
     });
 
     sys.run();
@@ -74,7 +74,7 @@ fn test_stream_with_error() {
     let act_error = Arc::clone(&error);
     MyActor::create::<(), _>(move |ctx| {
         MyActor::add_stream(futures::stream::iter_result(items), ctx);
-        MyActor(act_count, act_error, true)
+        MyActor(act_count, act_error, ErrorAction::Stop)
     });
 
     sys.run();
@@ -94,7 +94,7 @@ fn test_stream_with_error_no_stop() {
     let act_error = Arc::clone(&error);
     MyActor::create::<(), _>(move |ctx| {
         MyActor::add_stream(futures::stream::iter_result(items), ctx);
-        MyActor(act_count, act_error, false)
+        MyActor(act_count, act_error, ErrorAction::Continue)
     });
 
     sys.run();

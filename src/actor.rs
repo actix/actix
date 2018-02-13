@@ -374,6 +374,12 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ErrorAction {
+    Stop,
+    Continue,
+}
+
 /// Spawned future handle. Could be used for cancelling spawned future.
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct SpawnHandle(usize);

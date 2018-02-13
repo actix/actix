@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use futures::{Async, Poll, Stream};
 
 use fut::ActorFuture;
-use actor::{Actor, ActorState, ActorContext, AsyncContext, SpawnHandle};
+use actor::{Actor, ActorState, ActorContext, AsyncContext, ErrorAction, SpawnHandle};
 
 /// Stream handler
 #[allow(unused_variables)]
@@ -16,10 +16,11 @@ pub trait StreamHandler<I, E> where Self: Actor
 
     /// Method is called when stream emits error.
     ///
-    /// If this method returns `false` stream processing continues otherwise
-    /// stream processing stops.
-    fn error(&mut self, err: E, ctx: &mut Self::Context) -> bool {
-        true
+    /// If this method returns `ErrorAction::Continue` stream processing continues
+    /// otherwise stream processing stops. Default method
+    /// implementation returns `ErrorAction::Stop`
+    fn error(&mut self, err: E, ctx: &mut Self::Context) -> ErrorAction {
+        ErrorAction::Stop
     }
 
     /// Method is called when stream finishes.
@@ -122,7 +123,7 @@ impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
                     }
                 }
                 Err(err) => {
-                    if A::error(act, err, ctx) {
+                    if A::error(act, err, ctx) == ErrorAction::Stop {
                         A::finished(act, ctx);
                         return Ok(Async::Ready(()))
                     }
