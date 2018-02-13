@@ -16,7 +16,7 @@ use futures::unsync::oneshot::{channel, Receiver};
 
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
-use super::{SendError, Unsync, DestinationSender, ToEnvelope};
+use super::{SendError, Unsync, DestinationSender, ToEnvelope, MessageSubscriberSender};
 use super::envelope::UnsyncEnvelope;
 
 
@@ -165,6 +165,14 @@ impl<A, M> UnsyncSender<M> for UnsyncAddrSender<A>
     }
     fn boxed(&self) -> Box<UnsyncSender<M>> {
         Box::new(self.clone())
+    }
+}
+
+impl<M> MessageSubscriberSender<Unsync, M> for Box<UnsyncSender<M>>
+    where M: Message + 'static,
+{
+    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
+        self.as_ref().send(msg)
     }
 }
 

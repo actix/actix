@@ -98,7 +98,7 @@ impl Message for Signal {
 
 /// An actor implementation of Unix signal handling
 pub struct ProcessSignals {
-    subscribers: Vec<SyncSubscriber<Signal>>,
+    subscribers: Vec<Subscriber<Syn, Signal>>,
 }
 
 impl Default for ProcessSignals {
@@ -174,7 +174,7 @@ impl Handler<SignalType> for ProcessSignals {
 }
 
 /// Subscribe to process signals.
-pub struct Subscribe(pub SyncSubscriber<Signal>);
+pub struct Subscribe(pub Subscriber<Syn, Signal>);
 
 impl Message for Subscribe {
     type Result = ();

@@ -12,6 +12,13 @@ use actix::prelude::*;
 #[derive(Message, Debug)]
 struct Ping(usize);
 
+
+use std::rc::Rc;
+use std::marker::PhantomData;
+
+#[derive(Message, Debug)]
+struct UnsyncPing(usize, PhantomData<Rc<bool>>);
+
 struct MyActor(Arc<AtomicUsize>);
 
 impl Actor for MyActor {
@@ -22,6 +29,14 @@ impl actix::Handler<Ping> for MyActor {
     type Result = ();
 
     fn handle(&mut self, _: Ping, _: &mut Self::Context) {
+        self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
+    }
+}
+
+impl actix::Handler<UnsyncPing> for MyActor {
+    type Result = ();
+
+    fn handle(&mut self, _: UnsyncPing, _: &mut Self::Context) {
         self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
     }
 }
@@ -71,7 +86,7 @@ fn test_subscriber_call() {
 
     let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().subscriber();
-    addr.send(Ping(0));
+    addr.send(UnsyncPing(0, PhantomData));
 
     Arbiter::handle().spawn(
         addr2.call(Ping(1))

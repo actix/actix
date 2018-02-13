@@ -25,6 +25,38 @@ pub trait EnvelopeProxy {
     fn handle(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context);
 }
 
+pub struct MessageEnvelope<M: Message> {
+    msg: M,
+}
+
+impl<M: Message> MessageEnvelope<M> {
+    pub fn into_inner(self) -> M {
+        self.msg
+    }
+}
+
+impl<M: Message> From<M> for MessageEnvelope<M> {
+    fn from(msg: M) -> MessageEnvelope<M> {
+        MessageEnvelope{msg: msg}
+    }
+}
+
+pub struct SyncMessageEnvelope<M: Message + Send> where M::Result: Send {
+    msg: M,
+}
+
+impl<M: Message + Send> SyncMessageEnvelope<M> where M::Result: Send {
+    pub fn into_inner(self) -> M {
+        self.msg
+    }
+}
+
+impl<M: Message + Send> From<M> for SyncMessageEnvelope<M> where M::Result: Send {
+    fn from(msg: M) -> SyncMessageEnvelope<M> {
+        SyncMessageEnvelope{msg: msg}
+    }
+}
+
 impl<A, M> ToEnvelope<Syn, A, M> for Context<A>
     where A: Actor<Context=Context<A>> + Handler<M>,
           M: Message + Send + 'static, M::Result: Send,

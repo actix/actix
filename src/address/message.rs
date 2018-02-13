@@ -2,15 +2,13 @@ use std::time::Duration;
 use std::marker::PhantomData;
 
 use futures::{Async, Future, Poll};
-use futures::sync::oneshot::Receiver;
 use tokio_core::reactor::Timeout;
 
 use arbiter::Arbiter;
 use handler::{Handler, Message};
 
 use super::{ToEnvelope, SendError, MailboxError};
-use super::sync_channel::SyncSender;
-use super::{MessageDestination, DestinationSender};
+use super::{DestinationSender, MessageDestination, MessageSubscriber, MessageSubscriberSender};
 
 
 /// `Request` is a `Future` which represents asynchronous message sending process.
@@ -95,20 +93,20 @@ impl<T, A, M> Future for Request<T, A, M>
 
 /// `SubscriberRequest` is a `Future` which represents asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct SyncSubscriberRequest<M>
-    where M: Message + Send + 'static, M::Result: Send,
+pub struct SubscriberRequest<T, M>
+    where T: MessageSubscriber<M>, M: Message + 'static
 {
-    rx: Option<Receiver<M::Result>>,
-    info: Option<(Box<SyncSender<M>>, M)>,
+    rx: Option<T::ResultReceiver>,
+    info: Option<(T::Transport, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<M> SyncSubscriberRequest<M>
-    where M: Message + Send + 'static, M::Result: Send,
+impl<T, M> SubscriberRequest<T, M>
+    where T: MessageSubscriber<M>, M: Message + 'static
 {
-    pub(crate) fn new(rx: Option<Receiver<M::Result>>,
-                      info: Option<(Box<SyncSender<M>>, M)>) -> SyncSubscriberRequest<M> {
-        SyncSubscriberRequest{rx: rx, info: info, timeout: None}
+    pub(crate) fn new(rx: Option<T::ResultReceiver>,
+                      info: Option<(T::Transport, M)>) -> SubscriberRequest<T, M> {
+        SubscriberRequest{rx: rx, info: info, timeout: None}
     }
 
     /// Set message delivery timeout
@@ -130,8 +128,8 @@ impl<M> SyncSubscriberRequest<M>
     }
 }
 
-impl<M> Future for SyncSubscriberRequest<M>
-    where M: Message + Send + 'static, M::Result: Send,
+impl<T, M> Future for SubscriberRequest<T, M>
+    where T: MessageSubscriber<M>, M: Message + 'static
 {
     type Item = M::Result;
     type Error = MailboxError;

@@ -73,8 +73,7 @@ pub use actor::{Actor, ActorState, Supervised,
 pub use handler::{Handler, Response, ActorResponse,
                   Message, MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
-pub use address::{Addr, Syn, Unsync, ActorAddress,
-                  Subscriber, SyncSubscriber, MailboxError};
+pub use address::{Addr, Syn, Unsync, ActorAddress, Subscriber, MailboxError};
 pub use context::Context;
 pub use stream::StreamHandler;
 pub use sync::{SyncContext, SyncArbiter};
@@ -115,8 +114,7 @@ pub mod prelude {
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
-    pub use address::{Addr, Syn, Unsync,
-                      SendError, Subscriber, SyncSubscriber, MailboxError};
+    pub use address::{Addr, Syn, Unsync, SendError, Subscriber, MailboxError};
     pub use context::{Context, ContextFutureSpawner};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
@@ -131,7 +129,7 @@ pub mod prelude {
         pub use fut;
         pub use msgs;
         pub use io;
-        pub use address::{Subscriber, SyncSubscriber, ActorAddress};
+        pub use address::ActorAddress;
         pub use registry::{ArbiterService, SystemService};
         pub use utils::Condition;
     }
@@ -153,7 +151,6 @@ pub mod dev {
 
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
-    pub use address::{ActorAddress, ToEnvelope, SyncEnvelope,
-                      Request, SyncSubscriberRequest, UnsyncSubscriberRequest};
+    pub use address::{ActorAddress, ToEnvelope, SyncEnvelope, Request, SubscriberRequest};
     pub use address::{Destination, MessageDestination};
 }
