@@ -12,9 +12,10 @@ use tokio_io::codec::Encoder;
 use fut::ActorFuture;
 use actor::{Actor, ActorContext, AsyncContext, SpawnHandle, ErrorAction};
 
-/// Stream handler
+/// Write handler
 ///
-/// `StreamHandler` is an extension of a `Handler` with stream specific methods.
+/// `WriteHandler` is a helper for `AsyncWrite` types. Implementation
+/// of this trait is required for `Writer` and `FramedWrite` support.
 #[allow(unused_variables)]
 pub trait WriteHandler<E> where Self: Actor, Self::Context: ActorContext
 {
@@ -28,7 +29,7 @@ pub trait WriteHandler<E> where Self: Actor, Self::Context: ActorContext
 
     /// Method is called when writer finishes.
     ///
-    /// By default actor's `Context` get stopped.
+    /// By default this method stops actor's `Context`.
     fn finished(&mut self, ctx: &mut Self::Context) {
         ctx.stop()
     }

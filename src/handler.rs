@@ -135,7 +135,6 @@ impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<I, E
 enum ResponseTypeItem<I, E> {
     Result(Result<I, E>),
     Fut(Box<Future<Item=I, Error=E>>),
-    //AFut(Box<ActorFuture<Item=M::Item, Error=M::Error, Actor=A>>),
 }
 
 /// Helper type for representing different type of message responses

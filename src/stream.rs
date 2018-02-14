@@ -24,7 +24,11 @@ pub trait StreamHandler<I, E> where Self: Actor
     }
 
     /// Method is called when stream finishes.
-    fn finished(&mut self, ctx: &mut Self::Context) {}
+    ///
+    /// By default this method stops actor execution.
+    fn finished(&mut self, ctx: &mut Self::Context) {
+        ctx.stop()
+    }
 
     /// This method is similar to `add_future` but works with streams.
     ///
