@@ -69,7 +69,7 @@ pub mod registry;
 
 pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
 pub use actor::{Actor, ActorState, Supervised,
-                ActorContext, AsyncContext, ErrorAction, SpawnHandle};
+                ActorContext, AsyncContext, Running, SpawnHandle};
 pub use handler::{Handler, Response, ActorResponse,
                   Message, MessageResult, ResponseFuture, ResponseActFuture};
 pub use arbiter::Arbiter;
@@ -113,7 +113,7 @@ pub mod prelude {
 
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use actor::{Actor, ActorState, ActorContext, AsyncContext,
-                    ErrorAction, Supervised, SpawnHandle};
+                    Running, Supervised, SpawnHandle};
     pub use arbiter::Arbiter;
     pub use address::{Addr, Syn, Unsync, SendError, Recipient, MailboxError};
     pub use context::{Context, ContextFutureSpawner};

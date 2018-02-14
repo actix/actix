@@ -10,7 +10,7 @@ use tokio_io::AsyncWrite;
 use tokio_io::codec::Encoder;
 
 use fut::ActorFuture;
-use actor::{Actor, ActorContext, AsyncContext, SpawnHandle, ErrorAction};
+use actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
 
 /// Write handler
 ///
@@ -23,8 +23,8 @@ pub trait WriteHandler<E> where Self: Actor, Self::Context: ActorContext
     ///
     /// If this method returns `ErrorAction::Continue` writer processing continues
     /// otherwise stream processing stops.
-    fn error(&mut self, err: E, ctx: &mut Self::Context) -> ErrorAction {
-        ErrorAction::Stop
+    fn error(&mut self, err: E, ctx: &mut Self::Context) -> Running {
+        Running::Stop
     }
 
     /// Method is called when writer finishes.
@@ -142,7 +142,7 @@ impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
     fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
         let inner = unsafe{ &mut *self.inner.get() };
         if let Some(err) = inner.error.take() {
-            if act.error(err, ctx) == ErrorAction::Stop {
+            if act.error(err, ctx) == Running::Stop {
                 act.finished(ctx);
                 return Ok(Async::Ready(()));
             }
@@ -155,7 +155,7 @@ impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
                         act.error(
                             io::Error::new(io::ErrorKind::WriteZero,
                                            "failed to write frame to transport").into(), ctx)
-                        == ErrorAction::Stop
+                        == Running::Stop
                     {
                         act.finished(ctx);
                         return Ok(Async::Ready(()))
@@ -168,7 +168,7 @@ impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
                     }
                     return Ok(Async::NotReady)
                 },
-                Err(e) => if act.error(e.into(), ctx) == ErrorAction::Stop {
+                Err(e) => if act.error(e.into(), ctx) == Running::Stop {
                     act.finished(ctx);
                     return Ok(Async::Ready(()))
                 }
@@ -181,7 +181,7 @@ impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 return Ok(Async::NotReady)
             },
-            Err(e) => if act.error(e.into(), ctx) == ErrorAction::Stop {
+            Err(e) => if act.error(e.into(), ctx) == Running::Stop {
                 act.finished(ctx);
                 return Ok(Async::Ready(()))
             }

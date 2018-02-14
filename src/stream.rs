@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use futures::{Async, Poll, Stream};
 
 use fut::ActorFuture;
-use actor::{Actor, ActorState, ActorContext, AsyncContext, ErrorAction, SpawnHandle};
+use actor::{Actor, ActorState, ActorContext, AsyncContext, Running, SpawnHandle};
 
 /// Stream handler
 #[allow(unused_variables)]
@@ -19,14 +19,15 @@ pub trait StreamHandler<I, E> where Self: Actor
     /// If this method returns `ErrorAction::Continue` stream processing continues
     /// otherwise stream processing stops. Default method
     /// implementation returns `ErrorAction::Stop`
-    fn error(&mut self, err: E, ctx: &mut Self::Context) -> ErrorAction {
-        ErrorAction::Stop
+    fn error(&mut self, err: E, ctx: &mut Self::Context) -> Running {
+        Running::Stop
     }
 
     /// Method is called when stream finishes.
     ///
     /// By default this method stops actor execution.
     fn finished(&mut self, ctx: &mut Self::Context) {
+        println!("====");
         ctx.stop()
     }
 
@@ -127,7 +128,7 @@ impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
                     }
                 }
                 Err(err) => {
-                    if A::error(act, err, ctx) == ErrorAction::Stop {
+                    if A::error(act, err, ctx) == Running::Stop {
                         A::finished(act, ctx);
                         return Ok(Async::Ready(()))
                     }

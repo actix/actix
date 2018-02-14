@@ -16,14 +16,14 @@ impl Message for Num {
     type Result = ();
 }
 
-struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>, ErrorAction);
+struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>, Running);
 
 impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
-    fn stopping(&mut self, _: &mut Self::Context) -> bool {
+    fn stopping(&mut self, _: &mut Self::Context) -> Running {
         Arbiter::system().do_send(actix::msgs::SystemExit(0));
-        true
+        Running::Stop
     }
 }
 
@@ -33,7 +33,7 @@ impl StreamHandler<Num, ()> for MyActor {
         self.0.fetch_add(msg.0, Ordering::Relaxed);
     }
 
-    fn error(&mut self, _: (), _: &mut Context<MyActor>) -> ErrorAction {
+    fn error(&mut self, _: (), _: &mut Context<MyActor>) -> Running {
         self.0.fetch_add(1, Ordering::Relaxed);
         self.2
     }
@@ -54,7 +54,7 @@ fn test_stream() {
     let act_err = Arc::clone(&err);
     MyActor::create::<(), _>(move |ctx| {
         MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
-        MyActor(act_count, act_err, ErrorAction::Stop)
+        MyActor(act_count, act_err, Running::Stop)
     });
 
     sys.run();
@@ -74,7 +74,7 @@ fn test_stream_with_error() {
     let act_error = Arc::clone(&error);
     MyActor::create::<(), _>(move |ctx| {
         MyActor::add_stream(futures::stream::iter_result(items), ctx);
-        MyActor(act_count, act_error, ErrorAction::Stop)
+        MyActor(act_count, act_error, Running::Stop)
     });
 
     sys.run();
@@ -94,7 +94,7 @@ fn test_stream_with_error_no_stop() {
     let act_error = Arc::clone(&error);
     MyActor::create::<(), _>(move |ctx| {
         MyActor::add_stream(futures::stream::iter_result(items), ctx);
-        MyActor(act_count, act_error, ErrorAction::Continue)
+        MyActor(act_count, act_error, Running::Continue)
     });
 
     sys.run();
@@ -117,9 +117,9 @@ impl Actor for MySyncActor {
     fn started(&mut self, _: &mut Self::Context) {
         self.started.fetch_add(1, Ordering::Relaxed);
     }
-    fn stopping(&mut self, _: &mut Self::Context) -> bool {
+    fn stopping(&mut self, _: &mut Self::Context) -> Running {
         self.stopping.fetch_add(1, Ordering::Relaxed);
-        false
+        Running::Continue
     }
     fn stopped(&mut self, _: &mut Self::Context) {
         self.stopped.fetch_add(1, Ordering::Relaxed);

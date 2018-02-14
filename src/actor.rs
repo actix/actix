@@ -75,9 +75,9 @@ pub trait Actor: Sized + 'static {
     /// All addresses to current actor get dropped and no more evented objects
     /// left in the context.
     ///
-    /// Actor could restore from stopping state by returning `false` value.
-    fn stopping(&mut self, ctx: &mut Self::Context) -> bool {
-        true
+    /// Actor could restore from stopping state by returning `Running::Continue` value.
+    fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
+        Running::Stop
     }
 
     /// Method is called after an actor is stopped, it can be used to perform
@@ -181,6 +181,12 @@ pub enum ActorState {
     Stopping,
     /// Actor is stopped.
     Stopped,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Running {
+    Stop,
+    Continue,
 }
 
 impl ActorState {
@@ -372,12 +378,6 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     {
         self.spawn(TimerFunc::new(dur, f))
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ErrorAction {
-    Stop,
-    Continue,
 }
 
 /// Spawned future handle. Could be used for cancelling spawned future.

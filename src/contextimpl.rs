@@ -4,7 +4,7 @@ use futures::{Async, Poll};
 use smallvec::SmallVec;
 
 use fut::ActorFuture;
-use actor::{Actor, AsyncContext, ActorState, SpawnHandle, Supervised};
+use actor::{Actor, AsyncContext, ActorState, Running, SpawnHandle, Supervised};
 use address::{Addr, SyncAddressReceiver, Syn, Unsync};
 use contextitems::ActorWaitItem;
 use mailbox::Mailbox;
@@ -290,20 +290,22 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
 
             // ContextFlags::MODIFIED indicates that new IO item has
             // been added during poll process
-            if self.flags.contains(ContextFlags::MODIFIED) {
+            if self.flags.contains(ContextFlags::MODIFIED) &&
+                !self.flags.contains(ContextFlags::STOPPING)
+            {
                 continue
             }
 
             // check state
             if self.flags.contains(ContextFlags::RUNNING) {
                 // possible stop condition
-                if !self.alive() && Actor::stopping(act, ctx) {
+                if !self.alive() && Actor::stopping(act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED;
                     Actor::stopped(act, ctx);
                     return Ok(Async::Ready(()))
                 }
             } else if self.flags.contains(ContextFlags::STOPPING) {
-                if Actor::stopping(act, ctx) {
+                if Actor::stopping(act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED;
                     Actor::stopped(act, ctx);
                     return Ok(Async::Ready(()))

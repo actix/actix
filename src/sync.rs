@@ -79,7 +79,7 @@ use crossbeam_channel as channel;
 use futures::{Async, Future, Poll, Stream};
 use futures::sync::oneshot::Sender as SyncSender;
 
-use actor::{Actor, ActorContext, ActorState};
+use actor::{Actor, ActorContext, ActorState, Running};
 use arbiter::Arbiter;
 use address::sync_channel;
 use address::{Addr, Syn, SyncEnvelope, SyncAddressReceiver, EnvelopeProxy, ToEnvelope};
@@ -203,7 +203,7 @@ impl<A> SyncContext<A> where A: Actor<Context=Self> {
             match self.queue.recv() {
                 Ok(SyncContextProtocol::Stop) => {
                     self.state = ActorState::Stopping;
-                    if !A::stopping(&mut self.act, ctx) {
+                    if A::stopping(&mut self.act, ctx) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
                     }
                     self.state = ActorState::Stopped;
