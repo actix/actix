@@ -27,7 +27,6 @@ pub trait StreamHandler<I, E> where Self: Actor
     ///
     /// By default this method stops actor execution.
     fn finished(&mut self, ctx: &mut Self::Context) {
-        println!("====");
         ctx.stop()
     }
 
