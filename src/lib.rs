@@ -130,6 +130,7 @@ pub mod prelude {
         pub use fut;
         pub use msgs;
         pub use io;
+        pub use actors;
         pub use address::ActorAddress;
         pub use registry::{ArbiterService, SystemService};
         pub use utils::Condition;
