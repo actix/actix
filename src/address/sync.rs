@@ -6,7 +6,7 @@ use handler::{Handler, Message};
 use super::envelope::{ToEnvelope, SyncEnvelope, SyncMessageEnvelope};
 use super::sync_channel::{SyncSender, SyncAddressSender};
 use super::{Request, Recipient, RecipientRequest};
-use super::{Destination, MessageDestination, MessageRecipient, SendError};
+use super::{Destination, MessageDestination, MessageRecipient, SendError, MailboxError};
 
 
 /// Sync destination of the actor. Actor can run in different thread
@@ -56,7 +56,11 @@ impl<M> MessageRecipient<M> for Syn
 {
     type Transport = Box<SyncSender<M>>;
     type Envelope = SyncMessageEnvelope<M>;
-    type ResultReceiver = Receiver<M::Result>;
+
+    type SendError = SendError<M>;
+    type MailboxError = MailboxError;
+    type Receiver = Receiver<M::Result>;
+    type ReceiverFuture = RecipientRequest<Self, M>;
 
     fn do_send(tx: &Self::Transport, msg: M) -> Result<(), SendError<M>> {
         tx.do_send(msg)

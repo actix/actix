@@ -5,7 +5,7 @@ use handler::{Handler, Message};
 
 use super::{Request, Recipient, RecipientRequest};
 use super::{ToEnvelope, UnsyncEnvelope, MessageEnvelope};
-use super::{Destination, MessageDestination, MessageRecipient, SendError};
+use super::{Destination, MessageDestination, MessageRecipient, SendError, MailboxError};
 use super::unsync_channel::{UnsyncSender, UnsyncAddrSender};
 
 
@@ -58,7 +58,11 @@ impl<M> MessageRecipient<M> for Unsync where M: Message + 'static
 {
     type Envelope = MessageEnvelope<M>;
     type Transport = Box<UnsyncSender<M>>;
-    type ResultReceiver = Receiver<M::Result>;
+
+    type SendError = SendError<M>;
+    type MailboxError = MailboxError;
+    type Receiver = Receiver<M::Result>;
+    type ReceiverFuture = RecipientRequest<Self, M>;
 
     fn do_send(tx: &Self::Transport, msg: M) -> Result<(), SendError<M>> {
         tx.do_send(msg)

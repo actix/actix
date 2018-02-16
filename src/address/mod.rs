@@ -150,25 +150,29 @@ pub trait MessageDestinationTransport<T: MessageDestination<A, M>, A, M>
 pub trait MessageRecipient<M>: Sized where M: Message + 'static
 {
     type Envelope: From<M>;
-    type ResultReceiver: Future<Item=M::Result>;
     type Transport: MessageRecipientTransport<Self, M>;
+
+    type SendError;
+    type MailboxError;
+    type Receiver: Future<Item=M::Result>;
+    type ReceiverFuture: Future<Item=M::Result, Error=Self::MailboxError>;
 
     /// Send message unconditionally
     ///
     /// Deliver message even if recipient's mailbox is full
-    fn do_send(tx: &Self::Transport, msg: M) -> Result<(), SendError<M>>;
+    fn do_send(tx: &Self::Transport, msg: M) -> Result<(), Self::SendError>;
 
     /// Try send message
     ///
     /// This method fails if actor's mailbox is full or closed. This method
     /// register current task in receivers queue.
-    fn try_send(tx: &Self::Transport, msg: M) -> Result<(), SendError<M>>;
+    fn try_send(tx: &Self::Transport, msg: M) -> Result<(), Self::SendError>;
 
     /// Send asynchronous message and wait for response.
     ///
     /// Communication channel to the actor is bounded. if returned `Receiver`
     /// object get dropped, message cancels.
-    fn send(tx: &Self::Transport, msg: M) -> RecipientRequest<Self, M>;
+    fn send(tx: &Self::Transport, msg: M) -> Self::ReceiverFuture;
 
     /// Clone transport
     fn clone(tx: &Self::Transport) -> Self::Transport;
@@ -178,7 +182,7 @@ pub trait MessageRecipientTransport<T: MessageRecipient<M>, M>
     where M: Message + 'static,
           T::Transport: MessageRecipientTransport<T, M>,
 {
-    fn send(&self, msg: M) -> Result<T::ResultReceiver, SendError<M>>;
+    fn send(&self, msg: M) -> Result<T::Receiver, T::SendError>;
 }
 
 /// Address of the actor
@@ -280,7 +284,7 @@ impl<T, M> Recipient<T, M>
     /// Send message
     ///
     /// Deliver message even if recipient's mailbox is full
-    pub fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
+    pub fn do_send(&self, msg: M) -> Result<(), T::SendError> {
         T::do_send(&self.tx, msg)
     }
 
@@ -288,7 +292,7 @@ impl<T, M> Recipient<T, M>
     ///
     /// This method fails if recipient's mailbox is full or closed. This method
     /// register current task in receivers queue.
-    pub fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+    pub fn try_send(&self, msg: M) -> Result<(), T::SendError> {
         T::try_send(&self.tx, msg)
     }
 
@@ -296,7 +300,7 @@ impl<T, M> Recipient<T, M>
     ///
     /// Communication channel to the actor is bounded. if returned `Request`
     /// object get dropped, message cancels.
-    pub fn send(&self, msg: M) -> RecipientRequest<T, M> {
+    pub fn send(&self, msg: M) -> T::ReceiverFuture {
         T::send(&self.tx, msg)
     }
 }

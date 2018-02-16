@@ -96,15 +96,16 @@ impl<T, A, M> Future for Request<T, A, M>
 pub struct RecipientRequest<T, M>
     where T: MessageRecipient<M>, M: Message + 'static
 {
-    rx: Option<T::ResultReceiver>,
+    rx: Option<T::Receiver>,
     info: Option<(T::Transport, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<T, M> RecipientRequest<T, M> where T: MessageRecipient<M>, M: Message + 'static
+impl<T, M> RecipientRequest<T, M>
+    where T: MessageRecipient<M, MailboxError=MailboxError>, M: Message + 'static
 {
-    pub fn new(rx: Option<T::ResultReceiver>, info: Option<(T::Transport, M)>)
-               -> RecipientRequest<T, M>
+    pub fn new(rx: Option<T::Receiver>,
+               info: Option<(T::Transport, M)>) -> RecipientRequest<T, M>
     {
         RecipientRequest{rx: rx, info: info, timeout: None}
     }
@@ -128,10 +129,13 @@ impl<T, M> RecipientRequest<T, M> where T: MessageRecipient<M>, M: Message + 'st
     }
 }
 
-impl<T, M> Future for RecipientRequest<T, M> where T: MessageRecipient<M>, M: Message + 'static
+impl<T, M> Future for RecipientRequest<T, M>
+    where M: Message + 'static,
+          T: MessageRecipient<M, SendError=SendError<M>, MailboxError=MailboxError>,
+
 {
     type Item = M::Result;
-    type Error = MailboxError;
+    type Error = T::MailboxError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if let Some((sender, msg)) = self.info.take() {

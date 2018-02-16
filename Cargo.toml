@@ -60,3 +60,4 @@ skeptic = "0.13"
 [profile.release]
 lto = true
 opt-level = 3
+codegen-units = 1
