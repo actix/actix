@@ -8,8 +8,7 @@ use arbiter::Arbiter;
 use handler::{Handler, Message};
 
 use super::{ToEnvelope, SendError, MailboxError};
-use super::{MessageDestination, MessageDestinationTransport,
-            MessageRecipient, MessageRecipientTransport};
+use super::{MessageDestination, MessageDestinationTransport};
 
 
 /// `Request` is a `Future` which represents asynchronous message sending process.
@@ -63,78 +62,6 @@ impl<T, A, M> Future for Request<T, A, M>
 {
     type Item = M::Result;
     type Error = MailboxError;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        if let Some((sender, msg)) = self.info.take() {
-            match sender.send(msg) {
-                Ok(rx) => self.rx = Some(rx),
-                Err(SendError::Full(msg)) => {
-                    self.info = Some((sender, msg));
-                    return Ok(Async::NotReady)
-                }
-                Err(SendError::Closed(_)) => return Err(MailboxError::Closed),
-            }
-        }
-
-        if let Some(mut rx) = self.rx.take() {
-            match rx.poll() {
-                Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
-                Ok(Async::NotReady) => {
-                    self.rx = Some(rx);
-                    self.poll_timeout()
-                }
-                Err(_) => Err(MailboxError::Closed),
-            }
-        } else {
-            Err(MailboxError::Closed)
-        }
-    }
-}
-
-/// `RecipientRequest` is a `Future` which represents asynchronous message sending process.
-#[must_use = "future do nothing unless polled"]
-pub struct RecipientRequest<T, M>
-    where T: MessageRecipient<M>, M: Message + 'static
-{
-    rx: Option<T::Receiver>,
-    info: Option<(T::Transport, M)>,
-    timeout: Option<Timeout>,
-}
-
-impl<T, M> RecipientRequest<T, M>
-    where T: MessageRecipient<M, MailboxError=MailboxError>, M: Message + 'static
-{
-    pub fn new(rx: Option<T::Receiver>,
-               info: Option<(T::Transport, M)>) -> RecipientRequest<T, M>
-    {
-        RecipientRequest{rx: rx, info: info, timeout: None}
-    }
-
-    /// Set message delivery timeout
-    pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(Timeout::new(dur, Arbiter::handle()).unwrap());
-        self
-    }
-
-    fn poll_timeout(&mut self) -> Poll<M::Result, MailboxError> {
-        if let Some(ref mut timeout) = self.timeout {
-            match timeout.poll() {
-                Ok(Async::Ready(())) => Err(MailboxError::Timeout),
-                Ok(Async::NotReady) => Ok(Async::NotReady),
-                Err(_) => unreachable!()
-            }
-        } else {
-            Ok(Async::NotReady)
-        }
-    }
-}
-
-impl<T, M> Future for RecipientRequest<T, M>
-    where M: Message + 'static,
-          T: MessageRecipient<M, SendError=SendError<M>, MailboxError=MailboxError>,
-{
-    type Item = M::Result;
-    type Error = T::MailboxError;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if let Some((sender, msg)) = self.info.take() {

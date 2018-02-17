@@ -12,7 +12,7 @@ use futures::sync::oneshot::{channel as sync_channel, Receiver};
 use actor::Actor;
 use handler::{Handler, Message};
 
-use super::{SendError, Syn, MessageDestinationTransport, MessageRecipientTransport};
+use super::{SendError, Syn, MessageDestinationTransport};
 use super::queue::{Queue, PopResult};
 use super::envelope::{ToEnvelope, SyncEnvelope};
 
@@ -459,14 +459,6 @@ impl<A, M> SyncSender<M> for SyncAddressSender<A>
     }
     fn boxed(&self) -> Box<SyncSender<M>> {
         Box::new(self.clone())
-    }
-}
-
-impl<M> MessageRecipientTransport<Syn, M> for Box<SyncSender<M>>
-    where M: Message + Send + 'static, M::Result: Send,
-{
-    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
-        self.as_ref().send(msg)
     }
 }
 

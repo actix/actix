@@ -15,12 +15,12 @@ mod unsync_channel;
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
 
-pub use self::message::{Request, RecipientRequest};
+pub use self::message::Request;
 pub use self::envelope::{EnvelopeProxy, ToEnvelope, SyncEnvelope, UnsyncEnvelope,
                          MessageEnvelope, SyncMessageEnvelope};
 
-pub use self::sync::Syn;
-pub use self::unsync::Unsync;
+pub use self::sync::{Syn, SyncRecipientRequest};
+pub use self::unsync::{Unsync, UnsyncRecipientRequest};
 pub(crate) use self::sync_channel::SyncAddressReceiver;
 pub(crate) use self::unsync_channel::UnsyncAddrReceiver;
 
@@ -150,12 +150,11 @@ pub trait MessageDestinationTransport<T: MessageDestination<A, M>, A, M>
 pub trait MessageRecipient<M>: Sized where M: Message + 'static
 {
     type Envelope: From<M>;
-    type Transport: MessageRecipientTransport<Self, M>;
+    type Transport;
 
     type SendError;
     type MailboxError;
-    type Receiver: Future<Item=M::Result>;
-    type ReceiverFuture: Future<Item=M::Result, Error=Self::MailboxError>;
+    type Request: Future<Item=M::Result, Error=Self::MailboxError>;
 
     /// Send message unconditionally
     ///
@@ -172,17 +171,10 @@ pub trait MessageRecipient<M>: Sized where M: Message + 'static
     ///
     /// Communication channel to the actor is bounded. if returned `Receiver`
     /// object get dropped, message cancels.
-    fn send(tx: &Self::Transport, msg: M) -> Self::ReceiverFuture;
+    fn send(tx: &Self::Transport, msg: M) -> Self::Request;
 
     /// Clone transport
     fn clone(tx: &Self::Transport) -> Self::Transport;
-}
-
-pub trait MessageRecipientTransport<T: MessageRecipient<M>, M>
-    where M: Message + 'static,
-          T::Transport: MessageRecipientTransport<T, M>,
-{
-    fn send(&self, msg: M) -> Result<T::Receiver, T::SendError>;
 }
 
 /// Address of the actor
@@ -300,7 +292,7 @@ impl<T, M> Recipient<T, M>
     ///
     /// Communication channel to the actor is bounded. if returned `Request`
     /// object get dropped, message cancels.
-    pub fn send(&self, msg: M) -> T::ReceiverFuture {
+    pub fn send(&self, msg: M) -> T::Request {
         T::send(&self.tx, msg)
     }
 }

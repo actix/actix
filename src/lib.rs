@@ -154,7 +154,7 @@ pub mod dev {
 
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
-    pub use address::{ActorAddress, ToEnvelope, SyncEnvelope, Request, RecipientRequest};
-    pub use address::{Destination, MessageDestination, MessageDestinationTransport,
-                      MessageRecipient, MessageRecipientTransport};
+    pub use address::{ActorAddress, ToEnvelope, SyncEnvelope,
+                      Request, SyncRecipientRequest, UnsyncRecipientRequest};
+    pub use address::{Destination, MessageDestination, MessageDestinationTransport, MessageRecipient};
 }
