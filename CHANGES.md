@@ -1,10 +1,8 @@
 # CHANGES
 
-## 0.5.0 (2018-01-..)
+## 0.5.0 (2018-02-17)
 
-* Address is generic over actor destination
-
-* Drop FramedContext
+* Address/Recipient is generic over actor destination
 
 * Make rules of actor stopping more strict
 
@@ -16,9 +14,9 @@
 
 * Add `Context::handle()` method, currently runnign future handle
 
-* Add `Sink` implementation for `Subscriber`
-
 * Add `actix::io` helper types for `AsyncWrite` related types
+
+* Drop FramedContext
 
 
 ## 0.4.5 (2018-01-23)
