@@ -29,8 +29,7 @@ default = []
 members = ["examples/chat"]
 
 [dependencies]
-# actix_derive = "0.2"
-actix_derive = { git = "https://github.com/actix/actix-derive.git" }
+actix_derive = "0.2"
 
 # io
 bytes = "0.4"
