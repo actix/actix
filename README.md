@@ -125,8 +125,7 @@ impl Handler<Sum> for Summator {
 fn main() {
     let system = System::new("test");
 
-    let addr: Address<_> = Summator.start();
-
+    let addr: Addr<Unsync, _> = Summator.start();
     let res = addr.send(Sum(10, 5));  // <- send message and get future for result
     
     system.handle().spawn(res.then(|res| {
@@ -174,7 +173,7 @@ struct Ping { pub id: usize }
 // Actor definition
 struct Game {
     counter: usize, 
-    addr: Box<Subscriber<Ping>>
+    addr: Recipient<Unsync, Ping>,
 }
 
 #[actor(Context<_>)]
@@ -206,13 +205,13 @@ fn main() {
     let _: Addr<Unsync, _> = Game::create(|ctx| {
         // now we can get an address of the first actor and create the second actor
         let addr: Addr<Unsync, _> = ctx.address();
-        let addr2: Addr<Unsync, _> = Game{counter: 0, addr: addr.subscriber()}.start();
+        let addr2: Addr<Unsync, _> = Game{counter: 0, addr: addr.recipient()}.start();
         
         // let's start pings
         addr2.do_send(Ping{id: 10});
         
         // now we can finally create first actor
-        Game{counter: 0, addr: addr2.subscriber()}
+        Game{counter: 0, addr: addr2.recipient()}
     });
 
     system.run();
