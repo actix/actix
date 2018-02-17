@@ -132,7 +132,6 @@ impl<T, M> RecipientRequest<T, M>
 impl<T, M> Future for RecipientRequest<T, M>
     where M: Message + 'static,
           T: MessageRecipient<M, SendError=SendError<M>, MailboxError=MailboxError>,
-
 {
     type Item = M::Result;
     type Error = T::MailboxError;

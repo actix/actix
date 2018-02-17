@@ -128,6 +128,7 @@ pub mod prelude {
     pub mod actix {
         pub use prelude::*;
         pub use fut;
+        pub use dev;
         pub use msgs;
         pub use io;
         pub use actors;
