@@ -1,4 +1,4 @@
-//! # Actix is a rust actor framework.
+//! # Actix is a rust actors framework.
 //!
 //! [Actors](https://actix.github.io/actix/actix/trait.Actor.html) are objects
 //! which encapsulate state and behavior, they communicate exclusively
@@ -6,6 +6,14 @@
 //! Multiple actors could run in same thread. Actors could run in multiple threads
 //! with support of [`Arbiter`](https://actix.github.io/actix/actix/struct.Arbiter.html).
 //! Actors exchange typed messages.
+//!
+//! ## Documentation
+//!
+//! * [User Guide](http://actix.github.io/actix/guide/)
+//! * [Chat on gitter](https://gitter.im/actix/actix)
+//! * [GitHub repository](https://github.com/actix/actix)
+//! * [Cargo package](https://crates.io/crates/actix)
+//! * Supported Rust version: 1.21 or later
 //!
 //! ## Features
 //!
