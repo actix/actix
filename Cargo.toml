@@ -45,7 +45,7 @@ bitflags = "1.0"
 smallvec = "0.6"
 crossbeam-channel = "0.1"
 libc = { version = "0.2" }
-uuid = { version = "0.5", features = ["v4"] }
+uuid = { version = "0.6", features = ["v4"] }
 
 # dns
 trust-dns-resolver = "0.8"
