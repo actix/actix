@@ -157,18 +157,15 @@ You may have noticed that methods of `Actor` and `Handler` traits accept `&mut s
 welcome to store anything in an actor and mutate it whenever necessary.
 
 Address objects require an actor type, but if we just want to send a specific message to 
-an actor that can handle the message, we can use the `Subscriber` interface. Let's create
-a new actor that uses `Subscriber`. This example will also show how to use standard future objects.
-We will use Rust's unstable `proc_macro` feature for message and handler definitions.
+an actor that can handle the message, we can use the `Recipient` interface. Let's create
+a new actor that uses `Recipient`.
 
-```rust,ignore
-#![feature(proc_macro)]
-
-extern crate actix;
+```rust
+#[macro_use] extern crate actix;
 use std::time::Duration;
-use actix::*;
+use actix::prelude::*;
 
-#[msg]
+#[derive(Message)]
 struct Ping { pub id: usize }
 
 // Actor definition
@@ -177,22 +174,25 @@ struct Game {
     addr: Recipient<Unsync, Ping>,
 }
 
-#[actor(Context<_>)]
-impl Game {
+impl Actor for Game {
+    type Context = Context<Game>;
+}
 
-    #[simple(Ping)]
-    // simple message handler for Ping message
-    fn ping(&mut self, id: usize, ctx: &mut Context<Self>) {
+// simple message handler for Ping message
+impl Handler<Ping> for Game {
+    type Result = ();
+
+    fn handle(&mut self, msg: Ping, ctx: &mut Context<Self>) {
         self.counter += 1;
         
         if self.counter > 10 {
-            Arbiter::system().do_send(msgs::SystemExit(0));
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
         } else {
-            println!("Ping received {:?}", id);
+            println!("Ping received {:?}", msg.id);
             
             // wait 100 nanos
             ctx.run_later(Duration::new(0, 100), move |act, _| {
-                act.addr.do_send(Ping{id: id + 1});
+                act.addr.do_send(Ping{id: msg.id + 1});
             });
         }
     }
