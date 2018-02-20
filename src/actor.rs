@@ -10,7 +10,6 @@ use stream::StreamHandler;
 use contextitems::{ActorMessageItem, ActorDelayedMessageItem, ActorMessageStreamItem};
 use utils::TimerFunc;
 
-
 #[allow(unused_variables)]
 /// Actors are objects which encapsulate state and behavior.
 ///
@@ -59,7 +58,7 @@ use utils::TimerFunc;
 ///
 /// ## Stopped
 ///
-/// If actor does not modify execution context during stooping state actor state changes
+/// If actor does not modify execution context during stoping state actor state changes
 /// to `Stopped`. This state is considered final and at this point actor get dropped.
 ///
 pub trait Actor: Sized + 'static {
