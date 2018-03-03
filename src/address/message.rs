@@ -33,7 +33,7 @@ impl<T, A, M> Request<T, A, M>
 {
     pub(crate) fn new(rx: Option<T::ResultReceiver>,
                       info: Option<(T::Transport, M)>) -> Request<T, A, M> {
-        Request{rx: rx, info: info, timeout: None, act: PhantomData}
+        Request{rx, info, timeout: None, act: PhantomData}
     }
 
     /// Set message delivery timeout

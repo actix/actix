@@ -17,7 +17,7 @@ pub struct MapErr<A, F> where A: ActorFuture {
 pub fn new<A, F>(future: A, f: F) -> MapErr<A, F> where A: ActorFuture
 {
     MapErr {
-        future: future,
+        future,
         f: Some(f),
     }
 }
@@ -53,9 +53,7 @@ pub struct DropErr<A> where A: ActorFuture {
 impl<A>DropErr<A> where A: ActorFuture {
     pub(crate) fn new(future: A) -> DropErr<A>
     {
-        DropErr {
-            future: future,
-        }
+        DropErr{future}
     }
 }
 

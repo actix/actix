@@ -14,14 +14,11 @@ pub struct StreamMapErr<S, F> {
     f: F,
 }
 
-pub fn new<S, F, U>(s: S, f: F) -> StreamMapErr<S, F>
+pub fn new<S, F, U>(stream: S, f: F) -> StreamMapErr<S, F>
     where S: ActorStream,
           F: FnMut(S::Error, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
 {
-    StreamMapErr {
-        stream: s,
-        f: f,
-    }
+    StreamMapErr {stream, f}
 }
 
 impl<S, F, U> ActorStream for StreamMapErr<S, F>

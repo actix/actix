@@ -17,16 +17,15 @@ pub struct StreamThen<S, F, U>
     f: F,
 }
 
-pub fn new<S, F, U>(s: S, f: F) -> StreamThen<S, F, U>
+pub fn new<S, F, U>(stream: S, f: F) -> StreamThen<S, F, U>
     where S: ActorStream,
           F: FnMut(Result<S::Item, S::Error>,
                    &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
           U: IntoActorFuture<Actor=S::Actor>,
 {
     StreamThen {
-        stream: s,
+        stream, f,
         future: None,
-        f: f,
     }
 }
 

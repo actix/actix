@@ -19,7 +19,7 @@ pub fn new<A, E>(future: A) -> FromErr<A, E>
     where A: ActorFuture
 {
     FromErr {
-        future: future,
+        future,
         f: PhantomData
     }
 }

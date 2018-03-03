@@ -103,7 +103,7 @@ impl<M> SyncRecipientRequest<M>
     pub fn new(rx: Option<Receiver<M::Result>>,
                info: Option<(Box<SyncSender<M>>, M)>) -> SyncRecipientRequest<M>
     {
-        SyncRecipientRequest{rx: rx, info: info, timeout: None}
+        SyncRecipientRequest{rx, info, timeout: None}
     }
 
     /// Set message delivery timeout

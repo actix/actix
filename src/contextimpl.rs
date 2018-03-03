@@ -1,3 +1,5 @@
+#![cfg_attr(feature="cargo-clippy",
+            allow(redundant_field_names, suspicious_arithmetic_impl))]
 use std::mem;
 
 use futures::{Async, Poll};
@@ -40,7 +42,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     #[inline]
     pub fn new(act: Option<A>) -> ContextImpl<A> {
         ContextImpl {
-            act: act,
+            act,
             wait: SmallVec::new(),
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
@@ -53,7 +55,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     #[inline]
     pub fn with_receiver(act: Option<A>, rx: SyncAddressReceiver<A>) -> Self {
         ContextImpl {
-            act: act,
+            act,
             wait: SmallVec::new(),
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,

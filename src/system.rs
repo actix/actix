@@ -66,17 +66,14 @@ impl System {
     pub fn new<T: Into<String>>(name: T) -> SystemRunner {
         let name = name.into();
         let core = Arbiter::new_system(name.clone());
-        let (stop_tx, stop_rx) = channel();
+        let (stop_tx, stop) = channel();
 
         // start system
         let sys = System {
             arbiters: HashMap::new(), stop: Some(stop_tx)}.start();
         Arbiter::set_system(sys, name);
 
-        SystemRunner {
-            core: core,
-            stop: stop_rx,
-        }
+        SystemRunner { core, stop }
     }
 }
 

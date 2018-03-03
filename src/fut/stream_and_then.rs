@@ -17,15 +17,14 @@ pub struct StreamAndThen<S, F, U>
     f: F,
 }
 
-pub fn new<S, F, U>(s: S, f: F) -> StreamAndThen<S, F, U>
+pub fn new<S, F, U>(stream: S, f: F) -> StreamAndThen<S, F, U>
     where S: ActorStream,
           F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
           U: IntoActorFuture<Error=S::Error>,
 {
     StreamAndThen {
-        stream: s,
+        stream, f,
         future: None,
-        f: f,
     }
 }
 

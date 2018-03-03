@@ -104,7 +104,7 @@ impl<M> UnsyncRecipientRequest<M> where M: Message + 'static
     pub fn new(rx: Option<Receiver<M::Result>>,
                info: Option<(Box<UnsyncSender<M>>, M)>) -> UnsyncRecipientRequest<M>
     {
-        UnsyncRecipientRequest{rx: rx, info: info, timeout: None}
+        UnsyncRecipientRequest{rx, info, timeout: None}
     }
 
     /// Set message delivery timeout

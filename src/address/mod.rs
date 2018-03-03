@@ -188,7 +188,7 @@ unsafe impl<A: Actor> Sync for Addr<Syn, A> {}
 
 impl<T: Destination<A>, A> Addr<T, A> {
     pub fn new(tx: T::Transport) -> Addr<T, A> {
-        Addr{tx: tx, act: PhantomData}
+        Addr{tx, act: PhantomData}
     }
 
     /// Indicates if actor is still alive
@@ -270,7 +270,7 @@ impl<T, M> Recipient<T, M>
 {
     /// Create new subscriber
     pub fn new(tx: T::Transport) -> Recipient<T, M> {
-        Recipient{tx: tx, msg: PhantomData}
+        Recipient{tx, msg: PhantomData}
     }
 
     /// Send message

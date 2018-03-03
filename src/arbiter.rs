@@ -79,7 +79,7 @@ impl Arbiter {
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
 
             // start arbiter
-            let (addr, saddr) = Actor::start(Arbiter {sys: false, id: id});
+            let (addr, saddr) = Actor::start(Arbiter {id, sys: false});
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
             if tx.send(saddr).is_err() {

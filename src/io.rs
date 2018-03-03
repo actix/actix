@@ -1,3 +1,5 @@
+#![cfg_attr(feature="cargo-clippy",
+            allow(redundant_field_names, suspicious_arithmetic_impl))]
 use std::{io, mem};
 use std::cell::UnsafeCell;
 use std::rc::Rc;
@@ -69,8 +71,8 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E>
     {
         let inner = Rc::new(UnsafeCell::new(
             InnerWriter {
+                io,
                 flags: Flags::empty(),
-                io: io,
                 buffer: BytesMut::new(),
                 error: None,
                 low: LOW_WATERMARK,
@@ -79,7 +81,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E>
             }));
         let h = ctx.spawn(WriterFut{inner: Rc::clone(&inner), act: PhantomData});
 
-        let mut writer = Writer{inner: inner};
+        let mut writer = Writer{inner};
         writer.as_mut().handle = h;
         writer
     }
@@ -252,7 +254,7 @@ pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
 
 impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
 {
-    pub fn new<A, C>(io: T, encoder: U, ctx: &mut C) -> FramedWrite<T, U>
+    pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> FramedWrite<T, U>
         where A: Actor<Context=C> + WriteHandler<U::Error>,
               C: AsyncContext<A>,
               U::Error: 'static,
@@ -260,8 +262,8 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
     {
         let inner = Rc::new(UnsafeCell::new(
             InnerWriter {
+                io,
                 flags: Flags::empty(),
-                io: io,
                 buffer: BytesMut::new(),
                 error: None,
                 low: LOW_WATERMARK,
@@ -270,12 +272,12 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
             }));
         let h = ctx.spawn(WriterFut{inner: Rc::clone(&inner), act: PhantomData});
 
-        let mut writer = FramedWrite{enc: encoder, inner: inner};
+        let mut writer = FramedWrite{enc, inner};
         writer.as_mut().handle = h;
         writer
     }
 
-    pub fn from_buffer<A, C>(io: T, encoder: U, buf: BytesMut, ctx: &mut C)
+    pub fn from_buffer<A, C>(io: T, enc: U, buffer: BytesMut, ctx: &mut C)
                              -> FramedWrite<T, U>
         where A: Actor<Context=C> + WriteHandler<U::Error>,
               C: AsyncContext<A>,
@@ -284,9 +286,9 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
     {
         let inner = Rc::new(UnsafeCell::new(
             InnerWriter {
+                io,
+                buffer,
                 flags: Flags::empty(),
-                io: io,
-                buffer: buf,
                 error: None,
                 low: LOW_WATERMARK,
                 high: HIGH_WATERMARK,
@@ -294,7 +296,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
             }));
         let h = ctx.spawn(WriterFut{inner: Rc::clone(&inner), act: PhantomData});
 
-        let mut writer = FramedWrite{enc: encoder, inner: inner};
+        let mut writer = FramedWrite{enc, inner};
         writer.as_mut().handle = h;
         writer
     }

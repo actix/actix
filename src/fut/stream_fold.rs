@@ -27,15 +27,14 @@ enum State<T, F> where F: ActorFuture {
     Processing(F),
 }
 
-pub fn new<S, F, Fut, T>(s: S, f: F, t: T) -> StreamFold<S, F, Fut, T>
+pub fn new<S, F, Fut, T>(stream: S, f: F, t: T) -> StreamFold<S, F, Fut, T>
     where S: ActorStream,
           F: FnMut(T, S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> Fut,
           Fut: IntoActorFuture<Item = T, Actor=S::Actor>,
           S::Error: From<Fut::Error>,
 {
     StreamFold {
-        stream: s,
-        f: f,
+        stream, f,
         state: State::Ready(t),
     }
 }

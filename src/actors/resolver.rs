@@ -140,7 +140,7 @@ impl Default for Connector {
                     Arbiter::handle())
             }
         };
-        Connector{resolver: resolver}
+        Connector{resolver}
     }
 
     #[cfg(not(unix))]
@@ -198,21 +198,21 @@ impl Resolver {
             addrs.push_back(addr);
 
             Resolver {
+                port,
                 lookup: None,
-                port: port,
                 addrs: Some(addrs),
                 error: None }
         } else {
             // we need to do dns resolution
             match Resolver::parse(addr.as_ref(), port) {
                 Ok((host, port)) => Resolver {
+                    port,
                     lookup: Some(resolver.lookup_ip(host)),
-                    port: port,
                     addrs: None,
                     error: None },
                 Err(err) => Resolver {
+                    port,
                     lookup: None,
-                    port: port,
                     addrs: None,
                     error: Some(err) }
             }
@@ -285,7 +285,7 @@ impl TcpConnector {
 
     pub fn with_timeout(addrs: VecDeque<SocketAddr>, timeout: Duration) -> TcpConnector {
         TcpConnector {
-            addrs: addrs,
+            addrs,
             stream: None,
             timeout: Timeout::new(timeout, Arbiter::handle()).unwrap() }
     }

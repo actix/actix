@@ -14,14 +14,11 @@ pub struct StreamMap<S, F> {
     f: F,
 }
 
-pub fn new<S, F, U>(s: S, f: F) -> StreamMap<S, F>
+pub fn new<S, F, U>(stream: S, f: F) -> StreamMap<S, F>
     where F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
           S: ActorStream,
 {
-    StreamMap {
-        stream: s,
-        f: f,
-    }
+    StreamMap {stream, f}
 }
 
 impl<S, F, U> ActorStream for StreamMap<S, F>

@@ -38,7 +38,7 @@ impl<M: Message> MessageEnvelope<M> {
 
 impl<M: Message> From<M> for MessageEnvelope<M> {
     fn from(msg: M) -> MessageEnvelope<M> {
-        MessageEnvelope{msg: msg}
+        MessageEnvelope{msg}
     }
 }
 
@@ -54,7 +54,7 @@ impl<M: Message + Send> SyncMessageEnvelope<M> where M::Result: Send {
 
 impl<M: Message + Send> From<M> for SyncMessageEnvelope<M> where M::Result: Send {
     fn from(msg: M) -> SyncMessageEnvelope<M> {
-        SyncMessageEnvelope{msg: msg}
+        SyncMessageEnvelope{msg}
     }
 }
 
@@ -85,9 +85,8 @@ impl<A: Actor> SyncEnvelope<A> {
         where A: Handler<M>, A::Context: AsyncContext<A>,
               M: Message + Send + 'static, M::Result: Send
     {
-        SyncEnvelope(Box::new(SyncEnvelopeProxy{msg: Some(msg),
-                                                tx: tx,
-                                                act: PhantomData}))
+        SyncEnvelope(
+            Box::new(SyncEnvelopeProxy{tx, msg: Some(msg), act: PhantomData}))
     }
 
     pub fn with_proxy(proxy: Box<EnvelopeProxy<Actor=A> + Send>) -> SyncEnvelope<A> {
@@ -138,8 +137,7 @@ impl<A: Actor> UnsyncEnvelope<A> {
         where A: Handler<M>, A::Context: AsyncContext<A>,
               M: Message + 'static
     {
-        UnsyncEnvelope(Box::new(UnsyncEnvelopeProxy{msg: Some(msg),
-                                                    tx: tx,
+        UnsyncEnvelope(Box::new(UnsyncEnvelopeProxy{tx, msg: Some(msg),
                                                     act: PhantomData}))
     }
 }

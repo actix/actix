@@ -24,12 +24,7 @@ pub struct StreamTimeout<S> where S: ActorStream
 pub fn new<S>(stream: S, timeout: Duration, err: S::Error) -> StreamTimeout<S>
     where S: ActorStream, S::Error: Clone
 {
-    StreamTimeout {
-        stream: stream,
-        err: err,
-        dur: timeout,
-        timeout: None,
-    }
+    StreamTimeout {stream, err, dur: timeout, timeout: None}
 }
 
 impl<S> ActorStream for StreamTimeout<S> where S: ActorStream, S::Error: Clone

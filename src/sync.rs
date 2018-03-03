@@ -115,7 +115,7 @@ impl<A> SyncArbiter<A> where A: Actor<Context=SyncContext<A>> + Send {
 
         let (tx, rx) = sync_channel::channel(0);
         Arbiter::handle().spawn(
-            SyncArbiter{queue: sender, msgs: rx, threads: threads});
+            SyncArbiter{queue: sender, msgs: rx, threads});
 
         Addr::new(tx)
     }
@@ -180,13 +180,16 @@ pub struct SyncContext<A> where A: Actor<Context=SyncContext<A>> {
 
 impl<A> SyncContext<A> where A: Actor<Context=Self> {
     /// Create new SyncContext
-    fn new(factory: Arc<Fn() -> A>, queue: channel::Receiver<SyncContextProtocol<A>>) -> Self {
+    fn new(factory: Arc<Fn() -> A>,
+           queue: channel::Receiver<SyncContextProtocol<A>>) -> Self
+    {
+        let act = factory();
         SyncContext {
-            act: factory(),
-            queue: queue,
+            act,
+            queue,
+            factory,
             stopping: false,
             state: ActorState::Started,
-            factory: factory,
         }
     }
 
@@ -270,9 +273,7 @@ impl<A, M> SyncContextEnvelope<A, M>
           M: Message + Send, M::Result: Send
 {
     pub fn new(msg: M, tx: Option<SyncSender<M::Result>>) -> Self {
-        SyncContextEnvelope{msg: Some(msg),
-                            tx: tx,
-                            actor: PhantomData}
+        SyncContextEnvelope{tx, msg: Some(msg), actor: PhantomData}
     }
 }
 

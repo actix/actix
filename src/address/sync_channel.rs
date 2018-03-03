@@ -178,9 +178,7 @@ pub fn channel<A: Actor>(buffer: usize) -> (SyncAddressSender<A>, SyncAddressRec
         maybe_parked: Cell::new(false),
     };
 
-    let rx = SyncAddressReceiver {
-        inner: inner,
-    };
+    let rx = SyncAddressReceiver{inner};
 
     (tx, rx)
 }

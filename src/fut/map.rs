@@ -18,7 +18,7 @@ pub fn new<A, F>(future: A, f: F) -> Map<A, F>
     where A: ActorFuture,
 {
     Map {
-        future: future,
+        future,
         f: Some(f),
     }
 }
