@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.1 (2018-03-xx)
+
+* Do not send StopArbiter message to system arbiter during system shutdown #53
+
+
 ## 0.5.0 (2018-02-17)
 
 * Address/Recipient is generic over actor destination
