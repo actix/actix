@@ -1,6 +1,8 @@
 # CHANGES
 
-## 0.5.1 (2018-03-xx)
+## 0.5.1 (2018-03-02)
+
+* Internal state is alive during `stopping` period.
 
 * Do not send StopArbiter message to system arbiter during system shutdown #53
 

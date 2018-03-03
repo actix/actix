@@ -289,8 +289,7 @@ impl<A, M> EnvelopeProxy for SyncContextEnvelope<A, M>
         }
 
         if let Some(msg) = self.msg.take() {
-            let mut response = <A as Handler<M>>::handle(act, msg, ctx);
-            response.handle(ctx, tx)
+            <A as Handler<M>>::handle(act, msg, ctx).handle(ctx, tx)
         }
     }
 }

@@ -180,7 +180,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
 
     #[inline]
     pub fn alive(&self) -> bool {
-        if self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPPED) {
+        if self.flags.intersects(ContextFlags::STOPPED) {
             false
         } else {
             self.mailbox.connected() || !self.items.is_empty() || !self.wait.is_empty()
