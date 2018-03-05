@@ -58,7 +58,7 @@ use utils::TimerFunc;
 ///
 /// ## Stopped
 ///
-/// If actor does not modify execution context during stoping state actor state changes
+/// If actor does not modify execution context during stopping state actor state changes
 /// to `Stopped`. This state is considered final and at this point actor get dropped.
 ///
 pub trait Actor: Sized + 'static {
