@@ -196,7 +196,7 @@ impl<T: Destination<A>, A> Addr<T, A> {
         T::connected(&self.tx)
     }
 
-    /// Sendm message unconditionally
+    /// Send message unconditionally
     ///
     /// This method ignores actor's mailbox capacity, it silently fails if mailbox is closed.
     pub fn do_send<M>(&self, msg: M)

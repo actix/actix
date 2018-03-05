@@ -2,7 +2,7 @@
 //!
 //! Sync actors could be used for cpu bound load. Only one sync actor
 //! runs within arbiter's thread. Sync actor process one message at a time.
-//! Sync arbiter can start mutiple threads with separate instance of actor in each.
+//! Sync arbiter can start multiple threads with separate instance of actor in each.
 //! Note on actor `stopping` lifecycle event, sync actor can not prevent
 //! stopping by returning `false` from `stopping` method.
 //! Multi consumer queue is used as a communication channel queue.
