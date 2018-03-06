@@ -52,7 +52,6 @@ use tokio_core::net::{TcpStream, TcpStreamNew};
 
 use prelude::*;
 
-
 pub struct Resolve {
     name: String,
     port: Option<u16>,
@@ -60,10 +59,16 @@ pub struct Resolve {
 
 impl Resolve {
     pub fn host<T: AsRef<str>>(host: T) -> Resolve {
-        Resolve{name: host.as_ref().to_owned(), port: None}
+        Resolve {
+            name: host.as_ref().to_owned(),
+            port: None,
+        }
     }
     pub fn host_and_port<T: AsRef<str>>(host: T, port: u16) -> Resolve {
-        Resolve{name: host.as_ref().to_owned(), port: Some(port)}
+        Resolve {
+            name: host.as_ref().to_owned(),
+            port: Some(port),
+        }
     }
 }
 
@@ -74,14 +79,43 @@ impl Message for Resolve {
 pub struct Connect {
     name: String,
     port: Option<u16>,
+    timeout: Option<Duration>,
 }
 
 impl Connect {
     pub fn host<T: AsRef<str>>(host: T) -> Connect {
-        Connect{name: host.as_ref().to_owned(), port: None}
+        Connect {
+            name: host.as_ref().to_owned(),
+            port: None,
+            timeout: None,
+        }
     }
     pub fn host_and_port<T: AsRef<str>>(host: T, port: u16) -> Connect {
-        Connect{name: host.as_ref().to_owned(), port: Some(port)}
+        Connect {
+            name: host.as_ref().to_owned(),
+            port: Some(port),
+            timeout: None,
+        }
+    }
+
+    pub fn host_and_timeout<T: AsRef<str>>(host: T, timeout: Duration) -> Connect {
+        Connect {
+            name: host.as_ref().to_owned(),
+            port: None,
+            timeout: Some(timeout),
+        }
+    }
+
+    pub fn host_and_port_and_timeout<T: AsRef<str>>(
+        host: T,
+        port: u16,
+        timeout: Duration,
+    ) -> Connect {
+        Connect {
+            name: host.as_ref().to_owned(),
+            port: Some(port),
+            timeout: Some(timeout),
+        }
     }
 }
 
@@ -127,7 +161,6 @@ impl Supervised for Connector {}
 impl actix::ArbiterService for Connector {}
 
 impl Default for Connector {
-
     #[cfg(unix)]
     fn default() -> Connector {
         let resolver = match ResolverFuture::from_system_conf(Arbiter::handle()) {
@@ -137,10 +170,11 @@ impl Default for Connector {
                 ResolverFuture::new(
                     ResolverConfig::default(),
                     ResolverOpts::default(),
-                    Arbiter::handle())
+                    Arbiter::handle(),
+                )
             }
         };
-        Connector{resolver}
+        Connector { resolver }
     }
 
     #[cfg(not(unix))]
@@ -148,8 +182,9 @@ impl Default for Connector {
         let resolver = ResolverFuture::new(
             ResolverConfig::default(),
             ResolverOpts::default(),
-            Arbiter::handle());
-        Connector{resolver: resolver}
+            Arbiter::handle(),
+        );
+        Connector { resolver: resolver }
     }
 }
 
@@ -157,7 +192,11 @@ impl Handler<Resolve> for Connector {
     type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ConnectorError>;
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
-        Box::new(Resolver::new(msg.name, msg.port.unwrap_or(0), &self.resolver))
+        Box::new(Resolver::new(
+            msg.name,
+            msg.port.unwrap_or(0),
+            &self.resolver,
+        ))
     }
 }
 
@@ -165,9 +204,11 @@ impl Handler<Connect> for Connector {
     type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
+        let timeout = msg.timeout.unwrap_or(Duration::from_secs(1));
         Box::new(
             Resolver::new(msg.name, msg.port.unwrap_or(0), &self.resolver)
-                .and_then(|addrs, _, _| TcpConnector::new(addrs)))
+                .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
+        )
     }
 }
 
@@ -190,7 +231,6 @@ struct Resolver {
 }
 
 impl Resolver {
-
     pub fn new<S: AsRef<str>>(addr: S, port: u16, resolver: &ResolverFuture) -> Resolver {
         // try to parse as a regular SocketAddr first
         if let Ok(addr) = addr.as_ref().parse() {
@@ -201,7 +241,8 @@ impl Resolver {
                 port,
                 lookup: None,
                 addrs: Some(addrs),
-                error: None }
+                error: None,
+            }
         } else {
             // we need to do dns resolution
             match Resolver::parse(addr.as_ref(), port) {
@@ -209,12 +250,14 @@ impl Resolver {
                     port,
                     lookup: Some(resolver.lookup_ip(host)),
                     addrs: None,
-                    error: None },
+                    error: None,
+                },
                 Err(err) => Resolver {
                     port,
                     lookup: None,
                     addrs: None,
-                    error: Some(err) }
+                    error: Some(err),
+                },
             }
         }
     }
@@ -244,9 +287,11 @@ impl ActorFuture for Resolver {
     type Error = ConnectorError;
     type Actor = Connector;
 
-    fn poll(&mut self, _: &mut Connector, _: &mut Context<Connector>)
-            -> Poll<Self::Item, Self::Error>
-    {
+    fn poll(
+        &mut self,
+        _: &mut Connector,
+        _: &mut Context<Connector>,
+    ) -> Poll<Self::Item, Self::Error> {
         if let Some(err) = self.error.take() {
             Err(err)
         } else if let Some(addrs) = self.addrs.take() {
@@ -255,15 +300,17 @@ impl ActorFuture for Resolver {
             match self.lookup.as_mut().unwrap().poll() {
                 Ok(Async::NotReady) => Ok(Async::NotReady),
                 Ok(Async::Ready(ips)) => {
-                    let addrs: VecDeque<_> =
-                        ips.iter().map(|ip| SocketAddr::new(ip, self.port)).collect();
+                    let addrs: VecDeque<_> = ips.iter()
+                        .map(|ip| SocketAddr::new(ip, self.port))
+                        .collect();
                     if addrs.is_empty() {
                         Err(ConnectorError::Resolver(
-                            "Expect at least one A dns record".to_owned()))
+                            "Expect at least one A dns record".to_owned(),
+                        ))
                     } else {
                         Ok(Async::Ready(addrs))
                     }
-                },
+                }
                 Err(err) => Err(ConnectorError::Resolver(format!("{}", err))),
             }
         }
@@ -278,7 +325,6 @@ pub struct TcpConnector {
 }
 
 impl TcpConnector {
-
     pub fn new(addrs: VecDeque<SocketAddr>) -> TcpConnector {
         TcpConnector::with_timeout(addrs, Duration::from_secs(1))
     }
@@ -287,7 +333,8 @@ impl TcpConnector {
         TcpConnector {
             addrs,
             stream: None,
-            timeout: Timeout::new(timeout, Arbiter::handle()).unwrap() }
+            timeout: Timeout::new(timeout, Arbiter::handle()).unwrap(),
+        }
     }
 }
 
@@ -296,12 +343,14 @@ impl ActorFuture for TcpConnector {
     type Error = ConnectorError;
     type Actor = Connector;
 
-    fn poll(&mut self, _: &mut Connector, _: &mut Context<Connector>)
-            -> Poll<Self::Item, Self::Error>
-    {
+    fn poll(
+        &mut self,
+        _: &mut Connector,
+        _: &mut Context<Connector>,
+    ) -> Poll<Self::Item, Self::Error> {
         // timeout
         if let Ok(Async::Ready(_)) = self.timeout.poll() {
-            return Err(ConnectorError::Timeout)
+            return Err(ConnectorError::Timeout);
         }
 
         // connect
@@ -312,7 +361,7 @@ impl ActorFuture for TcpConnector {
                     Ok(Async::NotReady) => return Ok(Async::NotReady),
                     Err(err) => {
                         if self.addrs.is_empty() {
-                            return Err(ConnectorError::IoError(err))
+                            return Err(ConnectorError::IoError(err));
                         }
                     }
                 }
