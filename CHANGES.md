@@ -19,7 +19,7 @@
 
 * Add `StreamHandler` trait for stream handling
 
-* Add `Context::handle()` method, currently runnign future handle
+* Add `Context::handle()` method, currently running future handle
 
 * Add `actix::io` helper types for `AsyncWrite` related types
 
@@ -39,7 +39,7 @@
 
 * Add `Clone` implementation for `Box<Subscriber<M> + Send>`
 
-* Stop stream polling if context is wating for future completion
+* Stop stream polling if context is waiting for future completion
 
 * Upgraded address stops working after all references are dropped #38
 
@@ -69,7 +69,7 @@
 
 * Simplify `Handler` trait (E type removed).
 
-* Use assosiated type for handler response for `Handler` trait.
+* Use associated type for handler response for `Handler` trait.
 
 * Added framed `drain` method.
 
