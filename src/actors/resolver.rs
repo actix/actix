@@ -74,14 +74,20 @@ impl Message for Resolve {
 pub struct Connect {
     name: String,
     port: Option<u16>,
+    timeout: Duration,
 }
 
 impl Connect {
     pub fn host<T: AsRef<str>>(host: T) -> Connect {
-        Connect{name: host.as_ref().to_owned(), port: None}
+        Connect{name: host.as_ref().to_owned(), port: None, timeout: Duration::from_secs(1)}
     }
     pub fn host_and_port<T: AsRef<str>>(host: T, port: u16) -> Connect {
-        Connect{name: host.as_ref().to_owned(), port: Some(port)}
+        Connect{name: host.as_ref().to_owned(), port: Some(port), timeout: Duration::from_secs(1)}
+    }
+
+    pub fn timeout(mut self, timeout: Duration) -> Connect {
+        self.timeout = timeout;
+        self
     }
 }
 
@@ -165,9 +171,10 @@ impl Handler<Connect> for Connector {
     type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
+        let timeout = msg.timeout;
         Box::new(
             Resolver::new(msg.name, msg.port.unwrap_or(0), &self.resolver)
-                .and_then(|addrs, _, _| TcpConnector::new(addrs)))
+                .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)))
     }
 }
 
