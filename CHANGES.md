@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.2 (2018-03-xx)
+
+* Allow to set timeout for Connect message #56
+
+
 ## 0.5.1 (2018-03-02)
 
 * Internal state is alive during `stopping` period.
