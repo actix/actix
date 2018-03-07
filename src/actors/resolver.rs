@@ -59,9 +59,11 @@ pub struct Resolve {
 }
 
 impl Resolve {
+
     pub fn host<T: AsRef<str>>(host: T) -> Resolve {
         Resolve{name: host.as_ref().to_owned(), port: None}
     }
+
     pub fn host_and_port<T: AsRef<str>>(host: T, port: u16) -> Resolve {
         Resolve{name: host.as_ref().to_owned(), port: Some(port)}
     }
@@ -78,13 +80,22 @@ pub struct Connect {
 }
 
 impl Connect {
+
     pub fn host<T: AsRef<str>>(host: T) -> Connect {
-        Connect{name: host.as_ref().to_owned(), port: None, timeout: Duration::from_secs(1)}
-    }
-    pub fn host_and_port<T: AsRef<str>>(host: T, port: u16) -> Connect {
-        Connect{name: host.as_ref().to_owned(), port: Some(port), timeout: Duration::from_secs(1)}
+        Connect{name: host.as_ref().to_owned(),
+                port: None,
+                timeout: Duration::from_secs(1)}
     }
 
+    pub fn host_and_port<T: AsRef<str>>(host: T, port: u16) -> Connect {
+        Connect{name: host.as_ref().to_owned(),
+                port: Some(port),
+                timeout: Duration::from_secs(1)}
+    }
+
+    /// Set connect timeout
+    ///
+    /// By default timeout is set to a 1 second.
     pub fn timeout(mut self, timeout: Duration) -> Connect {
         self.timeout = timeout;
         self

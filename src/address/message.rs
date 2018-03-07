@@ -12,7 +12,7 @@ use super::{MessageDestination, MessageDestinationTransport};
 
 
 /// `Request` is a `Future` which represents asynchronous message sending process.
-#[must_use = "future do nothing unless polled"]
+#[must_use = "You have to wait on request otherwise Message wont be delivered"]
 pub struct Request<T, A, M>
     where T: MessageDestination<A, M>,
           T::Transport: MessageDestinationTransport<T, A, M>,
