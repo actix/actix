@@ -1,6 +1,6 @@
 # CHANGES
 
-## 0.5.2 (2018-03-xx)
+## 0.5.2 (2018-03-06)
 
 * Allow to set timeout for Connect message #56
 
