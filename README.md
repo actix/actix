@@ -201,7 +201,7 @@ impl Handler<Ping> for Game {
 fn main() {
     let system = System::new("test");
 
-    // To get a Subscriber object, we need to use a different builder method
+    // To get a Recipient object, we need to use a different builder method
     // which will allow postponing actor creation
     let _: Addr<Unsync, _> = Game::create(|ctx| {
         // now we can get an address of the first actor and create the second actor

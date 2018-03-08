@@ -251,10 +251,10 @@ impl<T: Destination<A>, A> Clone for Addr<T, A> {
     }
 }
 
-/// `Subscriber` type allows to send one specific message to an actor.
+/// `Recipient` type allows to send one specific message to an actor.
 ///
-/// You can get subscriber with `Addr<_, _>::subscriber()` method.
-/// It is possible to use `Clone::clone()` method to get cloned subscriber.
+/// You can get recipient with `Addr<_, _>::recipient()` method.
+/// It is possible to use `Clone::clone()` method to get cloned recipient.
 pub struct Recipient<T: MessageRecipient<M>, M: Message + 'static> {
     tx: T::Transport,
     msg: PhantomData<M>,
@@ -268,7 +268,7 @@ unsafe impl<M> Sync for Recipient<Syn, M>
 impl<T, M> Recipient<T, M>
     where T: MessageRecipient<M>, M: Message + 'static
 {
-    /// Create new subscriber
+    /// Create new recipient
     pub fn new(tx: T::Transport) -> Recipient<T, M> {
         Recipient{tx, msg: PhantomData}
     }
