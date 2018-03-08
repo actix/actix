@@ -6,10 +6,10 @@ extern crate tokio_core;
 use std::time::Duration;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use futures::{future, Future};
+use futures::{future, Future, Stream};
 use futures::stream::once;
 use futures::unsync::mpsc::unbounded;
-use tokio_core::reactor::Timeout;
+use tokio_core::reactor::{Timeout, Interval};
 use actix::prelude::*;
 use actix::msgs::SystemExit;
 
@@ -66,6 +66,7 @@ impl Handler<TimeoutMessage> for MyActor {
     type Result = ();
 
     fn handle(&mut self, _: TimeoutMessage, _: &mut Self::Context) {
+        println!("HANDLE");
         if self.op != Op::Timeout {
             assert!(false, "should not happen {:?}", self.op);
         }
@@ -349,4 +350,39 @@ fn test_start_from_context() {
     sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
+}
+
+
+struct CancelHandler {
+    source: SpawnHandle,
+}
+impl Actor for CancelHandler {
+    type Context = Context<Self>;
+
+    fn stopped(&mut self, _: &mut Context<Self>) {
+        Arbiter::system().do_send(SystemExit(0));
+    }
+}
+
+struct CancelPacket;
+impl<K> StreamHandler<CancelPacket, K> for CancelHandler {
+    fn handle(&mut self, _: CancelPacket, ctx: &mut Context<Self>) {
+        ctx.cancel_future(self.source);
+    }
+}
+
+#[test]
+fn test_cancel_handler() {
+    let sys = actix::System::new("test");
+    let _: () = CancelHandler::create(|ctx| {
+        CancelHandler {
+            source: ctx.add_stream(
+                Interval::new(
+                    Duration::from_millis(1),
+                    Arbiter::handle()
+                ).unwrap().map(|_| CancelPacket)
+            ),
+        }
+    });
+    sys.run();
 }

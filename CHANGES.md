@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.3 (2018-03-08)
+
+* Panic after cancelling stream future #58
+
+
 ## 0.5.2 (2018-03-06)
 
 * Allow to set timeout for Connect message #56

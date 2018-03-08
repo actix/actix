@@ -33,8 +33,7 @@ pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     mailbox: Mailbox<A>,
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
     items: SmallVec<[Item<A>; 3]>,
-    handle: SpawnHandle,
-    curr_handle: SpawnHandle,
+    handles: SmallVec<[SpawnHandle; 2]>,
 }
 
 impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
@@ -47,8 +46,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
             mailbox: Mailbox::default(),
-            handle: SpawnHandle::default(),
-            curr_handle: SpawnHandle::default(),
+            handles: SmallVec::from_slice(
+                &[SpawnHandle::default(), SpawnHandle::default()]),
         }
     }
 
@@ -60,8 +59,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
             mailbox: Mailbox::new(rx),
-            handle: SpawnHandle::default(),
-            curr_handle: SpawnHandle::default(),
+            handles: SmallVec::from_slice(
+                &[SpawnHandle::default(), SpawnHandle::default()]),
         }
     }
 
@@ -120,7 +119,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     #[inline]
     /// Handle of the running future
     pub fn curr_handle(&self) -> SpawnHandle {
-        self.curr_handle
+        self.handles[1]
     }
 
     #[inline]
@@ -129,10 +128,11 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
         where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
     {
         self.modify();
-        self.handle = self.handle.next();
+        let handle = self.handles[0].next();
+        self.handles[0] = handle;
         let fut: Box<ActorFuture<Item=(), Error=(), Actor=A>> = Box::new(fut);
-        self.items.push((self.handle, fut));
-        self.handle
+        self.items.push((handle, fut));
+        handle
     }
 
     #[inline]
@@ -147,14 +147,8 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     #[inline]
     /// Cancel previously scheduled future.
     pub fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        for idx in 0..self.items.len() {
-            if self.items[idx].0 == handle {
-                self.modify();
-                self.items.swap_remove(idx);
-                return true
-            }
-        }
-        false
+        self.handles.push(handle);
+        true
     }
 
     #[inline]
@@ -203,7 +197,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             self.flags = ContextFlags::RUNNING;
             self.wait = SmallVec::new();
             self.items = SmallVec::new();
-            self.handle = SpawnHandle::default();
+            self.handles[0] = SpawnHandle::default();
             self.actor().restarting(ctx);
             true
         }
@@ -235,6 +229,16 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
         if !self.flags.contains(ContextFlags::STARTED) {
             self.flags.insert(ContextFlags::STARTED);
             Actor::started(act, ctx);
+
+            // check cancelled handles, just in case
+            while self.handles.len() > 2 {
+                let handle = self.handles.pop().unwrap();
+                for idx in 0..self.items.len() {
+                    if self.items[idx].0 == handle {
+                        self.items.swap_remove(idx);
+                    }
+                }
+            }
         }
 
         'outer: loop {
@@ -262,9 +266,25 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             // process items
             let mut idx = 0;
             while idx < self.items.len() && !self.stopping() {
-                self.curr_handle = self.items[idx].0;
+                self.handles[1] = self.items[idx].0;
                 match self.items[idx].1.poll(act, ctx) {
                     Ok(Async::NotReady) => {
+                        // check cancelled handles
+                        if self.handles.len() > 2 {
+                            // this code is not very efficient, relaing on fact that
+                            // cancellation should be rear also number of futures
+                            // in actor context should be small
+                            while self.handles.len() > 2 {
+                                let handle = self.handles.pop().unwrap();
+                                for idx in 0..self.items.len() {
+                                    if self.items[idx].0 == handle {
+                                        self.items.swap_remove(idx);
+                                    }
+                                }
+                            }
+                            continue 'outer
+                        }
+
                         // item scheduled wait future
                         if !self.wait.is_empty() && !self.stopping() {
                             // move current item to end of poll queue
@@ -288,7 +308,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
                     },
                 }
             }
-            self.curr_handle = SpawnHandle::default();
+            self.handles[1] = SpawnHandle::default();
 
             // ContextFlags::MODIFIED indicates that new IO item has
             // been added during poll process
