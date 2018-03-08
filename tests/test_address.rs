@@ -80,7 +80,7 @@ fn test_address() {
 }
 
 #[test]
-fn test_subscriber_call() {
+fn test_recipient_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
@@ -132,7 +132,7 @@ fn test_sync_address() {
 }
 
 #[test]
-fn test_sync_subscriber_call() {
+fn test_sync_recipient_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
