@@ -5,6 +5,15 @@ use fut::ActorFuture;
 use actor::{Actor, ActorState, ActorContext, AsyncContext, Running, SpawnHandle};
 
 /// Stream handler
+///
+/// This is helper trait that allows to handle `Stream` in
+/// a similar way as normal actor messages.
+/// When stream resolves to a next item, `handle()` method of this trait
+/// get called. If stream produces error, `error()` method get called.
+/// Depends on result of the `error()` method, actor could continue to
+/// process stream items or stop stream processing.
+/// When stream completes, `finished()` method get called. By default `finished()`
+/// method stops actor execution.
 #[allow(unused_variables)]
 pub trait StreamHandler<I, E> where Self: Actor
 {
@@ -30,12 +39,8 @@ pub trait StreamHandler<I, E> where Self: Actor
         ctx.stop()
     }
 
-    /// This method is similar to `add_future` but works with streams.
-    ///
-    /// Information to consider. Actor wont receive next item from a stream
-    /// until `Response` future resolves to a result. `Self::reply` resolves immediately.
-    ///
-    /// This method is similar to `add_stream` but it skips result error.
+    /// This method register stream to an actor context and
+    /// allows to handle `Stream` in similar way as normal actor messages.
     ///
     /// ```rust
     /// # #[macro_use] extern crate actix;

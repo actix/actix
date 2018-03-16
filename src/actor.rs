@@ -245,12 +245,8 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     /// Cancel future. idx is a value returned by `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
 
-    /// This method allow to handle `Stream` in similar way as normal actor messages.
-    ///
-    /// Information to consider. Actor wont receive next item from a stream
-    /// until `Response` future resolves to a result.
-    ///
-    /// This method is similar to `add_stream` but it skips result error.
+    /// This method register stream to an actor context and
+    /// allows to handle `Stream` in similar way as normal actor messages.
     ///
     /// ```rust
     /// # #[macro_use] extern crate actix;

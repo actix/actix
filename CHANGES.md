@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.4 (2018-03-16)
+
+* Always complete actor lifecycle (i.e. Actor::started())
+
+
 ## 0.5.3 (2018-03-08)
 
 * Panic after cancelling stream future #58

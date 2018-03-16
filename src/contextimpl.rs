@@ -176,10 +176,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
 
     #[inline]
     pub fn alive(&self) -> bool {
-        if self.flags.intersects(ContextFlags::STOPPED) {
+        if self.flags.contains(ContextFlags::STOPPED) {
             false
         } else {
-            self.mailbox.connected() || !self.items.is_empty() || !self.wait.is_empty()
+            !self.flags.contains(ContextFlags::STARTED)
+                || self.mailbox.connected()
+                || !self.items.is_empty()
+                || !self.wait.is_empty()
         }
     }
 
@@ -322,13 +325,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             if self.flags.contains(ContextFlags::RUNNING) {
                 // possible stop condition
                 if !self.alive() && Actor::stopping(act, ctx) == Running::Stop {
-                    self.flags = ContextFlags::STOPPED;
+                    self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(act, ctx);
                     return Ok(Async::Ready(()))
                 }
             } else if self.flags.contains(ContextFlags::STOPPING) {
                 if Actor::stopping(act, ctx) == Running::Stop {
-                    self.flags = ContextFlags::STOPPED;
+                    self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(act, ctx);
                     return Ok(Async::Ready(()))
                 } else {
