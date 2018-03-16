@@ -29,7 +29,7 @@ impl actix::Handler<Ping> for MyActor {
     type Result = ();
 
     fn handle(&mut self, _: Ping, _: &mut Self::Context) {
-        self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
+        self.0.fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -37,7 +37,7 @@ impl actix::Handler<UnsyncPing> for MyActor {
     type Result = ();
 
     fn handle(&mut self, _: UnsyncPing, _: &mut Self::Context) {
-        self.0.store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
+        self.0.fetch_add(1, Ordering::Relaxed);
     }
 }
 
@@ -113,7 +113,14 @@ fn test_sync_address() {
 
     arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
         addr3.do_send(Ping(2));
-        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+
+        Arbiter::handle().spawn_fn(move || {
+            Timeout::new(Duration::new(0, 1000), Arbiter::handle()).unwrap()
+                .then(move |_| {
+                    Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                    future::result(Ok(()))
+                })
+        });
         Ok(())
     }));
     
