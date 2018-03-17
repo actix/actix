@@ -210,7 +210,7 @@ impl<T: Destination<A>, A> Addr<T, A> {
 
     /// Send asynchronous message and wait for response.
     ///
-    /// Communication channel to the actor is bounded. if returned `Receiver`
+    /// Communication channel to the actor is bounded. if returned `Future`
     /// object get dropped, message cancels.
     pub fn send<M>(&self, msg: M) -> Request<T, A, M>
         where T: MessageDestination<A, M>,
@@ -221,7 +221,7 @@ impl<T: Destination<A>, A> Addr<T, A> {
         T::send(&self.tx, msg)
     }
 
-    /// Try send message
+    /// Try to send message
     ///
     /// This method fails if actor's mailbox is full or closed. This method
     /// register current task in receivers queue.
