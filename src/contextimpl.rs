@@ -251,13 +251,14 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             // ctx.wait() always add to the back of the list
             // and we always have to check most recent future
             while !self.wait.is_empty() && !self.stopping() {
+                let idx = self.wait.len() - 1;
                 if let Some(item) = self.wait.last_mut() {
                     match item.poll(act, ctx) {
                         Async::Ready(_) => (),
                         Async::NotReady => return Ok(Async::NotReady),
                     }
                 }
-                self.wait.pop();
+                self.wait.remove(idx);
             }
 
             // process mailbox

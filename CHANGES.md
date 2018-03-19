@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.5 (2018-03-19)
+
+* Fix polling of wrong wait future after completion
+
+
 ## 0.5.4 (2018-03-16)
 
 * Always complete actor lifecycle (i.e. Actor::started())
