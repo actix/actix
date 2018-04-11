@@ -236,9 +236,12 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             // check cancelled handles, just in case
             while self.handles.len() > 2 {
                 let handle = self.handles.pop().unwrap();
-                for idx in 0..self.items.len() {
+                let mut idx = 0;
+                while idx < self.items.len() {
                     if self.items[idx].0 == handle {
                         self.items.swap_remove(idx);
+                    } else {
+                        idx += 1;
                     }
                 }
             }
@@ -280,9 +283,12 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
                             // in actor context should be small
                             while self.handles.len() > 2 {
                                 let handle = self.handles.pop().unwrap();
-                                for idx in 0..self.items.len() {
+                                let mut idx = 0;
+                                while idx < self.items.len() {
                                     if self.items[idx].0 == handle {
                                         self.items.swap_remove(idx);
+                                    } else {
+                                        idx += 1;
                                     }
                                 }
                             }
