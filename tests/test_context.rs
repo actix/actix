@@ -30,8 +30,10 @@ impl Actor for MyActor {
     fn started(&mut self, ctx: &mut Context<MyActor>) {
         match self.op {
             Op::Cancel => {
-                let handle = ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
-                ctx.cancel_future(handle);
+                let handle0 = ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
+                let handle1 = ctx.notify_later(TimeoutMessage, Duration::new(0, 100));
+                assert!(ctx.cancel_future(handle1));
+                assert!(ctx.cancel_future(handle0));
             },
             Op::Timeout => {
                 ctx.notify_later(TimeoutMessage, Duration::new(0, 1000));
