@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.5.5"
+version = "0.5.6"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"

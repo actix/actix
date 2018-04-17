@@ -1,5 +1,6 @@
 extern crate futures;
-#[macro_use] extern crate actix;
+#[macro_use]
+extern crate actix;
 
 use actix::{msgs, Actor, Addr, Arbiter, Context, Handler, System, Unsync};
 use futures::{future, Future};
@@ -20,7 +21,7 @@ impl Handler<Empty> for EmptyActor {
 }
 
 #[test]
-#[cfg_attr(feature="cargo-clippy", allow(unit_cmp))]
+#[cfg_attr(feature = "cargo-clippy", allow(unit_cmp))]
 fn response_derive_empty() {
     let system = System::new("test");
     let addr: Addr<Unsync, _> = EmptyActor.start();
@@ -39,9 +40,8 @@ fn response_derive_empty() {
     system.run();
 }
 
-
 #[derive(Message)]
-#[rtype(result="Result<usize, ()>")]
+#[rtype(result = "Result<usize, ()>")]
 struct SumResult(usize, usize);
 
 struct SumResultActor;
@@ -53,7 +53,9 @@ impl Actor for SumResultActor {
 impl Handler<SumResult> for SumResultActor {
     type Result = Result<usize, ()>;
 
-    fn handle(&mut self, message: SumResult, _context: &mut Context<Self>) -> Self::Result {
+    fn handle(
+        &mut self, message: SumResult, _context: &mut Context<Self>
+    ) -> Self::Result {
         Ok(message.0 + message.1)
     }
 }
@@ -76,7 +78,6 @@ pub fn derive_result() {
 
     system.run();
 }
-
 
 #[derive(Message)]
 #[rtype(usize)]

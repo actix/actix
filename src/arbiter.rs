@@ -1,18 +1,18 @@
-use std;
-use std::thread;
-use std::cell::RefCell;
-use uuid::Uuid;
-use tokio_core::reactor::{Core, Handle};
 use futures::sync::oneshot::{channel, Sender};
+use std;
+use std::cell::RefCell;
+use std::thread;
+use tokio_core::reactor::{Core, Handle};
+use uuid::Uuid;
 
 use actor::{Actor, AsyncContext};
 use address::{sync_channel, Addr, Syn, Unsync};
 use context::Context;
+use handler::Handler;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::{Execute, StartActor, StopArbiter};
-use handler::Handler;
 use registry::{Registry, SystemRegistry};
-use system::{System, RegisterArbiter, UnregisterArbiter};
+use system::{RegisterArbiter, System, UnregisterArbiter};
 
 thread_local!(
     static HND: RefCell<Option<Handle>> = RefCell::new(None);
@@ -42,14 +42,15 @@ impl Actor for Arbiter {
     fn started(&mut self, ctx: &mut Context<Self>) {
         // register arbiter within system
         if !self.sys {
-            Arbiter::system().do_send(
-                RegisterArbiter(self.id.simple().to_string(), ctx.address()));
+            Arbiter::system().do_send(RegisterArbiter(
+                self.id.simple().to_string(),
+                ctx.address(),
+            ));
         }
     }
 }
 
 impl Arbiter {
-
     /// Spawn new thread and run event loop in spawned thread.
     /// Returns address of newly created arbiter.
     pub fn new<T: Into<String>>(name: T) -> Addr<Syn, Arbiter> {
@@ -60,42 +61,46 @@ impl Arbiter {
         let sys_name = Arbiter::system_name();
         let sys_arbiter = Arbiter::system_arbiter();
         let sys_registry = Arbiter::system_registry().clone();
-        let name = format!("arbiter:{:?}:{:?}",
-                           id.hyphenated().to_string(), name.into());
+        let name = format!(
+            "arbiter:{:?}:{:?}",
+            id.hyphenated().to_string(),
+            name.into()
+        );
 
-        let _ = thread::Builder::new().name(name.clone()).spawn(move|| {
-            let mut core = Core::new().unwrap();
+        let _ = thread::Builder::new()
+            .name(name.clone())
+            .spawn(move || {
+                let mut core = Core::new().unwrap();
 
-            let (stop_tx, stop_rx) = channel();
-            HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
-            STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
-            NAME.with(|cell| *cell.borrow_mut() = Some(name));
-            REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
+                let (stop_tx, stop_rx) = channel();
+                HND.with(|cell| *cell.borrow_mut() = Some(core.handle()));
+                STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
+                NAME.with(|cell| *cell.borrow_mut() = Some(name));
+                REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
 
-            // system
-            SYS.with(|cell| *cell.borrow_mut() = Some(sys));
-            SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_arbiter));
-            SYSNAME.with(|cell| *cell.borrow_mut() = Some(sys_name));
-            SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
+                // system
+                SYS.with(|cell| *cell.borrow_mut() = Some(sys));
+                SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_arbiter));
+                SYSNAME.with(|cell| *cell.borrow_mut() = Some(sys_name));
+                SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
 
-            // start arbiter
-            let (addr, saddr) = Actor::start(Arbiter {id, sys: false});
-            ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
+                // start arbiter
+                let (addr, saddr) = Actor::start(Arbiter { id, sys: false });
+                ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
 
-            if tx.send(saddr).is_err() {
-                error!("Can not start Arbiter, remote side is dead");
-            } else {
-                // run loop
-                let _ = match core.run(stop_rx) {
-                    Ok(code) => code,
-                    Err(_) => 1,
-                };
-            }
+                if tx.send(saddr).is_err() {
+                    error!("Can not start Arbiter, remote side is dead");
+                } else {
+                    // run loop
+                    let _ = match core.run(stop_rx) {
+                        Ok(code) => code,
+                        Err(_) => 1,
+                    };
+                }
 
-            // unregister arbiter
-            Arbiter::system().do_send(
-                UnregisterArbiter(id.simple().to_string()));
-        });
+                // unregister arbiter
+                Arbiter::system().do_send(UnregisterArbiter(id.simple().to_string()));
+            });
 
         rx.recv().unwrap()
     }
@@ -108,8 +113,10 @@ impl Arbiter {
         SYSREG.with(|cell| *cell.borrow_mut() = Some(SystemRegistry::new()));
 
         // start arbiter
-        let (addr, sys_addr) = Actor::start(
-            Arbiter {sys: true, id: Uuid::new_v4()});
+        let (addr, sys_addr) = Actor::start(Arbiter {
+            sys: true,
+            id: Uuid::new_v4(),
+        });
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
         SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_addr));
 
@@ -164,7 +171,7 @@ impl Arbiter {
     /// This function returns system registry,
     pub fn system_registry() -> &'static SystemRegistry {
         SYSREG.with(|cell| match *cell.borrow() {
-            Some(ref reg) => unsafe{std::mem::transmute(reg)},
+            Some(ref reg) => unsafe { std::mem::transmute(reg) },
             None => panic!("System is not running"),
         })
     }
@@ -172,7 +179,7 @@ impl Arbiter {
     /// This function returns current event loop's handle,
     pub fn handle() -> &'static Handle {
         HND.with(|cell| match *cell.borrow() {
-            Some(ref h) => unsafe{std::mem::transmute(h)},
+            Some(ref h) => unsafe { std::mem::transmute(h) },
             None => panic!("Arbiter is not running"),
         })
     }
@@ -180,7 +187,7 @@ impl Arbiter {
     /// This function returns arbiter's registry,
     pub fn registry() -> &'static Registry {
         REG.with(|cell| match *cell.borrow() {
-            Some(ref reg) => unsafe{std::mem::transmute(reg)},
+            Some(ref reg) => unsafe { std::mem::transmute(reg) },
             None => panic!("System is not running: {}", Arbiter::name()),
         })
     }
@@ -188,8 +195,9 @@ impl Arbiter {
     /// Start new arbiter and then start actor in created arbiter.
     /// Returns `Addr<Syn, A>` of created actor.
     pub fn start<A, F>(f: F) -> Addr<Syn, A>
-        where A: Actor<Context=Context<A>>,
-              F: FnOnce(&mut A::Context) -> A + Send + 'static
+    where
+        A: Actor<Context = Context<A>>,
+        F: FnOnce(&mut A::Context) -> A + Send + 'static,
     {
         let (stx, srx) = sync_channel::channel(DEFAULT_CAPACITY);
 
@@ -197,14 +205,13 @@ impl Arbiter {
         let addr = Arbiter::new("actor");
 
         // create actor
-        addr.do_send::<Execute>(
-            Execute::new(move || {
-                let mut ctx = Context::with_receiver(None, srx);
-                let act = f(&mut ctx);
-                ctx.set_actor(act);
-                ctx.run(Arbiter::handle());
-                Ok(())
-            }));
+        addr.do_send::<Execute>(Execute::new(move || {
+            let mut ctx = Context::with_receiver(None, srx);
+            let act = f(&mut ctx);
+            ctx.set_actor(act);
+            ctx.run(Arbiter::handle());
+            Ok(())
+        }));
 
         Addr::new(stx)
     }
@@ -213,12 +220,13 @@ impl Arbiter {
 impl Handler<StopArbiter> for Arbiter {
     type Result = ();
 
-    fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>)
-    {
+    fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>) {
         if self.sys {
-            warn!("System arbiter received `StopArbiter` message.
+            warn!(
+                "System arbiter received `StopArbiter` message.
                   To shutdown system, `SystemExit` message should be
-                  send to `Addr<Syn, System>`");
+                  send to `Addr<Syn, System>`"
+            );
         } else {
             STOP.with(|cell| {
                 if let Some(stop) = cell.borrow_mut().take() {
@@ -229,7 +237,10 @@ impl Handler<StopArbiter> for Arbiter {
     }
 }
 
-impl<A> Handler<StartActor<A>> for Arbiter where A: Actor<Context=Context<A>> {
+impl<A> Handler<StartActor<A>> for Arbiter
+where
+    A: Actor<Context = Context<A>>,
+{
     type Result = Addr<Syn, A>;
 
     fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Addr<Syn, A> {

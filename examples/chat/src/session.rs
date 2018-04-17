@@ -1,14 +1,13 @@
 //! `ClientSession` is an actor, it manages peer tcp connection and
 //! proxies commands from peer to `ChatServer`.
+use actix::prelude::*;
 use std::io;
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 use tokio_core::net::TcpStream;
 use tokio_io::io::WriteHalf;
-use actix::prelude::*;
 
+use codec::{ChatCodec, ChatRequest, ChatResponse};
 use server::{self, ChatServer};
-use codec::{ChatRequest, ChatResponse, ChatCodec};
-
 
 /// Chat server sends this messages to session
 #[derive(Message)]
@@ -20,7 +19,8 @@ pub struct ChatSession {
     id: usize,
     /// this is address of chat server
     addr: Addr<Unsync, ChatServer>,
-    /// Client must send ping at least once per 10 seconds, otherwise we drop connection.
+    /// Client must send ping at least once per 10 seconds, otherwise we drop
+    /// connection.
     hb: Instant,
     /// joined room
     room: String,
@@ -38,7 +38,10 @@ impl Actor for ChatSession {
         // register self in chat server. `AsyncContext::wait` register
         // future within context, but context waits until this future resolves
         // before processing any other events.
-        self.addr.send(server::Connect{addr: ctx.address()})
+        self.addr
+            .send(server::Connect {
+                addr: ctx.address(),
+            })
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
@@ -47,12 +50,13 @@ impl Actor for ChatSession {
                     _ => ctx.stop(),
                 }
                 actix::fut::ok(())
-            }).wait(ctx);
+            })
+            .wait(ctx);
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
         // notify chat server
-        self.addr.do_send(server::Disconnect{id: self.id});
+        self.addr.do_send(server::Disconnect { id: self.id });
         Running::Stop
     }
 }
@@ -61,7 +65,6 @@ impl actix::io::WriteHandler<io::Error> for ChatSession {}
 
 /// To use `Framed` with an actor, we have to implement `StreamHandler` trait
 impl StreamHandler<ChatRequest, io::Error> for ChatSession {
-
     /// This is main event loop for client requests
     fn handle(&mut self, msg: ChatRequest, ctx: &mut Self::Context) {
         match msg {
@@ -79,29 +82,33 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
                     }).wait(ctx)
                 // .wait(ctx) pauses all events in context,
                 // so actor wont receive any new messages until it get list of rooms back
-            },
+            }
             ChatRequest::Join(name) => {
                 println!("Join to room: {}", name);
                 self.room = name.clone();
-                self.addr.do_send(server::Join{id: self.id, name: name.clone()});
+                self.addr.do_send(server::Join {
+                    id: self.id,
+                    name: name.clone(),
+                });
                 self.framed.write(ChatResponse::Joined(name));
-            },
+            }
             ChatRequest::Message(message) => {
                 // send message to chat server
                 println!("Peer message: {}", message);
-                self.addr.do_send(
-                    server::Message{id: self.id,
-                                    msg: message, room:
-                                    self.room.clone()})
+                self.addr.do_send(server::Message {
+                    id: self.id,
+                    msg: message,
+                    room: self.room.clone(),
+                })
             }
             // we update heartbeat time on ping from peer
-            ChatRequest::Ping =>
-                self.hb = Instant::now(),
+            ChatRequest::Ping => self.hb = Instant::now(),
         }
     }
 }
 
-/// Handler for Message, chat server sends this message, we just send string to peer
+/// Handler for Message, chat server sends this message, we just send string to
+/// peer
 impl Handler<Message> for ChatSession {
     type Result = ();
 
@@ -113,17 +120,19 @@ impl Handler<Message> for ChatSession {
 
 /// Helper methods
 impl ChatSession {
-
-    pub fn new(addr: Addr<Unsync, ChatServer>,
-               framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>) -> ChatSession
-    {
-        ChatSession {id: 0,
-                     addr: addr,
-                     hb: Instant::now(),
-                     room: "Main".to_owned(),
-                     framed: framed}
+    pub fn new(
+        addr: Addr<Unsync, ChatServer>,
+        framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>,
+    ) -> ChatSession {
+        ChatSession {
+            id: 0,
+            addr: addr,
+            hb: Instant::now(),
+            room: "Main".to_owned(),
+            framed: framed,
+        }
     }
-    
+
     /// helper method that sends ping to client every second.
     ///
     /// also this method check heartbeats from client
@@ -135,7 +144,7 @@ impl ChatSession {
                 println!("Client heartbeat failed, disconnecting!");
 
                 // notify chat server
-                act.addr.do_send(server::Disconnect{id: act.id});
+                act.addr.do_send(server::Disconnect { id: act.id });
 
                 // stop actor
                 ctx.stop();

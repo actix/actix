@@ -1,8 +1,8 @@
-use std::marker::PhantomData;
 use futures::{Async, Poll, Stream};
+use std::marker::PhantomData;
 
+use actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle};
 use fut::ActorFuture;
-use actor::{Actor, ActorState, ActorContext, AsyncContext, Running, SpawnHandle};
 
 /// Stream handler
 ///
@@ -12,10 +12,12 @@ use actor::{Actor, ActorState, ActorContext, AsyncContext, Running, SpawnHandle}
 /// get called. If stream produces error, `error()` method get called.
 /// Depends on result of the `error()` method, actor could continue to
 /// process stream items or stop stream processing.
-/// When stream completes, `finished()` method get called. By default `finished()`
-/// method stops actor execution.
+/// When stream completes, `finished()` method get called. By default
+/// `finished()` method stops actor execution.
 #[allow(unused_variables)]
-pub trait StreamHandler<I, E> where Self: Actor
+pub trait StreamHandler<I, E>
+where
+    Self: Actor,
 {
     /// Method is called for every message received by this Actor
     fn handle(&mut self, item: I, ctx: &mut Self::Context);
@@ -25,8 +27,8 @@ pub trait StreamHandler<I, E> where Self: Actor
 
     /// Method is called when stream emits error.
     ///
-    /// If this method returns `ErrorAction::Continue` stream processing continues
-    /// otherwise stream processing stops. Default method
+    /// If this method returns `ErrorAction::Continue` stream processing
+    /// continues otherwise stream processing stops. Default method
     /// implementation returns `ErrorAction::Stop`
     fn error(&mut self, err: E, ctx: &mut Self::Context) -> Running {
         Running::Stop
@@ -81,9 +83,11 @@ pub trait StreamHandler<I, E> where Self: Actor
     /// # }
     /// ```
     fn add_stream<S>(fut: S, ctx: &mut Self::Context) -> SpawnHandle
-        where Self::Context: AsyncContext<Self>,
-              S: Stream<Item=I, Error=E> + 'static,
-              I: 'static, E: 'static
+    where
+        Self::Context: AsyncContext<Self>,
+        S: Stream<Item = I, Error = E> + 'static,
+        I: 'static,
+        E: 'static,
     {
         if ctx.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
@@ -104,42 +108,51 @@ pub(crate) struct ActorStream<A, M, E, S> {
 
 impl<A, M, E, S> ActorStream<A, M, E, S> {
     pub fn new(fut: S) -> Self {
-        ActorStream{stream: fut, started: false,
-                    act: PhantomData, msg: PhantomData, error: PhantomData}
+        ActorStream {
+            stream: fut,
+            started: false,
+            act: PhantomData,
+            msg: PhantomData,
+            error: PhantomData,
+        }
     }
 }
 
 impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
-    where S: Stream<Item=M, Error=E>,
-          A: Actor + StreamHandler<M, E>, A::Context: AsyncContext<A>,
+where
+    S: Stream<Item = M, Error = E>,
+    A: Actor + StreamHandler<M, E>,
+    A::Context: AsyncContext<A>,
 {
     type Item = ();
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
+    fn poll(
+        &mut self, act: &mut A, ctx: &mut A::Context
+    ) -> Poll<Self::Item, Self::Error> {
         if !self.started {
             self.started = true;
             <A as StreamHandler<M, E>>::started(act, ctx);
         }
-        
+
         loop {
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
                     A::handle(act, msg, ctx);
                     if ctx.waiting() {
-                        return Ok(Async::NotReady)
+                        return Ok(Async::NotReady);
                     }
                 }
                 Err(err) => {
                     if A::error(act, err, ctx) == Running::Stop {
                         A::finished(act, ctx);
-                        return Ok(Async::Ready(()))
+                        return Ok(Async::Ready(()));
                     }
-                },
+                }
                 Ok(Async::Ready(None)) => {
                     A::finished(act, ctx);
-                    return Ok(Async::Ready(()))
+                    return Ok(Async::Ready(()));
                 }
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
             }

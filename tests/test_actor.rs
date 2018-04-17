@@ -2,11 +2,11 @@ extern crate actix;
 extern crate futures;
 extern crate tokio_core;
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering};
-use std::time::Duration;
 use actix::prelude::*;
-use futures::{Future, future};
+use futures::{future, Future};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::Duration;
 use tokio_core::reactor::Timeout;
 
 #[derive(Debug)]
@@ -28,7 +28,6 @@ impl Actor for MyActor {
 }
 
 impl StreamHandler<Num, ()> for MyActor {
-
     fn handle(&mut self, msg: Num, _: &mut Context<MyActor>) {
         self.0.fetch_add(msg.0, Ordering::Relaxed);
     }
@@ -67,8 +66,16 @@ fn test_stream_with_error() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
     let error = Arc::new(AtomicBool::new(false));
-    let items = vec![Ok(Num(1)), Ok(Num(1)), Err(()), Ok(Num(1)),
-                     Ok(Num(1)), Ok(Num(1)), Ok(Num(1)), Ok(Num(1))];
+    let items = vec![
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Err(()),
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Ok(Num(1)),
+    ];
 
     let act_count = Arc::clone(&count);
     let act_error = Arc::clone(&error);
@@ -87,8 +94,16 @@ fn test_stream_with_error_no_stop() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
     let error = Arc::new(AtomicBool::new(false));
-    let items = vec![Ok(Num(1)), Ok(Num(1)), Err(()), Ok(Num(1)),
-                     Ok(Num(1)), Ok(Num(1)), Ok(Num(1)), Ok(Num(1))];
+    let items = vec![
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Err(()),
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Ok(Num(1)),
+        Ok(Num(1)),
+    ];
 
     let act_count = Arc::clone(&count);
     let act_error = Arc::clone(&error);
@@ -101,7 +116,6 @@ fn test_stream_with_error_no_stop() {
     assert_eq!(count.load(Ordering::Relaxed), 8);
     assert!(error.load(Ordering::Relaxed));
 }
-
 
 struct MySyncActor {
     started: Arc<AtomicUsize>,
@@ -156,18 +170,19 @@ fn test_restart_sync_actor() {
         stopping: Arc::clone(&stopping1),
         stopped: Arc::clone(&stopped1),
         msgs: Arc::clone(&msgs1),
-        stop: started1.load(Ordering::Relaxed) == 0});
+        stop: started1.load(Ordering::Relaxed) == 0,
+    });
     addr.do_send(Num(2));
 
     Arbiter::handle().spawn_fn(move || {
-        addr.send(Num(4))
-            .then(move |_| {
-                Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle()).unwrap()
-                    .then(move |_| {
-                        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                        future::result(Ok(()))
-                    })
-            })
+        addr.send(Num(4)).then(move |_| {
+            Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle())
+                .unwrap()
+                .then(move |_| {
+                    Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                    future::result(Ok(()))
+                })
+        })
     });
 
     sys.run();

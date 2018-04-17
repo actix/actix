@@ -1,25 +1,25 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
-use std::{usize, thread};
 use std::cell::Cell;
 use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering::{SeqCst, Relaxed};
+use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::{Arc, Mutex};
+use std::{thread, usize};
 
+use futures::sync::oneshot::{channel as sync_channel, Receiver};
 use futures::task::{self, Task};
 use futures::{Async, Poll, Stream};
-use futures::sync::oneshot::{channel as sync_channel, Receiver};
 
 use actor::Actor;
 use handler::{Handler, Message};
 
-use super::{SendError, Syn, MessageDestinationTransport};
-use super::queue::{Queue, PopResult};
-use super::envelope::{ToEnvelope, SyncEnvelope};
-
+use super::envelope::{SyncEnvelope, ToEnvelope};
+use super::queue::{PopResult, Queue};
+use super::{MessageDestinationTransport, SendError, Syn};
 
 pub trait SyncSender<M>: Send
-    where M::Result: Send,
-          M: Message + Send + 'static
+where
+    M::Result: Send,
+    M: Message + Send + 'static,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
 
@@ -50,7 +50,6 @@ pub struct SyncAddressSender<A: Actor> {
 unsafe impl<A: Actor> Sync for SyncAddressSender<A> {}
 
 trait AssertKinds: Send + Sync + Clone {}
-
 
 /// The receiving end of a channel which implements the `Stream` trait.
 ///
@@ -155,7 +154,9 @@ impl SenderTask {
 ///
 /// The `Receiver` returned implements the `Stream` trait and has access to any
 /// number of the associated combinators for transforming the result.
-pub fn channel<A: Actor>(buffer: usize) -> (SyncAddressSender<A>, SyncAddressReceiver<A>) {
+pub fn channel<A: Actor>(
+    buffer: usize
+) -> (SyncAddressSender<A>, SyncAddressReceiver<A>) {
     // Check that the requested buffer size does not exceed the maximum buffer
     // size permitted by the system.
     assert!(buffer < MAX_BUFFER, "requested buffer size too large");
@@ -178,15 +179,17 @@ pub fn channel<A: Actor>(buffer: usize) -> (SyncAddressSender<A>, SyncAddressRec
         maybe_parked: Cell::new(false),
     };
 
-    let rx = SyncAddressReceiver{inner};
+    let rx = SyncAddressReceiver { inner };
 
     (tx, rx)
 }
 
 impl<A, M> MessageDestinationTransport<Syn, A, M> for SyncAddressSender<A>
-    where A: Actor + Handler<M>,
-          A::Context: ToEnvelope<Syn, A, M>,
-          M: Message + Send + 'static, M::Result: Send,
+where
+    A: Actor + Handler<M>,
+    A::Context: ToEnvelope<Syn, A, M>,
+    M: Message + Send + 'static,
+    M::Result: Send,
 {
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         SyncAddressSender::send(self, msg)
@@ -199,7 +202,6 @@ impl<A, M> MessageDestinationTransport<Syn, A, M> for SyncAddressSender<A>
 //
 //
 impl<A: Actor> SyncAddressSender<A> {
-
     pub fn connected(&self) -> bool {
         let curr = self.inner.state.load(SeqCst);
         let state = decode_state(curr);
@@ -211,13 +213,15 @@ impl<A: Actor> SyncAddressSender<A> {
     ///
     /// This function, must be called from inside of a task.
     pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
-        where A: Handler<M>, A::Context: ToEnvelope<Syn, A, M>,
-              M::Result: Send,
-              M: Message + Send + 'static,
+    where
+        A: Handler<M>,
+        A::Context: ToEnvelope<Syn, A, M>,
+        M::Result: Send,
+        M: Message + Send + 'static,
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false).is_ready() {
-            return Err(SendError::Full(msg))
+            return Err(SendError::Full(msg));
         }
 
         // First, increment the number of messages contained by the channel.
@@ -247,13 +251,15 @@ impl<A: Actor> SyncAddressSender<A> {
 
     /// Attempts to send a message on this `Sender<A>` without blocking.
     pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
-        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn, A, M>,
-              M::Result: Send,
-              M: Message + Send + 'static,
+    where
+        A: Handler<M>,
+        <A as Actor>::Context: ToEnvelope<Syn, A, M>,
+        M::Result: Send,
+        M: Message + Send + 'static,
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false).is_ready() {
-            return Err(SendError::Full(msg))
+            return Err(SendError::Full(msg));
         }
 
         let park_self = match self.inc_num_messages() {
@@ -277,9 +283,11 @@ impl<A: Actor> SyncAddressSender<A> {
     ///
     /// This function does not park current task.
     pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where A: Handler<M>, <A as Actor>::Context: ToEnvelope<Syn, A, M>,
-              M::Result: Send,
-              M: Message + Send + 'static,
+    where
+        A: Handler<M>,
+        <A as Actor>::Context: ToEnvelope<Syn, A, M>,
+        M::Result: Send,
+        M: Message + Send + 'static,
     {
         if self.inc_num_messages_force().is_none() {
             Err(SendError::Closed(msg))
@@ -320,7 +328,10 @@ impl<A: Actor> SyncAddressSender<A> {
             state.num_messages += 1;
 
             let next = encode_state(&state);
-            match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
+            match self.inner
+                .state
+                .compare_exchange(curr, next, SeqCst, SeqCst)
+            {
                 Ok(_) => return Some(false),
                 Err(actual) => curr = actual,
             }
@@ -338,11 +349,14 @@ impl<A: Actor> SyncAddressSender<A> {
             state.num_messages += 1;
 
             let next = encode_state(&state);
-            match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
+            match self.inner
+                .state
+                .compare_exchange(curr, next, SeqCst, SeqCst)
+            {
                 Ok(_) => {
                     let buffer = self.inner.buffer.load(Relaxed);
                     let park_self = buffer != 0 && state.num_messages >= buffer;
-                    return Some(park_self)
+                    return Some(park_self);
                 }
                 Err(actual) => curr = actual,
             }
@@ -410,7 +424,7 @@ impl<A: Actor> SyncAddressSender<A> {
 
             if !task.is_parked {
                 self.maybe_parked.set(false);
-                return Async::Ready(())
+                return Async::Ready(());
             }
 
             // At this point, an unpark request is pending, so there will be an
@@ -433,18 +447,22 @@ impl<A: Actor> SyncAddressSender<A> {
 
     /// Get `Sender` for a specific message type
     pub(crate) fn into_sender<M>(self) -> Box<SyncSender<M>>
-        where A: Handler<M>, A::Context: ToEnvelope<Syn, A, M>,
-              M::Result: Send,
-              M: Message + Send + 'static
+    where
+        A: Handler<M>,
+        A::Context: ToEnvelope<Syn, A, M>,
+        M::Result: Send,
+        M: Message + Send + 'static,
     {
         Box::new(self)
     }
 }
 
 impl<A, M> SyncSender<M> for SyncAddressSender<A>
-    where A: Handler<M>, A::Context: ToEnvelope<Syn, A, M>,
-          M::Result: Send,
-          M: Message + Send + 'static,
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<Syn, A, M>,
+    M::Result: Send,
+    M: Message + Send + 'static,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.do_send(msg)
@@ -476,7 +494,9 @@ impl<A: Actor> Clone for SyncAddressSender<A> {
             debug_assert!(curr < self.inner.max_senders());
 
             let next = curr + 1;
-            let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
+            let actual = self.inner
+                .num_senders
+                .compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
@@ -510,14 +530,14 @@ impl<A: Actor> Drop for SyncAddressSender<A> {
 //
 //
 impl<A: Actor> SyncAddressReceiver<A> {
-
     pub fn connected(&self) -> bool {
         self.inner.num_senders.load(SeqCst) != 0
     }
 
     /// Set channel capacity
     ///
-    /// This method wakes up all waiting senders if new capacity is greater than current
+    /// This method wakes up all waiting senders if new capacity is greater
+    /// than current
     pub fn set_capacity(&mut self, cap: usize) {
         let buffer = self.inner.buffer.load(Relaxed);
         self.inner.buffer.store(cap, Relaxed);
@@ -554,7 +574,9 @@ impl<A: Actor> SyncAddressReceiver<A> {
             }
 
             let next = curr + 1;
-            let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
+            let actual = self.inner
+                .num_senders
+                .compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
@@ -643,7 +665,10 @@ impl<A: Actor> SyncAddressReceiver<A> {
             state.num_messages -= 1;
 
             let next = encode_state(&state);
-            match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
+            match self.inner
+                .state
+                .compare_exchange(curr, next, SeqCst, SeqCst)
+            {
                 Ok(_) => break,
                 Err(actual) => curr = actual,
             }
@@ -700,12 +725,15 @@ impl<A: Actor> Drop for SyncAddressReceiver<A> {
         loop {
             let mut state = decode_state(curr);
             if !state.is_open {
-                break
+                break;
             }
             state.is_open = false;
 
             let next = encode_state(&state);
-            match self.inner.state.compare_exchange(curr, next, SeqCst, SeqCst) {
+            match self.inner
+                .state
+                .compare_exchange(curr, next, SeqCst, SeqCst)
+            {
                 Ok(_) => break,
                 Err(actual) => curr = actual,
             }
@@ -772,7 +800,7 @@ fn encode_state(state: &State) -> usize {
 mod tests {
     use super::*;
     use prelude::*;
-    use std::{time, thread};
+    use std::{thread, time};
 
     struct Act;
     impl Actor for Act {
@@ -798,16 +826,20 @@ mod tests {
             let s2 = recv.sender();
 
             let arb: Addr<Syn, _> = Arbiter::new("s1");
-            arb.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
-                let _ = s1.send(Ping);
-                Ok(())
-            }));
+            arb.do_send(actix::msgs::Execute::new(
+                move || -> Result<(), ()> {
+                    let _ = s1.send(Ping);
+                    Ok(())
+                },
+            ));
             thread::sleep(time::Duration::from_millis(100));
             let arb2 = Arbiter::new("s1");
-            arb2.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
-                let _ = s2.send(Ping);
-                Ok(())
-            }));
+            arb2.do_send(actix::msgs::Execute::new(
+                move || -> Result<(), ()> {
+                    let _ = s2.send(Ping);
+                    Ok(())
+                },
+            ));
 
             thread::sleep(time::Duration::from_millis(100));
             let state = decode_state(recv.inner.state.load(SeqCst));

@@ -3,8 +3,8 @@
 //! [Actors](https://actix.github.io/actix/actix/trait.Actor.html) are objects
 //! which encapsulate state and behavior, they communicate exclusively
 //! by exchanging messages. Actix actors are implemented on top of [Tokio](https://tokio.rs).
-//! Multiple actors could run in same thread. Actors could run in multiple threads
-//! with support of [`Arbiter`](https://actix.github.io/actix/actix/struct.Arbiter.html).
+//! Multiple actors could run in same thread. Actors could run in multiple
+//! threads with support of [`Arbiter`](https://actix.github.io/actix/actix/struct.Arbiter.html).
 //! Actors exchange typed messages.
 //!
 //! ## Documentation
@@ -27,23 +27,23 @@
 
 #[macro_use]
 extern crate log;
-extern crate libc;
-extern crate uuid;
-extern crate smallvec;
 extern crate crossbeam_channel;
+extern crate libc;
+extern crate smallvec;
+extern crate uuid;
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
 extern crate futures;
-extern crate tokio_io;
 extern crate tokio_core;
+extern crate tokio_io;
 extern crate tokio_signal;
 extern crate trust_dns_resolver;
 
 #[macro_use]
 extern crate failure;
 
-#[cfg_attr(feature="cargo-clippy", allow(useless_attribute))]
+#[cfg_attr(feature = "cargo-clippy", allow(useless_attribute))]
 #[allow(unused_imports)]
 #[macro_use]
 extern crate actix_derive;
@@ -61,108 +61,109 @@ mod contextimpl;
 mod contextitems;
 mod handler;
 mod stream;
-mod system;
 mod supervisor;
+mod system;
 
 mod address;
 mod mailbox;
 
-pub mod io;
-pub mod fut;
 pub mod actors;
+pub mod fut;
+pub mod io;
 pub mod msgs;
+pub mod registry;
 pub mod sync;
 pub mod utils;
-pub mod registry;
 
-pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream, FinishStream};
-pub use actor::{Actor, ActorState, Supervised,
-                ActorContext, AsyncContext, Running, SpawnHandle};
-pub use handler::{Handler, Response, ActorResponse,
-                  Message, MessageResult, ResponseFuture, ResponseActFuture};
+pub use actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle,
+                Supervised};
+pub use address::{ActorAddress, Addr, MailboxError, Recipient, Syn, Unsync};
 pub use arbiter::Arbiter;
-pub use address::{Addr, Syn, Unsync, ActorAddress, Recipient, MailboxError};
 pub use context::Context;
+pub use fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
+pub use handler::{ActorResponse, Handler, Message, MessageResult, Response,
+                  ResponseActFuture, ResponseFuture};
 pub use stream::StreamHandler;
-pub use sync::{SyncContext, SyncArbiter};
-pub use system::{System, SystemRunner};
 pub use supervisor::Supervisor;
+pub use sync::{SyncArbiter, SyncContext};
+pub use system::{System, SystemRunner};
 
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;
 
 #[doc(hidden)]
-#[deprecated(since="0.5.0", note="Use Addr<Unsync<T>>")]
+#[deprecated(since = "0.5.0", note = "Use Addr<Unsync<T>>")]
 pub type Address<T> = Addr<Unsync, T>;
 #[doc(hidden)]
-#[deprecated(since="0.5.0", note="Use Addr<Syn<T>>")]
+#[deprecated(since = "0.5.0", note = "Use Addr<Syn<T>>")]
 pub type SyncAddress<T> = Addr<Syn, T>;
 
 pub mod prelude {
-//! The `actix` prelude
-//!
-//! The purpose of this module is to alleviate imports of many common actix traits
-//! by adding a glob import to the top of actix heavy modules:
-//!
-//! ```
-//! # #![allow(unused_imports)]
-//! use actix::prelude::*;
-//! ```
+    //! The `actix` prelude
+    //!
+    //! The purpose of this module is to alleviate imports of many common actix
+    //! traits by adding a glob import to the top of actix heavy modules:
+    //!
+    //! ```
+    //! # #![allow(unused_imports)]
+    //! use actix::prelude::*;
+    //! ```
 
     #[doc(hidden)]
     pub use actix_derive::*;
 
     #[doc(hidden)]
-    #[deprecated(since="0.5.0", note="Use Addr<Unsync<T>>")]
+    #[deprecated(since = "0.5.0", note = "Use Addr<Unsync<T>>")]
     pub type Address<T> = Addr<Unsync, T>;
     #[doc(hidden)]
-    #[deprecated(since="0.5.0", note="Use Addr<Syn<T>>")]
+    #[deprecated(since = "0.5.0", note = "Use Addr<Syn<T>>")]
     pub type SyncAddress<T> = Addr<Syn, T>;
 
-    pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
-    pub use actor::{Actor, ActorState, ActorContext, AsyncContext,
-                    Running, Supervised, SpawnHandle};
+    pub use actor::{Actor, ActorContext, ActorState, AsyncContext, Running,
+                    SpawnHandle, Supervised};
+    pub use address::{Addr, MailboxError, Recipient, SendError, Syn, Unsync};
     pub use arbiter::Arbiter;
-    pub use address::{Addr, Syn, Unsync, SendError, Recipient, MailboxError};
     pub use context::{Context, ContextFutureSpawner};
+    pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
+    pub use handler::{ActorResponse, Handler, Message, MessageResult, Response,
+                      ResponseActFuture, ResponseFuture};
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
-    pub use handler::{Handler, Response, ActorResponse, Message, MessageResult,
-                      ResponseFuture, ResponseActFuture};
-    pub use system::System;
-    pub use sync::{SyncContext, SyncArbiter};
     pub use supervisor::Supervisor;
+    pub use sync::{SyncArbiter, SyncContext};
+    pub use system::System;
 
     pub mod actix {
-        pub use prelude::*;
-        pub use fut;
-        pub use dev;
-        pub use msgs;
-        pub use io;
         pub use actors;
         pub use address::ActorAddress;
+        pub use dev;
+        pub use fut;
+        pub use io;
+        pub use msgs;
+        pub use prelude::*;
         pub use registry::{ArbiterService, SystemService};
         pub use utils::Condition;
     }
 }
 
 pub mod dev {
-//! The `actix` prelude for library developers
-//!
-//! The purpose of this module is to alleviate imports of many common actix traits
-//! by adding a glob import to the top of actix heavy modules:
-//!
-//! ```
-//! # #![allow(unused_imports)]
-//! use actix::dev::*;
-//! ```
+    //! The `actix` prelude for library developers
+    //!
+    //! The purpose of this module is to alleviate imports of many common actix
+    //! traits by adding a glob import to the top of actix heavy modules:
+    //!
+    //! ```
+    //! # #![allow(unused_imports)]
+    //! use actix::dev::*;
+    //! ```
 
-    pub use prelude::*;
     pub use prelude::actix::*;
+    pub use prelude::*;
 
+    pub use address::{ActorAddress, Request, SyncEnvelope, SyncRecipientRequest,
+                      ToEnvelope, UnsyncRecipientRequest};
+    pub use address::{Destination, MessageDestination, MessageDestinationTransport,
+                      MessageRecipient};
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
-    pub use address::{ActorAddress, ToEnvelope, SyncEnvelope,
-                      Request, SyncRecipientRequest, UnsyncRecipientRequest};
-    pub use address::{Destination, MessageDestination, MessageDestinationTransport, MessageRecipient};
 }

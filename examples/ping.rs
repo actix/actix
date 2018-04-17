@@ -1,8 +1,8 @@
 extern crate actix;
 extern crate futures;
 
-use futures::Future;
 use actix::prelude::*;
+use futures::Future;
 
 /// Define `Ping` message
 struct Ping(usize);
@@ -36,20 +36,18 @@ fn main() {
     let system = System::new("test");
 
     // start new actor
-    let addr: Addr<Unsync, _> = MyActor{count: 10}.start();
+    let addr: Addr<Unsync, _> = MyActor { count: 10 }.start();
 
     // send message and get future for result
     let res = addr.send(Ping(10));
 
     // handle() returns tokio handle
-    Arbiter::handle().spawn(
-        res.map(|res| {
-            println!("RESULT: {}", res == 20);
+    Arbiter::handle().spawn(res.map(|res| {
+        println!("RESULT: {}", res == 20);
 
-            // stop system and exit
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
-        })
-        .map_err(|_| ()));
+        // stop system and exit
+        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    }).map_err(|_| ()));
 
     system.run();
 }

@@ -6,19 +6,18 @@
 //! These queues are the same as those in `futures::sync`, except they're not
 //! intended to be sent across threads.
 
-use std::rc::{Rc, Weak};
 use std::cell::RefCell;
 use std::collections::VecDeque;
+use std::rc::{Rc, Weak};
 
-use futures::{Async, Poll, Stream};
 use futures::task::{self, Task};
 use futures::unsync::oneshot::{channel, Receiver};
+use futures::{Async, Poll, Stream};
 
+use super::envelope::UnsyncEnvelope;
+use super::{MessageDestinationTransport, SendError, ToEnvelope, Unsync};
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
-use super::{SendError, Unsync, ToEnvelope, MessageDestinationTransport};
-use super::envelope::UnsyncEnvelope;
-
 
 pub trait UnsyncSender<M: Message + 'static> {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
@@ -40,21 +39,30 @@ struct Shared<A: Actor> {
 /// The transmission end of a channel.
 ///
 /// This is created by the `channel` function.
-pub struct UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct UnsyncAddrSender<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     shared: Weak<RefCell<Shared<A>>>,
 }
 
 impl<A, M> MessageDestinationTransport<Unsync, A, M> for UnsyncAddrSender<A>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A> + ToEnvelope<Unsync, A, M>,
-          M: Message + 'static,
+where
+    A: Actor + Handler<M>,
+    A::Context: AsyncContext<A> + ToEnvelope<Unsync, A, M>,
+    M: Message + 'static,
 {
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         UnsyncAddrSender::send(self, msg)
     }
 }
 
-impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> UnsyncAddrSender<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     pub fn connected(&self) -> bool {
         match self.shared.upgrade() {
             Some(_) => true,
@@ -67,7 +75,9 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     ///
     /// This method does not register current task in receivers queue.
     pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where A: Handler<M>, M: Message + 'static
+    where
+        A: Handler<M>,
+        M: Message + 'static,
     {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -75,8 +85,12 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         };
         let mut shared = shared.borrow_mut();
 
-        shared.buffer.push_back(
-            <A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, None));
+        shared
+            .buffer
+            .push_back(<A::Context as ToEnvelope<Unsync, A, M>>::pack(
+                msg,
+                None,
+            ));
         if let Some(task) = shared.blocked_recv.take() {
             drop(shared);
             task.notify();
@@ -90,7 +104,9 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     /// This method may register current task in receivers queue depends on
     /// state of `park` parameter.
     pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
-        where A: Handler<M>, M: Message + 'static
+    where
+        A: Handler<M>,
+        M: Message + 'static,
     {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -99,8 +115,12 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
         let mut shared = shared.borrow_mut();
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
-            shared.buffer.push_back(
-            <A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, None));
+            shared
+                .buffer
+                .push_back(<A::Context as ToEnvelope<Unsync, A, M>>::pack(
+                    msg,
+                    None,
+                ));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -119,7 +139,9 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
     ///
     /// This method registers current task in receivers queue.
     pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
-        where A: Handler<M>, M: Message + 'static
+    where
+        A: Handler<M>,
+        M: Message + 'static,
     {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -129,8 +151,12 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
             let (tx, rx) = channel();
-            shared.buffer.push_back(
-                <A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, Some(tx)));
+            shared
+                .buffer
+                .push_back(<A::Context as ToEnvelope<Unsync, A, M>>::pack(
+                    msg,
+                    Some(tx),
+                ));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -144,15 +170,19 @@ impl<A> UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
 
     /// Get `Sender` for a specific message type
     pub fn into_sender<M>(self) -> Box<UnsyncSender<M>>
-        where A: Handler<M>, M: Message + 'static {
+    where
+        A: Handler<M>,
+        M: Message + 'static,
+    {
         Box::new(self)
     }
 }
 
 impl<A, M> UnsyncSender<M> for UnsyncAddrSender<A>
-    where A: Actor + Handler<M>,
-          A::Context: AsyncContext<A>,
-          M: Message + 'static
+where
+    A: Actor + Handler<M>,
+    A::Context: AsyncContext<A>,
+    M: Message + 'static,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.do_send(msg)
@@ -168,13 +198,23 @@ impl<A, M> UnsyncSender<M> for UnsyncAddrSender<A>
     }
 }
 
-impl<A> Clone for UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Clone for UnsyncAddrSender<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     fn clone(&self) -> Self {
-        UnsyncAddrSender { shared: Weak::clone(&self.shared) }
+        UnsyncAddrSender {
+            shared: Weak::clone(&self.shared),
+        }
     }
 }
 
-impl<A> Drop for UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Drop for UnsyncAddrSender<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     fn drop(&mut self) {
         let shared = match self.shared.upgrade() {
             Some(shared) => shared,
@@ -193,12 +233,19 @@ impl<A> Drop for UnsyncAddrSender<A> where A: Actor, A::Context: AsyncContext<A>
 /// The receiving end of a channel which implements the `Stream` trait.
 ///
 /// This is created by the `channel` function.
-pub(crate) struct UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
+pub(crate) struct UnsyncAddrReceiver<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     state: Rc<RefCell<Shared<A>>>,
 }
 
-impl<A> UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
-
+impl<A> UnsyncAddrReceiver<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     /// Creates a bounded in-memory channel with buffered storage.
     ///
     /// This method creates concrete implementations of the `Stream`
@@ -211,7 +258,8 @@ impl<A> UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
                 buffer: VecDeque::new(),
                 capacity: cap,
                 blocked_senders: VecDeque::new(),
-                blocked_recv: None }))
+                blocked_recv: None,
+            })),
         }
     }
 
@@ -222,7 +270,9 @@ impl<A> UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
 
     /// Get the sender half
     pub fn sender(&mut self) -> UnsyncAddrSender<A> {
-        UnsyncAddrSender{shared: Rc::downgrade(&self.state)}
+        UnsyncAddrSender {
+            shared: Rc::downgrade(&self.state),
+        }
     }
 
     /// Get channel capacity
@@ -239,18 +289,22 @@ impl<A> UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
 
         // wake up senders
         if shared.buffer.len() < shared.capacity {
-            for _ in 0..shared.capacity-shared.buffer.len() {
+            for _ in 0..shared.capacity - shared.buffer.len() {
                 if let Some(task) = shared.blocked_senders.pop_front() {
                     task.notify();
                 } else {
-                    break
+                    break;
                 }
             }
         }
     }
 }
 
-impl<A> Stream for UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Stream for UnsyncAddrReceiver<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     type Item = UnsyncEnvelope<A>;
     type Error = ();
 
@@ -275,7 +329,11 @@ impl<A> Stream for UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContex
     }
 }
 
-impl<A> Drop for UnsyncAddrReceiver<A> where A: Actor, A::Context: AsyncContext<A> {
+impl<A> Drop for UnsyncAddrReceiver<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     fn drop(&mut self) {
         for task in &self.state.borrow().blocked_senders {
             task.notify();

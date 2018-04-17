@@ -1,53 +1,57 @@
-use std::collections::HashMap;
-use tokio_core::reactor::{Core, Handle};
 use futures::Future;
 use futures::sync::oneshot::{channel, Receiver, Sender};
+use std::collections::HashMap;
+use tokio_core::reactor::{Core, Handle};
 
 use actor::Actor;
 use address::{Addr, Syn};
 use arbiter::Arbiter;
-use handler::{Handler, Message};
 use context::Context;
-use msgs::{SystemExit, StopArbiter};
+use handler::{Handler, Message};
+use msgs::{StopArbiter, SystemExit};
 
 /// System is an actor which manages process.
 ///
 /// Before starting any actix's actors, `System` actor has to be created
-/// with `System::new()` call. This method creates new `Arbiter` in current thread
-/// and starts `System` actor.
+/// with `System::new()` call. This method creates new `Arbiter` in current
+/// thread and starts `System` actor.
 ///
 /// # Examples
 ///
 /// ```rust
 /// extern crate actix;
 ///
-/// use std::time::Duration;
 /// use actix::prelude::*;
+/// use std::time::Duration;
 ///
-/// struct Timer {dur: Duration}
+/// struct Timer {
+///     dur: Duration,
+/// }
 ///
 /// impl Actor for Timer {
-///    type Context = Context<Self>;
+///     type Context = Context<Self>;
 ///
-///    // stop system after `self.dur` seconds
-///    fn started(&mut self, ctx: &mut Context<Self>) {
-///        ctx.run_later(self.dur, |act, ctx| {
-///            // send `SystemExit` to `System` actor.
-///            Arbiter::system().do_send(actix::msgs::SystemExit(0));
-///        });
-///    }
+///     // stop system after `self.dur` seconds
+///     fn started(&mut self, ctx: &mut Context<Self>) {
+///         ctx.run_later(self.dur, |act, ctx| {
+///             // send `SystemExit` to `System` actor.
+///             Arbiter::system().do_send(actix::msgs::SystemExit(0));
+///         });
+///     }
 /// }
 ///
 /// fn main() {
-///    // initialize system
-///    let sys = System::new("test");
+///     // initialize system
+///     let sys = System::new("test");
 ///
-///    // Start `Timer` actor
-///    let _:() = Timer{dur: Duration::new(0, 1)}.start();
+///     // Start `Timer` actor
+///     let _: () = Timer {
+///         dur: Duration::new(0, 1),
+///     }.start();
 ///
-///    // Run system, this function blocks current thread
-///    let code = sys.run();
-///    std::process::exit(code);
+///     // Run system, this function blocks current thread
+///     let code = sys.run();
+///     std::process::exit(code);
 /// }
 /// ```
 pub struct System {
@@ -60,8 +64,7 @@ impl Actor for System {
 }
 
 impl System {
-
-    #[cfg_attr(feature="cargo-clippy", allow(new_ret_no_self))]
+    #[cfg_attr(feature = "cargo-clippy", allow(new_ret_no_self))]
     /// Create new system
     pub fn new<T: Into<String>>(name: T) -> SystemRunner {
         let name = name.into();
@@ -70,7 +73,9 @@ impl System {
 
         // start system
         let sys = System {
-            arbiters: HashMap::new(), stop: Some(stop_tx)}.start();
+            arbiters: HashMap::new(),
+            stop: Some(stop_tx),
+        }.start();
         Arbiter::set_system(sys, name);
 
         SystemRunner { core, stop }
@@ -78,23 +83,24 @@ impl System {
 }
 
 /// Helper object that runs System's event loop
-#[must_use="SystemRunner must be run"]
+#[must_use = "SystemRunner must be run"]
 pub struct SystemRunner {
     core: Core,
     stop: Receiver<i32>,
 }
 
 impl SystemRunner {
-
     /// Returns handle to the current event loop.
     pub fn handle(&self) -> &Handle {
         Arbiter::handle()
     }
 
-    /// This function will start event loop and will finish once the `SystemExit`
-    /// message get received.
+    /// This function will start event loop and will finish once the
+    /// `SystemExit` message get received.
     pub fn run(self) -> i32 {
-        let SystemRunner { mut core, stop, ..} = self;
+        let SystemRunner {
+            mut core, stop, ..
+        } = self;
 
         // run loop
         match core.run(stop) {
@@ -104,7 +110,8 @@ impl SystemRunner {
     }
 
     pub fn run_until_complete<F, I, E>(&mut self, fut: F) -> Result<I, E>
-        where F: Future<Item=I, Error=E>
+    where
+        F: Future<Item = I, Error = E>,
     {
         self.core.run(fut)
     }
@@ -113,8 +120,7 @@ impl SystemRunner {
 impl Handler<SystemExit> for System {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>)
-    {
+    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>) {
         // stop arbiters
         for addr in self.arbiters.values() {
             addr.do_send(StopArbiter(msg.0));
@@ -155,8 +161,7 @@ impl Message for UnregisterArbiter {
 impl Handler<UnregisterArbiter> for System {
     type Result = ();
 
-    fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>)
-    {
+    fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>) {
         self.arbiters.remove(&msg.0);
     }
 }

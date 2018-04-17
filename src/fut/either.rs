@@ -27,17 +27,17 @@ impl<T, A, B> Either<(T, A), (T, B)> {
 }
 
 impl<A, B> ActorFuture for Either<A, B>
-    where A: ActorFuture,
-          B: ActorFuture<Item = A::Item, Error = A::Error, Actor = A::Actor>
+where
+    A: ActorFuture,
+    B: ActorFuture<Item = A::Item, Error = A::Error, Actor = A::Actor>,
 {
     type Item = A::Item;
     type Error = A::Error;
     type Actor = A::Actor;
 
-    fn poll(&mut self,
-            act: &mut A::Actor,
-            ctx: &mut <A::Actor as Actor>::Context) -> Poll<A::Item, B::Error>
-    {
+    fn poll(
+        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context
+    ) -> Poll<A::Item, B::Error> {
         match *self {
             Either::A(ref mut a) => a.poll(act, ctx),
             Either::B(ref mut b) => b.poll(act, ctx),

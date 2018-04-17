@@ -1,8 +1,8 @@
 //! An actor implementation of Unix signal handling
 //!
-//! This module implements asynchronous signal handling for Actix. For each signal
-//! `ProcessSignals` actor sends `Signal` message to all subscriber. To subscriber,
-//! send `Subscribe` message to `ProcessSignals` actor.
+//! This module implements asynchronous signal handling for Actix. For each
+//! signal `ProcessSignals` actor sends `Signal` message to all subscriber. To
+//! subscriber, send `Subscribe` message to `ProcessSignals` actor.
 //!
 //! # Examples
 //!
@@ -61,9 +61,9 @@
 //!    std::process::exit(code);
 //! }
 //! ```
-use std;
-use libc;
 use futures::{Future, Stream};
+use libc;
+use std;
 use tokio_signal;
 #[cfg(unix)]
 use tokio_signal::unix;
@@ -103,7 +103,9 @@ pub struct ProcessSignals {
 
 impl Default for ProcessSignals {
     fn default() -> Self {
-        ProcessSignals{subscribers: Vec::new()}
+        ProcessSignals {
+            subscribers: Vec::new(),
+        }
     }
 }
 
@@ -114,15 +116,16 @@ impl Actor for ProcessSignals {
 impl actix::Supervised for ProcessSignals {}
 
 impl actix::SystemService for ProcessSignals {
-
     fn service_started(&mut self, ctx: &mut Self::Context) {
         let handle = actix::Arbiter::handle();
 
         // SIGINT
-        tokio_signal::ctrl_c(handle).map_err(|_| ())
+        tokio_signal::ctrl_c(handle)
+            .map_err(|_| ())
             .actfuture()
-            .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                 ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Int)))
+            .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Int))
+            })
             .spawn(ctx);
 
         #[cfg(unix)]
@@ -131,29 +134,38 @@ impl actix::SystemService for ProcessSignals {
             unix::Signal::new(libc::SIGHUP, handle)
                 .actfuture()
                 .drop_err()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Hup)))
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                    ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Hup))
+                })
                 .spawn(ctx);
 
             // SIGTERM
-            unix::Signal::new(libc::SIGTERM, handle).map_err(|_| ())
+            unix::Signal::new(libc::SIGTERM, handle)
+                .map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Term)))
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                    ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Term))
+                })
                 .spawn(ctx);
 
             // SIGQUIT
-            unix::Signal::new(libc::SIGQUIT, handle).map_err(|_| ())
+            unix::Signal::new(libc::SIGQUIT, handle)
+                .map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Quit)))
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                    ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Quit))
+                })
                 .spawn(ctx);
 
             // SIGCHLD
-            unix::Signal::new(libc::SIGCHLD, handle).map_err(|_| ())
+            unix::Signal::new(libc::SIGCHLD, handle)
+                .map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>|
-                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Child)))
+                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                    ctx.add_message_stream(
+                        sig.map_err(|_| ()).map(|_| SignalType::Child),
+                    )
+                })
                 .spawn(ctx);
         }
     }
@@ -189,8 +201,8 @@ impl actix::Handler<Subscribe> for ProcessSignals {
     }
 }
 
-/// Default signals handler. This actor sends `SystemExit` message to `System` actor
-/// for each of `SIGINT`, `SIGTERM`, `SIGQUIT` signals.
+/// Default signals handler. This actor sends `SystemExit` message to `System`
+/// actor for each of `SIGINT`, `SIGTERM`, `SIGQUIT` signals.
 pub struct DefaultSignalsHandler;
 
 impl Default for DefaultSignalsHandler {

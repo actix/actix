@@ -10,7 +10,8 @@ use fut::{ActorFuture, ActorStream, IntoActorFuture};
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
 pub struct StreamThen<S, F, U>
-    where U: IntoActorFuture,
+where
+    U: IntoActorFuture,
 {
     stream: S,
     future: Option<U::Future>,
@@ -18,31 +19,39 @@ pub struct StreamThen<S, F, U>
 }
 
 pub fn new<S, F, U>(stream: S, f: F) -> StreamThen<S, F, U>
-    where S: ActorStream,
-          F: FnMut(Result<S::Item, S::Error>,
-                   &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
-          U: IntoActorFuture<Actor=S::Actor>,
+where
+    S: ActorStream,
+    F: FnMut(
+        Result<S::Item, S::Error>,
+        &mut S::Actor,
+        &mut <S::Actor as Actor>::Context,
+    ) -> U,
+    U: IntoActorFuture<Actor = S::Actor>,
 {
     StreamThen {
-        stream, f,
+        stream,
+        f,
         future: None,
     }
 }
 
 impl<S, F, U> ActorStream for StreamThen<S, F, U>
-    where S: ActorStream,
-          F: FnMut(Result<S::Item, S::Error>,
-                   &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
-          U: IntoActorFuture<Actor=S::Actor>,
+where
+    S: ActorStream,
+    F: FnMut(
+        Result<S::Item, S::Error>,
+        &mut S::Actor,
+        &mut <S::Actor as Actor>::Context,
+    ) -> U,
+    U: IntoActorFuture<Actor = S::Actor>,
 {
     type Item = U::Item;
     type Error = U::Error;
     type Actor = S::Actor;
 
-    fn poll(&mut self,
-            act: &mut S::Actor,
-            ctx: &mut <S::Actor as Actor>::Context) -> Poll<Option<U::Item>, U::Error>
-    {
+    fn poll(
+        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context
+    ) -> Poll<Option<U::Item>, U::Error> {
         if self.future.is_none() {
             let item = match self.stream.poll(act, ctx) {
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
@@ -62,7 +71,7 @@ impl<S, F, U> ActorStream for StreamThen<S, F, U>
                 self.future = None;
                 Err(e)
             }
-            Ok(Async::NotReady) => Ok(Async::NotReady)
+            Ok(Async::NotReady) => Ok(Async::NotReady),
         }
     }
 }

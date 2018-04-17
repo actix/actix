@@ -1,25 +1,26 @@
-#[macro_use] extern crate actix;
-extern crate bytes;
+#[macro_use]
+extern crate actix;
 extern crate byteorder;
+extern crate bytes;
 extern crate futures;
-extern crate tokio_io;
-extern crate tokio_core;
 extern crate serde;
 extern crate serde_json;
-#[macro_use] extern crate serde_derive;
+extern crate tokio_core;
+extern crate tokio_io;
+#[macro_use]
+extern crate serde_derive;
 
-use std::{io, net, process, thread};
+use actix::prelude::*;
+use futures::Future;
 use std::str::FromStr;
 use std::time::Duration;
-use futures::Future;
-use tokio_io::AsyncRead;
-use tokio_io::io::WriteHalf;
-use tokio_io::codec::FramedRead;
+use std::{io, net, process, thread};
 use tokio_core::net::TcpStream;
-use actix::prelude::*;
+use tokio_io::AsyncRead;
+use tokio_io::codec::FramedRead;
+use tokio_io::io::WriteHalf;
 
 mod codec;
-
 
 fn main() {
     let sys = actix::System::new("chat-client");
@@ -32,20 +33,24 @@ fn main() {
                 let addr: Addr<Syn, _> = ChatClient::create(|ctx| {
                     let (r, w) = stream.split();
                     ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
-                    ChatClient{framed: actix::io::FramedWrite::new(
-                        w, codec::ClientChatCodec, ctx)}});
+                    ChatClient {
+                        framed: actix::io::FramedWrite::new(
+                            w,
+                            codec::ClientChatCodec,
+                            ctx,
+                        ),
+                    }
+                });
 
                 // start console loop
-                thread::spawn(move|| {
-                    loop {
-                        let mut cmd = String::new();
-                        if io::stdin().read_line(&mut cmd).is_err() {
-                            println!("error");
-                            return
-                        }
-
-                        addr.do_send(ClientCommand(cmd));
+                thread::spawn(move || loop {
+                    let mut cmd = String::new();
+                    if io::stdin().read_line(&mut cmd).is_err() {
+                        println!("error");
+                        return;
                     }
+
+                    addr.do_send(ClientCommand(cmd));
                 });
 
                 futures::future::ok(())
@@ -53,13 +58,12 @@ fn main() {
             .map_err(|e| {
                 println!("Can not connect to server: {}", e);
                 process::exit(1)
-            })
+            }),
     );
 
     println!("Running chat client");
     sys.run();
 }
-
 
 struct ChatClient {
     framed: actix::io::FramedWrite<WriteHalf<TcpStream>, codec::ClientChatCodec>,
@@ -98,8 +102,7 @@ impl ChatClient {
 impl actix::io::WriteHandler<io::Error> for ChatClient {}
 
 /// Handle stdin commands
-impl Handler<ClientCommand> for ChatClient
-{
+impl Handler<ClientCommand> for ChatClient {
     type Result = ();
 
     fn handle(&mut self, msg: ClientCommand, _: &mut Context<Self>) {
@@ -111,25 +114,26 @@ impl Handler<ClientCommand> for ChatClient
             match v[0] {
                 "/list" => {
                     self.framed.write(codec::ChatRequest::List);
-                },
+                }
                 "/join" => {
                     if v.len() == 2 {
-                        self.framed.write(codec::ChatRequest::Join(v[1].to_owned()));
+                        self.framed
+                            .write(codec::ChatRequest::Join(v[1].to_owned()));
                     } else {
                         println!("!!! room name is required");
                     }
-                },
+                }
                 _ => println!("!!! unknown command"),
             }
         } else {
-            self.framed.write(codec::ChatRequest::Message(m.to_owned()));
+            self.framed
+                .write(codec::ChatRequest::Message(m.to_owned()));
         }
     }
 }
 
 /// Server communication
 impl StreamHandler<codec::ChatResponse, io::Error> for ChatClient {
-
     fn handle(&mut self, msg: codec::ChatResponse, _: &mut Context<Self>) {
         match msg {
             codec::ChatResponse::Message(ref msg) => {

@@ -1,13 +1,13 @@
-use std::time::Duration;
 use futures::{future, Stream};
+use std::time::Duration;
 
-use fut::ActorFuture;
+use address::{ActorAddress, Addr, Syn, Unsync};
 use arbiter::Arbiter;
-use address::{Addr, ActorAddress, Syn, Unsync};
 use context::Context;
+use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
+use fut::ActorFuture;
 use handler::{Handler, Message};
 use stream::StreamHandler;
-use contextitems::{ActorMessageItem, ActorDelayedMessageItem, ActorMessageStreamItem};
 use utils::TimerFunc;
 
 #[allow(unused_variables)]
@@ -24,21 +24,22 @@ use utils::TimerFunc;
 /// [`Addr<Syn, A>`](struct.Addr.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
-/// implementation for this message. All messages are statically typed. Message could be
-/// handled in asynchronous fashion. Actor can spawn other actors or add futures or
-/// streams to execution context. Actor trait provides several methods that allow
-/// to control actor lifecycle.
+/// implementation for this message. All messages are statically typed. Message
+/// could be handled in asynchronous fashion. Actor can spawn other actors or
+/// add futures or streams to execution context. Actor trait provides several
+/// methods that allow to control actor lifecycle.
 ///
 /// # Actor lifecycle
 ///
 /// ## Started
 ///
-/// Actor starts in `Started` state, during this state `started` method get called.
+/// Actor starts in `Started` state, during this state `started` method get
+/// called.
 ///
 /// ## Running
 ///
-/// After Actor's method `started` get called, actor transitions to `Running` state.
-/// Actor can stay in `running` state indefinitely long.
+/// After Actor's method `started` get called, actor transitions to `Running`
+/// state. Actor can stay in `running` state indefinitely long.
 ///
 /// ## Stopping
 ///
@@ -49,32 +50,34 @@ use utils::TimerFunc;
 /// * no evented objects are registered in context.
 ///
 /// Actor could restore from `stopping` state to `running` state by creating new
-/// address or adding evented object, like future or stream, in `Actor::stopping` method.
+/// address or adding evented object, like future or stream, in
+/// `Actor::stopping` method.
 ///
-/// If actor changed state to a `stopping` state because of `Context::stop()` get called
-/// then context immediately stops processing incoming messages and calls
-/// `Actor::stopping()` method. If actor does not restore back to a `running` state, all
-/// unprocessed messages get dropped.
+/// If actor changed state to a `stopping` state because of `Context::stop()`
+/// get called then context immediately stops processing incoming messages and
+/// calls `Actor::stopping()` method. If actor does not restore back to a
+/// `running` state, all unprocessed messages get dropped.
 ///
 /// ## Stopped
 ///
-/// If actor does not modify execution context during stopping state actor state changes
-/// to `Stopped`. This state is considered final and at this point actor get dropped.
+/// If actor does not modify execution context during stopping state actor
+/// state changes to `Stopped`. This state is considered final and at this
+/// point actor get dropped.
 ///
 pub trait Actor: Sized + 'static {
-
     /// Actor execution context type
     type Context: ActorContext;
 
     /// Method is called when actor get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
 
-    /// Method is called after an actor is in `Actor::Stopping` state. There could be several
-    /// reasons for stopping. `Context::stop` get called by the actor itself.
-    /// All addresses to current actor get dropped and no more evented objects
-    /// left in the context.
+    /// Method is called after an actor is in `Actor::Stopping` state. There
+    /// could be several reasons for stopping. `Context::stop` get called
+    /// by the actor itself. All addresses to current actor get dropped and
+    /// no more evented objects left in the context.
     ///
-    /// Actor could restore from stopping state by returning `Running::Continue` value.
+    /// Actor could restore from stopping state by returning
+    /// `Running::Continue` value.
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         Running::Stop
     }
@@ -102,22 +105,25 @@ pub trait Actor: Sized + 'static {
     /// let addr: Addr<Unsync, _> = MyActor.start();
     /// ```
     fn start<Addr>(self) -> Addr
-        where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
+    where
+        Self: Actor<Context = Context<Self>> + ActorAddress<Self, Addr>,
     {
         let mut ctx = Context::new(Some(self));
-        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+        let addr = <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
         ctx.run(Arbiter::handle());
         addr
     }
 
     /// Start new asynchronous actor, returns address of newly created actor.
     fn start_default<Addr>() -> Addr
-        where Self: Default + Actor<Context=Context<Self>> + ActorAddress<Self, Addr>
+    where
+        Self: Default + Actor<Context = Context<Self>> + ActorAddress<Self, Addr>,
     {
         Self::default().start()
     }
 
-    /// Use `create` method, if you need `Context` object during actor initialization.
+    /// Use `create` method, if you need `Context` object during actor
+    /// initialization.
     ///
     /// # Examples
     ///
@@ -127,21 +133,23 @@ pub trait Actor: Sized + 'static {
     /// // initialize system
     /// System::new("test");
     ///
-    /// struct MyActor{val: usize};
+    /// struct MyActor {
+    ///     val: usize,
+    /// };
     /// impl Actor for MyActor {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: Addr<Unsync, _> = MyActor::create(|ctx: &mut Context<MyActor>| {
-    ///     MyActor{val: 10}
-    /// });
+    /// let addr: Addr<Unsync, _> =
+    ///     MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
     /// ```
     fn create<Addr, F>(f: F) -> Addr
-        where Self: Actor<Context=Context<Self>> + ActorAddress<Self, Addr>,
-              F: FnOnce(&mut Context<Self>) -> Self + 'static
+    where
+        Self: Actor<Context = Context<Self>> + ActorAddress<Self, Addr>,
+        F: FnOnce(&mut Context<Self>) -> Self + 'static,
     {
         let mut ctx = Context::new(None);
-        let addr =  <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+        let addr = <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
 
         Arbiter::handle().spawn_fn(move || {
             let act = f(&mut ctx);
@@ -160,11 +168,11 @@ pub trait Actor: Sized + 'static {
 /// Lifecycle events are extended with `restarting` method.
 /// If actor fails, supervisor creates new execution context and restarts actor.
 /// `restarting` method is called during restart. After call to this method
-/// Actor execute state changes to `Started` and normal lifecycle process starts.
+/// Actor execute state changes to `Started` and normal lifecycle process
+/// starts.
 ///
 /// `restarting` method get called with newly constructed `Context` object.
 pub trait Supervised: Actor {
-
     /// Method called when supervisor restarting failed actor
     fn restarting(&mut self, ctx: &mut <Self as Actor>::Context) {}
 }
@@ -197,11 +205,11 @@ impl ActorState {
 /// Actor execution context
 ///
 /// Each actor runs within specific execution context. `Actor::Context` defines
-/// context. Execution context defines type of execution, actor communication channels
-/// (message handling).
+/// context. Execution context defines type of execution, actor communication
+/// channels (message handling).
 pub trait ActorContext: Sized {
-
-    /// Immediately stop processing incoming messages and switch to a `stopping` state
+    /// Immediately stop processing incoming messages and switch to a
+    /// `stopping` state
     fn stop(&mut self);
 
     /// Terminate actor execution
@@ -212,10 +220,15 @@ pub trait ActorContext: Sized {
 }
 
 /// Asynchronous execution context
-pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
+pub trait AsyncContext<A>: ActorContext
+where
+    A: Actor<Context = Self>,
 {
     /// Get actor address
-    fn address<Address>(&mut self) -> Address where A: ActorAddress<A, Address> {
+    fn address<Address>(&mut self) -> Address
+    where
+        A: ActorAddress<A, Address>,
+    {
         <A as ActorAddress<A, Address>>::get(self)
     }
 
@@ -232,12 +245,14 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     ///
     /// All futures cancel during actor stopping stage.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
+    where
+        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
 
     /// Spawn future into the context. Stop processing any of incoming events
     /// until this future resolves.
     fn wait<F>(&mut self, fut: F)
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static;
+    where
+        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
 
     /// Check if context is paused (waiting for future completion or stopping)
     fn waiting(&self) -> bool;
@@ -287,8 +302,9 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     /// # }
     /// ```
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
-        where S: Stream + 'static,
-              A: StreamHandler<S::Item, S::Error>,
+    where
+        S: Stream + 'static,
+        A: StreamHandler<S::Item, S::Error>,
     {
         <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
     }
@@ -330,9 +346,10 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
     /// # }
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
-        where S: Stream<Error=()> + 'static,
-              S::Item: Message,
-              A: Handler<S::Item>
+    where
+        S: Stream<Error = ()> + 'static,
+        S::Item: Message,
+        A: Handler<S::Item>,
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_message_stream called for stopped actor.");
@@ -343,7 +360,9 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
 
     /// Send message `msg` to self.
     fn notify<M>(&mut self, msg: M)
-        where A: Handler<M>, M: Message + 'static
+    where
+        A: Handler<M>,
+        M: Message + 'static,
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");
@@ -352,11 +371,13 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
         }
     }
 
-    /// Send message `msg` to self after specified period of time. Returns spawn handle
-    /// which could be used for cancellation. Notification get cancelled
-    /// if context's stop method get called.
+    /// Send message `msg` to self after specified period of time. Returns
+    /// spawn handle which could be used for cancellation. Notification get
+    /// cancelled if context's stop method get called.
     fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
-        where A: Handler<M>, M: Message + 'static
+    where
+        A: Handler<M>,
+        M: Message + 'static,
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_timeout called for stopped actor.");
@@ -366,10 +387,12 @@ pub trait AsyncContext<A>: ActorContext where A: Actor<Context=Self>
         }
     }
 
-    /// Execute closure after specified period of time within same Actor and Context.
-    /// Execution get cancelled if context's stop method get called.
+    /// Execute closure after specified period of time within same Actor and
+    /// Context. Execution get cancelled if context's stop method get
+    /// called.
     fn run_later<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
-        where F: FnOnce(&mut A, &mut A::Context) + 'static
+    where
+        F: FnOnce(&mut A, &mut A::Context) + 'static,
     {
         self.spawn(TimerFunc::new(dur, f))
     }

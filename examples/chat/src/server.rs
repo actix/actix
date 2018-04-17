@@ -2,10 +2,10 @@
 //! And manages available rooms. Peers send messages to other peers in same
 //! room through `ChatServer`.
 
+use actix::prelude::*;
+use rand::{self, Rng, ThreadRng};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use rand::{self, Rng, ThreadRng};
-use actix::prelude::*;
 
 use session;
 
@@ -22,7 +22,6 @@ pub struct Connect {
 impl actix::Message for Connect {
     type Result = usize;
 }
-
 
 /// Session is disconnected
 #[derive(Message)]
@@ -57,8 +56,8 @@ pub struct Join {
     pub name: String,
 }
 
-/// `ChatServer` manages chat rooms and responsible for coordinating chat session.
-/// implementation is super primitive
+/// `ChatServer` manages chat rooms and responsible for coordinating chat
+/// session. implementation is super primitive
 pub struct ChatServer {
     sessions: HashMap<usize, Addr<Unsync, session::ChatSession>>,
     rooms: HashMap<String, HashSet<usize>>,
@@ -118,7 +117,10 @@ impl Handler<Connect> for ChatServer {
         self.sessions.insert(id, msg.addr);
 
         // auto join session to Main room
-        self.rooms.get_mut(&"Main".to_owned()).unwrap().insert(id);
+        self.rooms
+            .get_mut(&"Main".to_owned())
+            .unwrap()
+            .insert(id);
 
         // send id back
         id
@@ -180,7 +182,7 @@ impl Handler<Join> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: Join, _: &mut Context<Self>) {
-        let Join {id, name} = msg;
+        let Join { id, name } = msg;
         let mut rooms = Vec::new();
 
         // remove session from all rooms

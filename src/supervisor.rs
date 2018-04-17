@@ -1,24 +1,26 @@
-use futures::{Future, Async, Poll};
+use futures::{Async, Future, Poll};
 
 use actor::{Actor, Supervised};
-use arbiter::Arbiter;
 use address::{sync_channel, ActorAddress, Addr, Syn};
+use arbiter::Arbiter;
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::Execute;
 
 /// Actor supervisor
 ///
-/// Supervisor manages incoming message for actor. In case of actor failure, supervisor
-/// creates new execution context and restarts actor lifecycle. Supervisor does not
-/// does not re-create actor, it just calls `restarting()` method.
+/// Supervisor manages incoming message for actor. In case of actor failure,
+/// supervisor creates new execution context and restarts actor lifecycle.
+/// Supervisor does not does not re-create actor, it just calls `restarting()`
+/// method.
 ///
-/// Supervisor has same lifecycle as actor. In situation when all addresses to supervisor
-/// get dropped and actor does not execute anything, supervisor terminates.
+/// Supervisor has same lifecycle as actor. In situation when all addresses to
+/// supervisor get dropped and actor does not execute anything, supervisor
+/// terminates.
 ///
-/// `Supervisor` can not guarantee that actor successfully process incoming message.
-/// If actor fails during message processing, this message can not be recovered. Sender
-/// would receive `Err(Cancelled)` error in this situation.
+/// `Supervisor` can not guarantee that actor successfully process incoming
+/// message. If actor fails during message processing, this message can not be
+/// recovered. Sender would receive `Err(Cancelled)` error in this situation.
 ///
 /// ## Example
 ///
@@ -59,16 +61,22 @@ use msgs::Execute;
 ///     sys.run();
 /// }
 /// ```
-pub struct Supervisor<A> where A: Supervised + Actor<Context=Context<A>> {
-    ctx: A::Context
+pub struct Supervisor<A>
+where
+    A: Supervised + Actor<Context = Context<A>>,
+{
+    ctx: A::Context,
 }
 
-impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
+impl<A> Supervisor<A>
+where
+    A: Supervised + Actor<Context = Context<A>>,
 {
     /// Start new supervised actor in current Arbiter.
     ///
-    /// Type of returned address depends on variable type. For example to get `Addr<Syn, _>`
-    /// of newly created actor, use explicitly `Addr<Syn, _>` type as type of a variable.
+    /// Type of returned address depends on variable type. For example to get
+    /// `Addr<Syn, _>` of newly created actor, use explicitly `Addr<Syn,
+    /// _>` type as type of a variable.
     ///
     /// ```rust
     /// # #[macro_use] extern crate actix;
@@ -90,25 +98,27 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
     /// # }
     /// ```
     pub fn start<Addr, F>(f: F) -> Addr
-        where F: FnOnce(&mut A::Context) -> A + 'static,
-              A: Actor<Context=Context<A>> + ActorAddress<A, Addr>
+    where
+        F: FnOnce(&mut A::Context) -> A + 'static,
+        A: Actor<Context = Context<A>> + ActorAddress<A, Addr>,
     {
         // create actor
         let mut ctx = Context::new(None);
         let act = f(&mut ctx);
-        let addr =  <A as ActorAddress<A, Addr>>::get(&mut ctx);
+        let addr = <A as ActorAddress<A, Addr>>::get(&mut ctx);
         ctx.set_actor(act);
 
         // create supervisor
-        Arbiter::handle().spawn(Supervisor::<A>{ ctx });
+        Arbiter::handle().spawn(Supervisor::<A> { ctx });
 
         addr
     }
 
     /// Start new supervised actor in arbiter's thread.
     pub fn start_in<F>(addr: &Addr<Syn, Arbiter>, f: F) -> Addr<Syn, A>
-        where A: Actor<Context=Context<A>>,
-              F: FnOnce(&mut Context<A>) -> A + Send + 'static
+    where
+        A: Actor<Context = Context<A>>,
+        F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         let (tx, rx) = sync_channel::channel(DEFAULT_CAPACITY);
 
@@ -116,7 +126,7 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
             let mut ctx = Context::with_receiver(None, rx);
             let act = f(&mut ctx);
             ctx.set_actor(act);
-            Arbiter::handle().spawn(Supervisor::<A>{ ctx });
+            Arbiter::handle().spawn(Supervisor::<A> { ctx });
             Ok(())
         }));
 
@@ -125,19 +135,21 @@ impl<A> Supervisor<A> where A: Supervised + Actor<Context=Context<A>>
 }
 
 #[doc(hidden)]
-impl<A> Future for Supervisor<A> where A: Supervised + Actor<Context=Context<A>> {
+impl<A> Future for Supervisor<A>
+where
+    A: Supervised + Actor<Context = Context<A>>,
+{
     type Item = ();
     type Error = ();
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         loop {
             match self.ctx.poll() {
-                Ok(Async::NotReady) =>
-                    return Ok(Async::NotReady),
+                Ok(Async::NotReady) => return Ok(Async::NotReady),
                 Ok(Async::Ready(_)) | Err(_) => {
                     // stop if context's address is not connected
                     if !self.ctx.restart() {
-                        return Ok(Async::Ready(()))
+                        return Ok(Async::Ready(()));
                     }
                 }
             }

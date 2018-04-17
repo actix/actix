@@ -1,10 +1,10 @@
+use futures::Future;
 use std::fmt;
 use std::marker::PhantomData;
-use futures::Future;
 
 mod envelope;
-mod queue;
 mod message;
+mod queue;
 
 mod sync;
 pub(crate) mod sync_channel;
@@ -15,15 +15,14 @@ mod unsync_channel;
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
 
+pub use self::envelope::{EnvelopeProxy, MessageEnvelope, SyncEnvelope,
+                         SyncMessageEnvelope, ToEnvelope, UnsyncEnvelope};
 pub use self::message::Request;
-pub use self::envelope::{EnvelopeProxy, ToEnvelope, SyncEnvelope, UnsyncEnvelope,
-                         MessageEnvelope, SyncMessageEnvelope};
 
 pub use self::sync::{Syn, SyncRecipientRequest};
-pub use self::unsync::{Unsync, UnsyncRecipientRequest};
 pub(crate) use self::sync_channel::SyncAddressReceiver;
+pub use self::unsync::{Unsync, UnsyncRecipientRequest};
 pub(crate) use self::unsync_channel::UnsyncAddrReceiver;
-
 
 pub enum SendError<T> {
     Full(T),
@@ -33,9 +32,9 @@ pub enum SendError<T> {
 #[derive(Fail)]
 /// Set of error that can occurred during message delivery process
 pub enum MailboxError {
-    #[fail(display="Mailbox has closed")]
+    #[fail(display = "Mailbox has closed")]
     Closed,
-    #[fail(display="Message delivery timed out")]
+    #[fail(display = "Message delivery timed out")]
     Timeout,
 }
 
@@ -72,13 +71,18 @@ impl fmt::Debug for MailboxError {
 }
 
 /// Trait give access to actor's address
-pub trait ActorAddress<A, T> where A: Actor {
+pub trait ActorAddress<A, T>
+where
+    A: Actor,
+{
     /// Returns actor's address for specific context
     fn get(ctx: &mut A::Context) -> T;
 }
 
 impl<A> ActorAddress<A, Addr<Unsync, A>> for A
-    where A: Actor, A::Context: AsyncContext<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
 {
     fn get(ctx: &mut A::Context) -> Addr<Unsync, A> {
         ctx.unsync_address()
@@ -86,7 +90,9 @@ impl<A> ActorAddress<A, Addr<Unsync, A>> for A
 }
 
 impl<A> ActorAddress<A, Addr<Syn, A>> for A
-    where A: Actor, A::Context: AsyncContext<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
 {
     fn get(ctx: &mut A::Context) -> Addr<Syn, A> {
         ctx.sync_address()
@@ -94,14 +100,19 @@ impl<A> ActorAddress<A, Addr<Syn, A>> for A
 }
 
 impl<A> ActorAddress<A, (Addr<Unsync, A>, Addr<Syn, A>)> for A
-    where A: Actor, A::Context: AsyncContext<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
 {
     fn get(ctx: &mut A::Context) -> (Addr<Unsync, A>, Addr<Syn, A>) {
         (ctx.unsync_address(), ctx.sync_address())
     }
 }
 
-impl<A> ActorAddress<A, ()> for A where A: Actor {
+impl<A> ActorAddress<A, ()> for A
+where
+    A: Actor,
+{
     fn get(_: &mut A::Context) -> () {
         ()
     }
@@ -116,13 +127,15 @@ pub trait Destination<A>: Sized {
 
 #[allow(unused_variables)]
 pub trait MessageDestination<A, M>: Destination<A>
-    where A: Handler<M>, A::Context: ToEnvelope<Self, A, M>,
-          M: Message + 'static,
-          Self::Transport: MessageDestinationTransport<Self, A, M>,
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<Self, A, M>,
+    M: Message + 'static,
+    Self::Transport: MessageDestinationTransport<Self, A, M>,
 {
     type Envelope;
     type ResultSender;
-    type ResultReceiver: Future<Item=M::Result>;
+    type ResultReceiver: Future<Item = M::Result>;
 
     /// Send message unconditionally
     fn do_send(tx: &Self::Transport, msg: M);
@@ -135,26 +148,31 @@ pub trait MessageDestination<A, M>: Destination<A>
 
     /// Get recipient for specific message type.
     fn recipient(tx: <Self as Destination<A>>::Transport) -> Recipient<Self, M>
-        where Self: MessageRecipient<M>;
+    where
+        Self: MessageRecipient<M>;
 }
 
 pub trait MessageDestinationTransport<T: MessageDestination<A, M>, A, M>
-    where M: Message + 'static,
-          A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
-          T::Transport: MessageDestinationTransport<T, A, M>,
+where
+    M: Message + 'static,
+    A: Handler<M>,
+    A::Context: ToEnvelope<T, A, M>,
+    T::Transport: MessageDestinationTransport<T, A, M>,
 {
     fn send(&self, msg: M) -> Result<T::ResultReceiver, SendError<M>>;
 }
 
 #[allow(unused_variables)]
-pub trait MessageRecipient<M>: Sized where M: Message + 'static
+pub trait MessageRecipient<M>: Sized
+where
+    M: Message + 'static,
 {
     type Envelope: From<M>;
     type Transport;
 
     type SendError;
     type MailboxError;
-    type Request: Future<Item=M::Result, Error=Self::MailboxError>;
+    type Request: Future<Item = M::Result, Error = Self::MailboxError>;
 
     /// Send message unconditionally
     ///
@@ -188,7 +206,10 @@ unsafe impl<A: Actor> Sync for Addr<Syn, A> {}
 
 impl<T: Destination<A>, A> Addr<T, A> {
     pub fn new(tx: T::Transport) -> Addr<T, A> {
-        Addr{tx, act: PhantomData}
+        Addr {
+            tx,
+            act: PhantomData,
+        }
     }
 
     /// Indicates if actor is still alive
@@ -198,12 +219,15 @@ impl<T: Destination<A>, A> Addr<T, A> {
 
     /// Send message unconditionally
     ///
-    /// This method ignores actor's mailbox capacity, it silently fails if mailbox is closed.
+    /// This method ignores actor's mailbox capacity, it silently fails if
+    /// mailbox is closed.
     pub fn do_send<M>(&self, msg: M)
-        where T: MessageDestination<A, M>,
-              T::Transport: MessageDestinationTransport<T, A, M>,
-              M: Message + 'static,
-              A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
+    where
+        T: MessageDestination<A, M>,
+        T::Transport: MessageDestinationTransport<T, A, M>,
+        M: Message + 'static,
+        A: Handler<M>,
+        A::Context: ToEnvelope<T, A, M>,
     {
         T::do_send(&self.tx, msg)
     }
@@ -213,10 +237,12 @@ impl<T: Destination<A>, A> Addr<T, A> {
     /// Communication channel to the actor is bounded. if returned `Future`
     /// object get dropped, message cancels.
     pub fn send<M>(&self, msg: M) -> Request<T, A, M>
-        where T: MessageDestination<A, M>,
-              T::Transport: MessageDestinationTransport<T, A, M>,
-              M: Message + 'static,
-              A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
+    where
+        T: MessageDestination<A, M>,
+        T::Transport: MessageDestinationTransport<T, A, M>,
+        M: Message + 'static,
+        A: Handler<M>,
+        A::Context: ToEnvelope<T, A, M>,
     {
         T::send(&self.tx, msg)
     }
@@ -226,20 +252,24 @@ impl<T: Destination<A>, A> Addr<T, A> {
     /// This method fails if actor's mailbox is full or closed. This method
     /// register current task in receivers queue.
     pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where T: MessageDestination<A, M>,
-              T::Transport: MessageDestinationTransport<T, A, M>,
-              M: Message + 'static,
-              A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
+    where
+        T: MessageDestination<A, M>,
+        T::Transport: MessageDestinationTransport<T, A, M>,
+        M: Message + 'static,
+        A: Handler<M>,
+        A::Context: ToEnvelope<T, A, M>,
     {
         T::try_send(&self.tx, msg)
     }
 
     /// Get `Recipient` for specific message type
     pub fn recipient<M>(self) -> Recipient<T, M>
-        where T: MessageDestination<A, M> + MessageRecipient<M>,
-              A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
-              <T as Destination<A>>::Transport: MessageDestinationTransport<T, A, M>,
-              M: Message + 'static,
+    where
+        T: MessageDestination<A, M> + MessageRecipient<M>,
+        A: Handler<M>,
+        A::Context: ToEnvelope<T, A, M>,
+        <T as Destination<A>>::Transport: MessageDestinationTransport<T, A, M>,
+        M: Message + 'static,
     {
         T::recipient(self.tx)
     }
@@ -247,7 +277,10 @@ impl<T: Destination<A>, A> Addr<T, A> {
 
 impl<T: Destination<A>, A> Clone for Addr<T, A> {
     fn clone(&self) -> Addr<T, A> {
-        Addr{tx: self.tx.clone(), act: PhantomData}
+        Addr {
+            tx: self.tx.clone(),
+            act: PhantomData,
+        }
     }
 }
 
@@ -261,16 +294,29 @@ pub struct Recipient<T: MessageRecipient<M>, M: Message + 'static> {
 }
 
 unsafe impl<M> Send for Recipient<Syn, M>
-    where M: Message + Send + 'static, M::Result: Send {}
+where
+    M: Message + Send + 'static,
+    M::Result: Send,
+{
+}
 unsafe impl<M> Sync for Recipient<Syn, M>
-    where M: Message + Send + 'static, M::Result: Send {}
+where
+    M: Message + Send + 'static,
+    M::Result: Send,
+{
+}
 
 impl<T, M> Recipient<T, M>
-    where T: MessageRecipient<M>, M: Message + 'static
+where
+    T: MessageRecipient<M>,
+    M: Message + 'static,
 {
     /// Create new recipient
     pub fn new(tx: T::Transport) -> Recipient<T, M> {
-        Recipient{tx, msg: PhantomData}
+        Recipient {
+            tx,
+            msg: PhantomData,
+        }
     }
 
     /// Send message
@@ -298,9 +344,14 @@ impl<T, M> Recipient<T, M>
 }
 
 impl<T, M> Clone for Recipient<T, M>
-    where T: MessageRecipient<M>, M: Message + 'static
+where
+    T: MessageRecipient<M>,
+    M: Message + 'static,
 {
     fn clone(&self) -> Recipient<T, M> {
-        Recipient{tx: T::clone(&self.tx), msg: PhantomData}
+        Recipient {
+            tx: T::clone(&self.tx),
+            msg: PhantomData,
+        }
     }
 }

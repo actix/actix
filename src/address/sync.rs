@@ -1,23 +1,21 @@
-use std::time::Duration;
+use futures::sync::oneshot::{Receiver, Sender};
 use futures::{Async, Future, Poll};
-use futures::sync::oneshot::{Sender, Receiver};
+use std::time::Duration;
 use tokio_core::reactor::Timeout;
 
 use actor::Actor;
 use arbiter::Arbiter;
 use handler::{Handler, Message};
 
-use super::envelope::{ToEnvelope, SyncEnvelope, SyncMessageEnvelope};
-use super::sync_channel::{SyncSender, SyncAddressSender};
-use super::{Request, Recipient};
-use super::{Destination, MessageDestination, MessageRecipient, SendError, MailboxError};
-
+use super::envelope::{SyncEnvelope, SyncMessageEnvelope, ToEnvelope};
+use super::sync_channel::{SyncAddressSender, SyncSender};
+use super::{Destination, MailboxError, MessageDestination, MessageRecipient, SendError};
+use super::{Recipient, Request};
 
 /// Sync destination of the actor. Actor can run in different thread
 pub struct Syn;
 
-impl<A: Actor> Destination<A> for Syn
-{
+impl<A: Actor> Destination<A> for Syn {
     type Transport = SyncAddressSender<A>;
 
     /// Indicates if actor is still alive
@@ -27,8 +25,11 @@ impl<A: Actor> Destination<A> for Syn
 }
 
 impl<A: Actor, M> MessageDestination<A, M> for Syn
-    where A: Handler<M>, A::Context: ToEnvelope<Self, A, M>,
-          M: Message + Send + 'static, M::Result: Send,
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<Self, A, M>,
+    M: Message + Send + 'static,
+    M::Result: Send,
 {
     type Envelope = SyncEnvelope<A>;
     type ResultSender = Sender<M::Result>;
@@ -56,7 +57,9 @@ impl<A: Actor, M> MessageDestination<A, M> for Syn
 }
 
 impl<M> MessageRecipient<M> for Syn
-    where M: Message + Send + 'static, M::Result: Send
+where
+    M: Message + Send + 'static,
+    M::Result: Send,
 {
     type Transport = Box<SyncSender<M>>;
     type Envelope = SyncMessageEnvelope<M>;
@@ -76,10 +79,10 @@ impl<M> MessageRecipient<M> for Syn
     fn send(tx: &Self::Transport, msg: M) -> SyncRecipientRequest<M> {
         match tx.send(msg) {
             Ok(rx) => SyncRecipientRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) =>
-                SyncRecipientRequest::new(None, Some((tx.boxed(), msg))),
-            Err(SendError::Closed(_)) =>
-                SyncRecipientRequest::new(None, None),
+            Err(SendError::Full(msg)) => {
+                SyncRecipientRequest::new(None, Some((tx.boxed(), msg)))
+            }
+            Err(SendError::Closed(_)) => SyncRecipientRequest::new(None, None),
         }
     }
 
@@ -88,22 +91,32 @@ impl<M> MessageRecipient<M> for Syn
     }
 }
 
-
-/// `SyncRecipientRequest` is a `Future` which represents asynchronous message sending process.
+/// `SyncRecipientRequest` is a `Future` which represents asynchronous message
+/// sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct SyncRecipientRequest<M> where M: Message + Send + 'static, M::Result: Send {
+pub struct SyncRecipientRequest<M>
+where
+    M: Message + Send + 'static,
+    M::Result: Send,
+{
     rx: Option<Receiver<M::Result>>,
     info: Option<(Box<SyncSender<M>>, M)>,
     timeout: Option<Timeout>,
 }
 
 impl<M> SyncRecipientRequest<M>
-    where M: Message + Send + 'static, M::Result: Send,
+where
+    M: Message + Send + 'static,
+    M::Result: Send,
 {
-    pub fn new(rx: Option<Receiver<M::Result>>,
-               info: Option<(Box<SyncSender<M>>, M)>) -> SyncRecipientRequest<M>
-    {
-        SyncRecipientRequest{rx, info, timeout: None}
+    pub fn new(
+        rx: Option<Receiver<M::Result>>, info: Option<(Box<SyncSender<M>>, M)>
+    ) -> SyncRecipientRequest<M> {
+        SyncRecipientRequest {
+            rx,
+            info,
+            timeout: None,
+        }
     }
 
     /// Set message delivery timeout
@@ -117,7 +130,7 @@ impl<M> SyncRecipientRequest<M>
             match timeout.poll() {
                 Ok(Async::Ready(())) => Err(MailboxError::Timeout),
                 Ok(Async::NotReady) => Ok(Async::NotReady),
-                Err(_) => unreachable!()
+                Err(_) => unreachable!(),
             }
         } else {
             Ok(Async::NotReady)
@@ -126,7 +139,9 @@ impl<M> SyncRecipientRequest<M>
 }
 
 impl<M> Future for SyncRecipientRequest<M>
-    where M: Message + Send + 'static, M::Result: Send,
+where
+    M: Message + Send + 'static,
+    M::Result: Send,
 {
     type Item = M::Result;
     type Error = MailboxError;
@@ -137,7 +152,7 @@ impl<M> Future for SyncRecipientRequest<M>
                 Ok(rx) => self.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
                     self.info = Some((sender, msg));
-                    return Ok(Async::NotReady)
+                    return Ok(Async::NotReady);
                 }
                 Err(SendError::Closed(_)) => return Err(MailboxError::Closed),
             }

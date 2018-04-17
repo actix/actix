@@ -26,10 +26,10 @@ impl<A: Actor> Message for StartActor<A> {
     type Result = Addr<Syn, A>;
 }
 
-impl<A: Actor<Context=Context<A>>> StartActor<A>
-{
+impl<A: Actor<Context = Context<A>>> StartActor<A> {
     pub fn new<F>(f: F) -> Self
-        where F: FnOnce(&mut Context<A>) -> A + Send + 'static
+    where
+        F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         StartActor(Box::new(|| A::create(f)))
     }
@@ -44,7 +44,7 @@ trait FnBox<A: Actor>: Send + 'static {
 }
 
 impl<A: Actor, F: FnOnce() -> Addr<Syn, A> + Send + 'static> FnBox<A> for F {
-    #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
+    #[cfg_attr(feature = "cargo-clippy", allow(boxed_local))]
     fn call_box(self: Box<Self>) -> Addr<Syn, A> {
         (*self)()
     }
@@ -83,9 +83,13 @@ impl<I: Send, E: Send> Message for Execute<I, E> {
 }
 
 impl<I, E> Execute<I, E>
-    where I: Send + 'static, E: Send + 'static
+where
+    I: Send + 'static,
+    E: Send + 'static,
 {
-    pub fn new<F>(f: F) -> Self where F: FnOnce() -> Result<I, E> + Send + 'static
+    pub fn new<F>(f: F) -> Self
+    where
+        F: FnOnce() -> Result<I, E> + Send + 'static,
     {
         Execute(Box::new(f))
     }
@@ -101,11 +105,12 @@ trait FnExec<I: Send + 'static, E: Send + 'static>: Send + 'static {
 }
 
 impl<I, E, F> FnExec<I, E> for F
-    where I: Send + 'static,
-          E: Send + 'static,
-          F: FnOnce() -> Result<I, E> + Send + 'static
+where
+    I: Send + 'static,
+    E: Send + 'static,
+    F: FnOnce() -> Result<I, E> + Send + 'static,
 {
-    #[cfg_attr(feature="cargo-clippy", allow(boxed_local))]
+    #[cfg_attr(feature = "cargo-clippy", allow(boxed_local))]
     fn call_box(self: Box<Self>) -> Result<I, E> {
         (*self)()
     }
