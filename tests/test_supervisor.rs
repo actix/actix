@@ -2,19 +2,18 @@ extern crate actix;
 extern crate futures;
 extern crate tokio_core;
 
+use actix::prelude::*;
+use futures::{future, Future};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
-use futures::{future, Future};
 use tokio_core::reactor::Timeout;
-use actix::prelude::*;
 
 struct Die;
 
 impl Message for Die {
     type Result = ();
 }
-
 
 struct MyActor(Arc<AtomicUsize>, Arc<AtomicUsize>, Arc<AtomicUsize>);
 
@@ -40,7 +39,6 @@ impl actix::Handler<Die> for MyActor {
     }
 }
 
-
 #[test]
 fn test_supervisor_restart() {
     let sys = System::new("test");
@@ -52,17 +50,18 @@ fn test_supervisor_restart() {
     let restarts2 = Arc::clone(&restarts);
     let messages2 = Arc::clone(&messages);
 
-    let addr: Addr<Unsync, _> = actix::Supervisor::start(
-        move |_| MyActor(starts2, restarts2, messages2));
+    let addr: Addr<Unsync, _> =
+        actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
     addr.do_send(Die);
     addr.do_send(Die);
 
     Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 100_000), Arbiter::handle()).unwrap()
+        Timeout::new(Duration::new(0, 100_000), Arbiter::handle())
+            .unwrap()
             .then(|_| {
                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
-            })
+            }),
     );
 
     sys.run();

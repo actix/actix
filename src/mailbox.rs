@@ -1,8 +1,8 @@
 use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Addr, Syn, SyncAddressReceiver, Unsync, UnsyncAddrReceiver};
 use address::EnvelopeProxy;
+use address::{sync_channel, Addr, Syn, SyncAddressReceiver, Unsync, UnsyncAddrReceiver};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -10,19 +10,26 @@ const MAX_SYNC_POLLS: u32 = 256;
 /// Default address channel capacity
 pub const DEFAULT_CAPACITY: usize = 16;
 
-
-pub(crate) struct Mailbox<A> where A: Actor, A::Context: AsyncContext<A> {
+pub(crate) struct Mailbox<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     sync_msgs: Option<SyncAddressReceiver<A>>,
     unsync_msgs: UnsyncAddrReceiver<A>,
 }
 
-impl<A> Default for Mailbox<A> where A: Actor, A::Context: AsyncContext<A> {
-
+impl<A> Default for Mailbox<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     #[inline]
     fn default() -> Self {
         Mailbox {
             sync_msgs: None,
-            unsync_msgs: UnsyncAddrReceiver::new(DEFAULT_CAPACITY) }
+            unsync_msgs: UnsyncAddrReceiver::new(DEFAULT_CAPACITY),
+        }
     }
 }
 
@@ -35,13 +42,17 @@ impl NumPolls {
     }
 }
 
-impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
+impl<A> Mailbox<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
 {
     #[inline]
     pub fn new(rx: SyncAddressReceiver<A>) -> Self {
         Mailbox {
             sync_msgs: Some(rx),
-            unsync_msgs: UnsyncAddrReceiver::new(16) }
+            unsync_msgs: UnsyncAddrReceiver::new(16),
+        }
     }
 
     pub fn capacity(&self) -> usize {
@@ -50,23 +61,28 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
 
     pub fn set_capacity(&mut self, cap: usize) {
         self.unsync_msgs.set_capacity(cap);
-        self.sync_msgs.as_mut().map(|msgs| msgs.set_capacity(cap));
-    }
-    
-    #[inline]
-    pub fn connected(&self) -> bool {
-        self.unsync_msgs.connected() ||
-            self.sync_msgs.as_ref().map(|msgs| msgs.connected()).unwrap_or(false)
+        self.sync_msgs
+            .as_mut()
+            .map(|msgs| msgs.set_capacity(cap));
     }
 
-    pub fn remote_address(&mut self) -> Addr<Syn,A> {
+    #[inline]
+    pub fn connected(&self) -> bool {
+        self.unsync_msgs.connected()
+            || self.sync_msgs
+                .as_ref()
+                .map(|msgs| msgs.connected())
+                .unwrap_or(false)
+    }
+
+    pub fn remote_address(&mut self) -> Addr<Syn, A> {
         if self.sync_msgs.is_none() {
             let (tx, rx) = sync_channel::channel(self.unsync_msgs.capacity());
             self.sync_msgs = Some(rx);
             Addr::new(tx)
         } else {
             if let Some(ref mut addr) = self.sync_msgs {
-                return Addr::new(addr.sender())
+                return Addr::new(addr.sender());
             }
             unreachable!();
         }
@@ -84,7 +100,9 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
 
             // unsync messages
             loop {
-                if ctx.waiting() { return }
+                if ctx.waiting() {
+                    return;
+                }
 
                 match self.unsync_msgs.poll() {
                     Ok(Async::Ready(Some(mut msg))) => {
@@ -93,14 +111,18 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
                     }
                     Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
                 }
-                debug_assert!(n_polls.inc() < MAX_SYNC_POLLS,
-                              "Use Self::Context::notify() instead of direct use of address");
+                debug_assert!(
+                    n_polls.inc() < MAX_SYNC_POLLS,
+                    "Use Self::Context::notify() instead of direct use of address"
+                );
             }
 
             // sync messages
             if let Some(ref mut msgs) = self.sync_msgs {
                 loop {
-                    if ctx.waiting() { return }
+                    if ctx.waiting() {
+                        return;
+                    }
 
                     match msgs.poll() {
                         Ok(Async::Ready(Some(mut msg))) => {
@@ -109,13 +131,15 @@ impl<A> Mailbox<A> where A: Actor, A::Context: AsyncContext<A>
                         }
                         Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
                     }
-                    debug_assert!(n_polls.inc() < MAX_SYNC_POLLS,
-                                  "Use Self::Context::notify() instead of direct use of address");
+                    debug_assert!(
+                        n_polls.inc() < MAX_SYNC_POLLS,
+                        "Use Self::Context::notify() instead of direct use of address"
+                    );
                 }
             }
 
             if not_ready {
-                return
+                return;
             }
         }
     }

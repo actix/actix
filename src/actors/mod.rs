@@ -4,4 +4,4 @@ mod resolver;
 pub mod signal;
 pub mod mocker;
 
-pub use self::resolver::{Connect, ConnectAddr, Resolve, Connector, ConnectorError};
+pub use self::resolver::{Connect, ConnectAddr, Connector, ConnectorError, Resolve};

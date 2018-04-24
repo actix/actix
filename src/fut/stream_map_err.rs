@@ -15,24 +15,25 @@ pub struct StreamMapErr<S, F> {
 }
 
 pub fn new<S, F, U>(stream: S, f: F) -> StreamMapErr<S, F>
-    where S: ActorStream,
-          F: FnMut(S::Error, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
+where
+    S: ActorStream,
+    F: FnMut(S::Error, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
 {
-    StreamMapErr {stream, f}
+    StreamMapErr { stream, f }
 }
 
 impl<S, F, U> ActorStream for StreamMapErr<S, F>
-    where S: ActorStream,
-          F: FnMut(S::Error, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
+where
+    S: ActorStream,
+    F: FnMut(S::Error, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
 {
     type Item = S::Item;
     type Error = U;
     type Actor = S::Actor;
 
-    fn poll(&mut self,
-            act: &mut Self::Actor,
-            ctx: &mut <S::Actor as Actor>::Context) -> Poll<Option<S::Item>, U>
-    {
+    fn poll(
+        &mut self, act: &mut Self::Actor, ctx: &mut <S::Actor as Actor>::Context
+    ) -> Poll<Option<S::Item>, U> {
         match self.stream.poll(act, ctx) {
             Ok(ok) => Ok(ok),
             Err(e) => Err((self.f)(e, act, ctx)),

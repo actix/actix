@@ -1,6 +1,7 @@
-//! Example of sync actor. It can be used for cpu bound tasks. Only one sync actor
-//! runs within arbiter's thread. Sync actor processes one message at a time.
-//! Sync arbiter can start multiple threads with separate instance of actor in each.
+//! Example of sync actor. It can be used for cpu bound tasks. Only one sync
+//! actor runs within arbiter's thread. Sync actor processes one message at a
+//! time. Sync arbiter can start multiple threads with separate instance of
+//! actor in each.
 
 extern crate actix;
 extern crate futures;
@@ -12,7 +13,6 @@ struct Fibonacci(pub u32);
 impl Message for Fibonacci {
     type Result = Result<u64, ()>;
 }
-
 
 struct SyncActor;
 
@@ -41,7 +41,7 @@ impl Handler<Fibonacci> for SyncActor {
             }
             Ok(sum)
         }
-   }
+    }
 }
 
 fn main() {

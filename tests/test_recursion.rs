@@ -24,9 +24,7 @@ impl TrackableItem {
     }
 
     fn count() -> u32 {
-        unsafe {
-            N_ITEMS
-        }
+        unsafe { N_ITEMS }
     }
 }
 
@@ -49,7 +47,7 @@ impl Actor for CounterActor {
 impl Handler<Count> for CounterActor {
     type Result = MessageResult<Count>;
 
-    fn handle(&mut self, msg: Count, ctx: &mut Self::Context,) -> Self::Result {
+    fn handle(&mut self, msg: Count, ctx: &mut Self::Context) -> Self::Result {
         assert!(TrackableItem::count() <= MAX_ITEMS);
 
         // send a message to self,

@@ -1,5 +1,5 @@
-use std::time::Duration;
 use std::marker::PhantomData;
+use std::time::Duration;
 
 use futures::{Async, Future, Poll};
 use tokio_core::reactor::Timeout;
@@ -7,17 +7,19 @@ use tokio_core::reactor::Timeout;
 use arbiter::Arbiter;
 use handler::{Handler, Message};
 
-use super::{ToEnvelope, SendError, MailboxError};
+use super::{MailboxError, SendError, ToEnvelope};
 use super::{MessageDestination, MessageDestinationTransport};
 
-
-/// `Request` is a `Future` which represents asynchronous message sending process.
+/// `Request` is a `Future` which represents asynchronous message sending
+/// process.
 #[must_use = "You have to wait on request otherwise Message wont be delivered"]
 pub struct Request<T, A, M>
-    where T: MessageDestination<A, M>,
-          T::Transport: MessageDestinationTransport<T, A, M>,
-          A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
-          M: Message + 'static,
+where
+    T: MessageDestination<A, M>,
+    T::Transport: MessageDestinationTransport<T, A, M>,
+    A: Handler<M>,
+    A::Context: ToEnvelope<T, A, M>,
+    M: Message + 'static,
 {
     rx: Option<T::ResultReceiver>,
     info: Option<(T::Transport, M)>,
@@ -26,14 +28,22 @@ pub struct Request<T, A, M>
 }
 
 impl<T, A, M> Request<T, A, M>
-    where T: MessageDestination<A, M>,
-          T::Transport: MessageDestinationTransport<T, A, M>,
-          A: Handler<M>, A::Context: ToEnvelope<T, A, M>,
-          M: Message + 'static,
+where
+    T: MessageDestination<A, M>,
+    T::Transport: MessageDestinationTransport<T, A, M>,
+    A: Handler<M>,
+    A::Context: ToEnvelope<T, A, M>,
+    M: Message + 'static,
 {
-    pub(crate) fn new(rx: Option<T::ResultReceiver>,
-                      info: Option<(T::Transport, M)>) -> Request<T, A, M> {
-        Request{rx, info, timeout: None, act: PhantomData}
+    pub(crate) fn new(
+        rx: Option<T::ResultReceiver>, info: Option<(T::Transport, M)>
+    ) -> Request<T, A, M> {
+        Request {
+            rx,
+            info,
+            timeout: None,
+            act: PhantomData,
+        }
     }
 
     /// Set message delivery timeout
@@ -47,7 +57,7 @@ impl<T, A, M> Request<T, A, M>
             match timeout.poll() {
                 Ok(Async::Ready(())) => Err(MailboxError::Timeout),
                 Ok(Async::NotReady) => Ok(Async::NotReady),
-                Err(_) => unreachable!()
+                Err(_) => unreachable!(),
             }
         } else {
             Ok(Async::NotReady)
@@ -56,9 +66,12 @@ impl<T, A, M> Request<T, A, M>
 }
 
 impl<T, A, M> Future for Request<T, A, M>
-    where T: MessageDestination<A, M>,
-          T::Transport: MessageDestinationTransport<T, A, M>,
-          A: Handler<M>, A::Context: ToEnvelope<T, A, M>, M: Message + 'static,
+where
+    T: MessageDestination<A, M>,
+    T::Transport: MessageDestinationTransport<T, A, M>,
+    A: Handler<M>,
+    A::Context: ToEnvelope<T, A, M>,
+    M: Message + 'static,
 {
     type Item = M::Result;
     type Error = MailboxError;
@@ -69,7 +82,7 @@ impl<T, A, M> Future for Request<T, A, M>
                 Ok(rx) => self.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
                     self.info = Some((sender, msg));
-                    return Ok(Async::NotReady)
+                    return Ok(Async::NotReady);
                 }
                 Err(SendError::Closed(_)) => return Err(MailboxError::Closed),
             }

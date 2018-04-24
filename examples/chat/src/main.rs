@@ -1,23 +1,25 @@
-#![cfg_attr(feature="cargo-clippy", allow(let_unit_value))]
-extern crate rand;
-extern crate bytes;
+#![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
 extern crate byteorder;
+extern crate bytes;
 extern crate futures;
-extern crate tokio_io;
-extern crate tokio_core;
+extern crate rand;
 extern crate serde;
 extern crate serde_json;
-#[macro_use] extern crate serde_derive;
+extern crate tokio_core;
+extern crate tokio_io;
+#[macro_use]
+extern crate serde_derive;
 
-#[macro_use] extern crate actix;
+#[macro_use]
+extern crate actix;
 
+use actix::prelude::*;
+use futures::Stream;
 use std::net;
 use std::str::FromStr;
-use futures::Stream;
+use tokio_core::net::{TcpListener, TcpStream};
 use tokio_io::AsyncRead;
 use tokio_io::codec::FramedRead;
-use tokio_core::net::{TcpListener, TcpStream};
-use actix::prelude::*;
 
 mod codec;
 mod server;
@@ -26,7 +28,6 @@ mod session;
 use codec::ChatCodec;
 use server::ChatServer;
 use session::ChatSession;
-
 
 /// Define tcp server that will accept incoming tcp connection and create
 /// chat actors.
@@ -53,15 +54,13 @@ impl Handler<TcpConnect> for Server {
         // For each incoming connection we create `ChatSession` actor
         // with out chat server address.
         let server = self.chat.clone();
-        let _: () = ChatSession::create(
-            move |ctx| {
-                let (r, w) = msg.0.split();
-                ChatSession::add_stream(FramedRead::new(r, ChatCodec), ctx);
-                ChatSession::new(server, actix::io::FramedWrite::new(w, ChatCodec, ctx))
-            });
+        let _: () = ChatSession::create(move |ctx| {
+            let (r, w) = msg.0.split();
+            ChatSession::add_stream(FramedRead::new(r, ChatCodec), ctx);
+            ChatSession::new(server, actix::io::FramedWrite::new(w, ChatCodec, ctx))
+        });
     }
 }
-
 
 fn main() {
     let sys = actix::System::new("chat-server");
@@ -75,13 +74,17 @@ fn main() {
 
     // Our chat server `Server` is an actor, first we need to start it
     // and then add stream on incoming tcp connections to it.
-    // TcpListener::incoming() returns stream of the (TcpStream, net::SocketAddr) items
-    // So to be able to handle this events `Server` actor has to implement
+    // TcpListener::incoming() returns stream of the (TcpStream, net::SocketAddr)
+    // items So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
     let _: () = Server::create(|ctx| {
-        ctx.add_message_stream(listener.incoming()
-                               .map_err(|_| ()).map(|(st, addr)| TcpConnect(st, addr)));
-        Server{chat: server}
+        ctx.add_message_stream(
+            listener
+                .incoming()
+                .map_err(|_| ())
+                .map(|(st, addr)| TcpConnect(st, addr)),
+        );
+        Server { chat: server }
     });
 
     println!("Running chat server on 127.0.0.1:12345");

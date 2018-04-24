@@ -5,10 +5,10 @@ use std::mem;
 use futures::{Async, Poll};
 use smallvec::SmallVec;
 
-use fut::ActorFuture;
-use actor::{Actor, AsyncContext, ActorState, Running, SpawnHandle, Supervised};
-use address::{Addr, SyncAddressReceiver, Syn, Unsync};
+use actor::{Actor, ActorState, AsyncContext, Running, SpawnHandle, Supervised};
+use address::{Addr, Syn, SyncAddressReceiver, Unsync};
 use contextitems::ActorWaitItem;
+use fut::ActorFuture;
 use mailbox::Mailbox;
 
 /// internal context state
@@ -22,12 +22,19 @@ bitflags! {
     }
 }
 
-type Item<A> = (SpawnHandle, Box<ActorFuture<Item=(), Error=(), Actor=A>>);
+type Item<A> = (
+    SpawnHandle,
+    Box<ActorFuture<Item = (), Error = (), Actor = A>>,
+);
 
 /// Actor execution context impl
 ///
 /// This is base Context implementation. Multiple cell's could be added.
-pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
+pub struct ContextImpl<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
     act: Option<A>,
     flags: ContextFlags,
     mailbox: Mailbox<A>,
@@ -36,7 +43,10 @@ pub struct ContextImpl<A> where A: Actor, A::Context: AsyncContext<A> {
     handles: SmallVec<[SpawnHandle; 2]>,
 }
 
-impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
+impl<A> ContextImpl<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
 {
     #[inline]
     pub fn new(act: Option<A>) -> ContextImpl<A> {
@@ -46,8 +56,10 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
             mailbox: Mailbox::default(),
-            handles: SmallVec::from_slice(
-                &[SpawnHandle::default(), SpawnHandle::default()]),
+            handles: SmallVec::from_slice(&[
+                SpawnHandle::default(),
+                SpawnHandle::default(),
+            ]),
         }
     }
 
@@ -59,8 +71,10 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             items: SmallVec::new(),
             flags: ContextFlags::RUNNING,
             mailbox: Mailbox::new(rx),
-            handles: SmallVec::from_slice(
-                &[SpawnHandle::default(), SpawnHandle::default()]),
+            handles: SmallVec::from_slice(&[
+                SpawnHandle::default(),
+                SpawnHandle::default(),
+            ]),
         }
     }
 
@@ -81,17 +95,20 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     #[inline]
     /// Is context waiting for future completion
     pub fn waiting(&self) -> bool {
-        !self.wait.is_empty() ||
-            self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
+        !self.wait.is_empty()
+            || self.flags
+                .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
     }
 
     #[inline]
     /// Initiate stop process for actor execution
     ///
-    /// Actor could prevent stopping by returning `false` from `Actor::stopping()` method.
+    /// Actor could prevent stopping by returning `false` from
+    /// `Actor::stopping()` method.
     pub fn stop(&mut self) {
         if self.flags.contains(ContextFlags::RUNNING) {
-            self.flags.remove(ContextFlags::RUNNING | ContextFlags::MODIFIED);
+            self.flags
+                .remove(ContextFlags::RUNNING | ContextFlags::MODIFIED);
             self.flags.insert(ContextFlags::STOPPING);
         }
     }
@@ -125,12 +142,13 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     #[inline]
     /// Spawn new future to this context.
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
-        where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static
+    where
+        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
         self.modify();
         let handle = self.handles[0].next();
         self.handles[0] = handle;
-        let fut: Box<ActorFuture<Item=(), Error=(), Actor=A>> = Box::new(fut);
+        let fut: Box<ActorFuture<Item = (), Error = (), Actor = A>> = Box::new(fut);
         self.items.push((handle, fut));
         handle
     }
@@ -139,7 +157,10 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
     /// Spawn new future to this context and wait future completion.
     ///
     /// During wait period actor does not receive any messages.
-    pub fn wait<F>(&mut self, f: F) where F: ActorFuture<Item=(), Error=(), Actor=A> + 'static {
+    pub fn wait<F>(&mut self, f: F)
+    where
+        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
+    {
         self.modify();
         self.wait.push(ActorWaitItem::new(f));
     }
@@ -179,21 +200,23 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
         if self.flags.contains(ContextFlags::STOPPED) {
             false
         } else {
-            !self.flags.contains(ContextFlags::STARTED)
-                || self.mailbox.connected()
-                || !self.items.is_empty()
-                || !self.wait.is_empty()
+            !self.flags.contains(ContextFlags::STARTED) || self.mailbox.connected()
+                || !self.items.is_empty() || !self.wait.is_empty()
         }
     }
 
     #[inline]
     fn stopping(&self) -> bool {
-        self.flags.intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
+        self.flags
+            .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
     }
 
     /// Restart context. Cleanup all futures, except address queue.
     #[inline]
-    pub fn restart(&mut self, ctx: &mut A::Context) -> bool where A: Supervised {
+    pub fn restart(&mut self, ctx: &mut A::Context) -> bool
+    where
+        A: Supervised,
+    {
         if self.act.is_none() || !self.mailbox.connected() {
             false
         } else {
@@ -226,7 +249,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
         let act: &mut A = if let Some(ref mut act) = self.act {
             unsafe { mem::transmute(act) }
         } else {
-            return Ok(Async::Ready(()))
+            return Ok(Async::Ready(()));
         };
 
         if !self.flags.contains(ContextFlags::STARTED) {
@@ -236,9 +259,12 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             // check cancelled handles, just in case
             while self.handles.len() > 2 {
                 let handle = self.handles.pop().unwrap();
-                for idx in 0..self.items.len() {
+                let mut idx = 0;
+                while idx < self.items.len() {
                     if self.items[idx].0 == handle {
                         self.items.swap_remove(idx);
+                    } else {
+                        idx += 1;
                     }
                 }
             }
@@ -264,7 +290,7 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
             // process mailbox
             self.mailbox.poll(act, ctx);
             if !self.wait.is_empty() && !self.stopping() {
-                continue
+                continue;
             }
 
             // process items
@@ -280,46 +306,50 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
                             // in actor context should be small
                             while self.handles.len() > 2 {
                                 let handle = self.handles.pop().unwrap();
-                                for idx in 0..self.items.len() {
+                                let mut idx = 0;
+                                while idx < self.items.len() {
                                     if self.items[idx].0 == handle {
                                         self.items.swap_remove(idx);
+                                    } else {
+                                        idx += 1;
                                     }
                                 }
                             }
-                            continue 'outer
+                            continue 'outer;
                         }
 
                         // item scheduled wait future
                         if !self.wait.is_empty() && !self.stopping() {
                             // move current item to end of poll queue
-                            // otherwise it is possible that same item generate wait future
-                            // and prevents polling of other items
-                            let next = self.items.len()-1;
+                            // otherwise it is possible that same item generate wait
+                            // future and prevents polling
+                            // of other items
+                            let next = self.items.len() - 1;
                             if idx != next {
                                 self.items.swap(idx, next);
                             }
-                            continue 'outer
+                            continue 'outer;
                         } else {
                             idx += 1;
                         }
-                    },
+                    }
                     Ok(Async::Ready(())) | Err(_) => {
                         self.items.swap_remove(idx);
                         // one of the items scheduled wait future
                         if !self.wait.is_empty() && !self.stopping() {
-                            continue 'outer
+                            continue 'outer;
                         }
-                    },
+                    }
                 }
             }
             self.handles[1] = SpawnHandle::default();
 
             // ContextFlags::MODIFIED indicates that new IO item has
             // been added during poll process
-            if self.flags.contains(ContextFlags::MODIFIED) &&
-                !self.flags.contains(ContextFlags::STOPPING)
+            if self.flags.contains(ContextFlags::MODIFIED)
+                && !self.flags.contains(ContextFlags::STOPPING)
             {
-                continue
+                continue;
             }
 
             // check state
@@ -328,24 +358,24 @@ impl<A> ContextImpl<A> where A: Actor, A::Context: AsyncContext<A>
                 if !self.alive() && Actor::stopping(act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(act, ctx);
-                    return Ok(Async::Ready(()))
+                    return Ok(Async::Ready(()));
                 }
             } else if self.flags.contains(ContextFlags::STOPPING) {
                 if Actor::stopping(act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(act, ctx);
-                    return Ok(Async::Ready(()))
+                    return Ok(Async::Ready(()));
                 } else {
                     self.flags.remove(ContextFlags::STOPPING);
                     self.flags.insert(ContextFlags::RUNNING);
-                    continue
+                    continue;
                 }
             } else if self.flags.contains(ContextFlags::STOPPED) {
                 Actor::stopped(act, ctx);
-                return Ok(Async::Ready(()))
+                return Ok(Async::Ready(()));
             }
 
-            return Ok(Async::NotReady)
+            return Ok(Async::NotReady);
         }
     }
 }

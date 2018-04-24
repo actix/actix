@@ -1,17 +1,16 @@
-use std::time::Duration;
-use futures::{Async, Future, Poll};
 use futures::unsync::oneshot::{Receiver, Sender};
+use futures::{Async, Future, Poll};
+use std::time::Duration;
 use tokio_core::reactor::Timeout;
 
 use actor::{Actor, AsyncContext};
 use arbiter::Arbiter;
 use handler::{Handler, Message};
 
-use super::{Request, Recipient};
-use super::{ToEnvelope, UnsyncEnvelope, MessageEnvelope};
-use super::{Destination, MessageDestination, MessageRecipient, SendError, MailboxError};
-use super::unsync_channel::{UnsyncSender, UnsyncAddrSender};
-
+use super::unsync_channel::{UnsyncAddrSender, UnsyncSender};
+use super::{Destination, MailboxError, MessageDestination, MessageRecipient, SendError};
+use super::{MessageEnvelope, ToEnvelope, UnsyncEnvelope};
+use super::{Recipient, Request};
 
 /// Unsync destination of the actor
 ///
@@ -19,7 +18,8 @@ use super::unsync_channel::{UnsyncSender, UnsyncAddrSender};
 pub struct Unsync;
 
 impl<A: Actor> Destination<A> for Unsync
-    where A::Context: AsyncContext<A>
+where
+    A::Context: AsyncContext<A>,
 {
     type Transport = UnsyncAddrSender<A>;
 
@@ -30,8 +30,10 @@ impl<A: Actor> Destination<A> for Unsync
 }
 
 impl<A, M> MessageDestination<A, M> for Unsync
-    where M: Message + 'static,
-          A: Handler<M>, A::Context: AsyncContext<A> + ToEnvelope<Self, A, M>
+where
+    M: Message + 'static,
+    A: Handler<M>,
+    A::Context: AsyncContext<A> + ToEnvelope<Self, A, M>,
 {
     type Envelope = UnsyncEnvelope<A>;
     type ResultSender = Sender<M::Result>;
@@ -58,7 +60,9 @@ impl<A, M> MessageDestination<A, M> for Unsync
     }
 }
 
-impl<M> MessageRecipient<M> for Unsync where M: Message + 'static
+impl<M> MessageRecipient<M> for Unsync
+where
+    M: Message + 'static,
 {
     type Envelope = MessageEnvelope<M>;
     type Transport = Box<UnsyncSender<M>>;
@@ -74,10 +78,10 @@ impl<M> MessageRecipient<M> for Unsync where M: Message + 'static
     fn send(tx: &Self::Transport, msg: M) -> UnsyncRecipientRequest<M> {
         match tx.send(msg) {
             Ok(rx) => UnsyncRecipientRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) =>
-                UnsyncRecipientRequest::new(None, Some((tx.boxed(), msg))),
-            Err(SendError::Closed(_)) =>
-                UnsyncRecipientRequest::new(None, None),
+            Err(SendError::Full(msg)) => {
+                UnsyncRecipientRequest::new(None, Some((tx.boxed(), msg)))
+            }
+            Err(SendError::Closed(_)) => UnsyncRecipientRequest::new(None, None),
         }
     }
 
@@ -90,21 +94,30 @@ impl<M> MessageRecipient<M> for Unsync where M: Message + 'static
     }
 }
 
-/// `UnsyncRecipientRequest` is a `Future` which represents asynchronous message sending process.
+/// `UnsyncRecipientRequest` is a `Future` which represents asynchronous
+/// message sending process.
 #[must_use = "future do nothing unless polled"]
-pub struct UnsyncRecipientRequest<M> where M: Message + 'static
+pub struct UnsyncRecipientRequest<M>
+where
+    M: Message + 'static,
 {
     rx: Option<Receiver<M::Result>>,
     info: Option<(Box<UnsyncSender<M>>, M)>,
     timeout: Option<Timeout>,
 }
 
-impl<M> UnsyncRecipientRequest<M> where M: Message + 'static
+impl<M> UnsyncRecipientRequest<M>
+where
+    M: Message + 'static,
 {
-    pub fn new(rx: Option<Receiver<M::Result>>,
-               info: Option<(Box<UnsyncSender<M>>, M)>) -> UnsyncRecipientRequest<M>
-    {
-        UnsyncRecipientRequest{rx, info, timeout: None}
+    pub fn new(
+        rx: Option<Receiver<M::Result>>, info: Option<(Box<UnsyncSender<M>>, M)>
+    ) -> UnsyncRecipientRequest<M> {
+        UnsyncRecipientRequest {
+            rx,
+            info,
+            timeout: None,
+        }
     }
 
     /// Set message delivery timeout
@@ -118,7 +131,7 @@ impl<M> UnsyncRecipientRequest<M> where M: Message + 'static
             match timeout.poll() {
                 Ok(Async::Ready(())) => Err(MailboxError::Timeout),
                 Ok(Async::NotReady) => Ok(Async::NotReady),
-                Err(_) => unreachable!()
+                Err(_) => unreachable!(),
             }
         } else {
             Ok(Async::NotReady)
@@ -126,7 +139,9 @@ impl<M> UnsyncRecipientRequest<M> where M: Message + 'static
     }
 }
 
-impl<M> Future for UnsyncRecipientRequest<M> where M: Message + 'static,
+impl<M> Future for UnsyncRecipientRequest<M>
+where
+    M: Message + 'static,
 {
     type Item = M::Result;
     type Error = MailboxError;
@@ -137,7 +152,7 @@ impl<M> Future for UnsyncRecipientRequest<M> where M: Message + 'static,
                 Ok(rx) => self.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
                     self.info = Some((sender, msg));
-                    return Ok(Async::NotReady)
+                    return Ok(Async::NotReady);
                 }
                 Err(SendError::Closed(_)) => return Err(MailboxError::Closed),
             }

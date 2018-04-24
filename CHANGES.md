@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.6 (2018-04-17)
+
+* Fix index usage during iteration for future cancellation #67
+
+
 ## 0.5.5 (2018-03-19)
 
 * Fix polling of wrong wait future after completion

@@ -1,14 +1,13 @@
 #![allow(dead_code)]
-use std::io;
+use byteorder::{BigEndian, ByteOrder};
+use bytes::{BufMut, BytesMut};
 use serde_json as json;
-use byteorder::{BigEndian , ByteOrder};
-use bytes::{BytesMut, BufMut};
-use tokio_io::codec::{Encoder, Decoder};
-
+use std::io;
+use tokio_io::codec::{Decoder, Encoder};
 
 /// Client request
 #[derive(Serialize, Deserialize, Debug, Message)]
-#[serde(tag="cmd", content="data")]
+#[serde(tag = "cmd", content = "data")]
 pub enum ChatRequest {
     /// List rooms
     List,
@@ -17,12 +16,12 @@ pub enum ChatRequest {
     /// Send message
     Message(String),
     /// Ping
-    Ping
+    Ping,
 }
 
 /// Server response
 #[derive(Serialize, Deserialize, Debug, Message)]
-#[serde(tag="cmd", content="data")]
+#[serde(tag = "cmd", content = "data")]
 pub enum ChatResponse {
     Ping,
 
@@ -39,15 +38,14 @@ pub enum ChatResponse {
 /// Codec for Client -> Server transport
 pub struct ChatCodec;
 
-impl Decoder for ChatCodec
-{
+impl Decoder for ChatCodec {
     type Item = ChatRequest;
     type Error = io::Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         let size = {
             if src.len() < 2 {
-                return Ok(None)
+                return Ok(None);
             }
             BigEndian::read_u16(src.as_ref()) as usize
         };
@@ -62,12 +60,13 @@ impl Decoder for ChatCodec
     }
 }
 
-impl Encoder for ChatCodec
-{
+impl Encoder for ChatCodec {
     type Item = ChatResponse;
     type Error = io::Error;
 
-    fn encode(&mut self, msg: ChatResponse, dst: &mut BytesMut) -> Result<(), Self::Error> {
+    fn encode(
+        &mut self, msg: ChatResponse, dst: &mut BytesMut
+    ) -> Result<(), Self::Error> {
         let msg = json::to_string(&msg).unwrap();
         let msg_ref: &[u8] = msg.as_ref();
 
@@ -79,19 +78,17 @@ impl Encoder for ChatCodec
     }
 }
 
-
 /// Codec for Server -> Client transport
 pub struct ClientChatCodec;
 
-impl Decoder for ClientChatCodec
-{
+impl Decoder for ClientChatCodec {
     type Item = ChatResponse;
     type Error = io::Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         let size = {
             if src.len() < 2 {
-                return Ok(None)
+                return Ok(None);
             }
             BigEndian::read_u16(src.as_ref()) as usize
         };
@@ -106,12 +103,13 @@ impl Decoder for ClientChatCodec
     }
 }
 
-impl Encoder for ClientChatCodec
-{
+impl Encoder for ClientChatCodec {
     type Item = ChatRequest;
     type Error = io::Error;
 
-    fn encode(&mut self, msg: ChatRequest, dst: &mut BytesMut) -> Result<(), Self::Error> {
+    fn encode(
+        &mut self, msg: ChatRequest, dst: &mut BytesMut
+    ) -> Result<(), Self::Error> {
         let msg = json::to_string(&msg).unwrap();
         let msg_ref: &[u8] = msg.as_ref();
 

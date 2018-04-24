@@ -1,9 +1,9 @@
 #![cfg_attr(feature="cargo-clippy",
             allow(redundant_field_names, suspicious_arithmetic_impl))]
-use std::{io, mem};
 use std::cell::UnsafeCell;
-use std::rc::Rc;
 use std::marker::PhantomData;
+use std::rc::Rc;
+use std::{io, mem};
 extern crate bytes;
 
 use self::bytes::BytesMut;
@@ -11,20 +11,23 @@ use futures::{Async, Poll};
 use tokio_io::AsyncWrite;
 use tokio_io::codec::Encoder;
 
-use fut::ActorFuture;
 use actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
+use fut::ActorFuture;
 
 /// Write handler
 ///
 /// `WriteHandler` is a helper for `AsyncWrite` types. Implementation
 /// of this trait is required for `Writer` and `FramedWrite` support.
 #[allow(unused_variables)]
-pub trait WriteHandler<E> where Self: Actor, Self::Context: ActorContext
+pub trait WriteHandler<E>
+where
+    Self: Actor,
+    Self::Context: ActorContext,
 {
     /// Method is called when writer emits error.
     ///
-    /// If this method returns `ErrorAction::Continue` writer processing continues
-    /// otherwise stream processing stops.
+    /// If this method returns `ErrorAction::Continue` writer processing
+    /// continues otherwise stream processing stops.
     fn error(&mut self, err: E, ctx: &mut Self::Context) -> Running {
         Running::Stop
     }
@@ -62,38 +65,40 @@ struct InnerWriter<T: AsyncWrite, E: From<io::Error>> {
     handle: SpawnHandle,
 }
 
-impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E>
-{
+impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
     pub fn new<A, C>(io: T, ctx: &mut C) -> Writer<T, E>
-        where A: Actor<Context=C> + WriteHandler<E>,
-              C: AsyncContext<A>,
-              T: 'static
+    where
+        A: Actor<Context = C> + WriteHandler<E>,
+        C: AsyncContext<A>,
+        T: 'static,
     {
-        let inner = Rc::new(UnsafeCell::new(
-            InnerWriter {
-                io,
-                flags: Flags::empty(),
-                buffer: BytesMut::new(),
-                error: None,
-                low: LOW_WATERMARK,
-                high: HIGH_WATERMARK,
-                handle: SpawnHandle::default(),
-            }));
-        let h = ctx.spawn(WriterFut{inner: Rc::clone(&inner), act: PhantomData});
+        let inner = Rc::new(UnsafeCell::new(InnerWriter {
+            io,
+            flags: Flags::empty(),
+            buffer: BytesMut::new(),
+            error: None,
+            low: LOW_WATERMARK,
+            high: HIGH_WATERMARK,
+            handle: SpawnHandle::default(),
+        }));
+        let h = ctx.spawn(WriterFut {
+            inner: Rc::clone(&inner),
+            act: PhantomData,
+        });
 
-        let mut writer = Writer{inner};
+        let mut writer = Writer { inner };
         writer.as_mut().handle = h;
         writer
     }
 
     #[inline]
     fn as_ref(&self) -> &InnerWriter<T, E> {
-        unsafe{ &*self.inner.get() }
+        unsafe { &*self.inner.get() }
     }
 
     #[inline]
     fn as_mut(&mut self) -> &mut InnerWriter<T, E> {
-        unsafe{ &mut *self.inner.get() }
+        unsafe { &mut *self.inner.get() }
     }
 
     /// Gracefully close sink
@@ -126,23 +131,30 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E>
     }
 }
 
-
-struct WriterFut<T, E, A> where T: AsyncWrite, E: From<io::Error> {
+struct WriterFut<T, E, A>
+where
+    T: AsyncWrite,
+    E: From<io::Error>,
+{
     act: PhantomData<A>,
     inner: Rc<UnsafeCell<InnerWriter<T, E>>>,
 }
 
 impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
-    where T: AsyncWrite,
-          E: From<io::Error>,
-          A: Actor + WriteHandler<E>, A::Context: AsyncContext<A>
+where
+    T: AsyncWrite,
+    E: From<io::Error>,
+    A: Actor + WriteHandler<E>,
+    A::Context: AsyncContext<A>,
 {
     type Item = ();
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        let inner = unsafe{ &mut *self.inner.get() };
+    fn poll(
+        &mut self, act: &mut A, ctx: &mut A::Context
+    ) -> Poll<Self::Item, Self::Error> {
+        let inner = unsafe { &mut *self.inner.get() };
         if let Some(err) = inner.error.take() {
             if act.error(err, ctx) == Running::Stop {
                 act.finished(ctx);
@@ -153,27 +165,33 @@ impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
         while !inner.buffer.is_empty() {
             match inner.io.write(&inner.buffer) {
                 Ok(n) => {
-                    if n == 0 &&
-                        act.error(
-                            io::Error::new(io::ErrorKind::WriteZero,
-                                           "failed to write frame to transport").into(), ctx)
-                        == Running::Stop
+                    if n == 0
+                        && act.error(
+                            io::Error::new(
+                                io::ErrorKind::WriteZero,
+                                "failed to write frame to transport",
+                            ).into(),
+                            ctx,
+                        ) == Running::Stop
                     {
                         act.finished(ctx);
-                        return Ok(Async::Ready(()))
+                        return Ok(Async::Ready(()));
                     }
                     let _ = inner.buffer.split_to(n);
-                },
+                }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     if inner.buffer.len() > inner.high {
-                        ctx.wait(WriterDrain{inner: Rc::clone(&self.inner), act: PhantomData});
+                        ctx.wait(WriterDrain {
+                            inner: Rc::clone(&self.inner),
+                            act: PhantomData,
+                        });
                     }
-                    return Ok(Async::NotReady)
-                },
+                    return Ok(Async::NotReady);
+                }
                 Err(e) => if act.error(e.into(), ctx) == Running::Stop {
                     act.finished(ctx);
-                    return Ok(Async::Ready(()))
-                }
+                    return Ok(Async::Ready(()));
+                },
             }
         }
 
@@ -182,11 +200,11 @@ impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
             Ok(_) => (),
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 return Ok(Async::NotReady)
-            },
+            }
             Err(e) => if act.error(e.into(), ctx) == Running::Stop {
                 act.finished(ctx);
-                return Ok(Async::Ready(()))
-            }
+                return Ok(Async::Ready(()));
+            },
         }
 
         // close if closing and we dont need to flush any data
@@ -200,20 +218,28 @@ impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
     }
 }
 
-struct WriterDrain<T, E, A> where T: AsyncWrite, E: From<io::Error> {
+struct WriterDrain<T, E, A>
+where
+    T: AsyncWrite,
+    E: From<io::Error>,
+{
     act: PhantomData<A>,
     inner: Rc<UnsafeCell<InnerWriter<T, E>>>,
 }
 
 impl<T, E, A> ActorFuture for WriterDrain<T, E, A>
-    where T: AsyncWrite, E: From<io::Error>, A: Actor, A::Context: AsyncContext<A>
+where
+    T: AsyncWrite,
+    E: From<io::Error>,
+    A: Actor,
+    A::Context: AsyncContext<A>,
 {
     type Item = ();
     type Error = ();
     type Actor = A;
 
     fn poll(&mut self, _: &mut A, _: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        let inner = unsafe{ &mut *self.inner.get() };
+        let inner = unsafe { &mut *self.inner.get() };
         if inner.error.is_some() {
             return Ok(Async::Ready(()));
         }
@@ -222,23 +248,26 @@ impl<T, E, A> ActorFuture for WriterDrain<T, E, A>
             match inner.io.write(&inner.buffer) {
                 Ok(n) => {
                     if n == 0 {
-                        inner.error = Some(io::Error::new(
-                            io::ErrorKind::WriteZero,
-                            "failed to write frame to transport").into());
-                        return Err(())
+                        inner.error = Some(
+                            io::Error::new(
+                                io::ErrorKind::WriteZero,
+                                "failed to write frame to transport",
+                            ).into(),
+                        );
+                        return Err(());
                     }
                     let _ = inner.buffer.split_to(n);
-                },
+                }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     return if inner.buffer.len() < inner.low {
                         Ok(Async::Ready(()))
                     } else {
                         Ok(Async::NotReady)
                     };
-                },
+                }
                 Err(e) => {
                     inner.error = Some(e.into());
-                    return Err(())
+                    return Err(());
                 }
             }
         }
@@ -252,63 +281,69 @@ pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
     inner: Rc<UnsafeCell<InnerWriter<T, U::Error>>>,
 }
 
-impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
-{
+impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
     pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> FramedWrite<T, U>
-        where A: Actor<Context=C> + WriteHandler<U::Error>,
-              C: AsyncContext<A>,
-              U::Error: 'static,
-              T: 'static
+    where
+        A: Actor<Context = C> + WriteHandler<U::Error>,
+        C: AsyncContext<A>,
+        U::Error: 'static,
+        T: 'static,
     {
-        let inner = Rc::new(UnsafeCell::new(
-            InnerWriter {
-                io,
-                flags: Flags::empty(),
-                buffer: BytesMut::new(),
-                error: None,
-                low: LOW_WATERMARK,
-                high: HIGH_WATERMARK,
-                handle: SpawnHandle::default(),
-            }));
-        let h = ctx.spawn(WriterFut{inner: Rc::clone(&inner), act: PhantomData});
+        let inner = Rc::new(UnsafeCell::new(InnerWriter {
+            io,
+            flags: Flags::empty(),
+            buffer: BytesMut::new(),
+            error: None,
+            low: LOW_WATERMARK,
+            high: HIGH_WATERMARK,
+            handle: SpawnHandle::default(),
+        }));
+        let h = ctx.spawn(WriterFut {
+            inner: Rc::clone(&inner),
+            act: PhantomData,
+        });
 
-        let mut writer = FramedWrite{enc, inner};
+        let mut writer = FramedWrite { enc, inner };
         writer.as_mut().handle = h;
         writer
     }
 
-    pub fn from_buffer<A, C>(io: T, enc: U, buffer: BytesMut, ctx: &mut C)
-                             -> FramedWrite<T, U>
-        where A: Actor<Context=C> + WriteHandler<U::Error>,
-              C: AsyncContext<A>,
-              U::Error: 'static,
-              T: 'static
+    pub fn from_buffer<A, C>(
+        io: T, enc: U, buffer: BytesMut, ctx: &mut C
+    ) -> FramedWrite<T, U>
+    where
+        A: Actor<Context = C> + WriteHandler<U::Error>,
+        C: AsyncContext<A>,
+        U::Error: 'static,
+        T: 'static,
     {
-        let inner = Rc::new(UnsafeCell::new(
-            InnerWriter {
-                io,
-                buffer,
-                flags: Flags::empty(),
-                error: None,
-                low: LOW_WATERMARK,
-                high: HIGH_WATERMARK,
-                handle: SpawnHandle::default(),
-            }));
-        let h = ctx.spawn(WriterFut{inner: Rc::clone(&inner), act: PhantomData});
+        let inner = Rc::new(UnsafeCell::new(InnerWriter {
+            io,
+            buffer,
+            flags: Flags::empty(),
+            error: None,
+            low: LOW_WATERMARK,
+            high: HIGH_WATERMARK,
+            handle: SpawnHandle::default(),
+        }));
+        let h = ctx.spawn(WriterFut {
+            inner: Rc::clone(&inner),
+            act: PhantomData,
+        });
 
-        let mut writer = FramedWrite{enc, inner};
+        let mut writer = FramedWrite { enc, inner };
         writer.as_mut().handle = h;
         writer
     }
 
     #[inline]
     fn as_ref(&self) -> &InnerWriter<T, U::Error> {
-        unsafe{ &*self.inner.get() }
+        unsafe { &*self.inner.get() }
     }
 
     #[inline]
     fn as_mut(&mut self) -> &mut InnerWriter<T, U::Error> {
-        unsafe{ &mut *self.inner.get() }
+        unsafe { &mut *self.inner.get() }
     }
 
     /// Gracefully close sink
@@ -331,7 +366,8 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U>
 
     /// Write item
     pub fn write(&mut self, item: U::Item) {
-        let inner: &mut InnerWriter<T, U::Error> = unsafe{ mem::transmute(self.as_mut()) };
+        let inner: &mut InnerWriter<T, U::Error> =
+            unsafe { mem::transmute(self.as_mut()) };
         let _ = self.enc.encode(item, &mut inner.buffer).map_err(|e| {
             inner.error = Some(e);
         });

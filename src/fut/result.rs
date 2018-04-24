@@ -1,11 +1,10 @@
 //! Definition of the `Result` (immediately finished) combinator
 
+use futures::{Async, Poll};
 use std::marker::PhantomData;
-use futures::{Poll, Async};
 
-use fut::ActorFuture;
 use actor::Actor;
-
+use fut::ActorFuture;
 
 /// A future representing a value that is immediately ready.
 ///
@@ -38,7 +37,10 @@ pub struct FutureResult<T, E, A> {
 /// let future_of_err_2 = fut::result::<u32, u32, MyActor>(Err(2));
 /// ```
 pub fn result<T, E, A>(r: Result<T, E>) -> FutureResult<T, E, A> {
-    FutureResult { inner: Some(r), act: PhantomData }
+    FutureResult {
+        inner: Some(r),
+        act: PhantomData,
+    }
 }
 
 /// Creates a "leaf future" from an immediate value of a finished and
@@ -85,14 +87,21 @@ pub fn err<T, E, A>(e: E) -> FutureResult<T, E, A> {
     result(Err(e))
 }
 
-impl<T, E, A> ActorFuture for FutureResult<T, E, A> where A:Actor {
+impl<T, E, A> ActorFuture for FutureResult<T, E, A>
+where
+    A: Actor,
+{
     type Item = T;
     type Error = E;
     type Actor = A;
 
-    fn poll(&mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context) -> Poll<T, E>
-    {
-        self.inner.take().expect("cannot poll Result twice").map(Async::Ready)
+    fn poll(
+        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context
+    ) -> Poll<T, E> {
+        self.inner
+            .take()
+            .expect("cannot poll Result twice")
+            .map(Async::Ready)
     }
 }
 
