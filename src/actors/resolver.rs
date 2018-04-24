@@ -52,7 +52,7 @@ use tokio_core::net::{TcpStream, TcpStreamNew};
 
 use prelude::*;
 
-
+#[derive(Eq, PartialEq, Debug)]
 pub struct Resolve {
     name: String,
     port: Option<u16>,
@@ -73,6 +73,7 @@ impl Message for Resolve {
     type Result = Result<VecDeque<SocketAddr>, ConnectorError>;
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub struct Connect {
     name: String,
     port: Option<u16>,
@@ -106,6 +107,7 @@ impl Message for Connect {
     type Result = Result<TcpStream, ConnectorError>;
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub struct ConnectAddr(pub SocketAddr);
 
 impl Message for ConnectAddr {
