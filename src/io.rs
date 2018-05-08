@@ -207,7 +207,7 @@ where
             },
         }
 
-        // close if closing and we dont need to flush any data
+        // close if closing and we don't need to flush any data
         if inner.flags.contains(Flags::CLOSING) {
             inner.flags |= Flags::CLOSED;
             act.finished(ctx);

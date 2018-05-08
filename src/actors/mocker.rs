@@ -1,6 +1,6 @@
 //! Mocking utility actor
 //! This actor wraps any actor, and replaces instances of that actor with mocker actor, which is
-//! able to accept all messages which the actor can recieve.
+//! able to accept all messages which the actor can receive.
 //!
 //! Mocking is intended to be achieved by using a pattern similar to
 //! ```rust,ignore
