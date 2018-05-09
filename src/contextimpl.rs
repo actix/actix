@@ -301,7 +301,7 @@ where
                     Ok(Async::NotReady) => {
                         // check cancelled handles
                         if self.handles.len() > 2 {
-                            // this code is not very efficient, relaing on fact that
+                            // this code is not very efficient, relaying on fact that
                             // cancellation should be rear also number of futures
                             // in actor context should be small
                             while self.handles.len() > 2 {
