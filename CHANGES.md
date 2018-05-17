@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.7 (2018-05-17)
+
+* Stop sync actor if sender is dead.
+
+
 ## 0.5.6 (2018-04-17)
 
 * Fix index usage during iteration for future cancellation #67

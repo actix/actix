@@ -203,7 +203,8 @@ where
 {
     /// Create new SyncContext
     fn new(
-        factory: Arc<Fn() -> A>, queue: channel::Receiver<SyncContextProtocol<A>>
+        factory: Arc<Fn() -> A>,
+        queue: channel::Receiver<SyncContextProtocol<A>>,
     ) -> Self {
         let act = factory();
         SyncContext {
@@ -237,7 +238,15 @@ where
                 Ok(SyncContextProtocol::Envelope(mut env)) => {
                     env.handle(&mut self.act, ctx);
                 }
-                Err(_) => (),
+                Err(_) => {
+                    self.state = ActorState::Stopping;
+                    if A::stopping(&mut self.act, ctx) != Running::Stop {
+                        warn!("stopping method is not supported for sync actors");
+                    }
+                    self.state = ActorState::Stopped;
+                    A::stopped(&mut self.act, ctx);
+                    return;
+                }
             }
 
             if self.stopping {
