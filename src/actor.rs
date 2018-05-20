@@ -257,7 +257,7 @@ where
     /// Check if context is paused (waiting for future completion or stopping)
     fn waiting(&self) -> bool;
 
-    /// Cancel future. idx is a value returned by `spawn` method.
+    /// Cancel future. handle is a value returned by `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
 
     /// This method register stream to an actor context and
