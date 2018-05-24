@@ -1,17 +1,16 @@
 [package]
 name = "actix"
-version = "0.5.7"
+version = "0.6.0-dev"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
 keywords = ["actor", "futures", "actix", "async", "tokio"]
-homepage = "https://github.com/actix/actix/"
+homepage = "https://actix.rs"
 repository = "https://github.com/actix/actix.git"
 documentation = "https://docs.rs/actix/"
 categories = ["network-programming", "asynchronous"]
 license = "MIT/Apache-2.0"
 exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
-build = "build.rs"
 
 [badges]
 travis-ci = { repository = "actix/actix", branch = "master" }
@@ -36,7 +35,7 @@ bytes = "0.4"
 futures = "0.1"
 tokio-io = "0.1"
 tokio-core = "0.1"
-tokio-signal = "0.1"
+# tokio-signal = "0.1"
 
 # other
 log = "0.4"
@@ -48,13 +47,7 @@ libc = { version = "0.2" }
 uuid = { version = "0.6", features = ["v4"] }
 
 # dns
-trust-dns-resolver = "0.8"
-
-[dev-dependencies]
-skeptic = "0.13"
-
-[build-dependencies]
-skeptic = "0.13"
+# trust-dns-resolver = "0.8"
 
 [profile.release]
 lto = true
