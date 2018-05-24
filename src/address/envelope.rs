@@ -23,7 +23,7 @@ pub trait EnvelopeProxy {
 
     /// handle message within new actor and context
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     );
 }
 
@@ -118,7 +118,7 @@ impl<A: Actor> EnvelopeProxy for SyncEnvelope<A> {
     type Actor = A;
 
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) {
         self.0.handle(act, ctx)
     }
@@ -144,7 +144,7 @@ where
     type Actor = A;
 
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) {
         let tx = self.tx.take();
         if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
@@ -180,7 +180,7 @@ impl<A: Actor> EnvelopeProxy for UnsyncEnvelope<A> {
 
     #[inline]
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) {
         self.0.handle(act, ctx)
     }
@@ -204,7 +204,7 @@ where
     type Actor = A;
 
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) {
         let tx = self.tx.take();
         if tx.is_some() && tx.as_ref().unwrap().is_canceled() {

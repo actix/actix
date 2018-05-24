@@ -20,10 +20,7 @@ pub fn new<A, F>(future: A, f: F) -> Map<A, F>
 where
     A: ActorFuture,
 {
-    Map {
-        future,
-        f: Some(f),
-    }
+    Map { future, f: Some(f) }
 }
 
 impl<U, A, F> ActorFuture for Map<A, F>
@@ -36,7 +33,7 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut Self::Actor, ctx: &mut <A::Actor as Actor>::Context
+        &mut self, act: &mut Self::Actor, ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<U, A::Error> {
         let e = match self.future.poll(act, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),
@@ -44,10 +41,8 @@ where
             Err(e) => Err(e),
         };
         match e {
-            Ok(item) => Ok(Async::Ready(self.f
-                .take()
-                .expect("cannot poll Map twice")(
-                item, act, ctx
+            Ok(item) => Ok(Async::Ready(self.f.take().expect("cannot poll Map twice")(
+                item, act, ctx,
             ))),
             Err(err) => Err(err),
         }

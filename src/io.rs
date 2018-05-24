@@ -8,8 +8,8 @@ extern crate bytes;
 
 use self::bytes::BytesMut;
 use futures::{Async, Poll};
-use tokio_io::AsyncWrite;
 use tokio_io::codec::Encoder;
+use tokio_io::AsyncWrite;
 
 use actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
 use fut::ActorFuture;
@@ -152,7 +152,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context
+        &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         let inner = unsafe { &mut *self.inner.get() };
         if let Some(err) = inner.error.take() {
@@ -309,7 +309,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
     }
 
     pub fn from_buffer<A, C>(
-        io: T, enc: U, buffer: BytesMut, ctx: &mut C
+        io: T, enc: U, buffer: BytesMut, ctx: &mut C,
     ) -> FramedWrite<T, U>
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,

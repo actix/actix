@@ -1,9 +1,9 @@
 use futures::{Future, Poll};
 use std::{fmt, mem};
-use tokio_core::reactor::Handle;
 
 use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle, Supervised};
 use address::{Addr, Syn, SyncAddressReceiver, Unsync};
+use arbiter::Arbiter;
 use contextimpl::ContextImpl;
 use fut::ActorFuture;
 
@@ -103,7 +103,7 @@ where
 
     #[inline]
     pub(crate) fn with_receiver(
-        act: Option<A>, rx: SyncAddressReceiver<A>
+        act: Option<A>, rx: SyncAddressReceiver<A>,
     ) -> Context<A> {
         Context {
             inner: ContextImpl::with_receiver(act, rx),
@@ -111,8 +111,8 @@ where
     }
 
     #[inline]
-    pub(crate) fn run(self, handle: &Handle) {
-        handle.spawn(self.map(|_| ()).map_err(|_| ()));
+    pub(crate) fn run(self) {
+        Arbiter::spawn(self.map(|_| ()).map_err(|_| ()));
     }
 
     #[inline]

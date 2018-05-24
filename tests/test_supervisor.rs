@@ -1,13 +1,14 @@
 extern crate actix;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio_timer;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::{future, Future};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
 struct Die;
 
@@ -55,13 +56,11 @@ fn test_supervisor_restart() {
     addr.do_send(Die);
     addr.do_send(Die);
 
-    Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 100_000), Arbiter::handle())
-            .unwrap()
-            .then(|_| {
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                future::result(Ok(()))
-            }),
+    Arbiter::spawn(
+        Delay::new(Instant::now() + Duration::new(0, 100_000)).then(|_| {
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            future::result(Ok(()))
+        }),
     );
 
     sys.run();

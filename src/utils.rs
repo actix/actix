@@ -1,10 +1,10 @@
+use std::time::{Duration, Instant};
+
 use futures::unsync::oneshot;
 use futures::{Async, Future, Poll};
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
 use actor::Actor;
-use arbiter::Arbiter;
 use fut::ActorFuture;
 
 pub struct Condition<T>
@@ -47,7 +47,7 @@ where
     A: Actor,
 {
     f: Option<Box<TimerFuncBox<A>>>,
-    timeout: Timeout,
+    timeout: Delay,
 }
 
 impl<A> TimerFunc<A>
@@ -60,7 +60,7 @@ where
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: Timeout::new(timeout, Arbiter::handle()).unwrap(),
+            timeout: Delay::new(Instant::now() + timeout),
         }
     }
 }
@@ -86,7 +86,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error> {
         match self.timeout.poll() {
             Ok(Async::Ready(_)) => {

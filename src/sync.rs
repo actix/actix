@@ -63,7 +63,7 @@
 //!         addr.do_send(Fibonacci(n));
 //!     }
 //!
-//!     Arbiter::handle().spawn_fn(|| {
+//!     Arbiter::spawn_fn(|| {
 //! #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!         futures::future::result(Ok(()))
 //!     });
@@ -117,7 +117,7 @@ where
         }
 
         let (tx, rx) = sync_channel::channel(0);
-        Arbiter::handle().spawn(SyncArbiter {
+        Arbiter::spawn(SyncArbiter {
             queue: sender,
             msgs: rx,
             threads,
@@ -145,7 +145,8 @@ where
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         loop {
             match self.msgs.poll() {
-                Ok(Async::Ready(Some(msg))) => self.queue
+                Ok(Async::Ready(Some(msg))) => self
+                    .queue
                     .send(SyncContextProtocol::Envelope(msg))
                     .expect("Should not fail"),
                 Ok(Async::NotReady) => break,
@@ -203,8 +204,7 @@ where
 {
     /// Create new SyncContext
     fn new(
-        factory: Arc<Fn() -> A>,
-        queue: channel::Receiver<SyncContextProtocol<A>>,
+        factory: Arc<Fn() -> A>, queue: channel::Receiver<SyncContextProtocol<A>>,
     ) -> Self {
         let act = factory();
         SyncContext {

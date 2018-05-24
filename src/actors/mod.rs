@@ -1,7 +1,8 @@
 //! Helper actors
 
-mod resolver;
-pub mod signal;
+//mod resolver;
 pub mod mocker;
+pub mod signal;
 
-pub use self::resolver::{Connect, ConnectAddr, Connector, ConnectorError, Resolve};
+//pub use self::resolver::{Connect, ConnectAddr, Connector, ConnectorError,
+// Resolve};

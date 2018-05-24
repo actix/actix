@@ -18,8 +18,8 @@ use futures::Stream;
 use std::net;
 use std::str::FromStr;
 use tokio_core::net::{TcpListener, TcpStream};
-use tokio_io::AsyncRead;
 use tokio_io::codec::FramedRead;
+use tokio_io::AsyncRead;
 
 mod codec;
 mod server;

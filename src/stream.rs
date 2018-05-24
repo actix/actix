@@ -129,7 +129,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context
+        &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         if !self.started {
             self.started = true;

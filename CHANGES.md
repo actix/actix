@@ -1,5 +1,8 @@
 # CHANGES
 
+* Use tokio
+
+
 ## 0.5.7 (2018-05-17)
 
 * Stop sync actor if sender is dead.

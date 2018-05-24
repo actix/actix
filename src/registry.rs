@@ -96,7 +96,10 @@ pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default 
     }
 
     /// Create an actor in the Arbiter with a closure
-    fn init_actor<F>(f: F) -> Addr<Unsync, Self> where F: FnOnce(&mut Self::Context) -> Self + 'static{
+    fn init_actor<F>(f: F) -> Addr<Unsync, Self>
+    where
+        F: FnOnce(&mut Self::Context) -> Self + 'static,
+    {
         Arbiter::registry().init_actor::<Self, F>(f)
     }
 }
@@ -113,7 +116,10 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     }
 
     /// Create an SystemService with a closure
-    fn init_actor<F>(f: F) -> Addr<Syn, Self> where F: FnOnce(&mut Self::Context) -> Self + Send + 'static{
+    fn init_actor<F>(f: F) -> Addr<Syn, Self>
+    where
+        F: FnOnce(&mut Self::Context) -> Self + Send + 'static,
+    {
         Arbiter::system_registry().init_actor::<Self, F>(f)
     }
 }
@@ -128,11 +134,13 @@ impl Registry {
     /// Query registry for specific actor. Returns address of the actor.
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
-    pub fn get<A: ArbiterService + Actor<Context=Context<A>>>(&self) -> Addr<Unsync, A> {
+    pub fn get<A: ArbiterService + Actor<Context = Context<A>>>(
+        &self,
+    ) -> Addr<Unsync, A> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
             if let Some(addr) = addr.downcast_ref::<Addr<Unsync, A>>() {
-                return addr.clone()
+                return addr.clone();
             }
         }
         let addr: Addr<Unsync, A> = Supervisor::start(|ctx| {
@@ -141,17 +149,24 @@ impl Registry {
             act
         });
 
-        self.registry.borrow_mut().insert(id, Box::new(addr.clone()));
+        self.registry
+            .borrow_mut()
+            .insert(id, Box::new(addr.clone()));
         addr
     }
 
-    /// Add new actor to the registry using the initialization function provided, panic if actor
-    /// is already running
-    pub fn init_actor<A: ArbiterService + Actor<Context=Context<A>>, F>(&self, with: F) -> Addr<Unsync, A> where F: FnOnce(&mut A::Context) -> A + 'static {
+    /// Add new actor to the registry using the initialization function
+    /// provided, panic if actor is already running
+    pub fn init_actor<A: ArbiterService + Actor<Context = Context<A>>, F>(
+        &self, with: F,
+    ) -> Addr<Unsync, A>
+    where
+        F: FnOnce(&mut A::Context) -> A + 'static,
+    {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
             if let Some(addr) = addr.downcast_ref::<Addr<Unsync, A>>() {
-                return addr.clone()
+                return addr.clone();
             }
         }
         let addr: Addr<Unsync, A> = Supervisor::start(|ctx| {
@@ -160,32 +175,35 @@ impl Registry {
             act
         });
 
-        self.registry.borrow_mut().insert(id, Box::new(addr.clone()));
+        self.registry
+            .borrow_mut()
+            .insert(id, Box::new(addr.clone()));
         addr
     }
 
-    /// Add new actor to the registry using the initialization function provided, panic if actor
-    /// is already running
-    pub fn set<A: ArbiterService + Actor<Context=Context<A>>>(&self, addr: Addr<Unsync, A>) {
+    /// Add new actor to the registry using the initialization function
+    /// provided, panic if actor is already running
+    pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(
+        &self, addr: Addr<Unsync, A>,
+    ) {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
-             match addr.downcast_ref::<Addr<Unsync, A>>() {
-                Some(_) => {
-                    panic!("Actor already started")
-                },
-                None => {},
+            if addr.downcast_ref::<Addr<Unsync, A>>().is_some() {
+                panic!("Actor already started")
             }
         }
 
-        self.registry.borrow_mut().insert(id, Box::new(addr.clone()));
+        self.registry
+            .borrow_mut()
+            .insert(id, Box::new(addr.clone()));
     }
 }
 
 // TODO: Remove lock
 /// System wide actors registry
 ///
-/// System registry serves same purpose as [Registry](struct.Registry.html), except
-/// it is shared across all arbiters.
+/// System registry serves same purpose as [Registry](struct.Registry.html),
+/// except it is shared across all arbiters.
 pub struct SystemRegistry {
     registry: Arc<Mutex<HashMap<TypeId, Box<Any>>>>,
 }
@@ -194,23 +212,25 @@ unsafe impl Send for SystemRegistry {}
 
 impl SystemRegistry {
     pub(crate) fn new() -> Self {
-        SystemRegistry{registry: Arc::new(Mutex::new(HashMap::new()))}
+        SystemRegistry {
+            registry: Arc::new(Mutex::new(HashMap::new())),
+        }
     }
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
-    pub fn get<A: SystemService + Actor<Context=Context<A>>>(&self) -> Addr<Syn,A> {
+    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&self) -> Addr<Syn, A> {
         {
             if let Ok(hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
                     match addr.downcast_ref::<Addr<Syn, A>>() {
-                        Some(addr) => {
-                            return addr.clone()
-                        },
+                        Some(addr) => return addr.clone(),
                         None => error!("Got unknown value: {:?}", addr),
                     }
                 }
-            } else { panic!("System registry lock is poisoned"); }
+            } else {
+                panic!("System registry lock is poisoned");
+            }
         }
 
         let addr = Supervisor::start_in(&Arbiter::system_arbiter(), |ctx| {
@@ -220,13 +240,18 @@ impl SystemRegistry {
         });
         if let Ok(mut hm) = self.registry.lock() {
             hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
-            return addr
+            return addr;
         }
         panic!("System registry lock is poisoned");
     }
 
     /// Initialize a SystemService, panic if already started
-    pub fn init_actor<A: SystemService + Actor<Context=Context<A>>, F>(&self, with: F) -> Addr<Syn,A> where F: FnOnce(&mut A::Context) -> A + Send + 'static {
+    pub fn init_actor<A: SystemService + Actor<Context = Context<A>>, F>(
+        &self, with: F,
+    ) -> Addr<Syn, A>
+    where
+        F: FnOnce(&mut A::Context) -> A + Send + 'static,
+    {
         let addr = Supervisor::start_in(&Arbiter::system_arbiter(), |ctx| {
             let mut act = with(ctx);
             act.service_started(ctx);
@@ -237,19 +262,21 @@ impl SystemRegistry {
         addr
     }
 
-    /// Initialize a SystemService to a actor address (can be used to start SyncActors, panic if already started
-    pub fn set<A: SystemService + Actor<Context=Context<A>>>(&self, addr: Addr<Syn,A>) {
+    /// Initialize a SystemService to a actor address (can be used to start
+    /// SyncActors, panic if already started
+    pub fn set<A: SystemService + Actor<Context = Context<A>>>(
+        &self, addr: Addr<Syn, A>,
+    ) {
         {
             if let Ok(hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
-                    match addr.downcast_ref::<Addr<Syn, A>>() {
-                        Some(_) => {
-                            panic!("Actor already started")
-                        },
-                        None => {},
+                    if addr.downcast_ref::<Addr<Syn, A>>().is_some() {
+                        panic!("Actor already started");
                     }
                 }
-            } else { panic!("System registry lock is poisoned"); }
+            } else {
+                panic!("System registry lock is poisoned");
+            }
         }
 
         if let Ok(mut hm) = self.registry.lock() {
@@ -262,6 +289,8 @@ impl SystemRegistry {
 
 impl Clone for SystemRegistry {
     fn clone(&self) -> Self {
-        SystemRegistry{registry: Arc::clone(&self.registry)}
+        SystemRegistry {
+            registry: Arc::clone(&self.registry),
+        }
     }
 }

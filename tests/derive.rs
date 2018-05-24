@@ -27,7 +27,7 @@ fn response_derive_empty() {
     let addr: Addr<Unsync, _> = EmptyActor.start();
     let res = addr.send(Empty);
 
-    system.handle().spawn(res.then(|res| {
+    system.spawn(res.then(|res| {
         match res {
             Ok(result) => assert!(result == ()),
             _ => panic!("Something went wrong"),
@@ -54,7 +54,7 @@ impl Handler<SumResult> for SumResultActor {
     type Result = Result<usize, ()>;
 
     fn handle(
-        &mut self, message: SumResult, _context: &mut Context<Self>
+        &mut self, message: SumResult, _context: &mut Context<Self>,
     ) -> Self::Result {
         Ok(message.0 + message.1)
     }
@@ -66,7 +66,7 @@ pub fn derive_result() {
     let addr: Addr<Unsync, _> = SumResultActor.start();
     let res = addr.send(SumResult(10, 5));
 
-    system.handle().spawn(res.then(|res| {
+    system.spawn(res.then(|res| {
         match res {
             Ok(result) => assert!(result == Ok(10 + 5)),
             _ => panic!("Something went wrong"),
@@ -103,7 +103,7 @@ pub fn response_derive_one() {
     let addr: Addr<Unsync, _> = SumOneActor.start();
     let res = addr.send(SumOne(10, 5));
 
-    system.handle().spawn(res.then(|res| {
+    system.spawn(res.then(|res| {
         match res {
             Ok(result) => assert!(result == 10 + 5),
             _ => panic!("Something went wrong"),

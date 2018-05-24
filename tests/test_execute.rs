@@ -12,7 +12,7 @@ fn test_execute() {
 
     let addr = Arbiter::new("exec-test");
 
-    Arbiter::handle().spawn(addr.send(Execute::new(|| Ok(Arbiter::name()))).then(
+    Arbiter::spawn(addr.send(Execute::new(|| Ok(Arbiter::name()))).then(
         |res: Result<Result<_, ()>, _>| {
             Arbiter::system().do_send(SystemExit(0));
 
@@ -35,7 +35,7 @@ fn test_system_execute() {
     let addr = Arbiter::new("exec-test");
 
     addr.do_send(Execute::new(|| -> Result<(), ()> {
-        Arbiter::handle().spawn_fn(|| {
+        Arbiter::spawn_fn(|| {
             Arbiter::system_arbiter().do_send(Execute::new(|| -> Result<(), ()> {
                 Arbiter::system().do_send(SystemExit(0));
 

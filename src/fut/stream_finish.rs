@@ -27,7 +27,7 @@ where
     type Actor = S::Actor;
 
     fn poll(
-        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context
+        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<(), S::Error> {
         loop {
             match self.0.poll(act, ctx) {

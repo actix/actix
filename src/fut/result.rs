@@ -96,7 +96,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context
+        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<T, E> {
         self.inner
             .take()

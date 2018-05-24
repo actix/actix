@@ -15,8 +15,10 @@ mod unsync_channel;
 use actor::{Actor, AsyncContext};
 use handler::{Handler, Message};
 
-pub use self::envelope::{EnvelopeProxy, MessageEnvelope, SyncEnvelope,
-                         SyncMessageEnvelope, ToEnvelope, UnsyncEnvelope};
+pub use self::envelope::{
+    EnvelopeProxy, MessageEnvelope, SyncEnvelope, SyncMessageEnvelope, ToEnvelope,
+    UnsyncEnvelope,
+};
 pub use self::message::Request;
 
 pub use self::sync::{Syn, SyncRecipientRequest};

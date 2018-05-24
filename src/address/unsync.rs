@@ -1,14 +1,16 @@
+use std::time::{Duration, Instant};
+
 use futures::unsync::oneshot::{Receiver, Sender};
 use futures::{Async, Future, Poll};
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
 use actor::{Actor, AsyncContext};
-use arbiter::Arbiter;
 use handler::{Handler, Message};
 
 use super::unsync_channel::{UnsyncAddrSender, UnsyncSender};
-use super::{Destination, MailboxError, MessageDestination, MessageRecipient, SendError};
+use super::{
+    Destination, MailboxError, MessageDestination, MessageRecipient, SendError,
+};
 use super::{MessageEnvelope, ToEnvelope, UnsyncEnvelope};
 use super::{Recipient, Request};
 
@@ -103,7 +105,7 @@ where
 {
     rx: Option<Receiver<M::Result>>,
     info: Option<(Box<UnsyncSender<M>>, M)>,
-    timeout: Option<Timeout>,
+    timeout: Option<Delay>,
 }
 
 impl<M> UnsyncRecipientRequest<M>
@@ -111,7 +113,7 @@ where
     M: Message + 'static,
 {
     pub fn new(
-        rx: Option<Receiver<M::Result>>, info: Option<(Box<UnsyncSender<M>>, M)>
+        rx: Option<Receiver<M::Result>>, info: Option<(Box<UnsyncSender<M>>, M)>,
     ) -> UnsyncRecipientRequest<M> {
         UnsyncRecipientRequest {
             rx,
@@ -122,7 +124,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(Timeout::new(dur, Arbiter::handle()).unwrap());
+        self.timeout = Some(Delay::new(Instant::now() + dur));
         self
     }
 

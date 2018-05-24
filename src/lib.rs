@@ -35,10 +35,11 @@ extern crate uuid;
 extern crate bitflags;
 #[macro_use]
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate tokio_io;
 extern crate tokio_signal;
-extern crate trust_dns_resolver;
+extern crate tokio_timer;
+// extern crate trust_dns_resolver;
 
 #[macro_use]
 extern crate failure;
@@ -75,14 +76,17 @@ pub mod registry;
 pub mod sync;
 pub mod utils;
 
-pub use actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle,
-                Supervised};
+pub use actor::{
+    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+};
 pub use address::{ActorAddress, Addr, MailboxError, Recipient, Syn, Unsync};
 pub use arbiter::Arbiter;
 pub use context::Context;
 pub use fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
-pub use handler::{ActorResponse, Handler, Message, MessageResult, Response,
-                  ResponseActFuture, ResponseFuture};
+pub use handler::{
+    ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
+    ResponseFuture,
+};
 pub use stream::StreamHandler;
 pub use supervisor::Supervisor;
 pub use sync::{SyncArbiter, SyncContext};
@@ -90,13 +94,6 @@ pub use system::{System, SystemRunner};
 
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;
-
-#[doc(hidden)]
-#[deprecated(since = "0.5.0", note = "Use Addr<Unsync<T>>")]
-pub type Address<T> = Addr<Unsync, T>;
-#[doc(hidden)]
-#[deprecated(since = "0.5.0", note = "Use Addr<Syn<T>>")]
-pub type SyncAddress<T> = Addr<Syn, T>;
 
 pub mod prelude {
     //! The `actix` prelude
@@ -112,21 +109,17 @@ pub mod prelude {
     #[doc(hidden)]
     pub use actix_derive::*;
 
-    #[doc(hidden)]
-    #[deprecated(since = "0.5.0", note = "Use Addr<Unsync<T>>")]
-    pub type Address<T> = Addr<Unsync, T>;
-    #[doc(hidden)]
-    #[deprecated(since = "0.5.0", note = "Use Addr<Syn<T>>")]
-    pub type SyncAddress<T> = Addr<Syn, T>;
-
-    pub use actor::{Actor, ActorContext, ActorState, AsyncContext, Running,
-                    SpawnHandle, Supervised};
+    pub use actor::{
+        Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+    };
     pub use address::{Addr, MailboxError, Recipient, SendError, Syn, Unsync};
     pub use arbiter::Arbiter;
     pub use context::{Context, ContextFutureSpawner};
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
-    pub use handler::{ActorResponse, Handler, Message, MessageResult, Response,
-                      ResponseActFuture, ResponseFuture};
+    pub use handler::{
+        ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
+        ResponseFuture,
+    };
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
     pub use supervisor::Supervisor;
@@ -160,10 +153,13 @@ pub mod dev {
     pub use prelude::actix::*;
     pub use prelude::*;
 
-    pub use address::{ActorAddress, Request, SyncEnvelope, SyncRecipientRequest,
-                      ToEnvelope, UnsyncRecipientRequest};
-    pub use address::{Destination, MessageDestination, MessageDestinationTransport,
-                      MessageRecipient};
+    pub use address::{
+        ActorAddress, Request, SyncEnvelope, SyncRecipientRequest, ToEnvelope,
+        UnsyncRecipientRequest,
+    };
+    pub use address::{
+        Destination, MessageDestination, MessageDestinationTransport, MessageRecipient,
+    };
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
 }

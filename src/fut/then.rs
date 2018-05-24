@@ -43,7 +43,7 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context
+        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<B::Item, B::Error> {
         self.state.poll(act, ctx, |a, f, act, ctx| {
             Ok(Err(f(a, act, ctx).into_future()))

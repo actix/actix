@@ -16,9 +16,9 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::{io, net, process, thread};
 use tokio_core::net::TcpStream;
-use tokio_io::AsyncRead;
 use tokio_io::codec::FramedRead;
 use tokio_io::io::WriteHalf;
+use tokio_io::AsyncRead;
 
 mod codec;
 
@@ -117,8 +117,7 @@ impl Handler<ClientCommand> for ChatClient {
                 }
                 "/join" => {
                     if v.len() == 2 {
-                        self.framed
-                            .write(codec::ChatRequest::Join(v[1].to_owned()));
+                        self.framed.write(codec::ChatRequest::Join(v[1].to_owned()));
                     } else {
                         println!("!!! room name is required");
                     }
@@ -126,8 +125,7 @@ impl Handler<ClientCommand> for ChatClient {
                 _ => println!("!!! unknown command"),
             }
         } else {
-            self.framed
-                .write(codec::ChatRequest::Message(m.to_owned()));
+            self.framed.write(codec::ChatRequest::Message(m.to_owned()));
         }
     }
 }

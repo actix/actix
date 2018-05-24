@@ -1,6 +1,6 @@
-use futures::Future;
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::unsync::oneshot::Sender as UnsyncSender;
+use futures::Future;
 
 use actor::{Actor, AsyncContext};
 use address::{Addr, Syn};
@@ -142,8 +142,10 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        Arbiter::handle().spawn(self.then(move |res| {
-            tx.map(|tx| tx.send(res));
+        Arbiter::spawn(self.then(move |res| {
+            if let Some(tx) = tx {
+                tx.send(res)
+            }
             Ok(())
         }));
     }
@@ -187,13 +189,17 @@ where
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         match self.item {
             ResponseTypeItem::Fut(fut) => {
-                Arbiter::handle().spawn(fut.then(move |res| {
-                    tx.map(|tx| tx.send(res));
+                Arbiter::spawn(fut.then(move |res| {
+                    if let Some(tx) = tx {
+                        tx.send(res);
+                    }
                     Ok(())
                 }));
             }
             ResponseTypeItem::Result(res) => {
-                tx.map(|tx| tx.send(res));
+                if let Some(tx) = tx {
+                    tx.send(res);
+                }
             }
         }
     }
@@ -238,12 +244,16 @@ where
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
                 ctx.spawn(fut.then(move |res, _, _| {
-                    tx.map(|tx| tx.send(res));
+                    if let Some(tx) = tx {
+                        tx.send(res)
+                    }
                     fut::ok(())
                 }));
             }
             ActorResponseTypeItem::Result(res) => {
-                tx.map(|tx| tx.send(res));
+                if let Some(tx) = tx {
+                    tx.send(res);
+                }
             }
         }
     }
