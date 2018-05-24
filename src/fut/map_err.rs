@@ -20,10 +20,7 @@ pub fn new<A, F>(future: A, f: F) -> MapErr<A, F>
 where
     A: ActorFuture,
 {
-    MapErr {
-        future,
-        f: Some(f),
-    }
+    MapErr { future, f: Some(f) }
 }
 
 impl<U, A, F> ActorFuture for MapErr<A, F>
@@ -36,7 +33,7 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context
+        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, U> {
         let e = match self.future.poll(act, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),
@@ -44,9 +41,7 @@ where
         };
         match e {
             Err(e) => Err(self.f.take().expect("cannot poll MapErr twice")(
-                e,
-                act,
-                ctx,
+                e, act, ctx,
             )),
             Ok(err) => Ok(err),
         }
@@ -78,7 +73,7 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context
+        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, ()> {
         match self.future.poll(act, ctx) {
             Ok(Async::Ready(item)) => Ok(Async::Ready(item)),

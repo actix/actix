@@ -155,7 +155,7 @@ impl SenderTask {
 /// The `Receiver` returned implements the `Stream` trait and has access to any
 /// number of the associated combinators for transforming the result.
 pub fn channel<A: Actor>(
-    buffer: usize
+    buffer: usize,
 ) -> (SyncAddressSender<A>, SyncAddressReceiver<A>) {
     // Check that the requested buffer size does not exceed the maximum buffer
     // size permitted by the system.
@@ -328,7 +328,8 @@ impl<A: Actor> SyncAddressSender<A> {
             state.num_messages += 1;
 
             let next = encode_state(&state);
-            match self.inner
+            match self
+                .inner
                 .state
                 .compare_exchange(curr, next, SeqCst, SeqCst)
             {
@@ -349,7 +350,8 @@ impl<A: Actor> SyncAddressSender<A> {
             state.num_messages += 1;
 
             let next = encode_state(&state);
-            match self.inner
+            match self
+                .inner
                 .state
                 .compare_exchange(curr, next, SeqCst, SeqCst)
             {
@@ -433,11 +435,7 @@ impl<A: Actor> SyncAddressSender<A> {
             //
             // Update the task in case the `Sender` has been moved to another
             // task
-            task.task = if do_park {
-                Some(task::current())
-            } else {
-                None
-            };
+            task.task = if do_park { Some(task::current()) } else { None };
 
             Async::NotReady
         } else {
@@ -494,9 +492,7 @@ impl<A: Actor> Clone for SyncAddressSender<A> {
             debug_assert!(curr < self.inner.max_senders());
 
             let next = curr + 1;
-            let actual = self.inner
-                .num_senders
-                .compare_and_swap(curr, next, SeqCst);
+            let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
@@ -574,9 +570,7 @@ impl<A: Actor> SyncAddressReceiver<A> {
             }
 
             let next = curr + 1;
-            let actual = self.inner
-                .num_senders
-                .compare_and_swap(curr, next, SeqCst);
+            let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
@@ -665,7 +659,8 @@ impl<A: Actor> SyncAddressReceiver<A> {
             state.num_messages -= 1;
 
             let next = encode_state(&state);
-            match self.inner
+            match self
+                .inner
                 .state
                 .compare_exchange(curr, next, SeqCst, SeqCst)
             {
@@ -730,7 +725,8 @@ impl<A: Actor> Drop for SyncAddressReceiver<A> {
             state.is_open = false;
 
             let next = encode_state(&state);
-            match self.inner
+            match self
+                .inner
                 .state
                 .compare_exchange(curr, next, SeqCst, SeqCst)
             {
@@ -821,25 +817,21 @@ mod tests {
     fn test_cap() {
         let sys = System::new("test");
 
-        Arbiter::handle().spawn_fn(move || {
+        Arbiter::spawn_fn(move || {
             let (s1, mut recv) = channel::<Act>(1);
             let s2 = recv.sender();
 
             let arb: Addr<Syn, _> = Arbiter::new("s1");
-            arb.do_send(actix::msgs::Execute::new(
-                move || -> Result<(), ()> {
-                    let _ = s1.send(Ping);
-                    Ok(())
-                },
-            ));
+            arb.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+                let _ = s1.send(Ping);
+                Ok(())
+            }));
             thread::sleep(time::Duration::from_millis(100));
             let arb2 = Arbiter::new("s1");
-            arb2.do_send(actix::msgs::Execute::new(
-                move || -> Result<(), ()> {
-                    let _ = s2.send(Ping);
-                    Ok(())
-                },
-            ));
+            arb2.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+                let _ = s2.send(Ping);
+                Ok(())
+            }));
 
             thread::sleep(time::Duration::from_millis(100));
             let state = decode_state(recv.inner.state.load(SeqCst));

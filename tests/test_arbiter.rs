@@ -4,8 +4,8 @@ extern crate actix;
 
 use actix::prelude::*;
 use futures::Future;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 #[derive(Debug, Message)]
 struct Ping(usize);
@@ -47,11 +47,9 @@ fn test_start_actor_message() {
     let act_count = Arc::clone(&count);
     let arbiter = Arbiter::new("test2");
 
-    Arbiter::handle().spawn(
+    Arbiter::spawn(
         arbiter
-            .send(actix::msgs::StartActor::new(move |_| {
-                MyActor(act_count)
-            }))
+            .send(actix::msgs::StartActor::new(move |_| MyActor(act_count)))
             .then(|res| {
                 res.unwrap().do_send(Ping(1));
                 Ok(())

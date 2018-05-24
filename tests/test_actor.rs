@@ -1,13 +1,14 @@
 extern crate actix;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio_timer;
+
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::{future, Future};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
 #[derive(Debug)]
 struct Num(usize);
@@ -174,14 +175,12 @@ fn test_restart_sync_actor() {
     });
     addr.do_send(Num(2));
 
-    Arbiter::handle().spawn_fn(move || {
+    Arbiter::spawn_fn(move || {
         addr.send(Num(4)).then(move |_| {
-            Timeout::new(Duration::new(0, 1_000_000), Arbiter::handle())
-                .unwrap()
-                .then(move |_| {
-                    Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                    future::result(Ok(()))
-                })
+            Delay::new(Instant::now() + Duration::new(0, 1_000_000)).then(move |_| {
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                future::result(Ok(()))
+            })
         })
     });
 

@@ -1,10 +1,9 @@
 use std::marker::PhantomData;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures::{Async, Future, Poll};
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
-use arbiter::Arbiter;
 use handler::{Handler, Message};
 
 use super::{MailboxError, SendError, ToEnvelope};
@@ -23,7 +22,7 @@ where
 {
     rx: Option<T::ResultReceiver>,
     info: Option<(T::Transport, M)>,
-    timeout: Option<Timeout>,
+    timeout: Option<Delay>,
     act: PhantomData<A>,
 }
 
@@ -36,7 +35,7 @@ where
     M: Message + 'static,
 {
     pub(crate) fn new(
-        rx: Option<T::ResultReceiver>, info: Option<(T::Transport, M)>
+        rx: Option<T::ResultReceiver>, info: Option<(T::Transport, M)>,
     ) -> Request<T, A, M> {
         Request {
             rx,
@@ -48,7 +47,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(Timeout::new(dur, Arbiter::handle()).unwrap());
+        self.timeout = Some(Delay::new(Instant::now() + dur));
         self
     }
 

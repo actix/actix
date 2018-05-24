@@ -1,15 +1,16 @@
 extern crate actix;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio_timer;
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use actix::msgs::SystemExit;
 use actix::prelude::*;
 use futures::stream::futures_ordered;
 use futures::{Future, Stream};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
 struct MyActor {
     timeout: Arc<AtomicBool>,
@@ -25,8 +26,7 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle())
-            .unwrap()
+        Delay::new(Instant::now() + Duration::new(0, 5_000_000))
             .then(|_| {
                 Arbiter::system().do_send(SystemExit(0));
                 Ok::<_, Error>(())
@@ -66,19 +66,17 @@ impl Actor for MyStreamActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let s = futures_ordered(vec![
-            Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle()),
-            Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle()),
+            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
+            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
         ]);
 
-        s.and_then(|f| f)
-            .map_err(|_| Error::Generic)
+        s.map_err(|_| Error::Generic)
             .into_actor(self)
             .timeout(Duration::new(0, 1000), Error::Timeout)
             .map_err(|e, act, _| {
                 if e == Error::Timeout {
                     act.timeout.store(true, Ordering::Relaxed);
                     Arbiter::system().do_send(SystemExit(0));
-                    ()
                 }
             })
             .finish()

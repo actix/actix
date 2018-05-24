@@ -1,11 +1,12 @@
 extern crate actix;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio_timer;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex};
 
 use actix::prelude::*;
 use futures::future;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
 
 struct Fibonacci(pub u32);
 
@@ -89,7 +90,7 @@ fn test_sync() {
         started = cond.wait(started).unwrap();
     }
 
-    Arbiter::handle().spawn_fn(move || {
+    Arbiter::spawn_fn(move || {
         for n in 5..10 {
             addr.do_send(Fibonacci(n));
         }

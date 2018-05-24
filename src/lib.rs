@@ -35,9 +35,10 @@ extern crate uuid;
 extern crate bitflags;
 #[macro_use]
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate tokio_io;
-// extern crate tokio_signal;
+extern crate tokio_signal;
+extern crate tokio_timer;
 // extern crate trust_dns_resolver;
 
 #[macro_use]
@@ -67,7 +68,7 @@ mod system;
 mod address;
 mod mailbox;
 
-// pub mod actors;
+pub mod actors;
 pub mod fut;
 pub mod io;
 pub mod msgs;
@@ -94,13 +95,6 @@ pub use system::{System, SystemRunner};
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;
 
-#[doc(hidden)]
-#[deprecated(since = "0.5.0", note = "Use Addr<Unsync<T>>")]
-pub type Address<T> = Addr<Unsync, T>;
-#[doc(hidden)]
-#[deprecated(since = "0.5.0", note = "Use Addr<Syn<T>>")]
-pub type SyncAddress<T> = Addr<Syn, T>;
-
 pub mod prelude {
     //! The `actix` prelude
     //!
@@ -114,13 +108,6 @@ pub mod prelude {
 
     #[doc(hidden)]
     pub use actix_derive::*;
-
-    #[doc(hidden)]
-    #[deprecated(since = "0.5.0", note = "Use Addr<Unsync<T>>")]
-    pub type Address<T> = Addr<Unsync, T>;
-    #[doc(hidden)]
-    #[deprecated(since = "0.5.0", note = "Use Addr<Syn<T>>")]
-    pub type SyncAddress<T> = Addr<Syn, T>;
 
     pub use actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
@@ -140,7 +127,7 @@ pub mod prelude {
     pub use system::System;
 
     pub mod actix {
-        // pub use actors;
+        pub use actors;
         pub use address::ActorAddress;
         pub use dev;
         pub use fut;

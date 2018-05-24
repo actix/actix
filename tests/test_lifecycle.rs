@@ -2,16 +2,17 @@
 
 extern crate actix;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio_timer;
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use actix::msgs::SystemExit;
 use actix::prelude::*;
 use futures::unsync::oneshot::{channel, Sender};
 use futures::{future, Future};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
 struct MyActor {
     started: Arc<AtomicBool>,
@@ -90,13 +91,11 @@ fn test_active_address() {
         restore_after_stop: false,
     }.start();
 
-    Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
-                future::result(Ok(()))
-            }),
+    Arbiter::spawn(
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
+            Arbiter::system().do_send(SystemExit(0));
+            future::result(Ok(()))
+        }),
     );
 
     sys.run();
@@ -121,13 +120,11 @@ fn test_active_sync_address() {
         restore_after_stop: false,
     }.start();
 
-    Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
-                future::result(Ok(()))
-            }),
+    Arbiter::spawn(
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
+            Arbiter::system().do_send(SystemExit(0));
+            future::result(Ok(()))
+        }),
     );
 
     sys.run();
@@ -152,26 +149,14 @@ fn test_stop_after_drop_address() {
         restore_after_stop: false,
     }.start();
 
-    let started2 = Arc::clone(&started);
-    let stopping2 = Arc::clone(&stopping);
-    let stopped2 = Arc::clone(&stopped);
-
-    Arbiter::handle().spawn_fn(move || {
-        assert!(started2.load(Ordering::Relaxed), "Not started");
-        assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
-        assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
-
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(move |_| {
-                drop(addr);
-                Timeout::new(Duration::new(0, 10_000), Arbiter::handle())
-                    .unwrap()
-                    .then(|_| {
-                        Arbiter::system().do_send(SystemExit(0));
-                        future::result(Ok(()))
-                    })
+    Arbiter::spawn_fn(move || {
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
+            drop(addr);
+            Delay::new(Instant::now() + Duration::new(0, 10_000)).then(|_| {
+                Arbiter::system().do_send(SystemExit(0));
+                future::result(Ok(()))
             })
+        })
     });
 
     sys.run();
@@ -196,22 +181,12 @@ fn test_stop_after_drop_sync_address() {
         restore_after_stop: false,
     }.start();
 
-    let started2 = Arc::clone(&started);
-    let stopping2 = Arc::clone(&stopping);
-    let stopped2 = Arc::clone(&stopped);
-
-    Arbiter::handle().spawn_fn(move || {
-        assert!(started2.load(Ordering::Relaxed), "Not started");
-        assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
-        assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
-
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(move |_| {
-                drop(addr);
-                Arbiter::system().do_send(SystemExit(0));
-                future::result(Ok(()))
-            })
+    Arbiter::spawn_fn(move || {
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
+            drop(addr);
+            Arbiter::system().do_send(SystemExit(0));
+            future::result(Ok(()))
+        })
     });
 
     sys.run();
@@ -243,22 +218,18 @@ fn test_stop_after_drop_sync_actor() {
     let stopping2 = Arc::clone(&stopping);
     let stopped2 = Arc::clone(&stopped);
 
-    Arbiter::handle().spawn_fn(move || {
-        Timeout::new(Duration::from_secs(2), Arbiter::handle())
-            .unwrap()
-            .then(move |_| {
-                assert!(started2.load(Ordering::Relaxed), "Not started");
-                assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
-                assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
-                drop(addr);
+    Arbiter::spawn_fn(move || {
+        Delay::new(Instant::now() + Duration::from_secs(2)).then(move |_| {
+            assert!(started2.load(Ordering::Relaxed), "Not started");
+            assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
+            assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
+            drop(addr);
 
-                Timeout::new(Duration::from_secs(2), Arbiter::handle())
-                    .unwrap()
-                    .then(move |_| {
-                        Arbiter::system().do_send(SystemExit(0));
-                        future::result(Ok(()))
-                    })
+            Delay::new(Instant::now() + Duration::from_secs(2)).then(move |_| {
+                Arbiter::system().do_send(SystemExit(0));
+                future::result(Ok(()))
             })
+        })
     });
 
     sys.run();
@@ -283,13 +254,11 @@ fn test_stop() {
         restore_after_stop: false,
     }.start();
 
-    Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
-                future::result(Ok(()))
-            }),
+    Arbiter::spawn(
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
+            Arbiter::system().do_send(SystemExit(0));
+            future::result(Ok(()))
+        }),
     );
 
     sys.run();
@@ -314,13 +283,11 @@ fn test_stop_restore_after_stopping() {
         restore_after_stop: true,
     }.start();
 
-    Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
-                future::result(Ok(()))
-            }),
+    Arbiter::spawn(
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
+            Arbiter::system().do_send(SystemExit(0));
+            future::result(Ok(()))
+        }),
     );
 
     sys.run();

@@ -2,7 +2,9 @@ use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
 use address::EnvelopeProxy;
-use address::{sync_channel, Addr, Syn, SyncAddressReceiver, Unsync, UnsyncAddrReceiver};
+use address::{
+    sync_channel, Addr, Syn, SyncAddressReceiver, Unsync, UnsyncAddrReceiver,
+};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -61,15 +63,16 @@ where
 
     pub fn set_capacity(&mut self, cap: usize) {
         self.unsync_msgs.set_capacity(cap);
-        self.sync_msgs
-            .as_mut()
-            .map(|msgs| msgs.set_capacity(cap));
+        if let Some(msgs) = self.sync_msgs.as_mut() {
+            msgs.set_capacity(cap)
+        }
     }
 
     #[inline]
     pub fn connected(&self) -> bool {
         self.unsync_msgs.connected()
-            || self.sync_msgs
+            || self
+                .sync_msgs
                 .as_ref()
                 .map(|msgs| msgs.connected())
                 .unwrap_or(false)

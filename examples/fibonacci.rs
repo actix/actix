@@ -55,7 +55,7 @@ fn main() {
         addr.do_send(Fibonacci(n));
     }
 
-    Arbiter::handle().spawn_fn(|| {
+    Arbiter::spawn_fn(|| {
         Arbiter::system().do_send(actix::msgs::SystemExit(0));
         futures::future::result(Ok(()))
     });

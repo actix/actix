@@ -87,10 +87,7 @@ where
 
         shared
             .buffer
-            .push_back(<A::Context as ToEnvelope<Unsync, A, M>>::pack(
-                msg,
-                None,
-            ));
+            .push_back(<A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, None));
         if let Some(task) = shared.blocked_recv.take() {
             drop(shared);
             task.notify();
@@ -117,10 +114,7 @@ where
         if shared.capacity == 0 || shared.buffer.len() < shared.capacity {
             shared
                 .buffer
-                .push_back(<A::Context as ToEnvelope<Unsync, A, M>>::pack(
-                    msg,
-                    None,
-                ));
+                .push_back(<A::Context as ToEnvelope<Unsync, A, M>>::pack(msg, None));
             if let Some(task) = shared.blocked_recv.take() {
                 drop(shared);
                 task.notify();
@@ -365,7 +359,7 @@ mod tests {
     fn test_cap() {
         let sys = System::new("test");
 
-        Arbiter::handle().spawn_fn(move || {
+        Arbiter::spawn_fn(move || {
             let mut recv = UnsyncAddrReceiver::<Act>::new(1);
             assert_eq!(recv.capacity(), 1);
 

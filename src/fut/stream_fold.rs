@@ -59,7 +59,7 @@ where
     type Actor = S::Actor;
 
     fn poll(
-        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context
+        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<T, S::Error> {
         loop {
             match mem::replace(&mut self.state, State::Empty) {

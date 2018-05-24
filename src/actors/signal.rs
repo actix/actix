@@ -117,10 +117,8 @@ impl actix::Supervised for ProcessSignals {}
 
 impl actix::SystemService for ProcessSignals {
     fn service_started(&mut self, ctx: &mut Self::Context) {
-        let handle = actix::Arbiter::handle();
-
         // SIGINT
-        tokio_signal::ctrl_c(handle)
+        tokio_signal::ctrl_c()
             .map_err(|_| ())
             .actfuture()
             .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
@@ -131,7 +129,7 @@ impl actix::SystemService for ProcessSignals {
         #[cfg(unix)]
         {
             // SIGHUP
-            unix::Signal::new(libc::SIGHUP, handle)
+            unix::Signal::new(libc::SIGHUP)
                 .actfuture()
                 .drop_err()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
@@ -140,7 +138,7 @@ impl actix::SystemService for ProcessSignals {
                 .spawn(ctx);
 
             // SIGTERM
-            unix::Signal::new(libc::SIGTERM, handle)
+            unix::Signal::new(libc::SIGTERM)
                 .map_err(|_| ())
                 .actfuture()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
@@ -149,7 +147,7 @@ impl actix::SystemService for ProcessSignals {
                 .spawn(ctx);
 
             // SIGQUIT
-            unix::Signal::new(libc::SIGQUIT, handle)
+            unix::Signal::new(libc::SIGQUIT)
                 .map_err(|_| ())
                 .actfuture()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
@@ -158,7 +156,7 @@ impl actix::SystemService for ProcessSignals {
                 .spawn(ctx);
 
             // SIGCHLD
-            unix::Signal::new(libc::SIGCHLD, handle)
+            unix::Signal::new(libc::SIGCHLD)
                 .map_err(|_| ())
                 .actfuture()
                 .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {

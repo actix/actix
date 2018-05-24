@@ -58,7 +58,7 @@ pub trait ActorFuture {
     type Actor: Actor;
 
     fn poll(
-        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error>;
 
     /// Map this future's result to a different type, returning a new future of
@@ -150,7 +150,7 @@ pub trait ActorStream {
     type Actor: Actor;
 
     fn poll(
-        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Option<Self::Item>, Self::Error>;
 
     /// Converts a stream of type `T` to a stream of type `U`.
@@ -270,7 +270,7 @@ impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
     type Actor = F::Actor;
 
     fn poll(
-        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context
+        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error> {
         (**self).poll(srv, ctx)
     }
@@ -340,7 +340,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context
+        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error> {
         self.fut.poll()
     }
@@ -410,7 +410,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context
+        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Option<Self::Item>, Self::Error> {
         self.st.poll()
     }

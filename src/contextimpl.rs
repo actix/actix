@@ -1,6 +1,6 @@
-#![cfg_attr(feature="cargo-clippy",
-            allow(redundant_field_names, suspicious_arithmetic_impl))]
-use std::mem;
+#![cfg_attr(
+    feature = "cargo-clippy", allow(redundant_field_names, suspicious_arithmetic_impl)
+)]
 
 use futures::{Async, Poll};
 use smallvec::SmallVec;
@@ -96,7 +96,8 @@ where
     /// Is context waiting for future completion
     pub fn waiting(&self) -> bool {
         !self.wait.is_empty()
-            || self.flags
+            || self
+                .flags
                 .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
     }
 
@@ -200,8 +201,10 @@ where
         if self.flags.contains(ContextFlags::STOPPED) {
             false
         } else {
-            !self.flags.contains(ContextFlags::STARTED) || self.mailbox.connected()
-                || !self.items.is_empty() || !self.wait.is_empty()
+            !self.flags.contains(ContextFlags::STARTED)
+                || self.mailbox.connected()
+                || !self.items.is_empty()
+                || !self.wait.is_empty()
         }
     }
 
@@ -247,7 +250,7 @@ where
 
     pub fn poll(&mut self, ctx: &mut A::Context) -> Poll<(), ()> {
         let act: &mut A = if let Some(ref mut act) = self.act {
-            unsafe { mem::transmute(act) }
+            unsafe { &mut *(act as *mut A) }
         } else {
             return Ok(Async::Ready(()));
         };

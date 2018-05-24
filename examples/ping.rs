@@ -42,12 +42,14 @@ fn main() {
     let res = addr.send(Ping(10));
 
     // handle() returns tokio handle
-    Arbiter::handle().spawn(res.map(|res| {
-        println!("RESULT: {}", res == 20);
+    Arbiter::spawn(
+        res.map(|res| {
+            println!("RESULT: {}", res == 20);
 
-        // stop system and exit
-        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-    }).map_err(|_| ()));
+            // stop system and exit
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+        }).map_err(|_| ()),
+    );
 
     system.run();
 }

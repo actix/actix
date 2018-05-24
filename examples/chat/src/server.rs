@@ -117,10 +117,7 @@ impl Handler<Connect> for ChatServer {
         self.sessions.insert(id, msg.addr);
 
         // auto join session to Main room
-        self.rooms
-            .get_mut(&"Main".to_owned())
-            .unwrap()
-            .insert(id);
+        self.rooms.get_mut(&"Main".to_owned()).unwrap().insert(id);
 
         // send id back
         id

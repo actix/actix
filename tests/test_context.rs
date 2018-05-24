@@ -2,17 +2,18 @@
 #[macro_use]
 extern crate actix;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio_timer;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use actix::msgs::SystemExit;
 use actix::prelude::*;
 use futures::stream::once;
 use futures::unsync::mpsc::unbounded;
 use futures::{future, Future, Stream};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
-use tokio_core::reactor::{Interval, Timeout};
+use tokio_timer::{Delay, Interval};
 
 #[derive(Debug, PartialEq)]
 enum Op {
@@ -71,7 +72,6 @@ impl Handler<TimeoutMessage> for MyActor {
     type Result = ();
 
     fn handle(&mut self, _: TimeoutMessage, _: &mut Self::Context) {
-        println!("HANDLE");
         if self.op != Op::Timeout {
             assert!(false, "should not happen {:?}", self.op);
         }
@@ -94,13 +94,11 @@ fn test_add_timeout_cancel() {
 
     let _addr: Addr<Unsync, _> = MyActor { op: Op::Cancel }.start();
 
-    Arbiter::handle().spawn(
-        Timeout::new(Duration::new(0, 1000), Arbiter::handle())
-            .unwrap()
-            .then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
-                future::result(Ok(()))
-            }),
+    Arbiter::spawn(
+        Delay::new(Instant::now() + Duration::new(0, 1000)).then(|_| {
+            Arbiter::system().do_send(SystemExit(0));
+            future::result(Ok(()))
+        }),
     );
 
     sys.run();
@@ -156,11 +154,8 @@ impl Handler<Ping> for ContextWait {
         let cnt = self.cnt.load(Ordering::Relaxed);
         self.cnt.store(cnt + 1, Ordering::Relaxed);
 
-        let fut = Timeout::new(Duration::from_secs(10), Arbiter::handle()).unwrap();
-        fut.map_err(|_| ())
-            .map(|_| ())
-            .into_actor(self)
-            .wait(ctx);
+        let fut = Delay::new(Instant::now() + Duration::from_secs(10));
+        fut.map_err(|_| ()).map(|_| ()).into_actor(self).wait(ctx);
 
         Arbiter::system().do_send(SystemExit(0));
     }
@@ -326,8 +321,7 @@ impl Actor for ContextHandle {
 
 impl StreamHandler<Ping, ()> for ContextHandle {
     fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
-        self.h
-            .store(ctx.handle().into_usize(), Ordering::Relaxed);
+        self.h.store(ctx.handle().into_usize(), Ordering::Relaxed);
         Arbiter::system().do_send(SystemExit(0));
     }
 }
@@ -365,8 +359,7 @@ fn test_start_from_context() {
 
     let _addr: Addr<Unsync, _> = ContextHandle::create(move |ctx| {
         h2.store(
-            ctx.add_stream(once::<Ping, ()>(Ok(Ping)))
-                .into_usize(),
+            ctx.add_stream(once::<Ping, ()>(Ok(Ping))).into_usize(),
             Ordering::Relaxed,
         );
         ContextHandle { h: m2 }
@@ -399,8 +392,7 @@ fn test_cancel_handler() {
     let sys = actix::System::new("test");
     let _: () = CancelHandler::create(|ctx| CancelHandler {
         source: ctx.add_stream(
-            Interval::new(Duration::from_millis(1), Arbiter::handle())
-                .unwrap()
+            Interval::new(Instant::now(), Duration::from_millis(1))
                 .map(|_| CancelPacket),
         ),
     });

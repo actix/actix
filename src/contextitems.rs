@@ -1,10 +1,9 @@
 use futures::{Async, Future, Poll, Stream};
 use std::marker::PhantomData;
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use std::time::{Duration, Instant};
+use tokio_timer::Delay;
 
 use actor::{Actor, ActorContext, AsyncContext};
-use arbiter::Arbiter;
 use fut::ActorFuture;
 use handler::{Handler, Message, MessageResponse};
 
@@ -45,7 +44,7 @@ where
     M: Message,
 {
     msg: Option<M>,
-    timeout: Timeout,
+    timeout: Delay,
     act: PhantomData<A>,
     m: PhantomData<M>,
 }
@@ -58,7 +57,7 @@ where
     pub fn new(msg: M, timeout: Duration) -> Self {
         ActorDelayedMessageItem {
             msg: Some(msg),
-            timeout: Timeout::new(timeout, Arbiter::handle()).unwrap(),
+            timeout: Delay::new(Instant::now() + timeout),
             act: PhantomData,
             m: PhantomData,
         }
@@ -76,7 +75,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context
+        &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         match self.timeout.poll() {
             Ok(Async::NotReady) => Ok(Async::NotReady),
@@ -123,7 +122,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context
+        &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         let fut = Handler::handle(act, self.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
@@ -167,7 +166,7 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context
+        &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         loop {
             match self.stream.poll() {

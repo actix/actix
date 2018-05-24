@@ -1,7 +1,7 @@
-use futures::Future;
 use futures::sync::oneshot::{channel, Receiver, Sender};
+use futures::{future, Future};
 use std::collections::HashMap;
-use tokio_core::reactor::{Core, Handle};
+use tokio::runtime::current_thread::Runtime;
 
 use actor::Actor;
 use address::{Addr, Syn};
@@ -68,42 +68,53 @@ impl System {
     /// Create new system
     pub fn new<T: Into<String>>(name: T) -> SystemRunner {
         let name = name.into();
-        let core = Arbiter::new_system(name.clone());
+
         let (stop_tx, stop) = channel();
 
         // start system
         let sys = System {
             arbiters: HashMap::new(),
             stop: Some(stop_tx),
-        }.start();
-        Arbiter::set_system(sys, name);
+        };
 
-        SystemRunner { core, stop }
+        let mut rt = Runtime::new().unwrap();
+        let _ = rt.block_on(future::lazy(move || {
+            let addr = sys.start();
+            Arbiter::new_system(addr, name);
+            Ok::<_, ()>(())
+        }));
+
+        SystemRunner { rt, stop }
     }
 }
 
 /// Helper object that runs System's event loop
 #[must_use = "SystemRunner must be run"]
 pub struct SystemRunner {
-    core: Core,
+    rt: Runtime,
     stop: Receiver<i32>,
 }
 
 impl SystemRunner {
-    /// Returns handle to the current event loop.
-    pub fn handle(&self) -> &Handle {
-        Arbiter::handle()
+    /// Executes a future on the current thread.
+    pub fn spawn<F>(&self, future: F)
+    where
+        F: Future<Item = (), Error = ()> + 'static,
+    {
+        Arbiter::spawn(future)
     }
 
     /// This function will start event loop and will finish once the
     /// `SystemExit` message get received.
     pub fn run(self) -> i32 {
-        let SystemRunner {
-            mut core, stop, ..
-        } = self;
+        let SystemRunner { mut rt, stop, .. } = self;
 
         // run loop
-        match core.run(stop) {
+        let _ = rt.block_on(future::lazy(move || {
+            Arbiter::run_system();
+            Ok::<_, ()>(())
+        }));
+        match rt.block_on(stop) {
             Ok(code) => code,
             Err(_) => 1,
         }
@@ -113,7 +124,7 @@ impl SystemRunner {
     where
         F: Future<Item = I, Error = E>,
     {
-        self.core.run(fut)
+        self.rt.block_on(fut)
     }
 }
 

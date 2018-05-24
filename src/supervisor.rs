@@ -109,7 +109,7 @@ where
         ctx.set_actor(act);
 
         // create supervisor
-        Arbiter::handle().spawn(Supervisor::<A> { ctx });
+        Arbiter::spawn(Supervisor::<A> { ctx });
 
         addr
     }
@@ -126,7 +126,7 @@ where
             let mut ctx = Context::with_receiver(None, rx);
             let act = f(&mut ctx);
             ctx.set_actor(act);
-            Arbiter::handle().spawn(Supervisor::<A> { ctx });
+            Arbiter::spawn(Supervisor::<A> { ctx });
             Ok(())
         }));
 

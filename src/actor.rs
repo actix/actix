@@ -1,4 +1,4 @@
-use futures::{future, Stream};
+use futures::Stream;
 use std::time::Duration;
 
 use address::{ActorAddress, Addr, Syn, Unsync};
@@ -110,7 +110,11 @@ pub trait Actor: Sized + 'static {
     {
         let mut ctx = Context::new(Some(self));
         let addr = <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
-        ctx.run(Arbiter::handle());
+
+        Arbiter::spawn_fn(move || {
+            ctx.run();
+            Ok(())
+        });
         addr
     }
 
@@ -151,11 +155,11 @@ pub trait Actor: Sized + 'static {
         let mut ctx = Context::new(None);
         let addr = <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
 
-        Arbiter::handle().spawn_fn(move || {
+        Arbiter::spawn_fn(move || {
             let act = f(&mut ctx);
             ctx.set_actor(act);
-            ctx.run(Arbiter::handle());
-            future::ok(())
+            ctx.run();
+            Ok(())
         });
         addr
     }

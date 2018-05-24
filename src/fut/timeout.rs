@@ -1,9 +1,9 @@
+use std::time::{Duration, Instant};
+
 use futures::{Async, Future, Poll};
-use std::time::Duration;
-use tokio_core::reactor::Timeout as TokioTimeout;
+use tokio_timer::Delay;
 
 use actor::Actor;
-use arbiter::Arbiter;
 use fut::ActorFuture;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
@@ -18,7 +18,7 @@ where
 {
     fut: F,
     err: Option<F::Error>,
-    timeout: TokioTimeout,
+    timeout: Delay,
 }
 
 pub fn new<F>(future: F, timeout: Duration, err: F::Error) -> Timeout<F>
@@ -28,7 +28,7 @@ where
     Timeout {
         fut: future,
         err: Some(err),
-        timeout: TokioTimeout::new(timeout, Arbiter::handle()).unwrap(),
+        timeout: Delay::new(Instant::now() + timeout),
     }
 }
 
@@ -41,7 +41,7 @@ where
     type Actor = F::Actor;
 
     fn poll(
-        &mut self, act: &mut F::Actor, ctx: &mut <F::Actor as Actor>::Context
+        &mut self, act: &mut F::Actor, ctx: &mut <F::Actor as Actor>::Context,
     ) -> Poll<F::Item, F::Error> {
         // check timeout
         match self.timeout.poll() {

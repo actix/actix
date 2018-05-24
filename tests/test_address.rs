@@ -1,14 +1,15 @@
 #[macro_use]
 extern crate actix;
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio_timer;
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::{future, Future};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
-use tokio_core::reactor::Timeout;
+use tokio_timer::Delay;
 
 #[derive(Message, Debug)]
 struct Ping(usize);
@@ -64,16 +65,14 @@ fn test_address() {
     let addr2 = addr.clone();
     addr.do_send(Ping(0));
 
-    Arbiter::handle().spawn_fn(move || {
+    Arbiter::spawn_fn(move || {
         addr2.do_send(Ping(1));
 
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(move |_| {
-                addr2.do_send(Ping(2));
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                future::result(Ok(()))
-            })
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
+            addr2.do_send(Ping(2));
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            future::result(Ok(()))
+        })
     });
 
     sys.run();
@@ -89,7 +88,7 @@ fn test_recipient_call() {
     let addr2 = addr.clone().recipient();
     addr.do_send(UnsyncPing(0, PhantomData));
 
-    Arbiter::handle().spawn(addr2.send(Ping(1)).then(move |_| {
+    Arbiter::spawn(addr2.send(Ping(1)).then(move |_| {
         addr2.send(Ping(2)).then(|_| {
             Arbiter::system().do_send(actix::msgs::SystemExit(0));
             Ok(())
@@ -111,31 +110,25 @@ fn test_sync_address() {
     let addr3 = addr.clone();
     addr.do_send(Ping(1));
 
-    arbiter.do_send(actix::msgs::Execute::new(
-        move || -> Result<(), ()> {
-            addr3.do_send(Ping(2));
+    arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+        addr3.do_send(Ping(2));
 
-            Arbiter::handle().spawn_fn(move || {
-                Timeout::new(Duration::new(0, 1000), Arbiter::handle())
-                    .unwrap()
-                    .then(move |_| {
-                        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                        future::result(Ok(()))
-                    })
-            });
-            Ok(())
-        },
-    ));
-
-    Arbiter::handle().spawn_fn(move || {
-        addr2.do_send(Ping(3));
-
-        Timeout::new(Duration::new(0, 100), Arbiter::handle())
-            .unwrap()
-            .then(move |_| {
-                addr2.do_send(Ping(4));
+        Arbiter::spawn_fn(move || {
+            Delay::new(Instant::now() + Duration::new(0, 1000)).then(move |_| {
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
+        });
+        Ok(())
+    }));
+
+    Arbiter::spawn_fn(move || {
+        addr2.do_send(Ping(3));
+
+        Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
+            addr2.do_send(Ping(4));
+            future::result(Ok(()))
+        })
     });
 
     sys.run();
@@ -151,7 +144,7 @@ fn test_sync_recipient_call() {
     let addr2 = addr.clone().recipient();
     addr.do_send(Ping(0));
 
-    Arbiter::handle().spawn(addr2.send(Ping(1)).then(move |_| {
+    Arbiter::spawn(addr2.send(Ping(1)).then(move |_| {
         addr2.send(Ping(2)).then(|_| {
             Arbiter::system().do_send(actix::msgs::SystemExit(0));
             Ok(())
@@ -168,7 +161,7 @@ fn test_error_result() {
 
     let addr: Addr<Unsync, _> = MyActor3.start();
 
-    Arbiter::handle().spawn_fn(move || {
+    Arbiter::spawn_fn(move || {
         addr.send(Ping(0)).then(|res| {
             match res {
                 Ok(_) => (),
@@ -191,8 +184,7 @@ impl Handler<Ping> for TimeoutActor {
     type Result = ();
 
     fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
-        Timeout::new(Duration::new(0, 5_000_000), Arbiter::handle())
-            .unwrap()
+        Delay::new(Instant::now() + Duration::new(0, 5_000_000))
             .map_err(|_| ())
             .into_actor(self)
             .wait(ctx);
@@ -207,7 +199,7 @@ fn test_message_timeout() {
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
-    Arbiter::handle().spawn_fn(move || {
+    Arbiter::spawn_fn(move || {
         addr.do_send(Ping(0));
         addr.send(Ping(0))
             .timeout(Duration::new(0, 1_000))
@@ -236,7 +228,7 @@ fn test_sync_message_timeout() {
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
-    Arbiter::handle().spawn_fn(move || {
+    Arbiter::spawn_fn(move || {
         addr.do_send(Ping(0));
         addr.send(Ping(0))
             .timeout(Duration::new(0, 1_000))
