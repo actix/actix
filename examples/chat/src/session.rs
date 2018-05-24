@@ -3,8 +3,8 @@
 use actix::prelude::*;
 use std::io;
 use std::time::{Duration, Instant};
-use tokio_core::net::TcpStream;
 use tokio_io::io::WriteHalf;
+use tokio_tcp::TcpStream;
 
 use codec::{ChatCodec, ChatRequest, ChatResponse};
 use server::{self, ChatServer};

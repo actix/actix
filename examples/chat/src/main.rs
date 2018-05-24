@@ -5,21 +5,23 @@ extern crate futures;
 extern crate rand;
 extern crate serde;
 extern crate serde_json;
-extern crate tokio_core;
+extern crate tokio;
 extern crate tokio_io;
+extern crate tokio_tcp;
 #[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
 extern crate actix;
 
-use actix::prelude::*;
-use futures::Stream;
 use std::net;
 use std::str::FromStr;
-use tokio_core::net::{TcpListener, TcpStream};
+
+use actix::prelude::*;
+use futures::Stream;
 use tokio_io::codec::FramedRead;
 use tokio_io::AsyncRead;
+use tokio_tcp::{TcpListener, TcpStream};
 
 mod codec;
 mod server;
@@ -70,7 +72,7 @@ fn main() {
 
     // Create server listener
     let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    let listener = TcpListener::bind(&addr, Arbiter::handle()).unwrap();
+    let listener = TcpListener::bind(&addr).unwrap();
 
     // Our chat server `Server` is an actor, first we need to start it
     // and then add stream on incoming tcp connections to it.
@@ -78,12 +80,10 @@ fn main() {
     // items So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
     let _: () = Server::create(|ctx| {
-        ctx.add_message_stream(
-            listener
-                .incoming()
-                .map_err(|_| ())
-                .map(|(st, addr)| TcpConnect(st, addr)),
-        );
+        ctx.add_message_stream(listener.incoming().map_err(|_| ()).map(|st| {
+            let addr = st.peer_addr().unwrap();
+            TcpConnect(st, addr)
+        }));
         Server { chat: server }
     });
 

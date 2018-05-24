@@ -71,7 +71,7 @@ impl Encoder for ChatCodec {
         let msg_ref: &[u8] = msg.as_ref();
 
         dst.reserve(msg_ref.len() + 2);
-        dst.put_u16::<BigEndian>(msg_ref.len() as u16);
+        dst.put_u16_be(msg_ref.len() as u16);
         dst.put(msg_ref);
 
         Ok(())
@@ -114,7 +114,7 @@ impl Encoder for ClientChatCodec {
         let msg_ref: &[u8] = msg.as_ref();
 
         dst.reserve(msg_ref.len() + 2);
-        dst.put_u16::<BigEndian>(msg_ref.len() as u16);
+        dst.put_u16_be(msg_ref.len() as u16);
         dst.put(msg_ref);
 
         Ok(())
