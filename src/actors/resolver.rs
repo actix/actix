@@ -153,6 +153,17 @@ impl Supervised for Connector {}
 
 impl actix::ArbiterService for Connector {}
 
+impl Connector {
+    pub fn new(config: ResolverConfig, options: ResolverOpts) -> Connector {
+        Connector{
+            resolver: ResolverFuture::new(
+            config,
+            options,
+            Arbiter::handle(),
+        )}
+    }
+}
+
 impl Default for Connector {
     #[cfg(unix)]
     fn default() -> Connector {
