@@ -2,7 +2,7 @@ use futures::{Future, Poll};
 use std::{fmt, mem};
 
 use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle, Supervised};
-use address::{Addr, Syn, SyncAddressReceiver, Unsync};
+use address::{Addr, AddressReceiver, Syn};
 use arbiter::Arbiter;
 use contextimpl::ContextImpl;
 use fut::ActorFuture;
@@ -65,14 +65,8 @@ where
 
     #[doc(hidden)]
     #[inline]
-    fn unsync_address(&mut self) -> Addr<Unsync, A> {
-        self.inner.unsync_address()
-    }
-
-    #[doc(hidden)]
-    #[inline]
-    fn sync_address(&mut self) -> Addr<Syn, A> {
-        self.inner.sync_address()
+    fn address(&mut self) -> Addr<Syn, A> {
+        self.inner.address()
     }
 }
 
@@ -102,9 +96,7 @@ where
     }
 
     #[inline]
-    pub(crate) fn with_receiver(
-        act: Option<A>, rx: SyncAddressReceiver<A>,
-    ) -> Context<A> {
+    pub(crate) fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Context<A> {
         Context {
             inner: ContextImpl::with_receiver(act, rx),
         }

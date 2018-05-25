@@ -1,7 +1,7 @@
 use futures::Stream;
 use std::time::Duration;
 
-use address::{ActorAddress, Addr, Syn, Unsync};
+use address::{Addr, Syn};
 use arbiter::Arbiter;
 use context::Context;
 use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
@@ -104,12 +104,12 @@ pub trait Actor: Sized + 'static {
     ///
     /// let addr: Addr<Unsync, _> = MyActor.start();
     /// ```
-    fn start<Addr>(self) -> Addr
+    fn start(self) -> Addr<Syn, Self>
     where
-        Self: Actor<Context = Context<Self>> + ActorAddress<Self, Addr>,
+        Self: Actor<Context = Context<Self>>,
     {
         let mut ctx = Context::new(Some(self));
-        let addr = <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+        let addr = ctx.address();
 
         Arbiter::spawn_fn(move || {
             ctx.run();
@@ -119,9 +119,9 @@ pub trait Actor: Sized + 'static {
     }
 
     /// Start new asynchronous actor, returns address of newly created actor.
-    fn start_default<Addr>() -> Addr
+    fn start_default() -> Addr<Syn, Self>
     where
-        Self: Default + Actor<Context = Context<Self>> + ActorAddress<Self, Addr>,
+        Self: Default + Actor<Context = Context<Self>>,
     {
         Self::default().start()
     }
@@ -147,13 +147,13 @@ pub trait Actor: Sized + 'static {
     /// let addr: Addr<Unsync, _> =
     ///     MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
     /// ```
-    fn create<Addr, F>(f: F) -> Addr
+    fn create<F>(f: F) -> Addr<Syn, Self>
     where
-        Self: Actor<Context = Context<Self>> + ActorAddress<Self, Addr>,
+        Self: Actor<Context = Context<Self>>,
         F: FnOnce(&mut Context<Self>) -> Self + 'static,
     {
         let mut ctx = Context::new(None);
-        let addr = <Self as ActorAddress<Self, Addr>>::get(&mut ctx);
+        let addr = ctx.address();
 
         Arbiter::spawn_fn(move || {
             let act = f(&mut ctx);
@@ -228,21 +228,8 @@ pub trait AsyncContext<A>: ActorContext
 where
     A: Actor<Context = Self>,
 {
-    /// Get actor address
-    fn address<Address>(&mut self) -> Address
-    where
-        A: ActorAddress<A, Address>,
-    {
-        <A as ActorAddress<A, Address>>::get(self)
-    }
-
-    #[doc(hidden)]
-    /// Return `SyncAddress` of the context
-    fn sync_address(&mut self) -> Addr<Syn, A>;
-
-    #[doc(hidden)]
-    /// Return `Addr<Unsync<_>>` of the context
-    fn unsync_address(&mut self) -> Addr<Unsync, A>;
+    /// Return `Address` of the context
+    fn address(&mut self) -> Addr<Syn, A>;
 
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.

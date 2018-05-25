@@ -6,7 +6,7 @@ use futures::{Async, Poll};
 use smallvec::SmallVec;
 
 use actor::{Actor, ActorState, AsyncContext, Running, SpawnHandle, Supervised};
-use address::{Addr, Syn, SyncAddressReceiver, Unsync};
+use address::{Addr, AddressReceiver, Syn};
 use contextitems::ActorWaitItem;
 use fut::ActorFuture;
 use mailbox::Mailbox;
@@ -64,7 +64,7 @@ where
     }
 
     #[inline]
-    pub fn with_receiver(act: Option<A>, rx: SyncAddressReceiver<A>) -> Self {
+    pub fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Self {
         ContextImpl {
             act,
             wait: SmallVec::new(),
@@ -185,15 +185,9 @@ where
     }
 
     #[inline]
-    pub fn unsync_address(&mut self) -> Addr<Unsync, A> {
+    pub fn address(&mut self) -> Addr<Syn, A> {
         self.modify();
-        self.mailbox.unsync_address()
-    }
-
-    #[inline]
-    pub fn sync_address(&mut self) -> Addr<Syn, A> {
-        self.modify();
-        self.mailbox.remote_address()
+        self.mailbox.address()
     }
 
     #[inline]

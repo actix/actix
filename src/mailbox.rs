@@ -2,9 +2,7 @@ use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
 use address::EnvelopeProxy;
-use address::{
-    sync_channel, Addr, Syn, SyncAddressReceiver, Unsync, UnsyncAddrReceiver,
-};
+use address::{sync_channel, Addr, AddressReceiver, Syn};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -17,8 +15,7 @@ where
     A: Actor,
     A::Context: AsyncContext<A>,
 {
-    sync_msgs: Option<SyncAddressReceiver<A>>,
-    unsync_msgs: UnsyncAddrReceiver<A>,
+    msgs: AddressReceiver<A>,
 }
 
 impl<A> Default for Mailbox<A>
@@ -28,10 +25,8 @@ where
 {
     #[inline]
     fn default() -> Self {
-        Mailbox {
-            sync_msgs: None,
-            unsync_msgs: UnsyncAddrReceiver::new(DEFAULT_CAPACITY),
-        }
+        let (_, rx) = sync_channel::channel(DEFAULT_CAPACITY);
+        Mailbox { msgs: rx }
     }
 }
 
@@ -50,50 +45,25 @@ where
     A::Context: AsyncContext<A>,
 {
     #[inline]
-    pub fn new(rx: SyncAddressReceiver<A>) -> Self {
-        Mailbox {
-            sync_msgs: Some(rx),
-            unsync_msgs: UnsyncAddrReceiver::new(16),
-        }
+    pub fn new(msgs: AddressReceiver<A>) -> Self {
+        Mailbox { msgs }
     }
 
     pub fn capacity(&self) -> usize {
-        self.unsync_msgs.capacity()
+        self.msgs.capacity()
     }
 
     pub fn set_capacity(&mut self, cap: usize) {
-        self.unsync_msgs.set_capacity(cap);
-        if let Some(msgs) = self.sync_msgs.as_mut() {
-            msgs.set_capacity(cap)
-        }
+        self.msgs.set_capacity(cap);
     }
 
     #[inline]
     pub fn connected(&self) -> bool {
-        self.unsync_msgs.connected()
-            || self
-                .sync_msgs
-                .as_ref()
-                .map(|msgs| msgs.connected())
-                .unwrap_or(false)
+        self.msgs.connected()
     }
 
-    pub fn remote_address(&mut self) -> Addr<Syn, A> {
-        if self.sync_msgs.is_none() {
-            let (tx, rx) = sync_channel::channel(self.unsync_msgs.capacity());
-            self.sync_msgs = Some(rx);
-            Addr::new(tx)
-        } else {
-            if let Some(ref mut addr) = self.sync_msgs {
-                return Addr::new(addr.sender());
-            }
-            unreachable!();
-        }
-    }
-
-    #[inline]
-    pub fn unsync_address(&mut self) -> Addr<Unsync, A> {
-        Addr::new(self.unsync_msgs.sender())
+    pub fn address(&mut self) -> Addr<Syn, A> {
+        Addr::new(self.msgs.sender())
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
@@ -101,13 +71,13 @@ where
         loop {
             let mut not_ready = true;
 
-            // unsync messages
+            // sync messages
             loop {
                 if ctx.waiting() {
                     return;
                 }
 
-                match self.unsync_msgs.poll() {
+                match self.msgs.poll() {
                     Ok(Async::Ready(Some(mut msg))) => {
                         not_ready = false;
                         msg.handle(act, ctx);
@@ -118,27 +88,6 @@ where
                     n_polls.inc() < MAX_SYNC_POLLS,
                     "Use Self::Context::notify() instead of direct use of address"
                 );
-            }
-
-            // sync messages
-            if let Some(ref mut msgs) = self.sync_msgs {
-                loop {
-                    if ctx.waiting() {
-                        return;
-                    }
-
-                    match msgs.poll() {
-                        Ok(Async::Ready(Some(mut msg))) => {
-                            not_ready = false;
-                            msg.handle(act, ctx);
-                        }
-                        Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
-                    }
-                    debug_assert!(
-                        n_polls.inc() < MAX_SYNC_POLLS,
-                        "Use Self::Context::notify() instead of direct use of address"
-                    );
-                }
             }
 
             if not_ready {

@@ -79,7 +79,7 @@ pub mod utils;
 pub use actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-pub use address::{ActorAddress, Addr, MailboxError, Recipient, Syn, Unsync};
+pub use address::{Addr, MailboxError, Recipient, Syn};
 pub use arbiter::Arbiter;
 pub use context::Context;
 pub use fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
@@ -112,7 +112,7 @@ pub mod prelude {
     pub use actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
-    pub use address::{Addr, MailboxError, Recipient, SendError, Syn, Unsync};
+    pub use address::{Addr, MailboxError, Recipient, SendError, Syn};
     pub use arbiter::Arbiter;
     pub use context::{Context, ContextFutureSpawner};
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
@@ -120,7 +120,7 @@ pub mod prelude {
         ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
         ResponseFuture,
     };
-    pub use registry::{ArbiterService, SystemService};
+    pub use registry::SystemService;
     pub use stream::StreamHandler;
     pub use supervisor::Supervisor;
     pub use sync::{SyncArbiter, SyncContext};
@@ -128,13 +128,12 @@ pub mod prelude {
 
     pub mod actix {
         pub use actors;
-        pub use address::ActorAddress;
         pub use dev;
         pub use fut;
         pub use io;
         pub use msgs;
         pub use prelude::*;
-        pub use registry::{ArbiterService, SystemService};
+        pub use registry::SystemService;
         pub use utils::Condition;
     }
 }
@@ -154,12 +153,9 @@ pub mod dev {
     pub use prelude::*;
 
     pub use address::{
-        ActorAddress, Request, SyncEnvelope, SyncRecipientRequest, ToEnvelope,
-        UnsyncRecipientRequest,
-    };
-    pub use address::{
         Destination, MessageDestination, MessageDestinationTransport, MessageRecipient,
     };
+    pub use address::{Envelope, RecipientRequest, Request, ToEnvelope};
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
 }

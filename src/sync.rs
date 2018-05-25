@@ -81,7 +81,7 @@ use futures::{Async, Future, Poll, Stream};
 
 use actor::{Actor, ActorContext, ActorState, Running};
 use address::sync_channel;
-use address::{Addr, EnvelopeProxy, Syn, SyncAddressReceiver, SyncEnvelope, ToEnvelope};
+use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, Syn, ToEnvelope};
 use arbiter::Arbiter;
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
@@ -92,7 +92,7 @@ where
     A: Actor<Context = SyncContext<A>>,
 {
     queue: channel::Sender<SyncContextProtocol<A>>,
-    msgs: SyncAddressReceiver<A>,
+    msgs: AddressReceiver<A>,
     threads: usize,
 }
 
@@ -173,8 +173,8 @@ where
     M: Message + Send + 'static,
     M::Result: Send,
 {
-    fn pack(msg: M, tx: Option<SyncSender<M::Result>>) -> SyncEnvelope<A> {
-        SyncEnvelope::with_proxy(Box::new(SyncContextEnvelope::new(msg, tx)))
+    fn pack(msg: M, tx: Option<SyncSender<M::Result>>) -> Envelope<A> {
+        Envelope::with_proxy(Box::new(SyncContextEnvelope::new(msg, tx)))
     }
 }
 
@@ -183,7 +183,7 @@ where
     A: Actor<Context = SyncContext<A>>,
 {
     Stop,
-    Envelope(SyncEnvelope<A>),
+    Envelope(Envelope<A>),
 }
 
 /// Sync actor execution context

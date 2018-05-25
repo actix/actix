@@ -9,19 +9,19 @@ use tokio::runtime::current_thread::Runtime;
 use uuid::Uuid;
 
 use actor::{Actor, AsyncContext};
-use address::{sync_channel, Addr, Syn, Unsync};
+use address::{sync_channel, Addr, Syn};
 use context::Context;
 use handler::Handler;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::{Execute, StartActor, StopArbiter};
-use registry::{Registry, SystemRegistry};
+use registry::SystemRegistry;
 use system::{RegisterArbiter, System, UnregisterArbiter};
 
 thread_local!(
     static RUNNING: Cell<bool> = Cell::new(false);
     static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
-    static ADDR: RefCell<Option<Addr<Unsync, Arbiter>>> = RefCell::new(None);
-    static REG: RefCell<Option<Registry>> = RefCell::new(None);
+    static ADDR: RefCell<Option<Addr<Syn, Arbiter>>> = RefCell::new(None);
+    // static REG: RefCell<Option<Registry>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
     static SYS: RefCell<Option<Addr<Syn, System>>> = RefCell::new(None);
     static SYSARB: RefCell<Option<Addr<Syn, Arbiter>>> = RefCell::new(None);
@@ -71,7 +71,7 @@ impl Arbiter {
             let (stop_tx, stop_rx) = channel();
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
-            REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
+            //REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
             RUNNING.with(|cell| cell.set(true));
 
             // system
@@ -81,14 +81,14 @@ impl Arbiter {
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sys_registry));
 
             // start arbiter
-            let (addr, saddr) =
+            let addr =
                 rt.block_on(future::lazy(move || {
-                    let (addr, saddr) = Actor::start(Arbiter { id, sys: false });
-                    Ok::<_, ()>((addr, saddr))
+                    let addr = Actor::start(Arbiter { id, sys: false });
+                    Ok::<_, ()>(addr)
                 })).unwrap();
-            ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
+            ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
 
-            if tx.send(saddr).is_err() {
+            if tx.send(addr).is_err() {
                 error!("Can not start Arbiter, remote side is dead");
             } else {
                 // run loop
@@ -106,19 +106,19 @@ impl Arbiter {
     }
 
     pub(crate) fn new_system(addr: Addr<Syn, System>, name: String) {
-        REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
+        // REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
         NAME.with(|cell| *cell.borrow_mut() = Some(name.clone()));
         SYS.with(|cell| *cell.borrow_mut() = Some(addr));
         SYSNAME.with(|cell| *cell.borrow_mut() = Some(name));
         SYSREG.with(|cell| *cell.borrow_mut() = Some(SystemRegistry::new()));
 
         // start arbiter
-        let (addr, sys_addr) = Actor::start(Arbiter {
+        let addr = Actor::start(Arbiter {
             sys: true,
             id: Uuid::new_v4(),
         });
-        ADDR.with(|cell| *cell.borrow_mut() = Some(addr));
-        SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_addr));
+        ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
+        SYSARB.with(|cell| *cell.borrow_mut() = Some(addr));
     }
 
     pub(crate) fn run_system() {
@@ -146,7 +146,7 @@ impl Arbiter {
     }
 
     /// Returns current arbiter's address
-    pub fn arbiter() -> Addr<Unsync, Arbiter> {
+    pub fn arbiter() -> Addr<Syn, Arbiter> {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("Arbiter is not running"),
@@ -210,13 +210,13 @@ impl Arbiter {
         Arbiter::spawn(future::lazy(f))
     }
 
-    /// This function returns arbiter's registry,
-    pub fn registry() -> &'static Registry {
-        REG.with(|cell| match *cell.borrow() {
-            Some(ref reg) => unsafe { std::mem::transmute(reg) },
-            None => panic!("System is not running: {}", Arbiter::name()),
-        })
-    }
+    // /// This function returns arbiter's registry,
+    //pub fn registry() -> &'static Registry {
+    //    REG.with(|cell| match *cell.borrow() {
+    //        Some(ref reg) => unsafe { std::mem::transmute(reg) },
+    //        None => panic!("System is not running: {}", Arbiter::name()),
+    //    })
+    //}
 
     /// Start new arbiter and then start actor in created arbiter.
     /// Returns `Addr<Syn, A>` of created actor.

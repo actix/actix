@@ -1,7 +1,7 @@
 use futures::{Async, Future, Poll};
 
-use actor::{Actor, Supervised};
-use address::{sync_channel, ActorAddress, Addr, Syn};
+use actor::{Actor, AsyncContext, Supervised};
+use address::{sync_channel, Addr, Syn};
 use arbiter::Arbiter;
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
@@ -97,15 +97,15 @@ where
     /// let addr2: Addr<Syn, _> = actix::Supervisor::start(|_| MyActor);
     /// # }
     /// ```
-    pub fn start<Addr, F>(f: F) -> Addr
+    pub fn start<F>(f: F) -> Addr<Syn, A>
     where
         F: FnOnce(&mut A::Context) -> A + 'static,
-        A: Actor<Context = Context<A>> + ActorAddress<A, Addr>,
+        A: Actor<Context = Context<A>>,
     {
         // create actor
         let mut ctx = Context::new(None);
         let act = f(&mut ctx);
-        let addr = <A as ActorAddress<A, Addr>>::get(&mut ctx);
+        let addr = ctx.address();
         ctx.set_actor(act);
 
         // create supervisor

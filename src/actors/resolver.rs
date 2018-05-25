@@ -199,7 +199,7 @@ impl Actor for Connector {
 
 impl Supervised for Connector {}
 
-impl actix::ArbiterService for Connector {}
+impl actix::SystemService for Connector {}
 
 impl Default for Connector {
     fn default() -> Connector {

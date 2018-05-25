@@ -4,13 +4,12 @@
 //! `ArbiterService` which is unique per arbiter or `SystemService` which is
 //! unique per system.
 use std::any::{Any, TypeId};
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::default::Default;
 use std::sync::{Arc, Mutex};
 
 use actor::{Actor, Supervised};
-use address::{Addr, Syn, Unsync};
+use address::{Addr, Syn};
 use arbiter::Arbiter;
 use context::Context;
 use supervisor::Supervisor;
@@ -80,29 +79,15 @@ use supervisor::Supervisor;
 /// #  std::process::exit(code);
 /// }
 /// ```
-pub struct Registry {
-    registry: RefCell<HashMap<TypeId, Box<Any>>>,
+/// System wide actors registry
+///
+/// System registry serves same purpose as [Registry](struct.Registry.html),
+/// except it is shared across all arbiters.
+pub struct SystemRegistry {
+    registry: Arc<Mutex<HashMap<TypeId, Box<Any>>>>,
 }
 
-/// Trait defines arbiter's service.
-#[allow(unused_variables)]
-pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default {
-    /// Method is called during service initialization.
-    fn service_started(&mut self, ctx: &mut Context<Self>) {}
-
-    /// Get actor's address from arbiter registry
-    fn from_registry() -> Addr<Unsync, Self> {
-        Arbiter::registry().get::<Self>()
-    }
-
-    /// Create an actor in the Arbiter with a closure
-    fn init_actor<F>(f: F) -> Addr<Unsync, Self>
-    where
-        F: FnOnce(&mut Self::Context) -> Self + 'static,
-    {
-        Arbiter::registry().init_actor::<Self, F>(f)
-    }
-}
+unsafe impl Send for SystemRegistry {}
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
@@ -123,92 +108,6 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
         Arbiter::system_registry().init_actor::<Self, F>(f)
     }
 }
-
-impl Registry {
-    pub(crate) fn new() -> Self {
-        Registry {
-            registry: RefCell::new(HashMap::new()),
-        }
-    }
-
-    /// Query registry for specific actor. Returns address of the actor.
-    /// If actor is not registered, starts new actor and
-    /// return address of newly created actor.
-    pub fn get<A: ArbiterService + Actor<Context = Context<A>>>(
-        &self,
-    ) -> Addr<Unsync, A> {
-        let id = TypeId::of::<A>();
-        if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<Addr<Unsync, A>>() {
-                return addr.clone();
-            }
-        }
-        let addr: Addr<Unsync, A> = Supervisor::start(|ctx| {
-            let mut act = A::default();
-            act.service_started(ctx);
-            act
-        });
-
-        self.registry
-            .borrow_mut()
-            .insert(id, Box::new(addr.clone()));
-        addr
-    }
-
-    /// Add new actor to the registry using the initialization function
-    /// provided, panic if actor is already running
-    pub fn init_actor<A: ArbiterService + Actor<Context = Context<A>>, F>(
-        &self, with: F,
-    ) -> Addr<Unsync, A>
-    where
-        F: FnOnce(&mut A::Context) -> A + 'static,
-    {
-        let id = TypeId::of::<A>();
-        if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<Addr<Unsync, A>>() {
-                return addr.clone();
-            }
-        }
-        let addr: Addr<Unsync, A> = Supervisor::start(|ctx| {
-            let mut act = with(ctx);
-            act.service_started(ctx);
-            act
-        });
-
-        self.registry
-            .borrow_mut()
-            .insert(id, Box::new(addr.clone()));
-        addr
-    }
-
-    /// Add new actor to the registry using the initialization function
-    /// provided, panic if actor is already running
-    pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(
-        &self, addr: Addr<Unsync, A>,
-    ) {
-        let id = TypeId::of::<A>();
-        if let Some(addr) = self.registry.borrow().get(&id) {
-            if addr.downcast_ref::<Addr<Unsync, A>>().is_some() {
-                panic!("Actor already started")
-            }
-        }
-
-        self.registry
-            .borrow_mut()
-            .insert(id, Box::new(addr.clone()));
-    }
-}
-
-// TODO: Remove lock
-/// System wide actors registry
-///
-/// System registry serves same purpose as [Registry](struct.Registry.html),
-/// except it is shared across all arbiters.
-pub struct SystemRegistry {
-    registry: Arc<Mutex<HashMap<TypeId, Box<Any>>>>,
-}
-
-unsafe impl Send for SystemRegistry {}
 
 impl SystemRegistry {
     pub(crate) fn new() -> Self {

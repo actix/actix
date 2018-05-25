@@ -12,11 +12,11 @@ use futures::{Async, Poll, Stream};
 use actor::Actor;
 use handler::{Handler, Message};
 
-use super::envelope::{SyncEnvelope, ToEnvelope};
+use super::envelope::{Envelope, ToEnvelope};
 use super::queue::{PopResult, Queue};
 use super::{MessageDestinationTransport, SendError, Syn};
 
-pub trait SyncSender<M>: Send
+pub trait Sender<M>: Send
 where
     M::Result: Send,
     M: Message + Send + 'static,
@@ -27,13 +27,13 @@ where
 
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
 
-    fn boxed(&self) -> Box<SyncSender<M>>;
+    fn boxed(&self) -> Box<Sender<M>>;
 }
 
 /// The transmission end of a channel which is used to send values.
 ///
 /// This is created by the `channel` method.
-pub struct SyncAddressSender<A: Actor> {
+pub struct AddressSender<A: Actor> {
     // Channel state shared between the sender and receiver.
     inner: Arc<Inner<A>>,
 
@@ -47,7 +47,7 @@ pub struct SyncAddressSender<A: Actor> {
     maybe_parked: Cell<bool>,
 }
 
-unsafe impl<A: Actor> Sync for SyncAddressSender<A> {}
+unsafe impl<A: Actor> Sync for AddressSender<A> {}
 
 trait AssertKinds: Send + Sync + Clone {}
 
@@ -56,7 +56,7 @@ trait AssertKinds: Send + Sync + Clone {}
 /// This is a concrete implementation of a stream which can be used to represent
 /// a stream of values being computed elsewhere. This is created by the
 /// `channel` method.
-pub struct SyncAddressReceiver<A: Actor> {
+pub struct AddressReceiver<A: Actor> {
     inner: Arc<Inner<A>>,
 }
 
@@ -69,7 +69,7 @@ struct Inner<A: Actor> {
     state: AtomicUsize,
 
     // Atomic, FIFO queue used to send messages to the receiver
-    message_queue: Queue<SyncEnvelope<A>>,
+    message_queue: Queue<Envelope<A>>,
 
     // Atomic, FIFO queue used to send parked task handles to the receiver.
     parked_queue: Queue<Arc<Mutex<SenderTask>>>,
@@ -154,9 +154,7 @@ impl SenderTask {
 ///
 /// The `Receiver` returned implements the `Stream` trait and has access to any
 /// number of the associated combinators for transforming the result.
-pub fn channel<A: Actor>(
-    buffer: usize,
-) -> (SyncAddressSender<A>, SyncAddressReceiver<A>) {
+pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>) {
     // Check that the requested buffer size does not exceed the maximum buffer
     // size permitted by the system.
     assert!(buffer < MAX_BUFFER, "requested buffer size too large");
@@ -173,18 +171,18 @@ pub fn channel<A: Actor>(
         }),
     });
 
-    let tx = SyncAddressSender {
+    let tx = AddressSender {
         inner: Arc::clone(&inner),
         sender_task: Arc::new(Mutex::new(SenderTask::new())),
         maybe_parked: Cell::new(false),
     };
 
-    let rx = SyncAddressReceiver { inner };
+    let rx = AddressReceiver { inner };
 
     (tx, rx)
 }
 
-impl<A, M> MessageDestinationTransport<Syn, A, M> for SyncAddressSender<A>
+impl<A, M> MessageDestinationTransport<Syn, A, M> for AddressSender<A>
 where
     A: Actor + Handler<M>,
     A::Context: ToEnvelope<Syn, A, M>,
@@ -192,7 +190,7 @@ where
     M::Result: Send,
 {
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
-        SyncAddressSender::send(self, msg)
+        AddressSender::send(self, msg)
     }
 }
 
@@ -201,7 +199,7 @@ where
 // ===== impl Sender =====
 //
 //
-impl<A: Actor> SyncAddressSender<A> {
+impl<A: Actor> AddressSender<A> {
     pub fn connected(&self) -> bool {
         let curr = self.inner.state.load(SeqCst);
         let state = decode_state(curr);
@@ -299,7 +297,7 @@ impl<A: Actor> SyncAddressSender<A> {
     }
 
     // Push message to the queue and signal to the receiver
-    fn queue_push_and_signal(&self, msg: SyncEnvelope<A>) {
+    fn queue_push_and_signal(&self, msg: Envelope<A>) {
         // Push the message onto the message queue
         self.inner.message_queue.push(msg);
 
@@ -444,7 +442,7 @@ impl<A: Actor> SyncAddressSender<A> {
     }
 
     /// Get `Sender` for a specific message type
-    pub(crate) fn into_sender<M>(self) -> Box<SyncSender<M>>
+    pub(crate) fn into_sender<M>(self) -> Box<Sender<M>>
     where
         A: Handler<M>,
         A::Context: ToEnvelope<Syn, A, M>,
@@ -455,7 +453,7 @@ impl<A: Actor> SyncAddressSender<A> {
     }
 }
 
-impl<A, M> SyncSender<M> for SyncAddressSender<A>
+impl<A, M> Sender<M> for AddressSender<A>
 where
     A: Handler<M>,
     A::Context: ToEnvelope<Syn, A, M>,
@@ -471,13 +469,13 @@ where
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         self.send(msg)
     }
-    fn boxed(&self) -> Box<SyncSender<M>> {
+    fn boxed(&self) -> Box<Sender<M>> {
         Box::new(self.clone())
     }
 }
 
-impl<A: Actor> Clone for SyncAddressSender<A> {
-    fn clone(&self) -> SyncAddressSender<A> {
+impl<A: Actor> Clone for AddressSender<A> {
+    fn clone(&self) -> AddressSender<A> {
         // Since this atomic op isn't actually guarding any memory and we don't
         // care about any orderings besides the ordering on the single atomic
         // variable, a relaxed ordering is acceptable.
@@ -497,7 +495,7 @@ impl<A: Actor> Clone for SyncAddressSender<A> {
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
             if actual == curr {
-                return SyncAddressSender {
+                return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
                     maybe_parked: Cell::new(false),
@@ -509,7 +507,7 @@ impl<A: Actor> Clone for SyncAddressSender<A> {
     }
 }
 
-impl<A: Actor> Drop for SyncAddressSender<A> {
+impl<A: Actor> Drop for AddressSender<A> {
     fn drop(&mut self) {
         // Ordering between variables don't matter here
         let prev = self.inner.num_senders.fetch_sub(1, SeqCst);
@@ -525,9 +523,14 @@ impl<A: Actor> Drop for SyncAddressSender<A> {
 // ===== impl Receiver =====
 //
 //
-impl<A: Actor> SyncAddressReceiver<A> {
+impl<A: Actor> AddressReceiver<A> {
     pub fn connected(&self) -> bool {
         self.inner.num_senders.load(SeqCst) != 0
+    }
+
+    /// Get channel capacity
+    pub fn capacity(&self) -> usize {
+        self.inner.buffer.load(Relaxed)
     }
 
     /// Set channel capacity
@@ -559,7 +562,7 @@ impl<A: Actor> SyncAddressReceiver<A> {
     }
 
     /// Get sender side of the channel
-    pub fn sender(&mut self) -> SyncAddressSender<A> {
+    pub fn sender(&mut self) -> AddressSender<A> {
         // this code same as Sender::clone
         let mut curr = self.inner.num_senders.load(SeqCst);
 
@@ -575,7 +578,7 @@ impl<A: Actor> SyncAddressReceiver<A> {
             // The ABA problem doesn't matter here. We only care that the
             // number of senders never exceeds the maximum.
             if actual == curr {
-                return SyncAddressSender {
+                return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
                     maybe_parked: Cell::new(false),
@@ -586,7 +589,7 @@ impl<A: Actor> SyncAddressReceiver<A> {
         }
     }
 
-    fn next_message(&mut self) -> Async<Option<SyncEnvelope<A>>> {
+    fn next_message(&mut self) -> Async<Option<Envelope<A>>> {
         // Pop off a message
         loop {
             match unsafe { self.inner.message_queue.pop() } {
@@ -671,8 +674,8 @@ impl<A: Actor> SyncAddressReceiver<A> {
     }
 }
 
-impl<A: Actor> Stream for SyncAddressReceiver<A> {
-    type Item = SyncEnvelope<A>;
+impl<A: Actor> Stream for AddressReceiver<A> {
+    type Item = Envelope<A>;
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
@@ -713,7 +716,7 @@ impl<A: Actor> Stream for SyncAddressReceiver<A> {
     }
 }
 
-impl<A: Actor> Drop for SyncAddressReceiver<A> {
+impl<A: Actor> Drop for AddressReceiver<A> {
     fn drop(&mut self) {
         // close
         let mut curr = self.inner.state.load(SeqCst);

@@ -9,22 +9,14 @@ mod queue;
 mod sync;
 pub(crate) mod sync_channel;
 
-mod unsync;
-mod unsync_channel;
-
-use actor::{Actor, AsyncContext};
+use actor::Actor;
 use handler::{Handler, Message};
 
-pub use self::envelope::{
-    EnvelopeProxy, MessageEnvelope, SyncEnvelope, SyncMessageEnvelope, ToEnvelope,
-    UnsyncEnvelope,
-};
+pub use self::envelope::{Envelope, EnvelopeProxy, MessageEnvelope, ToEnvelope};
 pub use self::message::Request;
 
-pub use self::sync::{Syn, SyncRecipientRequest};
-pub(crate) use self::sync_channel::SyncAddressReceiver;
-pub use self::unsync::{Unsync, UnsyncRecipientRequest};
-pub(crate) use self::unsync_channel::UnsyncAddrReceiver;
+pub use self::sync::{RecipientRequest, Syn};
+pub(crate) use self::sync_channel::AddressReceiver;
 
 pub enum SendError<T> {
     Full(T),
@@ -69,54 +61,6 @@ impl<T> fmt::Display for SendError<T> {
 impl fmt::Debug for MailboxError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "MailboxError({})", self)
-    }
-}
-
-/// Trait give access to actor's address
-pub trait ActorAddress<A, T>
-where
-    A: Actor,
-{
-    /// Returns actor's address for specific context
-    fn get(ctx: &mut A::Context) -> T;
-}
-
-impl<A> ActorAddress<A, Addr<Unsync, A>> for A
-where
-    A: Actor,
-    A::Context: AsyncContext<A>,
-{
-    fn get(ctx: &mut A::Context) -> Addr<Unsync, A> {
-        ctx.unsync_address()
-    }
-}
-
-impl<A> ActorAddress<A, Addr<Syn, A>> for A
-where
-    A: Actor,
-    A::Context: AsyncContext<A>,
-{
-    fn get(ctx: &mut A::Context) -> Addr<Syn, A> {
-        ctx.sync_address()
-    }
-}
-
-impl<A> ActorAddress<A, (Addr<Unsync, A>, Addr<Syn, A>)> for A
-where
-    A: Actor,
-    A::Context: AsyncContext<A>,
-{
-    fn get(ctx: &mut A::Context) -> (Addr<Unsync, A>, Addr<Syn, A>) {
-        (ctx.unsync_address(), ctx.sync_address())
-    }
-}
-
-impl<A> ActorAddress<A, ()> for A
-where
-    A: Actor,
-{
-    fn get(_: &mut A::Context) -> () {
-        ()
     }
 }
 
