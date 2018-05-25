@@ -13,7 +13,7 @@
 //! * [Chat on gitter](https://gitter.im/actix/actix)
 //! * [GitHub repository](https://github.com/actix/actix)
 //! * [Cargo package](https://crates.io/crates/actix)
-//! * Minimum supported Rust version: 1.21 or later
+//! * Minimum supported Rust version: 1.26 or later
 //!
 //! ## Features
 //!
