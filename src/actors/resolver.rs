@@ -47,9 +47,9 @@ use futures::{Async, Future, Poll};
 use tokio_tcp::{ConnectFuture, TcpStream};
 use tokio_timer::Delay;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
+use trust_dns_resolver::error::ResolveError;
 use trust_dns_resolver::lookup_ip::LookupIpFuture;
 use trust_dns_resolver::ResolverFuture;
-use trust_dns_resolver::error::ResolveError;
 
 use prelude::*;
 
@@ -147,12 +147,11 @@ pub struct Connector {
 }
 
 impl Connector {
-    pub fn new(config: ResolverConfig, options: ResolverOpts) -> Result<Connector, ResolveError> {
-        Ok(Connector{
-            resolver: Some(ResolverFuture::new(
-                config,
-                options,
-            ).wait()?)
+    pub fn new(
+        config: ResolverConfig, options: ResolverOpts,
+    ) -> Result<Connector, ResolveError> {
+        Ok(Connector {
+            resolver: Some(ResolverFuture::new(config, options).wait()?),
         })
     }
 }
@@ -182,7 +181,7 @@ impl Actor for Connector {
     }
 
     #[cfg(not(unix))]
-    fn started(&mut self, ctx: &mut Context) {
+    fn started(&mut self, ctx: &mut Self::Context) {
         let resolver =
             ResolverFuture::new(ResolverConfig::default(), ResolverOpts::default());
         resolver
