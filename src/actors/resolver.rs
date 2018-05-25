@@ -12,7 +12,7 @@
 //! fn main() {
 //!     let sys = System::new("test");
 //!
-//!     Arbiter::handle().spawn({
+//!     Arbiter::spawn({
 //!         let resolver: Addr<Unsync, _> = actors::Connector::from_registry();
 //!
 //!         resolver.send(
@@ -24,7 +24,7 @@
 //!                 })
 //!    });
 //!
-//!     Arbiter::handle().spawn({
+//!     Arbiter::spawn({
 //!         let resolver: Addr<Unsync, _> = actors::Connector::from_registry();
 //!
 //!         resolver.send(
@@ -41,14 +41,14 @@
 use std::collections::VecDeque;
 use std::io;
 use std::net::SocketAddr;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use futures::{Async, Future, Poll};
-use tokio_core::net::{TcpStream, TcpStreamNew};
-use tokio_core::reactor::Timeout;
-use trust_dns_resolver::ResolverFuture;
+use tokio_tcp::{ConnectFuture, TcpStream};
+use tokio_timer::Delay;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::lookup_ip::LookupIpFuture;
+use trust_dns_resolver::ResolverFuture;
 
 use prelude::*;
 
@@ -142,11 +142,48 @@ pub enum ConnectorError {
 }
 
 pub struct Connector {
-    resolver: ResolverFuture,
+    resolver: Option<ResolverFuture>,
 }
 
 impl Actor for Connector {
     type Context = Context<Self>;
+
+    #[cfg(unix)]
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let resolver = match ResolverFuture::from_system_conf() {
+            Ok(resolver) => resolver,
+            Err(err) => {
+                warn!("Can not create system dns resolver: {}", err);
+                ResolverFuture::new(ResolverConfig::default(), ResolverOpts::default())
+            }
+        };
+        resolver
+            .into_actor(self)
+            .map(|resolver, act, _| {
+                act.resolver = Some(resolver);
+            })
+            .map_err(|err, _, ctx| {
+                error!("Can not create resolver: {}", err);
+                ctx.stop()
+            })
+            .wait(ctx);
+    }
+
+    #[cfg(not(unix))]
+    fn started(&mut self, ctx: &mut Context) {
+        let resolver =
+            ResolverFuture::new(ResolverConfig::default(), ResolverOpts::default());
+        resolver
+            .into_actor(self)
+            .map(|resolver, act, _| {
+                act.resolver = Some(resolver);
+            })
+            .map_err(|err, _, ctx| {
+                error!("Can not create resolver: {}", err);
+                ctx.stop()
+            })
+            .wait(ctx);
+    }
 }
 
 impl Supervised for Connector {}
@@ -154,32 +191,8 @@ impl Supervised for Connector {}
 impl actix::ArbiterService for Connector {}
 
 impl Default for Connector {
-    #[cfg(unix)]
     fn default() -> Connector {
-        let resolver = match ResolverFuture::from_system_conf(Arbiter::handle()) {
-            Ok(resolver) => resolver,
-            Err(err) => {
-                warn!("Can not create system dns resolver: {}", err);
-                ResolverFuture::new(
-                    ResolverConfig::default(),
-                    ResolverOpts::default(),
-                    Arbiter::handle(),
-                )
-            }
-        };
-        Connector { resolver }
-    }
-
-    #[cfg(not(unix))]
-    fn default() -> Connector {
-        let resolver = ResolverFuture::new(
-            ResolverConfig::default(),
-            ResolverOpts::default(),
-            Arbiter::handle(),
-        );
-        Connector {
-            resolver: resolver,
-        }
+        Connector { resolver: None }
     }
 }
 
@@ -190,7 +203,7 @@ impl Handler<Resolve> for Connector {
         Box::new(Resolver::new(
             msg.name,
             msg.port.unwrap_or(0),
-            &self.resolver,
+            self.resolver.as_ref().unwrap(),
         ))
     }
 }
@@ -201,8 +214,11 @@ impl Handler<Connect> for Connector {
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         let timeout = msg.timeout;
         Box::new(
-            Resolver::new(msg.name, msg.port.unwrap_or(0), &self.resolver)
-                .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
+            Resolver::new(
+                msg.name,
+                msg.port.unwrap_or(0),
+                self.resolver.as_ref().unwrap(),
+            ).and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
         )
     }
 }
@@ -227,7 +243,7 @@ struct Resolver {
 
 impl Resolver {
     pub fn new<S: AsRef<str>>(
-        addr: S, port: u16, resolver: &ResolverFuture
+        addr: S, port: u16, resolver: &ResolverFuture,
     ) -> Resolver {
         // try to parse as a regular SocketAddr first
         if let Ok(addr) = addr.as_ref().parse() {
@@ -285,7 +301,7 @@ impl ActorFuture for Resolver {
     type Actor = Connector;
 
     fn poll(
-        &mut self, _: &mut Connector, _: &mut Context<Connector>
+        &mut self, _: &mut Connector, _: &mut Context<Connector>,
     ) -> Poll<Self::Item, Self::Error> {
         if let Some(err) = self.error.take() {
             Err(err)
@@ -295,7 +311,8 @@ impl ActorFuture for Resolver {
             match self.lookup.as_mut().unwrap().poll() {
                 Ok(Async::NotReady) => Ok(Async::NotReady),
                 Ok(Async::Ready(ips)) => {
-                    let addrs: VecDeque<_> = ips.iter()
+                    let addrs: VecDeque<_> = ips
+                        .iter()
                         .map(|ip| SocketAddr::new(ip, self.port))
                         .collect();
                     if addrs.is_empty() {
@@ -315,8 +332,8 @@ impl ActorFuture for Resolver {
 /// Tcp stream connector
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
-    timeout: Timeout,
-    stream: Option<TcpStreamNew>,
+    timeout: Delay,
+    stream: Option<ConnectFuture>,
 }
 
 impl TcpConnector {
@@ -328,7 +345,7 @@ impl TcpConnector {
         TcpConnector {
             addrs,
             stream: None,
-            timeout: Timeout::new(timeout, Arbiter::handle()).unwrap(),
+            timeout: Delay::new(Instant::now() + timeout),
         }
     }
 }
@@ -339,7 +356,7 @@ impl ActorFuture for TcpConnector {
     type Actor = Connector;
 
     fn poll(
-        &mut self, _: &mut Connector, _: &mut Context<Connector>
+        &mut self, _: &mut Connector, _: &mut Context<Connector>,
     ) -> Poll<Self::Item, Self::Error> {
         // timeout
         if let Ok(Async::Ready(_)) = self.timeout.poll() {
@@ -362,7 +379,7 @@ impl ActorFuture for TcpConnector {
 
             // try to connect
             let addr = self.addrs.pop_front().unwrap();
-            self.stream = Some(TcpStream::connect(&addr, Arbiter::handle()));
+            self.stream = Some(TcpStream::connect(&addr));
         }
     }
 }

@@ -38,8 +38,9 @@ extern crate futures;
 extern crate tokio;
 extern crate tokio_io;
 extern crate tokio_signal;
+extern crate tokio_tcp;
 extern crate tokio_timer;
-// extern crate trust_dns_resolver;
+extern crate trust_dns_resolver;
 
 #[macro_use]
 extern crate failure;

@@ -4,7 +4,6 @@ use actix::actors::{self, signal};
 use actix::prelude::*;
 use futures::Future;
 
-/*
 #[test]
 fn test_resolver() {
     let sys = System::new("test");
@@ -26,7 +25,7 @@ fn test_resolver() {
     });
 
     sys.run();
-}*/
+}
 
 //#[test]
 #[cfg(unix)]

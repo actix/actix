@@ -35,6 +35,7 @@ bytes = "0.4"
 futures = "0.1"
 tokio = "0.1"
 tokio-io = "0.1"
+tokio-tcp = "0.1"
 tokio-timer = "0.2"
 tokio-signal = "0.2"
 
@@ -47,8 +48,8 @@ crossbeam-channel = "0.1"
 libc = { version = "0.2" }
 uuid = { version = "0.6", features = ["v4"] }
 
-# dns
-# trust-dns-resolver = "0.8"
+# dns resolver
+trust-dns-resolver = "0.9"
 
 [profile.release]
 lto = true
