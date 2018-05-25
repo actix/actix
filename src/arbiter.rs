@@ -132,6 +132,11 @@ impl Arbiter {
         });
     }
 
+    #[inline]
+    pub(crate) fn stop_system() {
+        RUNNING.with(|cell| cell.set(false));
+    }
+
     /// Returns current arbiter's address
     pub fn name() -> String {
         NAME.with(|cell| match *cell.borrow() {

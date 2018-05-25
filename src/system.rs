@@ -124,7 +124,16 @@ impl SystemRunner {
     where
         F: Future<Item = I, Error = E>,
     {
-        self.rt.block_on(fut)
+        let _ = self.rt.block_on(future::lazy(move || {
+            Arbiter::run_system();
+            Ok::<_, ()>(())
+        }));
+        let res = self.rt.block_on(fut);
+        let _ = self.rt.block_on(future::lazy(move || {
+            Arbiter::stop_system();
+            Ok::<_, ()>(())
+        }));
+        res
     }
 }
 

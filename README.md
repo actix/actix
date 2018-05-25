@@ -6,6 +6,7 @@ Actix is a Rust actors framework.
 * [API Documentation (Development)](http://actix.github.io/actix/actix/)
 * [API Documentation (Releases)](https://docs.rs/actix/)
 * Cargo package: [actix](https://crates.io/crates/actix)
+* Minimum supported Rust version: 1.25 or later
 
 ---
 

@@ -13,7 +13,7 @@
 //! * [Chat on gitter](https://gitter.im/actix/actix)
 //! * [GitHub repository](https://github.com/actix/actix)
 //! * [Cargo package](https://crates.io/crates/actix)
-//! * Supported Rust version: 1.21 or later
+//! * Minimum supported Rust version: 1.21 or later
 //!
 //! ## Features
 //!
@@ -23,7 +23,6 @@
 //! * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
 //! * Actor supervision.
 //! * Typed messages (No `Any` type). Generic messages are allowed.
-//! * Minimum supported Rust version: 1.21 or later
 
 #[macro_use]
 extern crate log;

@@ -87,13 +87,10 @@ where
             }
         }
 
-        if let Some(mut rx) = self.rx.take() {
-            match rx.poll() {
+        if self.rx.is_some() {
+            match self.rx.as_mut().unwrap().poll() {
                 Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
-                Ok(Async::NotReady) => {
-                    self.rx = Some(rx);
-                    self.poll_timeout()
-                }
+                Ok(Async::NotReady) => self.poll_timeout(),
                 Err(_) => Err(MailboxError::Closed),
             }
         } else {
