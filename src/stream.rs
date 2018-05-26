@@ -78,7 +78,7 @@ where
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Addr<Unsync, _> = MyActor.start();
+    /// #    let addr = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```

@@ -2,7 +2,7 @@ use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
 use address::EnvelopeProxy;
-use address::{sync_channel, Addr, AddressReceiver, Syn};
+use address::{channel, Addr, AddressReceiver};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -25,7 +25,7 @@ where
 {
     #[inline]
     fn default() -> Self {
-        let (_, rx) = sync_channel::channel(DEFAULT_CAPACITY);
+        let (_, rx) = channel::channel(DEFAULT_CAPACITY);
         Mailbox { msgs: rx }
     }
 }
@@ -62,7 +62,7 @@ where
         self.msgs.connected()
     }
 
-    pub fn address(&mut self) -> Addr<Syn, A> {
+    pub fn address(&mut self) -> Addr<A> {
         Addr::new(self.msgs.sender())
     }
 

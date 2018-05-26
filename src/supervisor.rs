@@ -1,7 +1,7 @@
 use futures::{Async, Future, Poll};
 
 use actor::{Actor, AsyncContext, Supervised};
-use address::{sync_channel, Addr, Syn};
+use address::{channel, Addr};
 use arbiter::Arbiter;
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
@@ -55,7 +55,7 @@ use msgs::Execute;
 /// fn main() {
 ///     let sys = System::new("test");
 ///
-///     let addr: Addr<Unsync, _> = actix::Supervisor::start(|_| MyActor);
+///     let addr = actix::Supervisor::start(|_| MyActor);
 ///
 ///     addr.do_send(Die);
 ///     sys.run();
@@ -90,14 +90,11 @@ where
     /// # impl actix::Supervised for MyActor {}
     /// # fn main() {
     /// #    let sys = System::new("test");
-    /// // Get `Addr<Unsync, _>` of a MyActor actor
-    /// let addr1: Addr<Unsync, _> = actix::Supervisor::start(|_| MyActor);
-    ///
-    /// // Get `Addr<Syn, _>` of a MyActor actor
-    /// let addr2: Addr<Syn, _> = actix::Supervisor::start(|_| MyActor);
+    /// // Get `Addr` of a MyActor actor
+    /// let addr = actix::Supervisor::start(|_| MyActor);
     /// # }
     /// ```
-    pub fn start<F>(f: F) -> Addr<Syn, A>
+    pub fn start<F>(f: F) -> Addr<A>
     where
         F: FnOnce(&mut A::Context) -> A + 'static,
         A: Actor<Context = Context<A>>,
@@ -115,12 +112,12 @@ where
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in<F>(addr: &Addr<Syn, Arbiter>, f: F) -> Addr<Syn, A>
+    pub fn start_in<F>(addr: &Addr<Arbiter>, f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
-        let (tx, rx) = sync_channel::channel(DEFAULT_CAPACITY);
+        let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
         addr.do_send(Execute::new(move || -> Result<(), ()> {
             let mut ctx = Context::with_receiver(None, rx);

@@ -1,20 +1,19 @@
 use futures::sync::oneshot::Sender;
 use std::marker::PhantomData;
 
-use super::{MessageDestination, MessageDestinationTransport, Syn};
+// use super::{MessageDestination, MessageDestinationTransport, Syn};
 use actor::{Actor, AsyncContext};
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
 
 /// Converter trait, packs message to suitable envelope
-pub trait ToEnvelope<T: MessageDestination<A, M>, A, M: Message + 'static>
+pub trait ToEnvelope<A, M: Message>
 where
-    T::Transport: MessageDestinationTransport<T, A, M>,
     A: Actor + Handler<M>,
-    A::Context: ToEnvelope<T, A, M>,
+    A::Context: ToEnvelope<A, M>,
 {
     /// Pack message into suitable envelope
-    fn pack(msg: M, tx: Option<T::ResultSender>) -> T::Envelope;
+    fn pack(msg: M, tx: Option<Sender<M::Result>>) -> Envelope<A>;
 }
 
 pub trait EnvelopeProxy {
@@ -26,35 +25,7 @@ pub trait EnvelopeProxy {
     );
 }
 
-pub struct MessageEnvelope<M>
-where
-    M: Message + Send,
-    M::Result: Send,
-{
-    msg: M,
-}
-
-impl<M: Message + Send> MessageEnvelope<M>
-where
-    M: Message + Send,
-    M::Result: Send,
-{
-    pub fn into_inner(self) -> M {
-        self.msg
-    }
-}
-
-impl<M> From<M> for MessageEnvelope<M>
-where
-    M: Message + Send,
-    M::Result: Send,
-{
-    fn from(msg: M) -> MessageEnvelope<M> {
-        MessageEnvelope { msg }
-    }
-}
-
-impl<A, M> ToEnvelope<Syn, A, M> for Context<A>
+impl<A, M> ToEnvelope<A, M> for Context<A>
 where
     A: Actor<Context = Context<A>> + Handler<M>,
     M: Message + Send + 'static,

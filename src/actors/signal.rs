@@ -48,7 +48,7 @@
 //!    let sys = System::new("test");
 //!
 //!    // Start signals handler
-//!    let addr: Addr<Syn, _> = Signals.start();
+//!    let addr = Signals.start();
 //!
 //!    // send SIGTERM
 //!    std::thread::spawn(move || {
@@ -98,7 +98,7 @@ impl Message for Signal {
 
 /// An actor implementation of Unix signal handling
 pub struct ProcessSignals {
-    subscribers: Vec<Recipient<Syn, Signal>>,
+    subscribers: Vec<Recipient<Signal>>,
 }
 
 impl Default for ProcessSignals {
@@ -184,7 +184,7 @@ impl Handler<SignalType> for ProcessSignals {
 }
 
 /// Subscribe to process signals.
-pub struct Subscribe(pub Recipient<Syn, Signal>);
+pub struct Subscribe(pub Recipient<Signal>);
 
 impl Message for Subscribe {
     type Result = ();
@@ -213,8 +213,8 @@ impl Actor for DefaultSignalsHandler {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let addr = Arbiter::system_registry().get::<ProcessSignals>();
-        let slf: Addr<Syn, _> = ctx.address();
+        let addr = Arbiter::registry().get::<ProcessSignals>();
+        let slf = ctx.address();
         addr.send(Subscribe(slf.recipient()))
             .map(|_| ())
             .map_err(|_| ())

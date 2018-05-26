@@ -52,7 +52,7 @@ impl Handler<Count> for CounterActor {
 
         // send a message to self,
         // creating sorta async recursion
-        let my_address: Addr<Unsync, CounterActor> = ctx.address();
+        let my_address = ctx.address();
 
         my_address.do_send(Count(msg.0 + 1));
         MessageResult(TrackableItem::new())
@@ -65,7 +65,7 @@ impl Handler<Count> for CounterActor {
 #[should_panic]
 fn test_recursion() {
     let system = actix::System::new("test");
-    let addr: Addr<Unsync, _> = CounterActor.start();
+    let addr = CounterActor.start();
     addr.do_send(Count(0));
     system.run();
 }

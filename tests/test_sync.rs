@@ -19,7 +19,7 @@ struct SyncActor {
     cond_l: Arc<Mutex<bool>>,
     counter: Arc<AtomicUsize>,
     messages: Arc<AtomicUsize>,
-    addr: Addr<Syn, System>,
+    addr: Addr<System>,
 }
 
 impl Actor for SyncActor {

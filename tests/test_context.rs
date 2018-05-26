@@ -83,7 +83,7 @@ impl Handler<TimeoutMessage> for MyActor {
 fn test_add_timeout() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync, _> = MyActor { op: Op::Timeout }.start();
+    let _addr = MyActor { op: Op::Timeout }.start();
 
     sys.run();
 }
@@ -92,7 +92,7 @@ fn test_add_timeout() {
 fn test_add_timeout_cancel() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync, _> = MyActor { op: Op::Cancel }.start();
+    let _addr = MyActor { op: Op::Cancel }.start();
 
     Arbiter::spawn(
         Delay::new(Instant::now() + Duration::new(0, 1000)).then(|_| {
@@ -109,7 +109,7 @@ fn test_add_timeout_cancel() {
 fn test_add_timeout_stop() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync, _> = MyActor {
+    let _addr = MyActor {
         op: Op::TimeoutStop,
     }.start();
 
@@ -120,7 +120,7 @@ fn test_add_timeout_stop() {
 fn test_run_after() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync, _> = MyActor { op: Op::RunAfter }.start();
+    let _addr = MyActor { op: Op::RunAfter }.start();
 
     sys.run();
 }
@@ -129,7 +129,7 @@ fn test_run_after() {
 fn test_run_after_stop() {
     let sys = System::new("test");
 
-    let _addr: Addr<Unsync, _> = MyActor {
+    let _addr = MyActor {
         op: Op::RunAfterStop,
     }.start();
 
@@ -166,7 +166,7 @@ fn test_wait_context() {
     let sys = System::new("test");
 
     let m = Arc::new(AtomicUsize::new(0));
-    let addr: Addr<Unsync, _> = ContextWait {
+    let addr = ContextWait {
         cnt: Arc::clone(&m),
     }.start();
     addr.do_send(Ping);
@@ -184,7 +184,7 @@ fn test_message_stream_wait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync, _> = ContextWait::create(move |ctx| {
+    let _addr = ContextWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -204,7 +204,7 @@ fn test_stream_wait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync, _> = ContextWait::create(move |ctx| {
+    let _addr = ContextWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -242,7 +242,7 @@ fn test_nowait_context() {
     let sys = System::new("test");
 
     let m = Arc::new(AtomicUsize::new(0));
-    let addr: Addr<Unsync, _> = ContextNoWait {
+    let addr = ContextNoWait {
         cnt: Arc::clone(&m),
     }.start();
     addr.do_send(Ping);
@@ -259,7 +259,7 @@ fn test_message_stream_nowait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync, _> = ContextNoWait::create(move |ctx| {
+    let _addr = ContextNoWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -279,7 +279,7 @@ fn test_stream_nowait_context() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr: Addr<Unsync, _> = ContextNoWait::create(move |ctx| {
+    let _addr = ContextNoWait::create(move |ctx| {
         let (tx, rx) = unbounded();
         let _ = tx.unbounded_send(Ping);
         let _ = tx.unbounded_send(Ping);
@@ -299,7 +299,7 @@ fn test_notify() {
 
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let addr: Addr<Unsync, _> = ContextNoWait::create(move |ctx| {
+    let addr = ContextNoWait::create(move |ctx| {
         ctx.notify(Ping);
         ctx.notify(Ping);
         ContextNoWait {
@@ -335,7 +335,7 @@ fn test_current_context_handle() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    let _addr: Addr<Unsync, _> = ContextHandle::create(move |ctx| {
+    let _addr = ContextHandle::create(move |ctx| {
         h2.store(
             ContextHandle::add_stream(once::<Ping, ()>(Ok(Ping)), ctx).into_usize(),
             Ordering::Relaxed,
@@ -357,7 +357,7 @@ fn test_start_from_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    let _addr: Addr<Unsync, _> = ContextHandle::create(move |ctx| {
+    let _addr = ContextHandle::create(move |ctx| {
         h2.store(
             ctx.add_stream(once::<Ping, ()>(Ok(Ping))).into_usize(),
             Ordering::Relaxed,
@@ -390,11 +390,13 @@ impl<K> StreamHandler<CancelPacket, K> for CancelHandler {
 #[test]
 fn test_cancel_handler() {
     let sys = actix::System::new("test");
-    let _: () = CancelHandler::create(|ctx| CancelHandler {
+
+    CancelHandler::create(|ctx| CancelHandler {
         source: ctx.add_stream(
             Interval::new(Instant::now(), Duration::from_millis(1))
                 .map(|_| CancelPacket),
         ),
     });
+
     sys.run();
 }

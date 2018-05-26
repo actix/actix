@@ -6,7 +6,7 @@ use futures::{Async, Poll};
 use smallvec::SmallVec;
 
 use actor::{Actor, ActorState, AsyncContext, Running, SpawnHandle, Supervised};
-use address::{Addr, AddressReceiver, Syn};
+use address::{Addr, AddressReceiver};
 use contextitems::ActorWaitItem;
 use fut::ActorFuture;
 use mailbox::Mailbox;
@@ -185,7 +185,7 @@ where
     }
 
     #[inline]
-    pub fn address(&mut self) -> Addr<Syn, A> {
+    pub fn address(&mut self) -> Addr<A> {
         self.modify();
         self.mailbox.address()
     }

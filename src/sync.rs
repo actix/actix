@@ -73,15 +73,15 @@
 //! ```
 use std::marker::PhantomData;
 use std::sync::Arc;
-use std::{mem, thread};
+use std::thread;
 
-use crossbeam_channel as channel;
+use crossbeam_channel as cb_channel;
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::{Async, Future, Poll, Stream};
 
 use actor::{Actor, ActorContext, ActorState, Running};
-use address::sync_channel;
-use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, Syn, ToEnvelope};
+use address::channel;
+use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
 use arbiter::Arbiter;
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
@@ -91,7 +91,7 @@ pub struct SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
-    queue: channel::Sender<SyncContextProtocol<A>>,
+    queue: cb_channel::Sender<SyncContextProtocol<A>>,
     msgs: AddressReceiver<A>,
     threads: usize,
 }
@@ -102,12 +102,12 @@ where
 {
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of the started actor.
-    pub fn start<F>(threads: usize, factory: F) -> Addr<Syn, A>
+    pub fn start<F>(threads: usize, factory: F) -> Addr<A>
     where
         F: Fn() -> A + Send + Sync + 'static,
     {
         let factory = Arc::new(factory);
-        let (sender, receiver) = channel::unbounded();
+        let (sender, receiver) = cb_channel::unbounded();
 
         for _ in 0..threads {
             let f = Arc::clone(&factory);
@@ -116,7 +116,7 @@ where
             thread::spawn(move || SyncContext::new(f, actor_queue).run());
         }
 
-        let (tx, rx) = sync_channel::channel(0);
+        let (tx, rx) = channel::channel(0);
         Arbiter::spawn(SyncArbiter {
             queue: sender,
             msgs: rx,
@@ -167,7 +167,7 @@ where
     }
 }
 
-impl<A, M> ToEnvelope<Syn, A, M> for SyncContext<A>
+impl<A, M> ToEnvelope<A, M> for SyncContext<A>
 where
     A: Actor<Context = SyncContext<A>> + Handler<M>,
     M: Message + Send + 'static,
@@ -192,7 +192,7 @@ where
     A: Actor<Context = SyncContext<A>>,
 {
     act: A,
-    queue: channel::Receiver<SyncContextProtocol<A>>,
+    queue: cb_channel::Receiver<SyncContextProtocol<A>>,
     stopping: bool,
     state: ActorState,
     factory: Arc<Fn() -> A>,
@@ -204,7 +204,7 @@ where
 {
     /// Create new SyncContext
     fn new(
-        factory: Arc<Fn() -> A>, queue: channel::Receiver<SyncContextProtocol<A>>,
+        factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<SyncContextProtocol<A>>,
     ) -> Self {
         let act = factory();
         SyncContext {
@@ -217,8 +217,7 @@ where
     }
 
     fn run(&mut self) {
-        let ctx: &mut SyncContext<A> =
-            unsafe { mem::transmute(self as &mut SyncContext<A>) };
+        let ctx: &mut SyncContext<A> = unsafe { &mut *(self as *mut _) };
 
         // started
         A::started(&mut self.act, ctx);

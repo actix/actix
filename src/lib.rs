@@ -26,6 +26,7 @@
 
 #[macro_use]
 extern crate log;
+extern crate bytes;
 extern crate crossbeam_channel;
 extern crate libc;
 extern crate smallvec;
@@ -48,9 +49,6 @@ extern crate failure;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate actix_derive;
-
-#[cfg(test)]
-extern crate bytes;
 
 #[doc(hidden)]
 pub use actix_derive::*;
@@ -79,7 +77,7 @@ pub mod utils;
 pub use actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-pub use address::{Addr, MailboxError, Recipient, Syn};
+pub use address::{Addr, MailboxError, Recipient};
 pub use arbiter::Arbiter;
 pub use context::Context;
 pub use fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
@@ -112,7 +110,7 @@ pub mod prelude {
     pub use actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
-    pub use address::{Addr, MailboxError, Recipient, SendError, Syn};
+    pub use address::{Addr, MailboxError, Recipient, SendError};
     pub use arbiter::Arbiter;
     pub use context::{Context, ContextFutureSpawner};
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
@@ -152,9 +150,6 @@ pub mod dev {
     pub use prelude::actix::*;
     pub use prelude::*;
 
-    pub use address::{
-        Destination, MessageDestination, MessageDestinationTransport, MessageRecipient,
-    };
     pub use address::{Envelope, RecipientRequest, Request, ToEnvelope};
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};

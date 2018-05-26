@@ -2,7 +2,7 @@ extern crate futures;
 #[macro_use]
 extern crate actix;
 
-use actix::{msgs, Actor, Addr, Arbiter, Context, Handler, System, Unsync};
+use actix::{msgs, Actor, Arbiter, Context, Handler, System};
 use futures::{future, Future};
 
 #[derive(Message)]
@@ -24,7 +24,7 @@ impl Handler<Empty> for EmptyActor {
 #[cfg_attr(feature = "cargo-clippy", allow(unit_cmp))]
 fn response_derive_empty() {
     let system = System::new("test");
-    let addr: Addr<Unsync, _> = EmptyActor.start();
+    let addr = EmptyActor.start();
     let res = addr.send(Empty);
 
     system.spawn(res.then(|res| {
@@ -63,7 +63,7 @@ impl Handler<SumResult> for SumResultActor {
 #[test]
 pub fn derive_result() {
     let system = System::new("test");
-    let addr: Addr<Unsync, _> = SumResultActor.start();
+    let addr = SumResultActor.start();
     let res = addr.send(SumResult(10, 5));
 
     system.spawn(res.then(|res| {
@@ -100,7 +100,7 @@ impl Handler<SumOne> for SumOneActor {
 #[test]
 pub fn response_derive_one() {
     let system = System::new("test");
-    let addr: Addr<Unsync, _> = SumOneActor.start();
+    let addr = SumOneActor.start();
     let res = addr.send(SumOne(10, 5));
 
     system.spawn(res.then(|res| {

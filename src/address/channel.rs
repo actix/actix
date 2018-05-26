@@ -14,16 +14,14 @@ use handler::{Handler, Message};
 
 use super::envelope::{Envelope, ToEnvelope};
 use super::queue::{PopResult, Queue};
-use super::{MessageDestinationTransport, SendError, Syn};
+use super::SendError;
 
 pub trait Sender<M>: Send
 where
     M::Result: Send,
-    M: Message + Send + 'static,
+    M: Message + Send,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
-
-    fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
 
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
 
@@ -182,17 +180,18 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>
     (tx, rx)
 }
 
+/*
 impl<A, M> MessageDestinationTransport<Syn, A, M> for AddressSender<A>
 where
     A: Actor + Handler<M>,
-    A::Context: ToEnvelope<Syn, A, M>,
+    A::Context: ToEnvelope<A, M>,
     M: Message + Send + 'static,
     M::Result: Send,
 {
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         AddressSender::send(self, msg)
     }
-}
+}*/
 
 //
 //
@@ -213,9 +212,9 @@ impl<A: Actor> AddressSender<A> {
     pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
     where
         A: Handler<M>,
-        A::Context: ToEnvelope<Syn, A, M>,
+        A::Context: ToEnvelope<A, M>,
         M::Result: Send,
-        M: Message + Send + 'static,
+        M: Message + Send,
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false).is_ready() {
@@ -241,7 +240,7 @@ impl<A: Actor> AddressSender<A> {
             Err(SendError::Full(msg))
         } else {
             let (tx, rx) = sync_channel();
-            let env = <A::Context as ToEnvelope<Syn, A, M>>::pack(msg, Some(tx));
+            let env = <A::Context as ToEnvelope<A, M>>::pack(msg, Some(tx));
             self.queue_push_and_signal(env);
             Ok(rx)
         }
@@ -251,7 +250,7 @@ impl<A: Actor> AddressSender<A> {
     pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
     where
         A: Handler<M>,
-        <A as Actor>::Context: ToEnvelope<Syn, A, M>,
+        <A as Actor>::Context: ToEnvelope<A, M>,
         M::Result: Send,
         M: Message + Send + 'static,
     {
@@ -271,7 +270,7 @@ impl<A: Actor> AddressSender<A> {
             }
             Err(SendError::Full(msg))
         } else {
-            let env = <A::Context as ToEnvelope<Syn, A, M>>::pack(msg, None);
+            let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
         }
@@ -283,14 +282,14 @@ impl<A: Actor> AddressSender<A> {
     pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
     where
         A: Handler<M>,
-        <A as Actor>::Context: ToEnvelope<Syn, A, M>,
+        <A as Actor>::Context: ToEnvelope<A, M>,
         M::Result: Send,
-        M: Message + Send + 'static,
+        M: Message + Send,
     {
         if self.inc_num_messages_force().is_none() {
             Err(SendError::Closed(msg))
         } else {
-            let env = <A::Context as ToEnvelope<Syn, A, M>>::pack(msg, None);
+            let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
         }
@@ -440,31 +439,17 @@ impl<A: Actor> AddressSender<A> {
             Async::Ready(())
         }
     }
-
-    /// Get `Sender` for a specific message type
-    pub(crate) fn into_sender<M>(self) -> Box<Sender<M>>
-    where
-        A: Handler<M>,
-        A::Context: ToEnvelope<Syn, A, M>,
-        M::Result: Send,
-        M: Message + Send + 'static,
-    {
-        Box::new(self)
-    }
 }
 
 impl<A, M> Sender<M> for AddressSender<A>
 where
     A: Handler<M>,
-    A::Context: ToEnvelope<Syn, A, M>,
+    A::Context: ToEnvelope<A, M>,
     M::Result: Send,
     M: Message + Send + 'static,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.do_send(msg)
-    }
-    fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.try_send(msg, true)
     }
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         self.send(msg)
@@ -824,7 +809,7 @@ mod tests {
             let (s1, mut recv) = channel::<Act>(1);
             let s2 = recv.sender();
 
-            let arb: Addr<Syn, _> = Arbiter::new("s1");
+            let arb = Arbiter::new("s1");
             arb.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
                 let _ = s1.send(Ping);
                 Ok(())

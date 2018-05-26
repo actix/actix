@@ -1,7 +1,7 @@
 use futures::Stream;
 use std::time::Duration;
 
-use address::{Addr, Syn};
+use address::Addr;
 use arbiter::Arbiter;
 use context::Context;
 use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
@@ -20,8 +20,7 @@ use utils::TimerFunc;
 ///
 /// Actors communicate exclusively by exchanging messages. Sender actor can
 /// wait for response. Actors are not referenced directly, but by
-/// non thread safe [`Addr<Unsync, A>`](struct.Addr.html) or thread safe address
-/// [`Addr<Syn, A>`](struct.Addr.html)
+/// address [`Addr`](struct.Addr.html)
 /// To be able to handle specific message actor has to provide
 /// [`Handler<M>`](trait.Handler.html)
 /// implementation for this message. All messages are statically typed. Message
@@ -102,9 +101,9 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: Addr<Unsync, _> = MyActor.start();
+    /// let addr = MyActor.start();
     /// ```
-    fn start(self) -> Addr<Syn, Self>
+    fn start(self) -> Addr<Self>
     where
         Self: Actor<Context = Context<Self>>,
     {
@@ -119,7 +118,7 @@ pub trait Actor: Sized + 'static {
     }
 
     /// Start new asynchronous actor, returns address of newly created actor.
-    fn start_default() -> Addr<Syn, Self>
+    fn start_default() -> Addr<Self>
     where
         Self: Default + Actor<Context = Context<Self>>,
     {
@@ -144,10 +143,9 @@ pub trait Actor: Sized + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr: Addr<Unsync, _> =
-    ///     MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    /// let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
     /// ```
-    fn create<F>(f: F) -> Addr<Syn, Self>
+    fn create<F>(f: F) -> Addr<Self>
     where
         Self: Actor<Context = Context<Self>>,
         F: FnOnce(&mut Context<Self>) -> Self + 'static,
@@ -229,7 +227,7 @@ where
     A: Actor<Context = Self>,
 {
     /// Return `Address` of the context
-    fn address(&mut self) -> Addr<Syn, A>;
+    fn address(&mut self) -> Addr<A>;
 
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
@@ -288,7 +286,7 @@ where
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Addr<Unsync, _> = MyActor.start();
+    /// #    let addr = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```
@@ -332,7 +330,7 @@ where
     /// }
     /// # fn main() {
     /// #    let sys = System::new("example");
-    /// #    let addr: Addr<Unsync, _> = MyActor.start();
+    /// #    let addr = MyActor.start();
     /// #    sys.run();
     /// # }
     /// ```

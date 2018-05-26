@@ -1,12 +1,9 @@
-#![cfg_attr(feature="cargo-clippy",
-            allow(redundant_field_names, suspicious_arithmetic_impl))]
 use std::cell::UnsafeCell;
+use std::io;
 use std::marker::PhantomData;
 use std::rc::Rc;
-use std::{io, mem};
-extern crate bytes;
 
-use self::bytes::BytesMut;
+use bytes::BytesMut;
 use futures::{Async, Poll};
 use tokio_io::codec::Encoder;
 use tokio_io::AsyncWrite;
@@ -367,7 +364,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
     /// Write item
     pub fn write(&mut self, item: U::Item) {
         let inner: &mut InnerWriter<T, U::Error> =
-            unsafe { mem::transmute(self.as_mut()) };
+            unsafe { &mut *(self.as_mut() as *mut _) };
         let _ = self.enc.encode(item, &mut inner.buffer).map_err(|e| {
             inner.error = Some(e);
         });

@@ -9,7 +9,7 @@ use std::default::Default;
 use std::sync::{Arc, Mutex};
 
 use actor::{Actor, Supervised};
-use address::{Addr, Syn};
+use address::Addr;
 use arbiter::Arbiter;
 use context::Context;
 use supervisor::Supervisor;
@@ -37,7 +37,7 @@ use supervisor::Supervisor;
 /// }
 /// impl actix::Supervised for MyActor1 {}
 ///
-/// impl ArbiterService for MyActor1 {
+/// impl SystemService for MyActor1 {
 ///    fn service_started(&mut self, ctx: &mut Context<Self>) {
 ///       println!("Service started");
 ///    }
@@ -69,10 +69,10 @@ use supervisor::Supervisor;
 ///    let sys = System::new("test");
 ///
 ///    // Start MyActor1
-///    let _:() = MyActor1.start();
+///    let addr = MyActor1.start();
 ///
 ///    // Start MyActor2
-///    let _:() = MyActor2.start();
+///    let addr = MyActor2.start();
 ///
 ///    // Run system, this function blocks current thread
 ///    let code = sys.run();
@@ -96,16 +96,16 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 
     /// Get actor's address from system registry
-    fn from_registry() -> Addr<Syn, Self> {
-        Arbiter::system_registry().get::<Self>()
+    fn from_registry() -> Addr<Self> {
+        Arbiter::registry().get::<Self>()
     }
 
     /// Create an SystemService with a closure
-    fn init_actor<F>(f: F) -> Addr<Syn, Self>
+    fn init_actor<F>(f: F) -> Addr<Self>
     where
         F: FnOnce(&mut Self::Context) -> Self + Send + 'static,
     {
-        Arbiter::system_registry().init_actor::<Self, F>(f)
+        Arbiter::registry().init_actor::<Self, F>(f)
     }
 }
 
@@ -118,11 +118,11 @@ impl SystemRegistry {
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
-    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&self) -> Addr<Syn, A> {
+    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&self) -> Addr<A> {
         {
             if let Ok(hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
-                    match addr.downcast_ref::<Addr<Syn, A>>() {
+                    match addr.downcast_ref::<Addr<A>>() {
                         Some(addr) => return addr.clone(),
                         None => error!("Got unknown value: {:?}", addr),
                     }
@@ -147,7 +147,7 @@ impl SystemRegistry {
     /// Initialize a SystemService, panic if already started
     pub fn init_actor<A: SystemService + Actor<Context = Context<A>>, F>(
         &self, with: F,
-    ) -> Addr<Syn, A>
+    ) -> Addr<A>
     where
         F: FnOnce(&mut A::Context) -> A + Send + 'static,
     {
@@ -163,13 +163,11 @@ impl SystemRegistry {
 
     /// Initialize a SystemService to a actor address (can be used to start
     /// SyncActors, panic if already started
-    pub fn set<A: SystemService + Actor<Context = Context<A>>>(
-        &self, addr: Addr<Syn, A>,
-    ) {
+    pub fn set<A: SystemService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
         {
             if let Ok(hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
-                    if addr.downcast_ref::<Addr<Syn, A>>().is_some() {
+                    if addr.downcast_ref::<Addr<A>>().is_some() {
                         panic!("Actor already started");
                     }
                 }
@@ -179,7 +177,7 @@ impl SystemRegistry {
         }
 
         if let Ok(mut hm) = self.registry.lock() {
-            hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
+            hm.insert(TypeId::of::<A>(), Box::new(addr));
         } else {
             panic!("System registry lock is poisoned");
         }

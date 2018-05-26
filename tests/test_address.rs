@@ -14,12 +14,6 @@ use tokio_timer::Delay;
 #[derive(Message, Debug)]
 struct Ping(usize);
 
-use std::marker::PhantomData;
-use std::rc::Rc;
-
-#[derive(Message, Debug)]
-struct UnsyncPing(usize, PhantomData<Rc<bool>>);
-
 struct MyActor(Arc<AtomicUsize>);
 
 impl Actor for MyActor {
@@ -30,14 +24,6 @@ impl actix::Handler<Ping> for MyActor {
     type Result = ();
 
     fn handle(&mut self, _: Ping, _: &mut Self::Context) {
-        self.0.fetch_add(1, Ordering::Relaxed);
-    }
-}
-
-impl actix::Handler<UnsyncPing> for MyActor {
-    type Result = ();
-
-    fn handle(&mut self, _: UnsyncPing, _: &mut Self::Context) {
         self.0.fetch_add(1, Ordering::Relaxed);
     }
 }
@@ -57,55 +43,12 @@ impl actix::Handler<Ping> for MyActor3 {
 }
 
 #[test]
-fn test_address() {
-    let sys = System::new("test");
-    let count = Arc::new(AtomicUsize::new(0));
-
-    let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone();
-    addr.do_send(Ping(0));
-
-    Arbiter::spawn_fn(move || {
-        addr2.do_send(Ping(1));
-
-        Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
-            addr2.do_send(Ping(2));
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
-            future::result(Ok(()))
-        })
-    });
-
-    sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 3);
-}
-
-#[test]
-fn test_recipient_call() {
-    let sys = System::new("test");
-    let count = Arc::new(AtomicUsize::new(0));
-
-    let addr: Addr<Unsync, _> = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone().recipient();
-    addr.do_send(UnsyncPing(0, PhantomData));
-
-    Arbiter::spawn(addr2.send(Ping(1)).then(move |_| {
-        addr2.send(Ping(2)).then(|_| {
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
-            Ok(())
-        })
-    }));
-
-    sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 3);
-}
-
-#[test]
 fn test_sync_address() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
     let arbiter = Arbiter::new("sync-test");
 
-    let addr: Addr<Syn, _> = MyActor(Arc::clone(&count)).start();
+    let addr = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone();
     let addr3 = addr.clone();
     addr.do_send(Ping(1));
@@ -140,7 +83,7 @@ fn test_sync_recipient_call() {
     let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
 
-    let addr: Addr<Syn, _> = MyActor(Arc::clone(&count)).start();
+    let addr = MyActor(Arc::clone(&count)).start();
     let addr2 = addr.clone().recipient();
     addr.do_send(Ping(0));
 
@@ -159,7 +102,7 @@ fn test_sync_recipient_call() {
 fn test_error_result() {
     let sys = System::new("test");
 
-    let addr: Addr<Unsync, _> = MyActor3.start();
+    let addr = MyActor3.start();
 
     Arbiter::spawn_fn(move || {
         addr.send(Ping(0)).then(|res| {
@@ -195,7 +138,7 @@ impl Handler<Ping> for TimeoutActor {
 fn test_message_timeout() {
     let sys = System::new("test");
 
-    let addr: Addr<Unsync, _> = TimeoutActor.start();
+    let addr = TimeoutActor.start();
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
@@ -220,75 +163,7 @@ fn test_message_timeout() {
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
-#[test]
-fn test_sync_message_timeout() {
-    let sys = System::new("test");
-
-    let addr: Addr<Syn, _> = TimeoutActor.start();
-    let count = Arc::new(AtomicUsize::new(0));
-    let count2 = Arc::clone(&count);
-
-    Arbiter::spawn_fn(move || {
-        addr.do_send(Ping(0));
-        addr.send(Ping(0))
-            .timeout(Duration::new(0, 1_000))
-            .then(move |res| {
-                match res {
-                    Ok(_) => panic!("Should not happen"),
-                    Err(MailboxError::Timeout) => {
-                        count2.fetch_add(1, Ordering::Relaxed);
-                    }
-                    _ => panic!("Should not happen"),
-                }
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                futures::future::result(Ok(()))
-            })
-    });
-
-    sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 1);
-}
-
-struct TimeoutActor2(Addr<Unsync, TimeoutActor>, Arc<AtomicUsize>);
-
-impl Actor for TimeoutActor2 {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        self.0.do_send(Ping(0));
-        self.0
-            .send(Ping(0))
-            .timeout(Duration::new(0, 1_000))
-            .into_actor(self)
-            .then(move |res, act, _| {
-                match res {
-                    Ok(_) => panic!("Should not happen"),
-                    Err(MailboxError::Timeout) => {
-                        act.1.fetch_add(1, Ordering::Relaxed);
-                    }
-                    _ => panic!("Should not happen"),
-                }
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                actix::fut::ok(())
-            })
-            .wait(ctx)
-    }
-}
-
-#[test]
-fn test_call_message_timeout() {
-    let sys = System::new("test");
-    let addr: Addr<Unsync, _> = TimeoutActor.start();
-
-    let count = Arc::new(AtomicUsize::new(0));
-    let count2 = Arc::clone(&count);
-    let _addr2: Addr<Unsync, _> = TimeoutActor2(addr, count2).start();
-
-    sys.run();
-    assert_eq!(count.load(Ordering::Relaxed), 1);
-}
-
-struct TimeoutActor3(Addr<Syn, TimeoutActor>, Arc<AtomicUsize>);
+struct TimeoutActor3(Addr<TimeoutActor>, Arc<AtomicUsize>);
 
 impl Actor for TimeoutActor3 {
     type Context = Context<Self>;
@@ -315,13 +190,13 @@ impl Actor for TimeoutActor3 {
 }
 
 #[test]
-fn test_sync_call_message_timeout() {
+fn test_call_message_timeout() {
     let sys = System::new("test");
-    let addr: Addr<Syn, _> = TimeoutActor.start();
+    let addr = TimeoutActor.start();
 
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
-    let _addr2: Addr<Unsync, _> = TimeoutActor3(addr, count2).start();
+    let _addr2 = TimeoutActor3(addr, count2).start();
 
     sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 1);

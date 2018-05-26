@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tokio::runtime::current_thread::Runtime;
 
 use actor::Actor;
-use address::{Addr, Syn};
+use address::Addr;
 use arbiter::Arbiter;
 use context::Context;
 use handler::{Handler, Message};
@@ -45,7 +45,7 @@ use msgs::{StopArbiter, SystemExit};
 ///     let sys = System::new("test");
 ///
 ///     // Start `Timer` actor
-///     let _: () = Timer {
+///     Timer {
 ///         dur: Duration::new(0, 1),
 ///     }.start();
 ///
@@ -56,7 +56,7 @@ use msgs::{StopArbiter, SystemExit};
 /// ```
 pub struct System {
     stop: Option<Sender<i32>>,
-    arbiters: HashMap<String, Addr<Syn, Arbiter>>,
+    arbiters: HashMap<String, Addr<Arbiter>>,
 }
 
 impl Actor for System {
@@ -153,7 +153,7 @@ impl Handler<SystemExit> for System {
 }
 
 /// Register Arbiter within system
-pub(crate) struct RegisterArbiter(pub String, pub Addr<Syn, Arbiter>);
+pub(crate) struct RegisterArbiter(pub String, pub Addr<Arbiter>);
 
 #[doc(hidden)]
 impl Message for RegisterArbiter {

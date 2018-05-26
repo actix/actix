@@ -36,7 +36,7 @@ fn main() {
     let system = System::new("test");
 
     // start new actor
-    let addr: Addr<Unsync, _> = MyActor { count: 10 }.start();
+    let addr = MyActor { count: 10 }.start();
 
     // send message and get future for result
     let res = addr.send(Ping(10));

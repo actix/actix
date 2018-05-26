@@ -1,8 +1,8 @@
 use futures::{Future, Poll};
-use std::{fmt, mem};
+use std::fmt;
 
 use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle, Supervised};
-use address::{Addr, AddressReceiver, Syn};
+use address::{Addr, AddressReceiver};
 use arbiter::Arbiter;
 use contextimpl::ContextImpl;
 use fut::ActorFuture;
@@ -65,7 +65,7 @@ where
 
     #[doc(hidden)]
     #[inline]
-    fn address(&mut self) -> Addr<Syn, A> {
+    fn address(&mut self) -> Addr<A> {
         self.inner.address()
     }
 }
@@ -112,7 +112,7 @@ where
     where
         A: Supervised,
     {
-        let ctx: &mut Context<A> = unsafe { mem::transmute(self as &mut Context<A>) };
+        let ctx: &mut Context<A> = unsafe { &mut *(self as *mut _) };
         self.inner.restart(ctx)
     }
 
@@ -132,7 +132,7 @@ where
 
     #[inline]
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let ctx: &mut Context<A> = unsafe { mem::transmute(self as &mut Context<A>) };
+        let ctx: &mut Context<A> = unsafe { &mut *(self as *mut _) };
         self.inner.poll(ctx)
     }
 }

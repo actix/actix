@@ -52,7 +52,7 @@ fn test_stream() {
 
     let act_count = Arc::clone(&count);
     let act_err = Arc::clone(&err);
-    MyActor::create::<(), _>(move |ctx| {
+    MyActor::create(move |ctx| {
         MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
         MyActor(act_count, act_err, Running::Stop)
     });
@@ -80,7 +80,7 @@ fn test_stream_with_error() {
 
     let act_count = Arc::clone(&count);
     let act_error = Arc::clone(&error);
-    MyActor::create::<(), _>(move |ctx| {
+    MyActor::create(move |ctx| {
         MyActor::add_stream(futures::stream::iter_result(items), ctx);
         MyActor(act_count, act_error, Running::Stop)
     });
@@ -108,7 +108,7 @@ fn test_stream_with_error_no_stop() {
 
     let act_count = Arc::clone(&count);
     let act_error = Arc::clone(&error);
-    MyActor::create::<(), _>(move |ctx| {
+    MyActor::create(move |ctx| {
         MyActor::add_stream(futures::stream::iter_result(items), ctx);
         MyActor(act_count, act_error, Running::Continue)
     });
@@ -166,7 +166,7 @@ fn test_restart_sync_actor() {
     let stopped1 = Arc::clone(&stopped);
     let msgs1 = Arc::clone(&msgs);
 
-    let addr: Addr<Syn, _> = SyncArbiter::start(1, move || MySyncActor {
+    let addr = SyncArbiter::start(1, move || MySyncActor {
         started: Arc::clone(&started1),
         stopping: Arc::clone(&stopping1),
         stopped: Arc::clone(&stopped1),
