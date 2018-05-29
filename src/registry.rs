@@ -96,7 +96,7 @@ pub trait SystemService:
 
     /// Get actor's address from system registry
     fn from_registry() -> Addr<Self> {
-        Arbiter::registry().get::<Self>()
+        Arbiter::system_reg().get::<Self>()
     }
 
     /*
@@ -132,14 +132,19 @@ impl SystemRegistry {
                         None => error!("Got unknown value: {:?}", addr),
                     }
                 }
-                let addr = Supervisor::start_in(
-                    self.arbiter.lock().unwrap().as_ref().unwrap(),
-                    |ctx| {
+                let addr = if let Some(addr) = self.arbiter.lock().unwrap().as_ref() {
+                    Supervisor::start_in(addr, |ctx| {
                         let mut act = A::default();
                         act.service_started(ctx);
                         act
-                    },
-                );
+                    })
+                } else {
+                    Supervisor::start(|ctx| {
+                        let mut act = A::default();
+                        act.service_started(ctx);
+                        act
+                    })
+                };
                 hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
                 return addr;
             } else {
