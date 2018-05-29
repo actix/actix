@@ -45,20 +45,19 @@
 //!
 //! fn main() {
 //!    // initialize system
-//!    let sys = System::new("test");
+//!    System::run(|| {
 //!
-//!    // Start signals handler
-//!    let addr = Signals.start();
+//!        // Start signals handler
+//!        let addr = Signals.start();
 //!
-//!    // send SIGTERM
-//!    std::thread::spawn(move || {
-//!       // emulate SIGNTERM
-//!       addr.do_send(signal::Signal(signal::SignalType::Term));
+//!        // send SIGTERM
+//!        std::thread::spawn(move || {
+//!            // emulate SIGNTERM
+//!            addr.do_send(signal::Signal(signal::SignalType::Term));
+//!        });
 //!    });
 //!
-//!    // Run system, this function blocks until system runs
-//!    let code = sys.run();
-//!    std::process::exit(code);
+//!    std::process::exit(0);
 //! }
 //! ```
 use futures::{Future, Stream};

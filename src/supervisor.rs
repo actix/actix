@@ -1,4 +1,5 @@
 use futures::{Async, Future, Poll};
+use tokio;
 
 use actor::{Actor, AsyncContext, Supervised};
 use address::{channel, Addr};
@@ -53,12 +54,12 @@ use msgs::Execute;
 /// }
 ///
 /// fn main() {
-///     let sys = System::new("test");
+///     System::run(|| {
 ///
-///     let addr = actix::Supervisor::start(|_| MyActor);
+///         let addr = actix::Supervisor::start(|_| MyActor);
 ///
-///     addr.do_send(Die);
-///     sys.run();
+///         addr.do_send(Die);
+///     });
 /// }
 /// ```
 pub struct Supervisor<A>
@@ -70,7 +71,7 @@ where
 
 impl<A> Supervisor<A>
 where
-    A: Supervised + Actor<Context = Context<A>>,
+    A: Supervised + Actor<Context = Context<A>> + Send,
 {
     /// Start new supervised actor in current Arbiter.
     ///
@@ -89,10 +90,11 @@ where
     ///
     /// # impl actix::Supervised for MyActor {}
     /// # fn main() {
-    /// #    let sys = System::new("test");
+    /// #    System::run(|| {
     /// // Get `Addr` of a MyActor actor
     /// let addr = actix::Supervisor::start(|_| MyActor);
-    /// # }
+    /// #         Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// # });}
     /// ```
     pub fn start<F>(f: F) -> Addr<A>
     where
@@ -106,7 +108,7 @@ where
         ctx.set_actor(act);
 
         // create supervisor
-        Arbiter::spawn(Supervisor::<A> { ctx });
+        tokio::spawn(Supervisor::<A> { ctx });
 
         addr
     }
@@ -114,7 +116,7 @@ where
     /// Start new supervised actor in arbiter's thread.
     pub fn start_in<F>(addr: &Addr<Arbiter>, f: F) -> Addr<A>
     where
-        A: Actor<Context = Context<A>>,
+        A: Actor<Context = Context<A>> + Send,
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
@@ -123,7 +125,7 @@ where
             let mut ctx = Context::with_receiver(None, rx);
             let act = f(&mut ctx);
             ctx.set_actor(act);
-            Arbiter::spawn(Supervisor::<A> { ctx });
+            tokio::spawn(Supervisor::<A> { ctx });
             Ok(())
         }));
 

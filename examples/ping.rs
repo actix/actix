@@ -1,5 +1,6 @@
 extern crate actix;
 extern crate futures;
+extern crate tokio;
 
 use actix::prelude::*;
 use futures::Future;
@@ -33,23 +34,21 @@ impl Handler<Ping> for MyActor {
 
 fn main() {
     // start system, this is required step
-    let system = System::new("test");
+    System::run(|| {
+        // start new actor
+        let addr = MyActor { count: 10 }.start();
 
-    // start new actor
-    let addr = MyActor { count: 10 }.start();
+        // send message and get future for result
+        let res = addr.send(Ping(10));
 
-    // send message and get future for result
-    let res = addr.send(Ping(10));
+        // handle() returns tokio handle
+        tokio::spawn(
+            res.map(|res| {
+                println!("RESULT: {}", res == 20);
 
-    // handle() returns tokio handle
-    Arbiter::spawn(
-        res.map(|res| {
-            println!("RESULT: {}", res == 20);
-
-            // stop system and exit
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
-        }).map_err(|_| ()),
-    );
-
-    system.run();
+                // stop system and exit
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            }).map_err(|_| ()),
+        );
+    });
 }

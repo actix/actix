@@ -1,10 +1,12 @@
 #[macro_use]
 extern crate actix;
 extern crate futures;
+extern crate tokio;
 extern crate tokio_timer;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::thread;
 use std::time::{Duration, Instant};
 
 use actix::prelude::*;
@@ -43,78 +45,78 @@ impl actix::Handler<Ping> for MyActor3 {
 }
 
 #[test]
-fn test_sync_address() {
-    let sys = System::new("test");
+fn test_address() {
     let count = Arc::new(AtomicUsize::new(0));
-    let arbiter = Arbiter::new("sync-test");
+    let count2 = Arc::clone(&count);
 
-    let addr = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone();
-    let addr3 = addr.clone();
-    addr.do_send(Ping(1));
+    System::run(move || {
+        let arbiter = Arbiter::new("sync-test");
 
-    arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
-        addr3.do_send(Ping(2));
+        let addr = MyActor(count2).start();
+        let addr2 = addr.clone();
+        let addr3 = addr.clone();
+        addr.do_send(Ping(1));
 
-        Arbiter::spawn_fn(move || {
-            Delay::new(Instant::now() + Duration::new(0, 1000)).then(move |_| {
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+        arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+            addr3.do_send(Ping(2));
+
+            tokio::spawn(futures::lazy(move || {
+                Delay::new(Instant::now() + Duration::new(0, 1000)).then(move |_| {
+                    Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                    future::result(Ok(()))
+                })
+            }));
+            Ok(())
+        }));
+
+        tokio::spawn(futures::lazy(move || {
+            addr2.do_send(Ping(3));
+
+            Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
+                addr2.do_send(Ping(4));
                 future::result(Ok(()))
             })
-        });
-        Ok(())
-    }));
-
-    Arbiter::spawn_fn(move || {
-        addr2.do_send(Ping(3));
-
-        Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
-            addr2.do_send(Ping(4));
-            future::result(Ok(()))
-        })
+        }));
     });
+    thread::sleep(Duration::from_millis(200));
 
-    sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }
 
 #[test]
 fn test_sync_recipient_call() {
-    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
+    let count2 = Arc::clone(&count);
 
-    let addr = MyActor(Arc::clone(&count)).start();
-    let addr2 = addr.clone().recipient();
-    addr.do_send(Ping(0));
+    System::run(move || {
+        let addr = MyActor(count2).start();
+        let addr2 = addr.clone().recipient();
+        addr.do_send(Ping(0));
 
-    Arbiter::spawn(addr2.send(Ping(1)).then(move |_| {
-        addr2.send(Ping(2)).then(|_| {
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
-            Ok(())
-        })
-    }));
+        tokio::spawn(addr2.send(Ping(1)).then(move |_| {
+            addr2.send(Ping(2)).then(|_| {
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                Ok(())
+            })
+        }));
+    });
 
-    sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 3);
 }
 
 #[test]
 fn test_error_result() {
-    let sys = System::new("test");
+    System::run(|| {
+        let addr = MyActor3.start();
 
-    let addr = MyActor3.start();
-
-    Arbiter::spawn_fn(move || {
-        addr.send(Ping(0)).then(|res| {
+        tokio::spawn(addr.send(Ping(0)).then(|res| {
             match res {
                 Ok(_) => (),
                 _ => panic!("Should not happen"),
             }
-            futures::future::result(Ok(()))
-        })
+            Ok(())
+        }));
     });
-
-    sys.run();
 }
 
 struct TimeoutActor;
@@ -136,17 +138,15 @@ impl Handler<Ping> for TimeoutActor {
 
 #[test]
 fn test_message_timeout() {
-    let sys = System::new("test");
-
-    let addr = TimeoutActor.start();
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
-    Arbiter::spawn_fn(move || {
+    System::run(move || {
+        let addr = TimeoutActor.start();
+
         addr.do_send(Ping(0));
-        addr.send(Ping(0))
-            .timeout(Duration::new(0, 1_000))
-            .then(move |res| {
+        tokio::spawn(addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).then(
+            move |res| {
                 match res {
                     Ok(_) => panic!("Should not happen"),
                     Err(MailboxError::Timeout) => {
@@ -156,10 +156,10 @@ fn test_message_timeout() {
                 }
                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 futures::future::result(Ok(()))
-            })
+            },
+        ));
     });
 
-    sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
@@ -191,13 +191,12 @@ impl Actor for TimeoutActor3 {
 
 #[test]
 fn test_call_message_timeout() {
-    let sys = System::new("test");
-    let addr = TimeoutActor.start();
-
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
-    let _addr2 = TimeoutActor3(addr, count2).start();
 
-    sys.run();
+    System::run(move || {
+        let addr = TimeoutActor.start();
+        let _addr2 = TimeoutActor3(addr, count2).start();
+    });
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }

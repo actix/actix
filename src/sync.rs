@@ -53,22 +53,18 @@
 //! }
 //!
 //! fn main() {
-//!     let sys = System::new("test");
+//!     System::run(|| {
 //!
-//!     // start sync arbiter with 2 threads
-//!     let addr = SyncArbiter::start(2, || SyncActor);
+//!         // start sync arbiter with 2 threads
+//!         let addr = SyncArbiter::start(2, || SyncActor);
 //!
-//!     // send 5 messages
-//!     for n in 5..10 {
-//!         addr.do_send(Fibonacci(n));
-//!     }
+//!         // send 5 messages
+//!         for n in 5..10 {
+//!             addr.do_send(Fibonacci(n));
+//!         }
 //!
-//!     Arbiter::spawn_fn(|| {
 //! #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-//!         futures::future::result(Ok(()))
 //!     });
-//!
-//!     sys.run();
 //! }
 //! ```
 use std::marker::PhantomData;
@@ -78,11 +74,11 @@ use std::thread;
 use crossbeam_channel as cb_channel;
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::{Async, Future, Poll, Stream};
+use tokio;
 
 use actor::{Actor, ActorContext, ActorState, Running};
 use address::channel;
 use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
-use arbiter::Arbiter;
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
 
@@ -117,7 +113,7 @@ where
         }
 
         let (tx, rx) = channel::channel(0);
-        Arbiter::spawn(SyncArbiter {
+        tokio::spawn(SyncArbiter {
             queue: sender,
             msgs: rx,
             threads,
@@ -323,6 +319,7 @@ where
 impl<A, M> EnvelopeProxy for SyncContextEnvelope<A, M>
 where
     M: Message + Send + 'static,
+    M::Result: Send,
     A: Actor<Context = SyncContext<A>> + Handler<M>,
 {
     type Actor = A;

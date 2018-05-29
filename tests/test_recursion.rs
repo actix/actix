@@ -64,8 +64,8 @@ impl Handler<Count> for CounterActor {
 #[test]
 #[should_panic]
 fn test_recursion() {
-    let system = actix::System::new("test");
-    let addr = CounterActor.start();
-    addr.do_send(Count(0));
-    system.run();
+    actix::System::run(|| {
+        let addr = CounterActor.start();
+        addr.do_send(Count(0));
+    });
 }

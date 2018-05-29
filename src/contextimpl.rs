@@ -43,6 +43,13 @@ where
     handles: SmallVec<[SpawnHandle; 2]>,
 }
 
+unsafe impl<A> Send for ContextImpl<A>
+where
+    A: Actor + Send,
+    A::Context: AsyncContext<A>,
+{
+}
+
 impl<A> ContextImpl<A>
 where
     A: Actor,
@@ -185,8 +192,7 @@ where
     }
 
     #[inline]
-    pub fn address(&mut self) -> Addr<A> {
-        self.modify();
+    pub fn address(&self) -> Addr<A> {
         self.mailbox.address()
     }
 

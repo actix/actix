@@ -1,6 +1,7 @@
 extern crate futures;
 #[macro_use]
 extern crate actix;
+extern crate tokio;
 
 use actix::prelude::*;
 use futures::Future;
@@ -28,34 +29,35 @@ impl Handler<Ping> for MyActor {
 
 #[test]
 fn test_start_actor() {
-    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
-
     let act_count = Arc::clone(&count);
-    let addr = Arbiter::start(move |_| MyActor(act_count));
 
-    addr.do_send(Ping(1));
-    sys.run();
+    System::run(move || {
+        let addr = Arbiter::start(move |_| MyActor(act_count));
+
+        addr.do_send(Ping(1));
+    });
+
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
 #[test]
 fn test_start_actor_message() {
-    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
-
     let act_count = Arc::clone(&count);
-    let arbiter = Arbiter::new("test2");
 
-    Arbiter::spawn(
-        arbiter
-            .send(actix::msgs::StartActor::new(move |_| MyActor(act_count)))
-            .then(|res| {
-                res.unwrap().do_send(Ping(1));
-                Ok(())
-            }),
-    );
+    System::run(move || {
+        let arbiter = Arbiter::new("test2");
 
-    sys.run();
+        tokio::spawn(
+            arbiter
+                .send(actix::msgs::StartActor::new(move |_| MyActor(act_count)))
+                .then(|res| {
+                    res.unwrap().do_send(Ping(1));
+                    Ok(())
+                }),
+        );
+    });
+
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }

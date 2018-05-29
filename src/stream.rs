@@ -77,9 +77,10 @@ where
     ///    }
     /// }
     /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr = MyActor.start();
-    /// #    sys.run();
+    /// #    System::run(|| {
+    /// #        let addr = MyActor.start();
+    /// #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #    });
     /// # }
     /// ```
     fn add_stream<S>(fut: S, ctx: &mut Self::Context) -> SpawnHandle

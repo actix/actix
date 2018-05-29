@@ -36,7 +36,9 @@ extern crate bitflags;
 #[macro_use]
 extern crate futures;
 extern crate tokio;
+extern crate tokio_executor;
 extern crate tokio_io;
+extern crate tokio_reactor;
 extern crate tokio_signal;
 extern crate tokio_tcp;
 extern crate tokio_timer;
@@ -88,7 +90,7 @@ pub use handler::{
 pub use stream::StreamHandler;
 pub use supervisor::Supervisor;
 pub use sync::{SyncArbiter, SyncContext};
-pub use system::{System, SystemRunner};
+pub use system::{System, SystemRuntime};
 
 #[doc(hidden)]
 pub use context::ContextFutureSpawner;

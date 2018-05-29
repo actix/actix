@@ -1,6 +1,7 @@
 extern crate futures;
 #[macro_use]
 extern crate actix;
+extern crate tokio;
 
 use actix::{msgs, Actor, Arbiter, Context, Handler, System};
 use futures::{future, Future};
@@ -23,21 +24,20 @@ impl Handler<Empty> for EmptyActor {
 #[test]
 #[cfg_attr(feature = "cargo-clippy", allow(unit_cmp))]
 fn response_derive_empty() {
-    let system = System::new("test");
-    let addr = EmptyActor.start();
-    let res = addr.send(Empty);
+    System::run(|| {
+        let addr = EmptyActor.start();
+        let res = addr.send(Empty);
 
-    system.spawn(res.then(|res| {
-        match res {
-            Ok(result) => assert!(result == ()),
-            _ => panic!("Something went wrong"),
-        }
+        tokio::spawn(res.then(|res| {
+            match res {
+                Ok(result) => assert!(result == ()),
+                _ => panic!("Something went wrong"),
+            }
 
-        Arbiter::system().do_send(msgs::SystemExit(0));
-        future::result(Ok(()))
-    }));
-
-    system.run();
+            Arbiter::system().do_send(msgs::SystemExit(0));
+            future::result(Ok(()))
+        }));
+    });
 }
 
 #[derive(Message)]
@@ -62,21 +62,20 @@ impl Handler<SumResult> for SumResultActor {
 
 #[test]
 pub fn derive_result() {
-    let system = System::new("test");
-    let addr = SumResultActor.start();
-    let res = addr.send(SumResult(10, 5));
+    System::run(|| {
+        let addr = SumResultActor.start();
+        let res = addr.send(SumResult(10, 5));
 
-    system.spawn(res.then(|res| {
-        match res {
-            Ok(result) => assert!(result == Ok(10 + 5)),
-            _ => panic!("Something went wrong"),
-        }
+        tokio::spawn(res.then(|res| {
+            match res {
+                Ok(result) => assert!(result == Ok(10 + 5)),
+                _ => panic!("Something went wrong"),
+            }
 
-        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-        future::result(Ok(()))
-    }));
-
-    system.run();
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            future::result(Ok(()))
+        }));
+    });
 }
 
 #[derive(Message)]
@@ -99,19 +98,18 @@ impl Handler<SumOne> for SumOneActor {
 
 #[test]
 pub fn response_derive_one() {
-    let system = System::new("test");
-    let addr = SumOneActor.start();
-    let res = addr.send(SumOne(10, 5));
+    System::run(|| {
+        let addr = SumOneActor.start();
+        let res = addr.send(SumOne(10, 5));
 
-    system.spawn(res.then(|res| {
-        match res {
-            Ok(result) => assert!(result == 10 + 5),
-            _ => panic!("Something went wrong"),
-        }
+        tokio::spawn(res.then(|res| {
+            match res {
+                Ok(result) => assert!(result == 10 + 5),
+                _ => panic!("Something went wrong"),
+            }
 
-        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-        future::result(Ok(()))
-    }));
-
-    system.run();
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            future::result(Ok(()))
+        }));
+    });
 }

@@ -46,14 +46,13 @@ impl Actor for MyActor {
 
 #[test]
 fn test_fut_timeout() {
-    let sys = System::new("test");
     let timeout = Arc::new(AtomicBool::new(false));
+    let timeout2 = Arc::clone(&timeout);
 
-    let _addr = MyActor {
-        timeout: Arc::clone(&timeout),
-    }.start();
+    System::run(move || {
+        let _addr = MyActor { timeout: timeout2 }.start();
+    });
 
-    sys.run();
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }
 
@@ -86,13 +85,12 @@ impl Actor for MyStreamActor {
 
 #[test]
 fn test_stream_timeout() {
-    let sys = System::new("test");
     let timeout = Arc::new(AtomicBool::new(false));
+    let timeout2 = Arc::clone(&timeout);
 
-    let _addr = MyStreamActor {
-        timeout: Arc::clone(&timeout),
-    }.start();
+    System::run(|| {
+        let _addr = MyStreamActor { timeout: timeout2 }.start();
+    });
 
-    sys.run();
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }

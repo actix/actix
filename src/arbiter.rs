@@ -1,10 +1,10 @@
 use futures::sync::oneshot::{channel, Sender};
 use std;
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::thread;
 
-use futures::{future, Future, IntoFuture};
-use tokio::executor::current_thread::TaskExecutor;
+use futures::{future, Future};
+use tokio::executor::current_thread::spawn;
 use tokio::runtime::current_thread::Runtime;
 use uuid::Uuid;
 
@@ -18,7 +18,6 @@ use registry::SystemRegistry;
 use system::{RegisterArbiter, System, UnregisterArbiter};
 
 thread_local!(
-    static RUNNING: Cell<bool> = Cell::new(false);
     static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
     static ADDR: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);
     static REG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
@@ -26,7 +25,6 @@ thread_local!(
     static SYS: RefCell<Option<Addr<System>>> = RefCell::new(None);
     static SYSARB: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);
     static SYSNAME: RefCell<Option<String>> = RefCell::new(None);
-    static Q: RefCell<Vec<Box<Future<Item=(), Error=()>>>> = RefCell::new(Vec::new());
 );
 
 /// Event loop controller
@@ -70,7 +68,6 @@ impl Arbiter {
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
             //REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
-            RUNNING.with(|cell| cell.set(true));
 
             // system
             SYS.with(|cell| *cell.borrow_mut() = Some(sys));
@@ -117,22 +114,6 @@ impl Arbiter {
         SYSARB.with(|cell| *cell.borrow_mut() = Some(addr));
     }
 
-    pub(crate) fn run_system() {
-        RUNNING.with(|cell| cell.set(true));
-        Q.with(|cell| {
-            let mut exec = TaskExecutor::current();
-            let mut v = cell.borrow_mut();
-            for fut in v.drain(..) {
-                exec.spawn_local(fut).unwrap();
-            }
-        });
-    }
-
-    #[inline]
-    pub(crate) fn stop_system() {
-        RUNNING.with(|cell| cell.set(false));
-    }
-
     /// Returns current arbiter's address
     pub fn name() -> String {
         NAME.with(|cell| match *cell.borrow() {
@@ -173,31 +154,6 @@ impl Arbiter {
         })
     }
 
-    /// Executes a future on the current thread.
-    pub fn spawn<F>(future: F)
-    where
-        F: Future<Item = (), Error = ()> + 'static,
-    {
-        RUNNING.with(move |cell| {
-            if cell.get() {
-                TaskExecutor::current()
-                    .spawn_local(Box::new(future))
-                    .unwrap();
-            } else {
-                Q.with(move |cell| cell.borrow_mut().push(Box::new(future)));
-            }
-        });
-    }
-
-    /// Executes a future on the current thread.
-    pub fn spawn_fn<F, R>(f: F)
-    where
-        F: FnOnce() -> R + 'static,
-        R: IntoFuture<Item = (), Error = ()> + 'static,
-    {
-        Arbiter::spawn(future::lazy(f))
-    }
-
     /// This function returns arbiter's registry
     pub fn registry() -> &'static SystemRegistry {
         REG.with(|cell| match *cell.borrow() {
@@ -223,7 +179,7 @@ impl Arbiter {
             let mut ctx = Context::with_receiver(None, srx);
             let act = f(&mut ctx);
             ctx.set_actor(act);
-            ctx.run();
+            spawn(ctx.map(|_| ()).map_err(|_| ()));
             Ok(())
         }));
 
@@ -253,7 +209,7 @@ impl Handler<StopArbiter> for Arbiter {
 
 impl<A> Handler<StartActor<A>> for Arbiter
 where
-    A: Actor<Context = Context<A>>,
+    A: Actor<Context = Context<A>> + Send,
 {
     type Result = Addr<A>;
 

@@ -62,7 +62,7 @@ where
         self.msgs.connected()
     }
 
-    pub fn address(&mut self) -> Addr<A> {
+    pub fn address(&self) -> Addr<A> {
         Addr::new(self.msgs.sender())
     }
 

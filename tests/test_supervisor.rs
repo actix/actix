@@ -1,9 +1,10 @@
 extern crate actix;
 extern crate futures;
+extern crate tokio;
 extern crate tokio_timer;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use actix::prelude::*;
@@ -42,8 +43,6 @@ impl actix::Handler<Die> for MyActor {
 
 #[test]
 fn test_supervisor_restart() {
-    let sys = System::new("test");
-
     let starts = Arc::new(AtomicUsize::new(0));
     let restarts = Arc::new(AtomicUsize::new(0));
     let messages = Arc::new(AtomicUsize::new(0));
@@ -51,18 +50,24 @@ fn test_supervisor_restart() {
     let restarts2 = Arc::clone(&restarts);
     let messages2 = Arc::clone(&messages);
 
-    let addr = actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
-    addr.do_send(Die);
-    addr.do_send(Die);
+    let addr = Arc::new(Mutex::new(None));
+    let addr2 = Arc::clone(&addr);
 
-    Arbiter::spawn(
-        Delay::new(Instant::now() + Duration::new(0, 100_000)).then(|_| {
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
-            future::result(Ok(()))
-        }),
-    );
+    System::run(move || {
+        let addr =
+            actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
+        addr.do_send(Die);
+        addr.do_send(Die);
+        *addr2.lock().unwrap() = Some(addr);
 
-    sys.run();
+        tokio::spawn(Delay::new(Instant::now() + Duration::new(0, 100_000)).then(
+            |_| {
+                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                future::result(Ok(()))
+            },
+        ));
+    });
+
     assert_eq!(starts.load(Ordering::Relaxed), 3);
     assert_eq!(restarts.load(Ordering::Relaxed), 2);
     assert_eq!(messages.load(Ordering::Relaxed), 2);

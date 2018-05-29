@@ -84,6 +84,7 @@ unsafe impl<A, M: Message + Send> Send for SyncEnvelopeProxy<A, M> {}
 impl<A, M> EnvelopeProxy for SyncEnvelopeProxy<A, M>
 where
     M: Message + Send + 'static,
+    M::Result: Send,
     A: Actor + Handler<M>,
     A::Context: AsyncContext<A>,
 {

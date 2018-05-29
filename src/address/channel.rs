@@ -547,7 +547,7 @@ impl<A: Actor> AddressReceiver<A> {
     }
 
     /// Get sender side of the channel
-    pub fn sender(&mut self) -> AddressSender<A> {
+    pub fn sender(&self) -> AddressSender<A> {
         // this code same as Sender::clone
         let mut curr = self.inner.num_senders.load(SeqCst);
 
@@ -803,9 +803,7 @@ mod tests {
 
     #[test]
     fn test_cap() {
-        let sys = System::new("test");
-
-        Arbiter::spawn_fn(move || {
+        System::run(|| {
             let (s1, mut recv) = channel::<Act>(1);
             let s2 = recv.sender();
 
@@ -852,9 +850,6 @@ mod tests {
             assert!(p.is_none());
 
             Arbiter::system().do_send(actix::msgs::SystemExit(0));
-            Ok(())
         });
-
-        sys.run();
     }
 }

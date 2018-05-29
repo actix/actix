@@ -1,5 +1,6 @@
 extern crate actix;
 extern crate futures;
+extern crate tokio;
 extern crate tokio_timer;
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -45,26 +46,26 @@ impl StreamHandler<Num, ()> for MyActor {
 
 #[test]
 fn test_stream() {
-    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
     let err = Arc::new(AtomicBool::new(false));
     let items = vec![Num(1), Num(1), Num(1), Num(1), Num(1), Num(1), Num(1)];
 
     let act_count = Arc::clone(&count);
     let act_err = Arc::clone(&err);
-    MyActor::create(move |ctx| {
-        MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
-        MyActor(act_count, act_err, Running::Stop)
+
+    System::run(move || {
+        MyActor::create(move |ctx| {
+            MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
+            MyActor(act_count, act_err, Running::Stop)
+        });
     });
 
-    sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 7);
     assert!(err.load(Ordering::Relaxed));
 }
 
 #[test]
 fn test_stream_with_error() {
-    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
     let error = Arc::new(AtomicBool::new(false));
     let items = vec![
@@ -80,19 +81,20 @@ fn test_stream_with_error() {
 
     let act_count = Arc::clone(&count);
     let act_error = Arc::clone(&error);
-    MyActor::create(move |ctx| {
-        MyActor::add_stream(futures::stream::iter_result(items), ctx);
-        MyActor(act_count, act_error, Running::Stop)
+
+    System::run(move || {
+        MyActor::create(move |ctx| {
+            MyActor::add_stream(futures::stream::iter_result(items), ctx);
+            MyActor(act_count, act_error, Running::Stop)
+        });
     });
 
-    sys.run();
     assert_eq!(count.load(Ordering::Relaxed), 3);
     assert!(error.load(Ordering::Relaxed));
 }
 
 #[test]
 fn test_stream_with_error_no_stop() {
-    let sys = System::new("test");
     let count = Arc::new(AtomicUsize::new(0));
     let error = Arc::new(AtomicBool::new(false));
     let items = vec![
@@ -108,12 +110,13 @@ fn test_stream_with_error_no_stop() {
 
     let act_count = Arc::clone(&count);
     let act_error = Arc::clone(&error);
-    MyActor::create(move |ctx| {
-        MyActor::add_stream(futures::stream::iter_result(items), ctx);
-        MyActor(act_count, act_error, Running::Continue)
-    });
 
-    sys.run();
+    System::run(move || {
+        MyActor::create(move |ctx| {
+            MyActor::add_stream(futures::stream::iter_result(items), ctx);
+            MyActor(act_count, act_error, Running::Continue)
+        });
+    });
     assert_eq!(count.load(Ordering::Relaxed), 8);
     assert!(error.load(Ordering::Relaxed));
 }
@@ -154,8 +157,6 @@ impl actix::Handler<Num> for MySyncActor {
 
 #[test]
 fn test_restart_sync_actor() {
-    let sys = System::new("test");
-
     let started = Arc::new(AtomicUsize::new(0));
     let stopping = Arc::new(AtomicUsize::new(0));
     let stopped = Arc::new(AtomicUsize::new(0));
@@ -166,25 +167,23 @@ fn test_restart_sync_actor() {
     let stopped1 = Arc::clone(&stopped);
     let msgs1 = Arc::clone(&msgs);
 
-    let addr = SyncArbiter::start(1, move || MySyncActor {
-        started: Arc::clone(&started1),
-        stopping: Arc::clone(&stopping1),
-        stopped: Arc::clone(&stopped1),
-        msgs: Arc::clone(&msgs1),
-        stop: started1.load(Ordering::Relaxed) == 0,
-    });
-    addr.do_send(Num(2));
+    System::run(move || {
+        let addr = SyncArbiter::start(1, move || MySyncActor {
+            started: Arc::clone(&started1),
+            stopping: Arc::clone(&stopping1),
+            stopped: Arc::clone(&stopped1),
+            msgs: Arc::clone(&msgs1),
+            stop: started1.load(Ordering::Relaxed) == 0,
+        });
+        addr.do_send(Num(2));
 
-    Arbiter::spawn_fn(move || {
-        addr.send(Num(4)).then(move |_| {
+        tokio::spawn(addr.send(Num(4)).then(move |_| {
             Delay::new(Instant::now() + Duration::new(0, 1_000_000)).then(move |_| {
                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 future::result(Ok(()))
             })
-        })
+        }));
     });
-
-    sys.run();
     assert_eq!(started.load(Ordering::Relaxed), 2);
     assert_eq!(stopping.load(Ordering::Relaxed), 2);
     assert_eq!(stopped.load(Ordering::Relaxed), 2);

@@ -5,6 +5,7 @@
 
 extern crate actix;
 extern crate futures;
+extern crate tokio;
 
 use actix::prelude::*;
 
@@ -45,20 +46,18 @@ impl Handler<Fibonacci> for SyncActor {
 }
 
 fn main() {
-    let sys = System::new("test");
+    System::run(|| {
+        // start sync arbiter with 3 threads
+        let addr = SyncArbiter::start(3, || SyncActor);
 
-    // start sync arbiter with 3 threads
-    let addr = SyncArbiter::start(3, || SyncActor);
+        // send 5 messages
+        for n in 5..10 {
+            addr.do_send(Fibonacci(n));
+        }
 
-    // send 5 messages
-    for n in 5..10 {
-        addr.do_send(Fibonacci(n));
-    }
-
-    Arbiter::spawn_fn(|| {
-        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-        futures::future::result(Ok(()))
+        tokio::spawn(futures::lazy(|| {
+            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            futures::future::result(Ok(()))
+        }));
     });
-
-    sys.run();
 }

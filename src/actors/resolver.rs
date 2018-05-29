@@ -5,37 +5,37 @@
 //! ```rust
 //! # extern crate actix;
 //! # extern crate futures;
+//! # extern crate tokio;
 //! # use futures::{future, Future};
 //! use actix::prelude::*;
 //! use actix::actors;
 //!
 //! fn main() {
-//!     let sys = System::new("test");
+//!     System::run(|| {
 //!
-//!     Arbiter::spawn({
-//!         let resolver = actors::Connector::from_registry();
+//!         tokio::spawn({
+//!             let resolver = actors::Connector::from_registry();
 //!
-//!         resolver.send(
-//!             actors::Resolve::host("localhost"))       // <- resolve "localhost"
-//!                 .then(|addrs| {
-//!                     println!("RESULT: {:?}", addrs);
-//! #                   Arbiter::system().do_send(actix::msgs::SystemExit(0));
-//!                     Ok::<_, ()>(())
-//!                 })
+//!             resolver.send(
+//!                 actors::Resolve::host("localhost"))       // <- resolve "localhost"
+//!                     .then(|addrs| {
+//!                         println!("RESULT: {:?}", addrs);
+//! #                       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//!                         Ok::<_, ()>(())
+//!                     })
+//!         });
+//!
+//!         tokio::spawn({
+//!             let resolver = actors::Connector::from_registry();
+//!
+//!             resolver.send(
+//!                 actors::Connect::host("localhost:5000"))  // <- connect to a "localhost"
+//!                     .then(|stream| {
+//!                         println!("RESULT: {:?}", stream);
+//!                         Ok::<_, ()>(())
+//!                     })
+//!        });
 //!    });
-//!
-//!     Arbiter::spawn({
-//!         let resolver = actors::Connector::from_registry();
-//!
-//!         resolver.send(
-//!             actors::Connect::host("localhost:5000"))  // <- connect to a "localhost"
-//!                 .then(|stream| {
-//!                     println!("RESULT: {:?}", stream);
-//!                     Ok::<_, ()>(())
-//!                 })
-//!    });
-//!
-//!    sys.run();
 //! }
 //! ```
 use std::collections::VecDeque;

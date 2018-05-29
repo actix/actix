@@ -10,11 +10,11 @@ use context::Context;
 use handler::{Handler, Message};
 use msgs::{StopArbiter, SystemExit};
 
-/// System is an actor which manages process.
+/// System is an actor which manages runtime.
 ///
-/// Before starting any actix's actors, `System` actor has to be created
-/// with `System::new()` call. This method creates new `Arbiter` in current
-/// thread and starts `System` actor.
+/// Before starting any actix's actors, `System` actor has to be created and
+/// started with `System::run()` call. This method creates new `Arbiter` in
+/// current thread and starts `System` actor.
 ///
 /// # Examples
 ///
@@ -41,16 +41,15 @@ use msgs::{StopArbiter, SystemExit};
 /// }
 ///
 /// fn main() {
-///     // initialize system
-///     let sys = System::new("test");
+///     // initialize system and run it.
+///     // This function blocks current thread
+///     let code = System::run(|| {
+///         // Start `Timer` actor
+///         Timer {
+///             dur: Duration::new(0, 1),
+///         }.start();
+///     });
 ///
-///     // Start `Timer` actor
-///     Timer {
-///         dur: Duration::new(0, 1),
-///     }.start();
-///
-///     // Run system, this function blocks current thread
-///     let code = sys.run();
 ///     std::process::exit(code);
 /// }
 /// ```
@@ -66,7 +65,7 @@ impl Actor for System {
 impl System {
     #[cfg_attr(feature = "cargo-clippy", allow(new_ret_no_self))]
     /// Create new system
-    pub fn new<T: Into<String>>(name: T) -> SystemRunner {
+    pub fn new<T: Into<String>>(name: T) -> SystemRuntime {
         let name = name.into();
 
         let (stop_tx, stop) = channel();
@@ -84,34 +83,62 @@ impl System {
             Ok::<_, ()>(())
         }));
 
-        SystemRunner { rt, stop }
+        SystemRuntime { rt, stop }
+    }
+
+    /// This function will start tokio runtime and will finish once the
+    /// `SystemExit` message get received.
+    /// Function `f` get called within tokio runtime context.
+    pub fn run<F>(f: F) -> i32
+    where
+        F: FnOnce(),
+    {
+        let (stop_tx, stop) = channel();
+
+        // start system
+        let sys = System {
+            arbiters: HashMap::new(),
+            stop: Some(stop_tx),
+        };
+
+        let mut rt = Runtime::new().unwrap();
+        let _ = rt.block_on(future::lazy(move || {
+            let addr = sys.start();
+            Arbiter::new_system(addr, "actix".to_owned());
+            Ok::<_, ()>(())
+        }));
+
+        // run loop
+        let _ = rt.block_on(future::lazy(move || {
+            f();
+            Ok::<_, ()>(())
+        }));
+        match rt.block_on(stop) {
+            Ok(code) => code,
+            Err(_) => 1,
+        }
     }
 }
 
 /// Helper object that runs System's event loop
 #[must_use = "SystemRunner must be run"]
-pub struct SystemRunner {
+pub struct SystemRuntime {
     rt: Runtime,
     stop: Receiver<i32>,
 }
 
-impl SystemRunner {
-    /// Executes a future on the current thread.
-    pub fn spawn<F>(&self, future: F)
-    where
-        F: Future<Item = (), Error = ()> + 'static,
-    {
-        Arbiter::spawn(future)
-    }
-
+impl SystemRuntime {
     /// This function will start event loop and will finish once the
     /// `SystemExit` message get received.
-    pub fn run(self) -> i32 {
-        let SystemRunner { mut rt, stop, .. } = self;
+    pub fn run<F>(self, f: F) -> i32
+    where
+        F: FnOnce(),
+    {
+        let SystemRuntime { mut rt, stop, .. } = self;
 
         // run loop
         let _ = rt.block_on(future::lazy(move || {
-            Arbiter::run_system();
+            f();
             Ok::<_, ()>(())
         }));
         match rt.block_on(stop) {
@@ -124,16 +151,7 @@ impl SystemRunner {
     where
         F: Future<Item = I, Error = E>,
     {
-        let _ = self.rt.block_on(future::lazy(move || {
-            Arbiter::run_system();
-            Ok::<_, ()>(())
-        }));
-        let res = self.rt.block_on(fut);
-        let _ = self.rt.block_on(future::lazy(move || {
-            Arbiter::stop_system();
-            Ok::<_, ()>(())
-        }));
-        res
+        self.rt.block_on(fut)
     }
 }
 

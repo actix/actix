@@ -1,6 +1,8 @@
 //! Actix system messages
 
-use actor::Actor;
+use tokio;
+
+use actor::{Actor, AsyncContext};
 use address::Addr;
 use context::Context;
 use handler::Message;
@@ -26,12 +28,17 @@ impl<A: Actor> Message for StartActor<A> {
     type Result = Addr<A>;
 }
 
-impl<A: Actor<Context = Context<A>>> StartActor<A> {
+impl<A: Actor<Context = Context<A>> + Send> StartActor<A> {
     pub fn new<F>(f: F) -> Self
     where
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
-        StartActor(Box::new(|| A::create(f)))
+        StartActor(Box::new(|| {
+            let ctx = Context::create(f);
+            let addr = ctx.address();
+            tokio::spawn(ctx);
+            addr
+        }))
     }
 
     pub(crate) fn call(self) -> Addr<A> {

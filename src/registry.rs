@@ -66,16 +66,14 @@ use supervisor::Supervisor;
 ///
 /// fn main() {
 ///    // initialize system
-///    let sys = System::new("test");
+///    let code = System::run(|| {
 ///
-///    // Start MyActor1
-///    let addr = MyActor1.start();
+///        // Start MyActor1
+///        let addr = MyActor1.start();
 ///
-///    // Start MyActor2
-///    let addr = MyActor2.start();
-///
-///    // Run system, this function blocks current thread
-///    let code = sys.run();
+///        // Start MyActor2
+///        let addr = MyActor2.start();
+///    });
 /// #  std::process::exit(code);
 /// }
 /// ```
@@ -91,7 +89,9 @@ unsafe impl Send for SystemRegistry {}
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
-pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
+pub trait SystemService:
+    Actor<Context = Context<Self>> + Supervised + Send + Default
+{
     /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 
@@ -100,13 +100,14 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
         Arbiter::registry().get::<Self>()
     }
 
+    /*
     /// Create an SystemService with a closure
     fn init_actor<F>(f: F) -> Addr<Self>
     where
         F: FnOnce(&mut Self::Context) -> Self + Send + 'static,
     {
         Arbiter::registry().init_actor::<Self, F>(f)
-    }
+    }*/
 }
 
 impl SystemRegistry {
@@ -118,7 +119,7 @@ impl SystemRegistry {
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
-    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&self) -> Addr<A> {
+    pub fn get<A: SystemService + Actor<Context = Context<A>> + Send>(&self) -> Addr<A> {
         {
             if let Ok(hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
@@ -144,6 +145,7 @@ impl SystemRegistry {
         panic!("System registry lock is poisoned");
     }
 
+    /*
     /// Initialize a SystemService, panic if already started
     pub fn init_actor<A: SystemService + Actor<Context = Context<A>>, F>(
         &self, with: F,
@@ -181,7 +183,7 @@ impl SystemRegistry {
         } else {
             panic!("System registry lock is poisoned");
         }
-    }
+    }*/
 }
 
 impl Clone for SystemRegistry {

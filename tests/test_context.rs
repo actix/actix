@@ -2,6 +2,7 @@
 #[macro_use]
 extern crate actix;
 extern crate futures;
+extern crate tokio;
 extern crate tokio_timer;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -81,59 +82,49 @@ impl Handler<TimeoutMessage> for MyActor {
 
 #[test]
 fn test_add_timeout() {
-    let sys = System::new("test");
-
-    let _addr = MyActor { op: Op::Timeout }.start();
-
-    sys.run();
+    System::run(|| {
+        let _addr = MyActor { op: Op::Timeout }.start();
+    });
 }
 
 #[test]
 fn test_add_timeout_cancel() {
-    let sys = System::new("test");
+    System::run(|| {
+        let _addr = MyActor { op: Op::Cancel }.start();
 
-    let _addr = MyActor { op: Op::Cancel }.start();
-
-    Arbiter::spawn(
-        Delay::new(Instant::now() + Duration::new(0, 1000)).then(|_| {
-            Arbiter::system().do_send(SystemExit(0));
-            future::result(Ok(()))
-        }),
-    );
-
-    sys.run();
+        tokio::spawn(
+            Delay::new(Instant::now() + Duration::new(0, 1000)).then(|_| {
+                Arbiter::system().do_send(SystemExit(0));
+                future::result(Ok(()))
+            }),
+        );
+    });
 }
 
 #[test]
 // delayed notification should be dropped after context stop
 fn test_add_timeout_stop() {
-    let sys = System::new("test");
-
-    let _addr = MyActor {
-        op: Op::TimeoutStop,
-    }.start();
-
-    sys.run();
+    System::run(|| {
+        let _addr = MyActor {
+            op: Op::TimeoutStop,
+        }.start();
+    });
 }
 
 #[test]
 fn test_run_after() {
-    let sys = System::new("test");
-
-    let _addr = MyActor { op: Op::RunAfter }.start();
-
-    sys.run();
+    System::run(|| {
+        let _addr = MyActor { op: Op::RunAfter }.start();
+    });
 }
 
 #[test]
 fn test_run_after_stop() {
-    let sys = System::new("test");
-
-    let _addr = MyActor {
-        op: Op::RunAfterStop,
-    }.start();
-
-    sys.run();
+    System::run(|| {
+        let _addr = MyActor {
+            op: Op::RunAfterStop,
+        }.start();
+    });
 }
 
 struct ContextWait {
@@ -163,57 +154,55 @@ impl Handler<Ping> for ContextWait {
 
 #[test]
 fn test_wait_context() {
-    let sys = System::new("test");
-
     let m = Arc::new(AtomicUsize::new(0));
-    let addr = ContextWait {
-        cnt: Arc::clone(&m),
-    }.start();
-    addr.do_send(Ping);
-    addr.do_send(Ping);
-    addr.do_send(Ping);
+    let cnt = Arc::clone(&m);
 
-    sys.run();
+    System::run(move || {
+        let addr = ContextWait { cnt }.start();
+        addr.do_send(Ping);
+        addr.do_send(Ping);
+        addr.do_send(Ping);
+    });
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
 
 #[test]
 fn test_message_stream_wait_context() {
-    let sys = System::new("test");
-
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr = ContextWait::create(move |ctx| {
-        let (tx, rx) = unbounded();
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let actor = ContextWait { cnt: m2 };
-        ctx.add_message_stream(rx);
-        actor
+
+    System::run(move || {
+        let _addr = ContextWait::create(move |ctx| {
+            let (tx, rx) = unbounded();
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let actor = ContextWait { cnt: m2 };
+            ctx.add_message_stream(rx);
+            actor
+        });
     });
-    sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
 
 #[test]
 fn test_stream_wait_context() {
-    let sys = System::new("test");
-
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr = ContextWait::create(move |ctx| {
-        let (tx, rx) = unbounded();
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let actor = ContextWait { cnt: m2 };
-        ctx.add_message_stream(rx);
-        actor
+
+    System::run(move || {
+        let _addr = ContextWait::create(move |ctx| {
+            let (tx, rx) = unbounded();
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let actor = ContextWait { cnt: m2 };
+            ctx.add_message_stream(rx);
+            actor
+        });
     });
-    sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
@@ -239,76 +228,75 @@ impl Handler<Ping> for ContextNoWait {
 
 #[test]
 fn test_nowait_context() {
-    let sys = System::new("test");
-
     let m = Arc::new(AtomicUsize::new(0));
-    let addr = ContextNoWait {
-        cnt: Arc::clone(&m),
-    }.start();
-    addr.do_send(Ping);
-    addr.do_send(Ping);
-    addr.do_send(Ping);
-    sys.run();
+    let cnt = Arc::clone(&m);
+
+    System::run(move || {
+        let addr = ContextNoWait { cnt }.start();
+        addr.do_send(Ping);
+        addr.do_send(Ping);
+        addr.do_send(Ping);
+    });
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
 
 #[test]
 fn test_message_stream_nowait_context() {
-    let sys = System::new("test");
-
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr = ContextNoWait::create(move |ctx| {
-        let (tx, rx) = unbounded();
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let actor = ContextNoWait { cnt: m2 };
-        ctx.add_message_stream(rx);
-        actor
+
+    System::run(move || {
+        let _addr = ContextNoWait::create(move |ctx| {
+            let (tx, rx) = unbounded();
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let actor = ContextNoWait { cnt: m2 };
+            ctx.add_message_stream(rx);
+            actor
+        });
     });
-    sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
 
 #[test]
 fn test_stream_nowait_context() {
-    let sys = System::new("test");
-
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let _addr = ContextNoWait::create(move |ctx| {
-        let (tx, rx) = unbounded();
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let _ = tx.unbounded_send(Ping);
-        let actor = ContextNoWait { cnt: m2 };
-        ctx.add_message_stream(rx);
-        actor
+
+    System::run(move || {
+        let _addr = ContextNoWait::create(move |ctx| {
+            let (tx, rx) = unbounded();
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let _ = tx.unbounded_send(Ping);
+            let actor = ContextNoWait { cnt: m2 };
+            ctx.add_message_stream(rx);
+            actor
+        });
     });
-    sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
 
 #[test]
 fn test_notify() {
-    let sys = System::new("test");
-
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
-    let addr = ContextNoWait::create(move |ctx| {
-        ctx.notify(Ping);
-        ctx.notify(Ping);
-        ContextNoWait {
-            cnt: Arc::clone(&m),
-        }
-    });
-    addr.do_send(Ping);
 
-    sys.run();
+    System::run(move || {
+        let addr = ContextNoWait::create(move |ctx| {
+            ctx.notify(Ping);
+            ctx.notify(Ping);
+            ContextNoWait {
+                cnt: Arc::clone(&m),
+            }
+        });
+        addr.do_send(Ping);
+    });
+
     assert_eq!(m2.load(Ordering::Relaxed), 3);
 }
 
@@ -328,43 +316,41 @@ impl StreamHandler<Ping, ()> for ContextHandle {
 
 #[test]
 fn test_current_context_handle() {
-    let sys = System::new("test");
-
     let h = Arc::new(AtomicUsize::new(0));
     let h2 = Arc::clone(&h);
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    let _addr = ContextHandle::create(move |ctx| {
-        h2.store(
-            ContextHandle::add_stream(once::<Ping, ()>(Ok(Ping)), ctx).into_usize(),
-            Ordering::Relaxed,
-        );
+    System::run(move || {
+        let _addr = ContextHandle::create(move |ctx| {
+            h2.store(
+                ContextHandle::add_stream(once::<Ping, ()>(Ok(Ping)), ctx).into_usize(),
+                Ordering::Relaxed,
+            );
 
-        ContextHandle { h: m2 }
+            ContextHandle { h: m2 }
+        });
     });
-    sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
 }
 
 #[test]
 fn test_start_from_context() {
-    let sys = System::new("test");
-
     let h = Arc::new(AtomicUsize::new(0));
     let h2 = Arc::clone(&h);
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    let _addr = ContextHandle::create(move |ctx| {
-        h2.store(
-            ctx.add_stream(once::<Ping, ()>(Ok(Ping))).into_usize(),
-            Ordering::Relaxed,
-        );
-        ContextHandle { h: m2 }
+    System::run(move || {
+        let _addr = ContextHandle::create(move |ctx| {
+            h2.store(
+                ctx.add_stream(once::<Ping, ()>(Ok(Ping))).into_usize(),
+                Ordering::Relaxed,
+            );
+            ContextHandle { h: m2 }
+        });
     });
-    sys.run();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
 }
@@ -389,14 +375,12 @@ impl<K> StreamHandler<CancelPacket, K> for CancelHandler {
 
 #[test]
 fn test_cancel_handler() {
-    let sys = actix::System::new("test");
-
-    CancelHandler::create(|ctx| CancelHandler {
-        source: ctx.add_stream(
-            Interval::new(Instant::now(), Duration::from_millis(1))
-                .map(|_| CancelPacket),
-        ),
+    actix::System::run(|| {
+        CancelHandler::create(|ctx| CancelHandler {
+            source: ctx.add_stream(
+                Interval::new(Instant::now(), Duration::from_millis(1))
+                    .map(|_| CancelPacket),
+            ),
+        });
     });
-
-    sys.run();
 }

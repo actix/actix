@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 
 use actix::prelude::*;
-use futures::future;
 
 struct Fibonacci(pub u32);
 
@@ -66,7 +65,6 @@ impl Handler<Fibonacci> for SyncActor {
 #[test]
 #[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
 fn test_sync() {
-    let sys = System::new("test");
     let l = Arc::new(Mutex::new(false));
     let cond = Arc::new(Condvar::new());
     let counter = Arc::new(AtomicUsize::new(0));
@@ -76,28 +74,27 @@ fn test_sync() {
     let cond_l_c = Arc::clone(&l);
     let counter_c = Arc::clone(&counter);
     let messages_c = Arc::clone(&messages);
-    let s_addr = Arbiter::system();
-    let addr = SyncArbiter::start(2, move || SyncActor {
-        cond: Arc::clone(&cond_c),
-        cond_l: Arc::clone(&cond_l_c),
-        counter: Arc::clone(&counter_c),
-        messages: Arc::clone(&messages_c),
-        addr: s_addr.clone(),
-    });
 
-    let mut started = l.lock().unwrap();
-    while !*started {
-        started = cond.wait(started).unwrap();
-    }
+    System::run(move || {
+        let s_addr = Arbiter::system();
+        let addr = SyncArbiter::start(2, move || SyncActor {
+            cond: Arc::clone(&cond_c),
+            cond_l: Arc::clone(&cond_l_c),
+            counter: Arc::clone(&counter_c),
+            messages: Arc::clone(&messages_c),
+            addr: s_addr.clone(),
+        });
 
-    Arbiter::spawn_fn(move || {
+        let mut started = l.lock().unwrap();
+        while !*started {
+            started = cond.wait(started).unwrap();
+        }
+
         for n in 5..10 {
             addr.do_send(Fibonacci(n));
         }
-        future::result(Ok(()))
     });
 
-    sys.run();
     assert_eq!(counter.load(Ordering::Relaxed), 2, "Not started");
     assert_eq!(
         messages.load(Ordering::Relaxed),

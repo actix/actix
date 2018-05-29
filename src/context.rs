@@ -1,9 +1,10 @@
-use futures::{Future, Poll};
 use std::fmt;
+
+use futures::{Future, Poll};
+use tokio;
 
 use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle, Supervised};
 use address::{Addr, AddressReceiver};
-use arbiter::Arbiter;
 use contextimpl::ContextImpl;
 use fut::ActorFuture;
 
@@ -63,9 +64,8 @@ where
         self.inner.cancel_future(handle)
     }
 
-    #[doc(hidden)]
     #[inline]
-    fn address(&mut self) -> Addr<A> {
+    fn address(&self) -> Addr<A> {
         self.inner.address()
     }
 }
@@ -74,6 +74,35 @@ impl<A> Context<A>
 where
     A: Actor<Context = Self>,
 {
+    /// Create `Context` instance with actor factory method.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use actix::*;
+    ///
+    /// // initialize system
+    /// System::new("test");
+    ///
+    /// struct MyActor {
+    ///     val: usize,
+    /// };
+    /// impl Actor for MyActor {
+    ///     type Context = Context<Self>;
+    /// }
+    ///
+    /// let ctx = Context::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    /// ```
+    pub fn create<F>(f: F) -> Self
+    where
+        F: FnOnce(&mut Self) -> A + 'static,
+    {
+        let mut ctx = Context::new(None);
+        let act = f(&mut ctx);
+        ctx.set_actor(act);
+        ctx
+    }
+
     /// Handle of the running future
     ///
     /// SpawnHandle is the handle returned by `AsyncContext::spawn()` method.
@@ -103,8 +132,11 @@ where
     }
 
     #[inline]
-    pub(crate) fn run(self) {
-        Arbiter::spawn(self.map(|_| ()).map_err(|_| ()));
+    pub(crate) fn run(self)
+    where
+        A: Send,
+    {
+        tokio::spawn(self.map(|_| ()).map_err(|_| ()));
     }
 
     #[inline]

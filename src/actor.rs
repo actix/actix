@@ -1,8 +1,9 @@
-use futures::Stream;
 use std::time::Duration;
 
+use futures::Stream;
+use tokio;
+
 use address::Addr;
-use arbiter::Arbiter;
 use context::Context;
 use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
 use fut::ActorFuture;
@@ -93,34 +94,33 @@ pub trait Actor: Sized + 'static {
     /// ```rust
     /// use actix::*;
     ///
-    /// // initialize system
-    /// System::new("test");
-    ///
     /// struct MyActor;
     /// impl Actor for MyActor {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr = MyActor.start();
+    /// fn main() {
+    ///     // initialize system
+    ///     System::run(|| {
+    ///         let addr = MyActor.start(); // <- start actor and get it's address
+    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    ///     });
+    /// }
     /// ```
     fn start(self) -> Addr<Self>
     where
-        Self: Actor<Context = Context<Self>>,
+        Self: Actor<Context = Context<Self>> + Send,
     {
-        let mut ctx = Context::new(Some(self));
+        let ctx = Context::new(Some(self));
         let addr = ctx.address();
-
-        Arbiter::spawn_fn(move || {
-            ctx.run();
-            Ok(())
-        });
+        ctx.run();
         addr
     }
 
     /// Start new asynchronous actor, returns address of newly created actor.
     fn start_default() -> Addr<Self>
     where
-        Self: Default + Actor<Context = Context<Self>>,
+        Self: Actor<Context = Context<Self>> + Default + Send,
     {
         Self::default().start()
     }
@@ -133,32 +133,30 @@ pub trait Actor: Sized + 'static {
     /// ```rust
     /// use actix::*;
     ///
-    /// // initialize system
-    /// System::new("test");
-    ///
     /// struct MyActor {
     ///     val: usize,
-    /// };
+    /// }
     /// impl Actor for MyActor {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    /// fn main() {
+    ///     // initialize system
+    ///     System::run(|| {
+    ///         let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    ///     });
+    /// }
     /// ```
     fn create<F>(f: F) -> Addr<Self>
     where
-        Self: Actor<Context = Context<Self>>,
-        F: FnOnce(&mut Context<Self>) -> Self + 'static,
+        Self: Actor<Context = Context<Self>> + Send,
+        F: FnOnce(&mut Context<Self>) -> Self + Send + 'static,
     {
-        let mut ctx = Context::new(None);
+        let ctx = Context::create(f);
         let addr = ctx.address();
 
-        Arbiter::spawn_fn(move || {
-            let act = f(&mut ctx);
-            ctx.set_actor(act);
-            ctx.run();
-            Ok(())
-        });
+        tokio::spawn(ctx);
         addr
     }
 }
@@ -227,7 +225,7 @@ where
     A: Actor<Context = Self>,
 {
     /// Return `Address` of the context
-    fn address(&mut self) -> Addr<A>;
+    fn address(&self) -> Addr<A>;
 
     /// Spawn async future into context. Returns handle of the item,
     /// could be used for cancelling execution.
@@ -285,9 +283,9 @@ where
     ///    }
     /// }
     /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr = MyActor.start();
-    /// #    sys.run();
+    /// #    System::run(|| {
+    /// #        let addr = MyActor.start();
+    /// #    });
     /// # }
     /// ```
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
@@ -329,9 +327,9 @@ where
     ///    }
     /// }
     /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr = MyActor.start();
-    /// #    sys.run();
+    /// #    System::run(|| {
+    /// #        let addr = MyActor.start();
+    /// #    });
     /// # }
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)

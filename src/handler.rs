@@ -1,10 +1,9 @@
 use futures::sync::oneshot::Sender as SyncSender;
-use futures::unsync::oneshot::Sender as UnsyncSender;
 use futures::Future;
+use tokio;
 
 use actor::{Actor, AsyncContext};
 use address::Addr;
-use arbiter::Arbiter;
 use context::Context;
 use fut::{self, ActorFuture};
 
@@ -44,7 +43,7 @@ pub type ResponseActFuture<A, I, E> = Box<ActorFuture<Item = I, Error = E, Actor
 pub type ResponseFuture<I, E> = Box<Future<Item = I, Error = E>>;
 
 /// Trait defines message response channel
-pub trait ResponseChannel<M: Message>: 'static {
+pub trait ResponseChannel<M: Message>: Send + 'static {
     fn is_canceled(&self) -> bool;
 
     fn send(self, response: M::Result);
@@ -55,23 +54,16 @@ pub trait MessageResponse<A: Actor, M: Message> {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>);
 }
 
-impl<M: Message + 'static> ResponseChannel<M> for SyncSender<M::Result> {
+impl<M: Message + 'static> ResponseChannel<M> for SyncSender<M::Result>
+where
+    M::Result: Send,
+{
     fn is_canceled(&self) -> bool {
         SyncSender::is_canceled(self)
     }
 
     fn send(self, response: M::Result) {
         let _ = SyncSender::send(self, response);
-    }
-}
-
-impl<M: Message + 'static> ResponseChannel<M> for UnsyncSender<M::Result> {
-    fn is_canceled(&self) -> bool {
-        UnsyncSender::is_canceled(self)
-    }
-
-    fn send(self, response: M::Result) {
-        let _ = UnsyncSender::send(self, response);
     }
 }
 
@@ -137,12 +129,14 @@ where
 
 impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<I, E>
 where
+    Self: Send,
     A: Actor,
+    M::Result: Send,
     M: Message<Result = Result<I, E>>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        Arbiter::spawn(self.then(move |res| {
+        tokio::spawn(self.then(move |res| {
             if let Some(tx) = tx {
                 tx.send(res)
             }
@@ -153,7 +147,7 @@ where
 
 enum ResponseTypeItem<I, E> {
     Result(Result<I, E>),
-    Fut(Box<Future<Item = I, Error = E>>),
+    Fut(Box<Future<Item = I, Error = E> + Send>),
 }
 
 /// Helper type for representing different type of message responses
@@ -165,7 +159,7 @@ impl<I, E> Response<I, E> {
     /// Create async response
     pub fn async<T>(fut: T) -> Self
     where
-        T: Future<Item = I, Error = E> + 'static,
+        T: Future<Item = I, Error = E> + Send + 'static,
     {
         Response {
             item: ResponseTypeItem::Fut(Box::new(fut)),
@@ -189,7 +183,7 @@ where
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         match self.item {
             ResponseTypeItem::Fut(fut) => {
-                Arbiter::spawn(fut.then(move |res| {
+                tokio::spawn(fut.then(move |res| {
                     if let Some(tx) = tx {
                         tx.send(res);
                     }
