@@ -89,6 +89,7 @@ impl Message for SignalType {
 }
 
 /// Process signal message
+#[derive(Debug)]
 pub struct Signal(pub SignalType);
 
 impl Message for Signal {

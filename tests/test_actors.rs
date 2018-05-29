@@ -25,20 +25,22 @@ fn test_resolver() {
     });
 }
 
-//#[test]
+#[test]
 #[cfg(unix)]
 fn test_signal() {
     System::run(|| {
         let _addr = signal::DefaultSignalsHandler::start_default();
-        tokio::spawn(futures::lazy(move || {
-            let sig = Arbiter::registry().get::<signal::ProcessSignals>();
+        let sig = Arbiter::registry().get::<signal::ProcessSignals>();
+
+        // send SIGTERM
+        std::thread::spawn(move || {
+            // emulate SIGNTERM
             sig.do_send(signal::SignalType::Quit);
-            Ok(())
-        }));
+        });
     });
 }
 
-// #[test]
+#[test]
 #[cfg(unix)]
 fn test_signal_term() {
     System::run(|| {
@@ -51,7 +53,7 @@ fn test_signal_term() {
     });
 }
 
-//#[test]
+#[test]
 #[cfg(unix)]
 fn test_signal_int() {
     System::run(|| {

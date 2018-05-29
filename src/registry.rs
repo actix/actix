@@ -125,31 +125,27 @@ impl SystemRegistry {
     /// it get started in system arbiter.
     pub fn get<A: SystemService + Actor<Context = Context<A>> + Send>(&self) -> Addr<A> {
         {
-            if let Ok(hm) = self.registry.lock() {
+            if let Ok(mut hm) = self.registry.lock() {
                 if let Some(addr) = hm.get(&TypeId::of::<A>()) {
                     match addr.downcast_ref::<Addr<A>>() {
                         Some(addr) => return addr.clone(),
                         None => error!("Got unknown value: {:?}", addr),
                     }
                 }
+                let addr = Supervisor::start_in(
+                    self.arbiter.lock().unwrap().as_ref().unwrap(),
+                    |ctx| {
+                        let mut act = A::default();
+                        act.service_started(ctx);
+                        act
+                    },
+                );
+                hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
+                return addr;
             } else {
                 panic!("System registry lock is poisoned");
             }
         }
-
-        let addr = Supervisor::start_in(
-            self.arbiter.lock().unwrap().as_ref().unwrap(),
-            |ctx| {
-                let mut act = A::default();
-                act.service_started(ctx);
-                act
-            },
-        );
-        if let Ok(mut hm) = self.registry.lock() {
-            hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
-            return addr;
-        }
-        panic!("System registry lock is poisoned");
     }
 
     /*
