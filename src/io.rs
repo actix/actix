@@ -1,7 +1,7 @@
 use std::cell::UnsafeCell;
 use std::io;
 use std::marker::PhantomData;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use bytes::BytesMut;
 use futures::{Async, Poll};
@@ -49,8 +49,20 @@ const HIGH_WATERMARK: usize = 4 * LOW_WATERMARK;
 
 /// Wrapper for `AsyncWrite` types
 pub struct Writer<T: AsyncWrite, E: From<io::Error>> {
-    inner: Rc<UnsafeCell<InnerWriter<T, E>>>,
+    inner: UnsafeWriter<T, E>,
 }
+
+struct UnsafeWriter<T: AsyncWrite, E: From<io::Error>>(
+    Arc<UnsafeCell<InnerWriter<T, E>>>,
+);
+
+impl<T: AsyncWrite, E: From<io::Error>> Clone for UnsafeWriter<T, E> {
+    fn clone(&self) -> Self {
+        UnsafeWriter(self.0.clone())
+    }
+}
+
+unsafe impl<T: AsyncWrite, E: From<io::Error>> Send for UnsafeWriter<T, E> {}
 
 struct InnerWriter<T: AsyncWrite, E: From<io::Error>> {
     flags: Flags,
@@ -69,7 +81,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
         C: AsyncContext<A>,
         T: 'static,
     {
-        let inner = Rc::new(UnsafeCell::new(InnerWriter {
+        let inner = UnsafeWriter(Arc::new(UnsafeCell::new(InnerWriter {
             io,
             flags: Flags::empty(),
             buffer: BytesMut::new(),
@@ -77,9 +89,9 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
             low: LOW_WATERMARK,
             high: HIGH_WATERMARK,
             handle: SpawnHandle::default(),
-        }));
+        })));
         let h = ctx.spawn(WriterFut {
-            inner: Rc::clone(&inner),
+            inner: inner.clone(),
             act: PhantomData,
         });
 
@@ -90,12 +102,12 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
 
     #[inline]
     fn as_ref(&self) -> &InnerWriter<T, E> {
-        unsafe { &*self.inner.get() }
+        unsafe { &*self.inner.0.get() }
     }
 
     #[inline]
     fn as_mut(&mut self) -> &mut InnerWriter<T, E> {
-        unsafe { &mut *self.inner.get() }
+        unsafe { &mut *self.inner.0.get() }
     }
 
     /// Gracefully close sink
@@ -134,7 +146,7 @@ where
     E: From<io::Error>,
 {
     act: PhantomData<A>,
-    inner: Rc<UnsafeCell<InnerWriter<T, E>>>,
+    inner: UnsafeWriter<T, E>,
 }
 
 impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
@@ -151,7 +163,7 @@ where
     fn poll(
         &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
-        let inner = unsafe { &mut *self.inner.get() };
+        let inner = unsafe { &mut *self.inner.0.get() };
         if let Some(err) = inner.error.take() {
             if act.error(err, ctx) == Running::Stop {
                 act.finished(ctx);
@@ -179,7 +191,7 @@ where
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     if inner.buffer.len() > inner.high {
                         ctx.wait(WriterDrain {
-                            inner: Rc::clone(&self.inner),
+                            inner: self.inner.clone(),
                             act: PhantomData,
                         });
                     }
@@ -221,7 +233,7 @@ where
     E: From<io::Error>,
 {
     act: PhantomData<A>,
-    inner: Rc<UnsafeCell<InnerWriter<T, E>>>,
+    inner: UnsafeWriter<T, E>,
 }
 
 impl<T, E, A> ActorFuture for WriterDrain<T, E, A>
@@ -236,7 +248,7 @@ where
     type Actor = A;
 
     fn poll(&mut self, _: &mut A, _: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        let inner = unsafe { &mut *self.inner.get() };
+        let inner = unsafe { &mut *self.inner.0.get() };
         if inner.error.is_some() {
             return Ok(Async::Ready(()));
         }
@@ -275,7 +287,7 @@ where
 /// Wrapper for `AsyncWrite` and `Encoder` types
 pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
     enc: U,
-    inner: Rc<UnsafeCell<InnerWriter<T, U::Error>>>,
+    inner: UnsafeWriter<T, U::Error>,
 }
 
 impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
@@ -286,7 +298,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
         U::Error: 'static,
         T: 'static,
     {
-        let inner = Rc::new(UnsafeCell::new(InnerWriter {
+        let inner = UnsafeWriter(Arc::new(UnsafeCell::new(InnerWriter {
             io,
             flags: Flags::empty(),
             buffer: BytesMut::new(),
@@ -294,9 +306,9 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
             low: LOW_WATERMARK,
             high: HIGH_WATERMARK,
             handle: SpawnHandle::default(),
-        }));
+        })));
         let h = ctx.spawn(WriterFut {
-            inner: Rc::clone(&inner),
+            inner: inner.clone(),
             act: PhantomData,
         });
 
@@ -314,7 +326,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
         U::Error: 'static,
         T: 'static,
     {
-        let inner = Rc::new(UnsafeCell::new(InnerWriter {
+        let inner = UnsafeWriter(Arc::new(UnsafeCell::new(InnerWriter {
             io,
             buffer,
             flags: Flags::empty(),
@@ -322,9 +334,9 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
             low: LOW_WATERMARK,
             high: HIGH_WATERMARK,
             handle: SpawnHandle::default(),
-        }));
+        })));
         let h = ctx.spawn(WriterFut {
-            inner: Rc::clone(&inner),
+            inner: inner.clone(),
             act: PhantomData,
         });
 
@@ -335,12 +347,12 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
 
     #[inline]
     fn as_ref(&self) -> &InnerWriter<T, U::Error> {
-        unsafe { &*self.inner.get() }
+        unsafe { &*self.inner.0.get() }
     }
 
     #[inline]
     fn as_mut(&mut self) -> &mut InnerWriter<T, U::Error> {
-        unsafe { &mut *self.inner.get() }
+        unsafe { &mut *self.inner.0.get() }
     }
 
     /// Gracefully close sink

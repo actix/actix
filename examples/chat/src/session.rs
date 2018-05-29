@@ -18,7 +18,7 @@ pub struct ChatSession {
     /// unique session id
     id: usize,
     /// this is address of chat server
-    addr: Addr<Unsync, ChatServer>,
+    addr: Addr<ChatServer>,
     /// Client must send ping at least once per 10 seconds, otherwise we drop
     /// connection.
     hb: Instant,
@@ -121,7 +121,7 @@ impl Handler<Message> for ChatSession {
 /// Helper methods
 impl ChatSession {
     pub fn new(
-        addr: Addr<Unsync, ChatServer>,
+        addr: Addr<ChatServer>,
         framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>,
     ) -> ChatSession {
         ChatSession {

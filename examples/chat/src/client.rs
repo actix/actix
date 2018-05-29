@@ -24,46 +24,45 @@ use tokio_tcp::TcpStream;
 mod codec;
 
 fn main() {
-    let sys = actix::System::new("chat-client");
-
-    // Connect to server
-    let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    Arbiter::spawn(
-        TcpStream::connect(&addr)
-            .and_then(|stream| {
-                let addr: Addr<Syn, _> = ChatClient::create(|ctx| {
-                    let (r, w) = stream.split();
-                    ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
-                    ChatClient {
-                        framed: actix::io::FramedWrite::new(
-                            w,
-                            codec::ClientChatCodec,
-                            ctx,
-                        ),
-                    }
-                });
-
-                // start console loop
-                thread::spawn(move || loop {
-                    let mut cmd = String::new();
-                    if io::stdin().read_line(&mut cmd).is_err() {
-                        println!("error");
-                        return;
-                    }
-
-                    addr.do_send(ClientCommand(cmd));
-                });
-
-                futures::future::ok(())
-            })
-            .map_err(|e| {
-                println!("Can not connect to server: {}", e);
-                process::exit(1)
-            }),
-    );
-
     println!("Running chat client");
-    sys.run();
+
+    actix::System::run(|| {
+        // Connect to server
+        let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
+        tokio::spawn(
+            TcpStream::connect(&addr)
+                .and_then(|stream| {
+                    let addr = ChatClient::create(|ctx| {
+                        let (r, w) = stream.split();
+                        ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
+                        ChatClient {
+                            framed: actix::io::FramedWrite::new(
+                                w,
+                                codec::ClientChatCodec,
+                                ctx,
+                            ),
+                        }
+                    });
+
+                    // start console loop
+                    thread::spawn(move || loop {
+                        let mut cmd = String::new();
+                        if io::stdin().read_line(&mut cmd).is_err() {
+                            println!("error");
+                            return;
+                        }
+
+                        addr.do_send(ClientCommand(cmd));
+                    });
+
+                    futures::future::ok(())
+                })
+                .map_err(|e| {
+                    println!("Can not connect to server: {}", e);
+                    process::exit(1)
+                }),
+        );
+    });
 }
 
 struct ChatClient {

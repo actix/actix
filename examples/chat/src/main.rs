@@ -34,7 +34,7 @@ use session::ChatSession;
 /// Define tcp server that will accept incoming tcp connection and create
 /// chat actors.
 struct Server {
-    chat: Addr<Unsync, ChatServer>,
+    chat: Addr<ChatServer>,
 }
 
 /// Make actor from `Server`
@@ -56,7 +56,7 @@ impl Handler<TcpConnect> for Server {
         // For each incoming connection we create `ChatSession` actor
         // with out chat server address.
         let server = self.chat.clone();
-        let _: () = ChatSession::create(move |ctx| {
+        ChatSession::create(move |ctx| {
             let (r, w) = msg.0.split();
             ChatSession::add_stream(FramedRead::new(r, ChatCodec), ctx);
             ChatSession::new(server, actix::io::FramedWrite::new(w, ChatCodec, ctx))
@@ -65,28 +65,27 @@ impl Handler<TcpConnect> for Server {
 }
 
 fn main() {
-    let sys = actix::System::new("chat-server");
+    actix::System::run(|| {
+        // Start chat server actor
+        let server = ChatServer::default().start();
 
-    // Start chat server actor
-    let server: Addr<Unsync, _> = ChatServer::default().start();
+        // Create server listener
+        let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
+        let listener = TcpListener::bind(&addr).unwrap();
 
-    // Create server listener
-    let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    let listener = TcpListener::bind(&addr).unwrap();
+        // Our chat server `Server` is an actor, first we need to start it
+        // and then add stream on incoming tcp connections to it.
+        // TcpListener::incoming() returns stream of the (TcpStream, net::SocketAddr)
+        // items So to be able to handle this events `Server` actor has to implement
+        // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
+        Server::create(|ctx| {
+            ctx.add_message_stream(listener.incoming().map_err(|_| ()).map(|st| {
+                let addr = st.peer_addr().unwrap();
+                TcpConnect(st, addr)
+            }));
+            Server { chat: server }
+        });
 
-    // Our chat server `Server` is an actor, first we need to start it
-    // and then add stream on incoming tcp connections to it.
-    // TcpListener::incoming() returns stream of the (TcpStream, net::SocketAddr)
-    // items So to be able to handle this events `Server` actor has to implement
-    // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
-    let _: () = Server::create(|ctx| {
-        ctx.add_message_stream(listener.incoming().map_err(|_| ()).map(|st| {
-            let addr = st.peer_addr().unwrap();
-            TcpConnect(st, addr)
-        }));
-        Server { chat: server }
+        println!("Running chat server on 127.0.0.1:12345");
     });
-
-    println!("Running chat server on 127.0.0.1:12345");
-    sys.run();
 }
