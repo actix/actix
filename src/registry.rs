@@ -82,10 +82,9 @@ use supervisor::Supervisor;
 /// System registry serves same purpose as [Registry](struct.Registry.html),
 /// except it is shared across all arbiters.
 pub struct SystemRegistry {
-    registry: Arc<Mutex<HashMap<TypeId, Box<Any>>>>,
+    arbiter: Arc<Mutex<Option<Addr<Arbiter>>>>,
+    registry: Arc<Mutex<HashMap<TypeId, Box<Any + Send>>>>,
 }
-
-unsafe impl Send for SystemRegistry {}
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
@@ -113,8 +112,13 @@ pub trait SystemService:
 impl SystemRegistry {
     pub(crate) fn new() -> Self {
         SystemRegistry {
+            arbiter: Arc::new(Mutex::new(None)),
             registry: Arc::new(Mutex::new(HashMap::new())),
         }
+    }
+
+    pub(crate) fn set_arbiter(&mut self, addr: Addr<Arbiter>) {
+        *self.arbiter.lock().unwrap() = Some(addr);
     }
 
     /// Return address of the service. If service actor is not running
@@ -133,11 +137,14 @@ impl SystemRegistry {
             }
         }
 
-        let addr = Supervisor::start_in(&Arbiter::system_arbiter(), |ctx| {
-            let mut act = A::default();
-            act.service_started(ctx);
-            act
-        });
+        let addr = Supervisor::start_in(
+            self.arbiter.lock().unwrap().as_ref().unwrap(),
+            |ctx| {
+                let mut act = A::default();
+                act.service_started(ctx);
+                act
+            },
+        );
         if let Ok(mut hm) = self.registry.lock() {
             hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
             return addr;
@@ -189,6 +196,7 @@ impl SystemRegistry {
 impl Clone for SystemRegistry {
     fn clone(&self) -> Self {
         SystemRegistry {
+            arbiter: self.arbiter.clone(),
             registry: Arc::clone(&self.registry),
         }
     }

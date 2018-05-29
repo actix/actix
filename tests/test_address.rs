@@ -10,7 +10,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::{future, Future};
+use futures::Future;
 use tokio_timer::Delay;
 
 #[derive(Message, Debug)]
@@ -59,13 +59,6 @@ fn test_address() {
 
         arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
             addr3.do_send(Ping(2));
-
-            tokio::spawn(futures::lazy(move || {
-                Delay::new(Instant::now() + Duration::new(0, 1000)).then(move |_| {
-                    Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                    future::result(Ok(()))
-                })
-            }));
             Ok(())
         }));
 
@@ -74,7 +67,14 @@ fn test_address() {
 
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
                 addr2.do_send(Ping(4));
-                future::result(Ok(()))
+
+                tokio::spawn(Delay::new(Instant::now() + Duration::new(0, 1000)).then(
+                    move |_| {
+                        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                        Ok(())
+                    },
+                ));
+                Ok(())
             })
         }));
     });

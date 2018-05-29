@@ -10,7 +10,6 @@ use actix::prelude::*;
 fn test_execute() {
     System::run(move || {
         let addr = Arbiter::new("exec-test");
-        assert_eq!(Arbiter::name(), "actix");
 
         tokio::spawn(addr.send(Execute::new(|| Ok(Arbiter::name()))).then(
             |res: Result<Result<_, ()>, _>| {
@@ -36,7 +35,6 @@ fn test_system_execute() {
                 Arbiter::system_arbiter().do_send(Execute::new(|| -> Result<(), ()> {
                     Arbiter::system().do_send(SystemExit(0));
 
-                    assert_eq!(Arbiter::name(), "actix");
                     Ok(())
                 }));
                 future::ok(())

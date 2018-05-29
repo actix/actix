@@ -40,6 +40,7 @@ tokio-reactor = "0.1"
 tokio-tcp = "0.1"
 tokio-timer = "0.2"
 tokio-signal = "0.2"
+tokio-threadpool = "0.1"
 
 # other
 log = "0.4"

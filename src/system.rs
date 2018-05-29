@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use futures::sync::oneshot::{channel, Receiver, Sender};
 use futures::{future, Future};
-use std::collections::HashMap;
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::{Builder, Runtime};
+use tokio_threadpool::Builder as ThreadPoolBuilder;
 
 use actor::Actor;
 use address::Addr;
@@ -64,24 +66,12 @@ impl Actor for System {
 
 impl System {
     #[cfg_attr(feature = "cargo-clippy", allow(new_ret_no_self))]
-    /// Create new system
+    /// Create new system.
+    ///
+    /// This method panics if it can not create tokio runtime
     pub fn new<T: Into<String>>(name: T) -> SystemRuntime {
-        let name = name.into();
-
-        let (stop_tx, stop) = channel();
-
-        // start system
-        let sys = System {
-            arbiters: HashMap::new(),
-            stop: Some(stop_tx),
-        };
-
-        let mut rt = Runtime::new().unwrap();
-        let _ = rt.block_on(future::lazy(move || {
-            let addr = sys.start();
-            Arbiter::new_system(addr, name);
-            Ok::<_, ()>(())
-        }));
+        let (rt, stop) =
+            System::create_runtime(&format!("{}-thread-pool-", name.into()), || {});
 
         SystemRuntime { rt, stop }
     }
@@ -91,7 +81,19 @@ impl System {
     /// Function `f` get called within tokio runtime context.
     pub fn run<F>(f: F) -> i32
     where
-        F: FnOnce(),
+        F: FnOnce() + Send + 'static,
+    {
+        let (_rt, stop) = System::create_runtime("actix-thread-pool-", f);
+
+        match stop.wait() {
+            Ok(code) => code,
+            Err(_) => 1,
+        }
+    }
+
+    fn create_runtime<F>(name: &str, f: F) -> (Runtime, Receiver<i32>)
+    where
+        F: FnOnce() + Send + 'static,
     {
         let (stop_tx, stop) = channel();
 
@@ -101,22 +103,42 @@ impl System {
             stop: Some(stop_tx),
         };
 
-        let mut rt = Runtime::new().unwrap();
-        let _ = rt.block_on(future::lazy(move || {
-            let addr = sys.start();
-            Arbiter::new_system(addr, "actix".to_owned());
-            Ok::<_, ()>(())
-        }));
+        let saddr = Arbiter::system_ref();
+        let system = saddr.clone();
 
-        // run loop
-        let _ = rt.block_on(future::lazy(move || {
+        let sarb = Arbiter::system_arb_ref();
+        let sarb2 = sarb.clone();
+
+        let reg = Arbiter::system_reg();
+
+        let mut threadpool = ThreadPoolBuilder::new();
+        threadpool.name_prefix(name).after_start(move || {
+            Arbiter::set_system_ref(saddr.clone());
+            Arbiter::set_system_arb_ref(sarb2.clone());
+            Arbiter::set_system_reg(reg.clone());
+        });
+
+        let mut rt = Builder::new()
+            .threadpool_builder(threadpool)
+            .build()
+            .unwrap();
+
+        // init system arbiter and run configuration method
+        let (tx, rx) = channel();
+        let _ = rt.spawn(future::lazy(move || {
+            let addr = sys.start();
+            *system.lock().unwrap() = Some(addr);
+
+            let addr = Arbiter::new_system();
+            *sarb.lock().unwrap() = Some(addr);
+
             f();
+            let _ = tx.send(());
             Ok::<_, ()>(())
         }));
-        match rt.block_on(stop) {
-            Ok(code) => code,
-            Err(_) => 1,
-        }
+        let _ = rx.wait();
+
+        (rt, stop)
     }
 }
 
@@ -130,28 +152,28 @@ pub struct SystemRuntime {
 impl SystemRuntime {
     /// This function will start event loop and will finish once the
     /// `SystemExit` message get received.
-    pub fn run<F>(self, f: F) -> i32
-    where
-        F: FnOnce(),
-    {
-        let SystemRuntime { mut rt, stop, .. } = self;
-
+    pub fn run(self) -> i32 {
         // run loop
-        let _ = rt.block_on(future::lazy(move || {
-            f();
-            Ok::<_, ()>(())
-        }));
-        match rt.block_on(stop) {
+        match self.stop.wait() {
             Ok(code) => code,
             Err(_) => 1,
         }
     }
 
-    pub fn run_until_complete<F, I, E>(&mut self, fut: F) -> Result<I, E>
+    pub fn config<F>(mut self, f: F) -> Self
     where
-        F: Future<Item = I, Error = E>,
+        F: FnOnce() + Send + 'static,
     {
-        self.rt.block_on(fut)
+        // run config fn
+        let (tx, rx) = channel();
+        self.rt.spawn(future::lazy(move || {
+            f();
+            let _ = tx.send(());
+            Ok::<_, ()>(())
+        }));
+        let _ = rx.wait();
+
+        self
     }
 }
 

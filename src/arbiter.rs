@@ -1,6 +1,7 @@
 use futures::sync::oneshot::{channel, Sender};
 use std;
 use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use futures::{future, Future};
@@ -20,11 +21,13 @@ use system::{RegisterArbiter, System, UnregisterArbiter};
 thread_local!(
     static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
     static ADDR: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);
-    static REG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
-    static SYS: RefCell<Option<Addr<System>>> = RefCell::new(None);
-    static SYSARB: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);
-    static SYSNAME: RefCell<Option<String>> = RefCell::new(None);
+
+    static SYS: RefCell<Arc<Mutex<Option<Addr<System>>>>> =
+        RefCell::new(Arc::new(Mutex::new(None)));
+    static SYSARB: RefCell<Arc<Mutex<Option<Addr<Arbiter>>>>> =
+        RefCell::new(Arc::new(Mutex::new(None)));
+    static SYSREG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
 );
 
 /// Event loop controller
@@ -56,10 +59,10 @@ impl Arbiter {
         let (tx, rx) = std::sync::mpsc::channel();
 
         let id = Uuid::new_v4();
-        let sys = Arbiter::system();
-        let sys_name = Arbiter::system_name();
-        let sys_arbiter = Arbiter::system_arbiter();
         let name = format!("arbiter:{}:{}", id.hyphenated().to_string(), name.into());
+        let sys = Arbiter::system_ref();
+        let sysreg = Arbiter::system_reg();
+        let sys_arbiter = Arbiter::system_arb_ref();
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move || {
             let mut rt = Runtime::new().unwrap();
@@ -67,12 +70,9 @@ impl Arbiter {
             let (stop_tx, stop_rx) = channel();
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
-            //REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
-
-            // system
-            SYS.with(|cell| *cell.borrow_mut() = Some(sys));
-            SYSARB.with(|cell| *cell.borrow_mut() = Some(sys_arbiter));
-            SYSNAME.with(|cell| *cell.borrow_mut() = Some(sys_name));
+            SYS.with(|cell| *cell.borrow_mut() = sys);
+            SYSARB.with(|cell| *cell.borrow_mut() = sys_arbiter);
+            SYSREG.with(|cell| *cell.borrow_mut() = Some(sysreg));
 
             // start arbiter
             let addr =
@@ -99,19 +99,43 @@ impl Arbiter {
         rx.recv().unwrap()
     }
 
-    pub(crate) fn new_system(addr: Addr<System>, name: String) {
-        REG.with(|cell| *cell.borrow_mut() = Some(SystemRegistry::new()));
-        NAME.with(|cell| *cell.borrow_mut() = Some(name.clone()));
-        SYS.with(|cell| *cell.borrow_mut() = Some(addr));
-        SYSNAME.with(|cell| *cell.borrow_mut() = Some(name));
+    pub(crate) fn system_ref() -> Arc<Mutex<Option<Addr<System>>>> {
+        SYS.with(|s| s.borrow().clone())
+    }
 
+    pub(crate) fn system_arb_ref() -> Arc<Mutex<Option<Addr<Arbiter>>>> {
+        SYSARB.with(|s| s.borrow().clone())
+    }
+
+    pub(crate) fn system_reg() -> SystemRegistry {
+        SYSREG.with(|s| {
+            if s.borrow().is_none() {
+                *s.borrow_mut() = Some(SystemRegistry::new());
+            }
+            s.borrow().clone().unwrap()
+        })
+    }
+
+    pub(crate) fn set_system_ref(addr: Arc<Mutex<Option<Addr<System>>>>) {
+        SYS.with(move |cell| *cell.borrow_mut() = addr);
+    }
+
+    pub(crate) fn set_system_arb_ref(addr: Arc<Mutex<Option<Addr<Arbiter>>>>) {
+        SYSARB.with(move |cell| *cell.borrow_mut() = addr);
+    }
+
+    pub fn set_system_reg(reg: SystemRegistry) {
+        SYSREG.with(|cell| *cell.borrow_mut() = Some(reg));
+    }
+
+    pub(crate) fn new_system() -> Addr<Arbiter> {
         // start arbiter
         let addr = Actor::start(Arbiter {
             sys: true,
             id: Uuid::new_v4(),
         });
-        ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
-        SYSARB.with(|cell| *cell.borrow_mut() = Some(addr));
+        Arbiter::system_reg().set_arbiter(addr.clone());
+        addr
     }
 
     /// Returns current arbiter's address
@@ -132,31 +156,31 @@ impl Arbiter {
 
     /// This function returns system address,
     pub fn system() -> Addr<System> {
-        SYS.with(|cell| match *cell.borrow() {
-            Some(ref addr) => addr.clone(),
-            None => panic!("System is not running"),
+        SYS.with(|cell| {
+            let b = cell.borrow();
+            if let Some(a) = b.as_ref().lock().unwrap().clone() {
+                return a;
+            } else {
+                panic!("System is not running");
+            };
         })
     }
 
     /// This function returns system address,
     pub fn system_arbiter() -> Addr<Arbiter> {
-        SYSARB.with(|cell| match *cell.borrow() {
-            Some(ref addr) => addr.clone(),
-            None => panic!("System is not running"),
-        })
-    }
-
-    /// This function returns system name,
-    pub fn system_name() -> String {
-        SYSNAME.with(|cell| match *cell.borrow() {
-            Some(ref name) => name.clone(),
-            None => panic!("System is not running"),
+        SYSARB.with(|cell| {
+            let b = cell.borrow();
+            if let Some(a) = b.as_ref().lock().unwrap().clone() {
+                return a;
+            } else {
+                panic!("System is not running");
+            };
         })
     }
 
     /// This function returns arbiter's registry
     pub fn registry() -> &'static SystemRegistry {
-        REG.with(|cell| match *cell.borrow() {
+        SYSREG.with(|cell| match *cell.borrow() {
             Some(ref reg) => unsafe { &*(reg as *const _) },
             None => panic!("System is not running: {}", Arbiter::name()),
         })

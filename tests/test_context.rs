@@ -221,8 +221,6 @@ impl Handler<Ping> for ContextNoWait {
     fn handle(&mut self, _: Ping, _: &mut Self::Context) {
         let cnt = self.cnt.load(Ordering::Relaxed);
         self.cnt.store(cnt + 1, Ordering::Relaxed);
-
-        Arbiter::system().do_send(SystemExit(0));
     }
 }
 
@@ -236,6 +234,14 @@ fn test_nowait_context() {
         addr.do_send(Ping);
         addr.do_send(Ping);
         addr.do_send(Ping);
+
+        tokio::spawn(
+            Delay::new(Instant::now() + Duration::from_millis(200))
+                .map_err(|_| ())
+                .map(|_| {
+                    Arbiter::system().do_send(SystemExit(0));
+                }),
+        );
     });
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
@@ -256,6 +262,13 @@ fn test_message_stream_nowait_context() {
             ctx.add_message_stream(rx);
             actor
         });
+        tokio::spawn(
+            Delay::new(Instant::now() + Duration::from_millis(200))
+                .map_err(|_| ())
+                .map(|_| {
+                    Arbiter::system().do_send(SystemExit(0));
+                }),
+        );
     });
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
@@ -276,6 +289,14 @@ fn test_stream_nowait_context() {
             ctx.add_message_stream(rx);
             actor
         });
+
+        tokio::spawn(
+            Delay::new(Instant::now() + Duration::from_millis(200))
+                .map_err(|_| ())
+                .map(|_| {
+                    Arbiter::system().do_send(SystemExit(0));
+                }),
+        );
     });
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
@@ -295,6 +316,14 @@ fn test_notify() {
             }
         });
         addr.do_send(Ping);
+
+        tokio::spawn(
+            Delay::new(Instant::now() + Duration::from_millis(200))
+                .map_err(|_| ())
+                .map(|_| {
+                    Arbiter::system().do_send(SystemExit(0));
+                }),
+        );
     });
 
     assert_eq!(m2.load(Ordering::Relaxed), 3);
