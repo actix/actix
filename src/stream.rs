@@ -59,7 +59,7 @@ where
     /// impl StreamHandler<Ping, io::Error> for MyActor {
     ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    ///         //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     }
     ///
     ///     fn finished(&mut self, ctx: &mut Self::Context) {

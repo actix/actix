@@ -1,7 +1,11 @@
 extern crate actix;
 extern crate futures;
 extern crate tokio;
-use actix::actors::{self, signal};
+
+use std::thread;
+use std::time::Duration;
+
+use actix::actors::{resolver, signal};
 use actix::prelude::*;
 use futures::Future;
 
@@ -9,17 +13,19 @@ use futures::Future;
 fn test_resolver() {
     System::run(|| {
         tokio::spawn({
-            let resolver = Arbiter::registry().get::<actors::Connector>();
-            resolver.send(actors::Resolve::host("localhost")).then(|_| {
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                Ok::<_, ()>(())
-            })
+            let resolver = Arbiter::registry().get::<resolver::Connector>();
+            resolver
+                .send(resolver::Resolve::host("localhost"))
+                .then(|_| {
+                    Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                    Ok::<_, ()>(())
+                })
         });
 
         tokio::spawn({
-            let resolver = Arbiter::registry().get::<actors::Connector>();
+            let resolver = Arbiter::registry().get::<resolver::Connector>();
             resolver
-                .send(actors::Connect::host("localhost:5000"))
+                .send(resolver::Connect::host("localhost:5000"))
                 .then(|_| Ok::<_, ()>(()))
         });
     });
@@ -31,6 +37,9 @@ fn test_signal() {
     System::run(|| {
         let _addr = signal::DefaultSignalsHandler::start_default();
         let sig = Arbiter::registry().get::<signal::ProcessSignals>();
+
+        // FIXME: this is timing issue, needs to be fixed
+        thread::sleep(Duration::from_millis(100));
 
         // send SIGTERM
         std::thread::spawn(move || {

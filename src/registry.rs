@@ -48,7 +48,7 @@ use supervisor::Supervisor;
 ///
 ///     fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
 ///         println!("ping");
-///         //#### #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
+/// #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///     }
 /// }
 ///
@@ -72,7 +72,7 @@ use supervisor::Supervisor;
 ///         // Start MyActor2
 ///         let addr = MyActor2.start();
 ///     });
-///     //#### #  std::process::exit(code);
+/// #   std::process::exit(code);
 /// }
 /// ```
 /// System wide actors registry

@@ -49,7 +49,7 @@ use msgs::Execute;
 ///
 ///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
 ///         ctx.stop();
-///         //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+/// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///     }
 /// }
 ///

@@ -62,7 +62,7 @@
 //!             addr.do_send(Fibonacci(n));
 //!         }
 //!
-//!         //#### #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//! #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!     });
 //! }
 //! ```
