@@ -30,7 +30,7 @@ pub struct FutureResult<T, E, A> {
 ///
 /// struct MyActor;
 /// impl Actor for MyActor {
-///    type Context = Context<Self>;
+///     type Context = Context<Self>;
 /// }
 ///
 /// let future_of_1 = fut::result::<u32, u32, MyActor>(Ok(1));
@@ -52,12 +52,12 @@ pub fn result<T, E, A>(r: Result<T, E>) -> FutureResult<T, E, A> {
 /// # Examples
 ///
 /// ```
-/// use actix::{Actor, Context};
 /// use actix::fut::*;
+/// use actix::{Actor, Context};
 ///
 /// struct MyActor;
 /// impl Actor for MyActor {
-///    type Context = Context<Self>;
+///     type Context = Context<Self>;
 /// }
 ///
 /// let future_of_1 = ok::<u32, u32, MyActor>(1);
@@ -78,7 +78,7 @@ pub fn ok<T, E, S>(t: T) -> FutureResult<T, E, S> {
 ///
 /// struct MyActor;
 /// impl Actor for MyActor {
-///    type Context = Context<Self>;
+///     type Context = Context<Self>;
 /// }
 ///
 /// let future_of_err_1 = fut::err::<u32, u32, MyActor>(1);

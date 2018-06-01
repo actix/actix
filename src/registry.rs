@@ -38,43 +38,41 @@ use supervisor::Supervisor;
 /// impl actix::Supervised for MyActor1 {}
 ///
 /// impl SystemService for MyActor1 {
-///    fn service_started(&mut self, ctx: &mut Context<Self>) {
-///       println!("Service started");
-///    }
+///     fn service_started(&mut self, ctx: &mut Context<Self>) {
+///         println!("Service started");
+///     }
 /// }
 ///
 /// impl Handler<Ping> for MyActor1 {
-///    type Result = ();
+///     type Result = ();
 ///
-///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
-///       println!("ping");
-/// #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
-///    }
+///     fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
+///         println!("ping");
+///         //#### #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
+///     }
 /// }
 ///
 /// struct MyActor2;
 ///
 /// impl Actor for MyActor2 {
-///    type Context = Context<Self>;
+///     type Context = Context<Self>;
 ///
-///    fn started(&mut self, _: &mut Context<Self>) {
-///       let act = Arbiter::registry().get::<MyActor1>();
-///       act.do_send(Ping);
-///    }
+///     fn started(&mut self, _: &mut Context<Self>) {
+///         let act = Arbiter::registry().get::<MyActor1>();
+///         act.do_send(Ping);
+///     }
 /// }
 ///
-///
 /// fn main() {
-///    // initialize system
-///    let code = System::run(|| {
+///     // initialize system
+///     let code = System::run(|| {
+///         // Start MyActor1
+///         let addr = MyActor1.start();
 ///
-///        // Start MyActor1
-///        let addr = MyActor1.start();
-///
-///        // Start MyActor2
-///        let addr = MyActor2.start();
-///    });
-/// #  std::process::exit(code);
+///         // Start MyActor2
+///         let addr = MyActor2.start();
+///     });
+///     //#### #  std::process::exit(code);
 /// }
 /// ```
 /// System wide actors registry

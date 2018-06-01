@@ -49,12 +49,11 @@
 //!             }
 //!             Ok(sum)
 //!         }
-//!    }
+//!     }
 //! }
 //!
 //! fn main() {
 //!     System::run(|| {
-//!
 //!         // start sync arbiter with 2 threads
 //!         let addr = SyncArbiter::start(2, || SyncActor);
 //!
@@ -63,7 +62,7 @@
 //!             addr.do_send(Fibonacci(n));
 //!         }
 //!
-//! #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//!         //#### #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!     });
 //! }
 //! ```

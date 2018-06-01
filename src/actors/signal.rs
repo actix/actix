@@ -8,8 +8,8 @@
 //!
 //! ```rust
 //! # extern crate actix;
-//! use actix::prelude::*;
 //! use actix::actors::signal;
+//! use actix::prelude::*;
 //!
 //! struct Signals;
 //!
@@ -26,14 +26,14 @@
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
 //!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
-//!             },
+//!             }
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
-//!             },
+//!             }
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
 //!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
-//!             },
+//!             }
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
 //!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
@@ -44,20 +44,19 @@
 //! }
 //!
 //! fn main() {
-//!    // initialize system
-//!    System::run(|| {
+//!     // initialize system
+//!     System::run(|| {
+//!         // Start signals handler
+//!         let addr = Signals.start();
 //!
-//!        // Start signals handler
-//!        let addr = Signals.start();
+//!         // send SIGTERM
+//!         std::thread::spawn(move || {
+//!             // emulate SIGNTERM
+//!             addr.do_send(signal::Signal(signal::SignalType::Term));
+//!         });
+//!     });
 //!
-//!        // send SIGTERM
-//!        std::thread::spawn(move || {
-//!            // emulate SIGNTERM
-//!            addr.do_send(signal::Signal(signal::SignalType::Term));
-//!        });
-//!    });
-//!
-//!    std::process::exit(0);
+//!     std::process::exit(0);
 //! }
 //! ```
 use futures::{Future, Stream};

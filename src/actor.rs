@@ -103,7 +103,7 @@ pub trait Actor: Sized + 'static {
     ///     // initialize system
     ///     System::run(|| {
     ///         let addr = MyActor.start(); // <- start actor and get it's address
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     });
     /// }
     /// ```
@@ -144,7 +144,7 @@ pub trait Actor: Sized + 'static {
     ///     // initialize system
     ///     System::run(|| {
     ///         let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    ///         //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     });
     /// }
     /// ```
@@ -263,10 +263,9 @@ where
     /// struct MyActor;
     ///
     /// impl StreamHandler<Ping, io::Error> for MyActor {
-    ///
     ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    ///         //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     }
     ///
     ///     fn finished(&mut self, ctx: &mut Self::Context) {
@@ -275,12 +274,12 @@ where
     /// }
     ///
     /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
+    ///     type Context = Context<Self>;
     ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        // add stream
-    ///        ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
-    ///    }
+    ///     fn started(&mut self, ctx: &mut Context<Self>) {
+    ///         // add stream
+    ///         ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
+    ///     }
     /// }
     /// # fn main() {
     /// #    System::run(|| {
@@ -314,17 +313,17 @@ where
     ///
     ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    ///         //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     }
     /// }
     ///
     /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
+    ///     type Context = Context<Self>;
     ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        // add messages stream
-    ///        ctx.add_message_stream(once(Ok(Ping)));
-    ///    }
+    ///     fn started(&mut self, ctx: &mut Context<Self>) {
+    ///         // add messages stream
+    ///         ctx.add_message_stream(once(Ok(Ping)));
+    ///     }
     /// }
     /// # fn main() {
     /// #    System::run(|| {

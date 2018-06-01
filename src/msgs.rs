@@ -67,18 +67,21 @@ impl<A: Actor, F: FnOnce() -> Addr<A> + Send + 'static> FnBox<A> for F {
 /// # extern crate actix;
 /// use actix::prelude::*;
 ///
-/// struct MyActor{addr: Addr<Arbiter>}
+/// struct MyActor {
+///     addr: Addr<Arbiter>,
+/// }
 ///
 /// impl Actor for MyActor {
-///    type Context = Context<Self>;
+///     type Context = Context<Self>;
 ///
-///    fn started(&mut self, ctx: &mut Context<Self>) {
-///        self.addr.do_send(actix::msgs::Execute::new(|| -> Result<(), ()> {
-///            // do something
-///            // ...
-///            Ok(())
-///        }));
-///    }
+///     fn started(&mut self, ctx: &mut Context<Self>) {
+///         self.addr
+///             .do_send(actix::msgs::Execute::new(|| -> Result<(), ()> {
+///                 // do something
+///                 // ...
+///                 Ok(())
+///             }));
+///     }
 /// }
 /// fn main() {}
 /// ```

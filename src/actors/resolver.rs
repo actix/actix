@@ -3,10 +3,10 @@
 //! ## Example
 //!
 //! ```rust
-//! # extern crate actix;
-//! # extern crate futures;
-//! # extern crate tokio;
-//! # use futures::{future, Future};
+//! //#### # extern crate actix;
+//! //#### # extern crate futures;
+//! //#### # extern crate tokio;
+//! //#### # use futures::{future, Future};
 //! use actix::prelude::*;
 //! use actix::actors;
 //!
@@ -20,7 +20,7 @@
 //!                 actors::Resolve::host("localhost"))       // <- resolve "localhost"
 //!                     .then(|addrs| {
 //!                         println!("RESULT: {:?}", addrs);
-//! #                       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//! //#### #                       Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!                         Ok::<_, ()>(())
 //!                     })
 //!         });

@@ -49,13 +49,12 @@ use msgs::Execute;
 ///
 ///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
 ///         ctx.stop();
-/// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+///         //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///     }
 /// }
 ///
 /// fn main() {
 ///     System::run(|| {
-///
 ///         let addr = actix::Supervisor::start(|_| MyActor);
 ///
 ///         addr.do_send(Die);
@@ -85,7 +84,7 @@ where
     /// struct MyActor;
     ///
     /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
+    ///     type Context = Context<Self>;
     /// }
     ///
     /// # impl actix::Supervised for MyActor {}

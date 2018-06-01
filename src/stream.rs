@@ -57,10 +57,9 @@ where
     /// struct MyActor;
     ///
     /// impl StreamHandler<Ping, io::Error> for MyActor {
-    ///
     ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    ///         //#### #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     }
     ///
     ///     fn finished(&mut self, ctx: &mut Self::Context) {
@@ -69,12 +68,12 @@ where
     /// }
     ///
     /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
+    ///     type Context = Context<Self>;
     ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        // add stream
-    ///        Self::add_stream(once::<Ping, io::Error>(Ok(Ping)), ctx);
-    ///    }
+    ///     fn started(&mut self, ctx: &mut Context<Self>) {
+    ///         // add stream
+    ///         Self::add_stream(once::<Ping, io::Error>(Ok(Ping)), ctx);
+    ///     }
     /// }
     /// # fn main() {
     /// #    System::run(|| {
