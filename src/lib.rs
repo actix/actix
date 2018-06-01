@@ -113,7 +113,9 @@ pub mod prelude {
     pub use actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
-    pub use address::{Addr, MailboxError, Recipient, SendError};
+    pub use address::{
+        Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
+    };
     pub use arbiter::Arbiter;
     pub use context::{Context, ContextFutureSpawner};
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
