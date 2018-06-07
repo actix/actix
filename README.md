@@ -147,9 +147,9 @@ fn main() {
 All communications with actors go through an `Addr` object. You can `do_send` a message
 without waiting for a response, or `send` an actor with specific message. The `Message`
 trait defines the result type for a message. There are different types of addresses.
-[`Unsync`](https://actix.github.io/actix/actix/struct.Unsync.html) is an address
+[`Unsync`](https://docs.rs/actix/0.5.7/actix/struct.Unsync.html) is an address
 of an actor that runs in the same arbiter (event loop). If an actor is running in a different
-thread, [`Syn`](https://actix.github.io/actix/actix/struct.Syn.html)
+thread, [`Syn`](https://docs.rs/actix/0.5.7/actix/struct.Syn.html)
 has to be used.
 
 ### Actor state and subscription for specific messages
