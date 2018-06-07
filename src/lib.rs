@@ -88,6 +88,7 @@ pub use handler::{
     ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
     ResponseFuture,
 };
+pub use registry::Registry;
 pub use stream::StreamHandler;
 pub use supervisor::Supervisor;
 pub use sync::{SyncArbiter, SyncContext};
