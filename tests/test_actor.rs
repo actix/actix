@@ -30,17 +30,20 @@ impl Actor for MyActor {
 }
 
 impl StreamHandler<Num, ()> for MyActor {
-    fn handle(&mut self, msg: Num, _: &mut Context<MyActor>) {
-        self.0.fetch_add(msg.0, Ordering::Relaxed);
-    }
-
-    fn error(&mut self, _: (), _: &mut Context<MyActor>) -> Running {
-        self.0.fetch_add(1, Ordering::Relaxed);
-        self.2
-    }
-
-    fn finished(&mut self, _: &mut Context<MyActor>) {
-        self.1.store(true, Ordering::Relaxed);
+    fn handle(&mut self, msg: Result<Option<Num>, ()>, ctx: &mut Self::Context) {
+        match msg {
+            Ok(Some(msg)) => {
+                self.0.fetch_add(msg.0, Ordering::Relaxed);
+            }
+            Ok(None) => self.1.store(true, Ordering::Relaxed),
+            Err(_) => {
+                self.1.store(true, Ordering::Relaxed);
+                self.0.fetch_add(1, Ordering::Relaxed);
+                if self.2 == Running::Stop {
+                    ctx.stop();
+                }
+            }
+        }
     }
 }
 

@@ -337,7 +337,7 @@ impl Actor for ContextHandle {
 }
 
 impl StreamHandler<Ping, ()> for ContextHandle {
-    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
+    fn handle(&mut self, _: Result<Option<Ping>, ()>, ctx: &mut Self::Context) {
         self.h.store(ctx.handle().into_usize(), Ordering::Relaxed);
         Arbiter::system().do_send(SystemExit(0));
     }
@@ -397,7 +397,7 @@ impl Actor for CancelHandler {
 
 struct CancelPacket;
 impl<K> StreamHandler<CancelPacket, K> for CancelHandler {
-    fn handle(&mut self, _: CancelPacket, ctx: &mut Context<Self>) {
+    fn handle(&mut self, _: Result<Option<CancelPacket>, K>, ctx: &mut Context<Self>) {
         ctx.cancel_future(self.source);
     }
 }
