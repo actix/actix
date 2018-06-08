@@ -23,7 +23,7 @@ where
     type Result: MessageResponse<Self, M>;
 
     /// Method is called for every message received by this Actor
-    fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
+    fn handle(&mut self, msg: M) -> Self::Result;
 }
 
 /// Message type

@@ -9,7 +9,7 @@ use tokio::executor::current_thread::spawn;
 use tokio::runtime::current_thread::Runtime;
 use uuid::Uuid;
 
-use actor::{Actor, AsyncContext};
+use actor::{Actor, AsyncContext, Ctx};
 use address::{channel, Addr};
 use context::Context;
 use handler::Handler;
@@ -191,7 +191,7 @@ impl Arbiter {
     pub fn start<A, F>(f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
-        F: FnOnce(&mut A::Context) -> A + Send + 'static,
+        F: FnOnce(Ctx<A>) -> A + Send + 'static,
     {
         let (stx, srx) = channel::channel(DEFAULT_CAPACITY);
 
@@ -201,7 +201,8 @@ impl Arbiter {
         // create actor
         addr.do_send::<Execute>(Execute::new(move || {
             let mut ctx = Context::with_receiver(None, srx);
-            let act = f(&mut ctx);
+            let link = Ctx::new(ctx.clone());
+            let act = f(link);
             ctx.set_actor(act);
             spawn(ctx.map(|_| ()).map_err(|_| ()));
             Ok(())
@@ -214,7 +215,7 @@ impl Arbiter {
 impl Handler<StopArbiter> for Arbiter {
     type Result = ();
 
-    fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: StopArbiter) {
         if self.sys {
             warn!(
                 "System arbiter received `StopArbiter` message.
@@ -237,7 +238,7 @@ where
 {
     type Result = Addr<A>;
 
-    fn handle(&mut self, msg: StartActor<A>, _: &mut Context<Self>) -> Addr<A> {
+    fn handle(&mut self, msg: StartActor<A>) -> Addr<A> {
         msg.call()
     }
 }
@@ -246,7 +247,7 @@ where
 impl<I: Send, E: Send> Handler<Execute<I, E>> for Arbiter {
     type Result = Result<I, E>;
 
-    fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>) -> Result<I, E> {
+    fn handle(&mut self, msg: Execute<I, E>) -> Result<I, E> {
         msg.exec()
     }
 }

@@ -177,7 +177,7 @@ impl Actor for Connector {
                 error!("Can not create resolver: {}", err);
                 ctx.stop()
             })
-            .wait(ctx);
+            .spawn_and_wait(ctx);
     }
 
     #[cfg(not(unix))]
@@ -210,7 +210,7 @@ impl Default for Connector {
 impl Handler<Resolve> for Connector {
     type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ConnectorError>;
 
-    fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Resolve) -> Self::Result {
         Box::new(Resolver::new(
             msg.name,
             msg.port.unwrap_or(0),
@@ -222,7 +222,7 @@ impl Handler<Resolve> for Connector {
 impl Handler<Connect> for Connector {
     type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
 
-    fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Connect) -> Self::Result {
         let timeout = msg.timeout;
         Box::new(
             Resolver::new(
@@ -237,7 +237,7 @@ impl Handler<Connect> for Connector {
 impl Handler<ConnectAddr> for Connector {
     type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
 
-    fn handle(&mut self, msg: ConnectAddr, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ConnectAddr) -> Self::Result {
         let mut v = VecDeque::new();
         v.push_back(msg.0);
         Box::new(TcpConnector::new(v))

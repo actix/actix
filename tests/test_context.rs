@@ -72,7 +72,7 @@ struct TimeoutMessage;
 impl Handler<TimeoutMessage> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, _: TimeoutMessage, _: &mut Self::Context) {
+    fn handle(&mut self, _: TimeoutMessage) {
         if self.op != Op::Timeout {
             assert!(false, "should not happen {:?}", self.op);
         }
@@ -128,6 +128,7 @@ fn test_run_after_stop() {
 }
 
 struct ContextWait {
+    ctx: Ctx<ContextWait>,
     cnt: Arc<AtomicUsize>,
 }
 
@@ -141,12 +142,15 @@ struct Ping;
 impl Handler<Ping> for ContextWait {
     type Result = ();
 
-    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
+    fn handle(&mut self, _: Ping) {
         let cnt = self.cnt.load(Ordering::Relaxed);
         self.cnt.store(cnt + 1, Ordering::Relaxed);
 
         let fut = Delay::new(Instant::now() + Duration::from_secs(10));
-        fut.map_err(|_| ()).map(|_| ()).into_actor(self).wait(ctx);
+        fut.map_err(|_| ())
+            .map(|_| ())
+            .into_actor(self)
+            .spawn_and_wait(&mut self.ctx);
 
         Arbiter::system().do_send(SystemExit(0));
     }
@@ -158,7 +162,7 @@ fn test_wait_context() {
     let cnt = Arc::clone(&m);
 
     System::run(move || {
-        let addr = ContextWait { cnt }.start();
+        let addr = ContextWait::create(|ctx| ContextWait { ctx, cnt });
         addr.do_send(Ping);
         addr.do_send(Ping);
         addr.do_send(Ping);
@@ -173,14 +177,13 @@ fn test_message_stream_wait_context() {
     let m2 = Arc::clone(&m);
 
     System::run(move || {
-        let _addr = ContextWait::create(move |ctx| {
+        let _addr = ContextWait::create(move |mut ctx| {
             let (tx, rx) = unbounded();
             let _ = tx.unbounded_send(Ping);
             let _ = tx.unbounded_send(Ping);
             let _ = tx.unbounded_send(Ping);
-            let actor = ContextWait { cnt: m2 };
             ctx.add_message_stream(rx);
-            actor
+            ContextWait { ctx, cnt: m2 }
         });
     });
 
@@ -193,14 +196,13 @@ fn test_stream_wait_context() {
     let m2 = Arc::clone(&m);
 
     System::run(move || {
-        let _addr = ContextWait::create(move |ctx| {
+        let _addr = ContextWait::create(move |mut ctx| {
             let (tx, rx) = unbounded();
             let _ = tx.unbounded_send(Ping);
             let _ = tx.unbounded_send(Ping);
             let _ = tx.unbounded_send(Ping);
-            let actor = ContextWait { cnt: m2 };
             ctx.add_message_stream(rx);
-            actor
+            ContextWait { ctx, cnt: m2 }
         });
     });
 
@@ -218,7 +220,7 @@ impl Actor for ContextNoWait {
 impl Handler<Ping> for ContextNoWait {
     type Result = ();
 
-    fn handle(&mut self, _: Ping, _: &mut Self::Context) {
+    fn handle(&mut self, _: Ping) {
         let cnt = self.cnt.load(Ordering::Relaxed);
         self.cnt.store(cnt + 1, Ordering::Relaxed);
     }
@@ -253,7 +255,7 @@ fn test_message_stream_nowait_context() {
     let m2 = Arc::clone(&m);
 
     System::run(move || {
-        let _addr = ContextNoWait::create(move |ctx| {
+        let _addr = ContextNoWait::create(move |mut ctx| {
             let (tx, rx) = unbounded();
             let _ = tx.unbounded_send(Ping);
             let _ = tx.unbounded_send(Ping);
@@ -280,7 +282,7 @@ fn test_stream_nowait_context() {
     let m2 = Arc::clone(&m);
 
     System::run(move || {
-        let _addr = ContextNoWait::create(move |ctx| {
+        let _addr = ContextNoWait::create(move |mut ctx| {
             let (tx, rx) = unbounded();
             let _ = tx.unbounded_send(Ping);
             let _ = tx.unbounded_send(Ping);
@@ -308,7 +310,7 @@ fn test_notify() {
     let m2 = Arc::clone(&m);
 
     System::run(move || {
-        let addr = ContextNoWait::create(move |ctx| {
+        let addr = ContextNoWait::create(move |mut ctx| {
             ctx.notify(Ping);
             ctx.notify(Ping);
             ContextNoWait {
@@ -330,6 +332,7 @@ fn test_notify() {
 }
 
 struct ContextHandle {
+    ctx: Ctx<ContextHandle>,
     h: Arc<AtomicUsize>,
 }
 impl Actor for ContextHandle {
@@ -337,8 +340,9 @@ impl Actor for ContextHandle {
 }
 
 impl StreamHandler<Ping, ()> for ContextHandle {
-    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
-        self.h.store(ctx.handle().into_usize(), Ordering::Relaxed);
+    fn handle(&mut self, _: Result<Option<Ping>, ()>, _: &mut Self::Context) {
+        self.h
+            .store(self.ctx.handle().into_usize(), Ordering::Relaxed);
         Arbiter::system().do_send(SystemExit(0));
     }
 }
@@ -351,13 +355,14 @@ fn test_current_context_handle() {
     let m2 = Arc::clone(&m);
 
     System::run(move || {
-        let _addr = ContextHandle::create(move |ctx| {
+        let _addr = ContextHandle::create(move |mut ctx| {
             h2.store(
-                ContextHandle::add_stream(once::<Ping, ()>(Ok(Ping)), ctx).into_usize(),
+                ContextHandle::add_stream(once::<Ping, ()>(Ok(Ping)), &mut ctx)
+                    .into_usize(),
                 Ordering::Relaxed,
             );
 
-            ContextHandle { h: m2 }
+            ContextHandle { ctx, h: m2 }
         });
     });
 
@@ -372,12 +377,12 @@ fn test_start_from_context() {
     let m2 = Arc::clone(&m);
 
     System::run(move || {
-        let _addr = ContextHandle::create(move |ctx| {
+        let _addr = ContextHandle::create(move |mut ctx| {
             h2.store(
                 ctx.add_stream(once::<Ping, ()>(Ok(Ping))).into_usize(),
                 Ordering::Relaxed,
             );
-            ContextHandle { h: m2 }
+            ContextHandle { ctx, h: m2 }
         });
     });
 
@@ -397,7 +402,7 @@ impl Actor for CancelHandler {
 
 struct CancelPacket;
 impl<K> StreamHandler<CancelPacket, K> for CancelHandler {
-    fn handle(&mut self, _: CancelPacket, ctx: &mut Context<Self>) {
+    fn handle(&mut self, _: Result<Option<CancelPacket>, K>, ctx: &mut Self::Context) {
         ctx.cancel_future(self.source);
     }
 }
@@ -405,11 +410,13 @@ impl<K> StreamHandler<CancelPacket, K> for CancelHandler {
 #[test]
 fn test_cancel_handler() {
     actix::System::run(|| {
-        CancelHandler::create(|ctx| CancelHandler {
-            source: ctx.add_stream(
+        CancelHandler::create(|mut ctx| {
+            let source = ctx.add_stream(
                 Interval::new(Instant::now(), Duration::from_millis(1))
                     .map(|_| CancelPacket),
-            ),
+            );
+
+            CancelHandler { source }
         });
     });
 }

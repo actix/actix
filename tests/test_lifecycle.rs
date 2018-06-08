@@ -193,7 +193,7 @@ fn test_stop_after_drop_sync_actor() {
     let stopped2 = Arc::clone(&stopped);
 
     System::run(move || {
-        let addr = SyncArbiter::start(1, move || MySyncActor {
+        let addr = SyncArbiter::start(1, move |_| MySyncActor {
             started: Arc::clone(&started1),
             stopping: Arc::clone(&stopping1),
             stopped: Arc::clone(&stopped1),

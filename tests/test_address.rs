@@ -25,7 +25,7 @@ impl Actor for MyActor {
 impl actix::Handler<Ping> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, _: Ping, _: &mut Self::Context) {
+    fn handle(&mut self, _: Ping) {
         self.0.fetch_add(1, Ordering::Relaxed);
     }
 }
@@ -39,7 +39,7 @@ impl Actor for MyActor3 {
 impl actix::Handler<Ping> for MyActor3 {
     type Result = ();
 
-    fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor3>) -> Self::Result {
+    fn handle(&mut self, _: Ping) -> Self::Result {
         Arbiter::system().do_send(actix::msgs::SystemExit(0));
     }
 }
@@ -119,7 +119,9 @@ fn test_error_result() {
     });
 }
 
-struct TimeoutActor;
+struct TimeoutActor {
+    ctx: Ctx<TimeoutActor>,
+}
 
 impl Actor for TimeoutActor {
     type Context = actix::Context<Self>;
@@ -128,11 +130,11 @@ impl Actor for TimeoutActor {
 impl Handler<Ping> for TimeoutActor {
     type Result = ();
 
-    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
+    fn handle(&mut self, _: Ping) {
         Delay::new(Instant::now() + Duration::new(0, 5_000_000))
             .map_err(|_| ())
             .into_actor(self)
-            .wait(ctx);
+            .spawn_and_wait(&mut self.ctx);
     }
 }
 
@@ -142,7 +144,7 @@ fn test_message_timeout() {
     let count2 = Arc::clone(&count);
 
     System::run(move || {
-        let addr = TimeoutActor.start();
+        let addr = TimeoutActor::create(|ctx| TimeoutActor { ctx });
 
         addr.do_send(Ping(0));
         tokio::spawn(addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).then(
@@ -185,7 +187,7 @@ impl Actor for TimeoutActor3 {
                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
                 actix::fut::ok(())
             })
-            .wait(ctx)
+            .spawn_and_wait(ctx)
     }
 }
 
@@ -195,7 +197,7 @@ fn test_call_message_timeout() {
     let count2 = Arc::clone(&count);
 
     System::run(move || {
-        let addr = TimeoutActor.start();
+        let addr = TimeoutActor::create(|ctx| TimeoutActor { ctx });
         let _addr2 = TimeoutActor3(addr, count2).start();
     });
     assert_eq!(count.load(Ordering::Relaxed), 1);

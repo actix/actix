@@ -180,7 +180,7 @@ impl SystemRuntime {
 impl Handler<SystemExit> for System {
     type Result = ();
 
-    fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: SystemExit) {
         // stop arbiters
         for addr in self.arbiters.values() {
             addr.do_send(StopArbiter(msg.0));
@@ -204,7 +204,7 @@ impl Message for RegisterArbiter {
 impl Handler<RegisterArbiter> for System {
     type Result = ();
 
-    fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: RegisterArbiter) {
         self.arbiters.insert(msg.0, msg.1);
     }
 }
@@ -221,7 +221,7 @@ impl Message for UnregisterArbiter {
 impl Handler<UnregisterArbiter> for System {
     type Result = ();
 
-    fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: UnregisterArbiter) {
         self.arbiters.remove(&msg.0);
     }
 }

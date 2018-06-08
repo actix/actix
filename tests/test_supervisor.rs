@@ -17,7 +17,12 @@ impl Message for Die {
     type Result = ();
 }
 
-struct MyActor(Arc<AtomicUsize>, Arc<AtomicUsize>, Arc<AtomicUsize>);
+struct MyActor(
+    Arc<AtomicUsize>,
+    Arc<AtomicUsize>,
+    Arc<AtomicUsize>,
+    Ctx<MyActor>,
+);
 
 impl Actor for MyActor {
     type Context = Context<Self>;
@@ -35,9 +40,9 @@ impl actix::Supervised for MyActor {
 impl actix::Handler<Die> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, _: Die, ctx: &mut actix::Context<MyActor>) {
+    fn handle(&mut self, _: Die) {
         self.2.fetch_add(1, Ordering::Relaxed);
-        ctx.stop();
+        self.3.stop();
     }
 }
 
@@ -54,8 +59,9 @@ fn test_supervisor_restart() {
     let addr2 = Arc::clone(&addr);
 
     System::run(move || {
-        let addr =
-            actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
+        let addr = actix::Supervisor::start(move |ctx| {
+            MyActor(starts2, restarts2, messages2, ctx)
+        });
         addr.do_send(Die);
         addr.do_send(Die);
         *addr2.lock().unwrap() = Some(addr);

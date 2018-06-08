@@ -20,7 +20,7 @@ impl Actor for MyActor {
 impl Handler<Ping> for MyActor {
     type Result = ();
 
-    fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor>) {
+    fn handle(&mut self, _: Ping) {
         self.0
             .store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
         Arbiter::system().do_send(actix::msgs::SystemExit(0));

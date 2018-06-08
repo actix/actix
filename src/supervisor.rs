@@ -1,7 +1,7 @@
 use futures::{Async, Future, Poll};
 use tokio;
 
-use actor::{Actor, AsyncContext, Supervised};
+use actor::{Actor, AsyncContext, Ctx, Supervised};
 use address::{channel, Addr};
 use arbiter::Arbiter;
 use context::Context;
@@ -31,7 +31,7 @@ use msgs::Execute;
 /// #[derive(Message)]
 /// struct Die;
 ///
-/// struct MyActor;
+/// struct MyActor{ctx: Ctx<MyActor>}
 ///
 /// impl Actor for MyActor {
 ///     type Context = Context<Self>;
@@ -47,15 +47,15 @@ use msgs::Execute;
 /// impl Handler<Die> for MyActor {
 ///     type Result = ();
 ///
-///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
-///         ctx.stop();
+///     fn handle(&mut self, _: Die) {
+///         self.ctx.stop();
 /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///     }
 /// }
 ///
 /// fn main() {
 ///     System::run(|| {
-///         let addr = actix::Supervisor::start(|_| MyActor);
+///         let addr = actix::Supervisor::start(|ctx| MyActor{ctx});
 ///
 ///         addr.do_send(Die);
 ///     });
@@ -97,12 +97,13 @@ where
     /// ```
     pub fn start<F>(f: F) -> Addr<A>
     where
-        F: FnOnce(&mut A::Context) -> A + 'static,
+        F: FnOnce(Ctx<A>) -> A + 'static,
         A: Actor<Context = Context<A>>,
     {
         // create actor
         let mut ctx = Context::new(None);
-        let act = f(&mut ctx);
+        let link = Ctx::new(ctx.clone());
+        let act = f(link);
         let addr = ctx.address();
         ctx.set_actor(act);
 

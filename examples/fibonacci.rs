@@ -24,7 +24,7 @@ impl Actor for SyncActor {
 impl Handler<Fibonacci> for SyncActor {
     type Result = Result<u64, ()>;
 
-    fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Fibonacci) -> Self::Result {
         if msg.0 == 0 {
             Err(())
         } else if msg.0 == 1 {
@@ -48,7 +48,7 @@ impl Handler<Fibonacci> for SyncActor {
 fn main() {
     System::run(|| {
         // start sync arbiter with 3 threads
-        let addr = SyncArbiter::start(3, || SyncActor);
+        let addr = SyncArbiter::start(3, |_| SyncActor);
 
         // send 5 messages
         for n in 5..10 {

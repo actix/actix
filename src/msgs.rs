@@ -2,7 +2,7 @@
 
 use tokio;
 
-use actor::{Actor, AsyncContext};
+use actor::{Actor, AsyncContext, Ctx};
 use address::Addr;
 use context::Context;
 use handler::Message;
@@ -31,7 +31,7 @@ impl<A: Actor> Message for StartActor<A> {
 impl<A: Actor<Context = Context<A>> + Send> StartActor<A> {
     pub fn new<F>(f: F) -> Self
     where
-        F: FnOnce(&mut Context<A>) -> A + Send + 'static,
+        F: FnOnce(Ctx<A>) -> A + Send + 'static,
     {
         StartActor(Box::new(|| {
             let ctx = Context::create(f);

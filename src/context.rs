@@ -1,9 +1,13 @@
+use std::cell::UnsafeCell;
 use std::fmt;
+use std::sync::Arc;
 
 use futures::{Future, Poll};
 use tokio;
 
-use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle, Supervised};
+use actor::{
+    Actor, ActorContext, ActorState, AsyncContext, Ctx, SpawnHandle, Supervised,
+};
 use address::{Addr, AddressReceiver};
 use contextimpl::ContextImpl;
 use fut::ActorFuture;
@@ -13,8 +17,10 @@ pub struct Context<A>
 where
     A: Actor<Context = Context<A>>,
 {
-    inner: ContextImpl<A>,
+    inner: Arc<UnsafeCell<ContextImpl<A>>>,
 }
+
+unsafe impl<A: Actor<Context = Context<A>>> Send for Context<A> {}
 
 impl<A> ActorContext for Context<A>
 where
@@ -22,15 +28,15 @@ where
 {
     #[inline]
     fn stop(&mut self) {
-        self.inner.stop()
+        self.get_mut().stop()
     }
     #[inline]
     fn terminate(&mut self) {
-        self.inner.terminate()
+        self.get_mut().terminate()
     }
     #[inline]
     fn state(&self) -> ActorState {
-        self.inner.state()
+        self.get_ref().state()
     }
 }
 
@@ -43,30 +49,30 @@ where
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        self.inner.spawn(fut)
+        self.get_mut().spawn(fut)
     }
 
     #[inline]
-    fn wait<F>(&mut self, fut: F)
+    fn spawn_and_wait<F>(&mut self, fut: F)
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        self.inner.wait(fut)
+        self.get_mut().wait(fut)
     }
 
     #[inline]
     fn waiting(&self) -> bool {
-        self.inner.waiting()
+        self.get_ref().waiting()
     }
 
     #[inline]
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        self.inner.cancel_future(handle)
+        self.get_mut().cancel_future(handle)
     }
 
     #[inline]
     fn address(&self) -> Addr<A> {
-        self.inner.address()
+        self.get_ref().address()
     }
 }
 
@@ -91,14 +97,17 @@ where
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// let ctx = Context::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    /// let ctx = Context::create(|ctx: Ctx<MyActor>| MyActor { val: 10 });
     /// ```
     pub fn create<F>(f: F) -> Self
     where
-        F: FnOnce(&mut Self) -> A + 'static,
+        F: FnOnce(Ctx<A>) -> A + 'static,
     {
         let mut ctx = Context::new(None);
-        let act = f(&mut ctx);
+        let link = Ctx::new(Context {
+            inner: ctx.inner.clone(),
+        });
+        let act = f(link);
         ctx.set_actor(act);
         ctx
     }
@@ -107,27 +116,27 @@ where
     ///
     /// SpawnHandle is the handle returned by `AsyncContext::spawn()` method.
     pub fn handle(&self) -> SpawnHandle {
-        self.inner.curr_handle()
+        self.get_ref().curr_handle()
     }
 
     /// Set mailbox capacity
     ///
     /// By default mailbox capacity is 16 messages.
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
-        self.inner.set_mailbox_capacity(cap)
+        self.get_mut().set_mailbox_capacity(cap)
     }
 
     #[inline]
     pub(crate) fn new(act: Option<A>) -> Context<A> {
         Context {
-            inner: ContextImpl::new(act),
+            inner: Arc::new(UnsafeCell::new(ContextImpl::new(act))),
         }
     }
 
     #[inline]
     pub(crate) fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Context<A> {
         Context {
-            inner: ContextImpl::with_receiver(act, rx),
+            inner: Arc::new(UnsafeCell::new(ContextImpl::with_receiver(act, rx))),
         }
     }
 
@@ -145,12 +154,28 @@ where
         A: Supervised,
     {
         let ctx: &mut Context<A> = unsafe { &mut *(self as *mut _) };
-        self.inner.restart(ctx)
+        self.get_mut().restart(ctx)
     }
 
     #[inline]
     pub(crate) fn set_actor(&mut self, act: A) {
-        self.inner.set_actor(act)
+        self.get_mut().set_actor(act)
+    }
+
+    #[inline]
+    fn get_ref(&self) -> &ContextImpl<A> {
+        unsafe { &*self.inner.get() }
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut ContextImpl<A> {
+        unsafe { &mut *self.inner.get() }
+    }
+
+    pub(crate) fn clone(&self) -> Self {
+        Context {
+            inner: self.inner.clone(),
+        }
     }
 }
 
@@ -165,7 +190,7 @@ where
     #[inline]
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         let ctx: &mut Context<A> = unsafe { &mut *(self as *mut _) };
-        self.inner.poll(ctx)
+        self.get_mut().poll(ctx)
     }
 }
 
@@ -189,7 +214,7 @@ where
 
     /// Spawn future into the context. Stop processing any of incoming events
     /// until this future resolves.
-    fn wait(self, ctx: &mut A::Context);
+    fn spawn_and_wait(self, ctx: &mut A::Context);
 }
 
 impl<A, T> ContextFutureSpawner<A> for T
@@ -204,7 +229,7 @@ where
     }
 
     #[inline]
-    fn wait(self, ctx: &mut A::Context) {
-        ctx.wait(self);
+    fn spawn_and_wait(self, ctx: &mut A::Context) {
+        ctx.spawn_and_wait(self);
     }
 }

@@ -46,7 +46,7 @@ use supervisor::Supervisor;
 /// impl Handler<Ping> for MyActor1 {
 ///     type Result = ();
 ///
-///     fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
+///     fn handle(&mut self, _: Ping) {
 ///         println!("ping");
 /// #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///     }
@@ -137,9 +137,9 @@ impl SystemRegistry {
                         act
                     })
                 } else {
-                    Supervisor::start(|ctx| {
+                    Supervisor::start(|mut ctx| {
                         let mut act = A::default();
-                        act.service_started(ctx);
+                        act.service_started(&mut ctx);
                         act
                     })
                 };

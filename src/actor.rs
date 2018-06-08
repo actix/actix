@@ -1,3 +1,4 @@
+use std::ops::{Deref, DerefMut};
 use std::time::Duration;
 
 use futures::Stream;
@@ -143,7 +144,7 @@ pub trait Actor: Sized + 'static {
     /// fn main() {
     ///     // initialize system
     ///     System::run(|| {
-    ///         let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    ///         let addr = MyActor::create(|ctx: Ctx<MyActor>| MyActor { val: 10 });
     /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     });
     /// }
@@ -151,7 +152,7 @@ pub trait Actor: Sized + 'static {
     fn create<F>(f: F) -> Addr<Self>
     where
         Self: Actor<Context = Context<Self>> + Send,
-        F: FnOnce(&mut Context<Self>) -> Self + Send + 'static,
+        F: FnOnce(Ctx<Self>) -> Self + Send + 'static,
     {
         let ctx = Context::create(f);
         let addr = ctx.address();
@@ -200,6 +201,9 @@ impl ActorState {
     pub fn alive(&self) -> bool {
         *self == ActorState::Started || *self == ActorState::Running
     }
+    pub fn stopping(&self) -> bool {
+        *self == ActorState::Stopping || *self == ActorState::Stopped
+    }
 }
 
 /// Actor execution context
@@ -237,7 +241,7 @@ where
 
     /// Spawn future into the context. Stop processing any of incoming events
     /// until this future resolves.
-    fn wait<F>(&mut self, fut: F)
+    fn spawn_and_wait<F>(&mut self, fut: F)
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
 
@@ -263,13 +267,13 @@ where
     /// struct MyActor;
     ///
     /// impl StreamHandler<Ping, io::Error> for MyActor {
-    ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
-    ///         println!("PING");
+    ///     fn handle(&mut self, msg: io::Result<Option<Ping>>, ctx: &mut Self::Context) {
+    ///         match msg {
+    ///           Ok(Some(_)) => println!("PING"),
+    ///           Ok(None) => println!("FINISHED"),
+    ///           Err(_) => println!("ERROR"),
+    ///         }
     /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
-    ///     }
-    ///
-    ///     fn finished(&mut self, ctx: &mut Self::Context) {
-    ///         println!("finished");
     ///     }
     /// }
     ///
@@ -311,7 +315,7 @@ where
     /// impl Handler<Ping> for MyActor {
     ///     type Result = ();
     ///
-    ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
+    ///     fn handle(&mut self, msg: Ping) {
     ///         println!("PING");
     /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
     ///     }
@@ -402,5 +406,31 @@ impl SpawnHandle {
 impl Default for SpawnHandle {
     fn default() -> SpawnHandle {
         SpawnHandle(0)
+    }
+}
+
+pub struct Ctx<A: Actor> {
+    inner: A::Context,
+}
+
+unsafe impl<A: Actor> Send for Ctx<A> {}
+
+impl<A: Actor> Ctx<A> {
+    pub fn new(ctx: A::Context) -> Self {
+        Ctx { inner: ctx }
+    }
+}
+
+impl<A: Actor> Deref for Ctx<A> {
+    type Target = A::Context;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<A: Actor> DerefMut for Ctx<A> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }

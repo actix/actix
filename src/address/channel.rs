@@ -798,7 +798,7 @@ mod tests {
 
     impl Handler<Ping> for Act {
         type Result = ();
-        fn handle(&mut self, _: Ping, _: &mut Context<Act>) {}
+        fn handle(&mut self, _: Ping) {}
     }
 
     #[test]

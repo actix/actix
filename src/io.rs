@@ -190,7 +190,7 @@ where
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     if inner.buffer.len() > inner.high {
-                        ctx.wait(WriterDrain {
+                        ctx.spawn_and_wait(WriterDrain {
                             inner: self.inner.clone(),
                             act: PhantomData,
                         });

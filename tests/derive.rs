@@ -18,7 +18,7 @@ impl Actor for EmptyActor {
 impl Handler<Empty> for EmptyActor {
     type Result = ();
 
-    fn handle(&mut self, _message: Empty, _context: &mut Context<Self>) {}
+    fn handle(&mut self, _message: Empty) {}
 }
 
 #[test]
@@ -53,9 +53,7 @@ impl Actor for SumResultActor {
 impl Handler<SumResult> for SumResultActor {
     type Result = Result<usize, ()>;
 
-    fn handle(
-        &mut self, message: SumResult, _context: &mut Context<Self>,
-    ) -> Self::Result {
+    fn handle(&mut self, message: SumResult) -> Self::Result {
         Ok(message.0 + message.1)
     }
 }
@@ -91,7 +89,7 @@ impl Actor for SumOneActor {
 impl Handler<SumOne> for SumOneActor {
     type Result = usize;
 
-    fn handle(&mut self, message: SumOne, _context: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, message: SumOne) -> Self::Result {
         message.0 + message.1
     }
 }

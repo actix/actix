@@ -21,7 +21,7 @@
 //! impl Handler<signal::Signal> for Signals {
 //!     type Result = ();
 //!
-//!     fn handle(&mut self, msg: signal::Signal, _: &mut Context<Self>) {
+//!     fn handle(&mut self, msg: signal::Signal) {
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
@@ -172,7 +172,7 @@ impl actix::SystemService for ProcessSignals {
 impl Handler<SignalType> for ProcessSignals {
     type Result = ();
 
-    fn handle(&mut self, sig: SignalType, _: &mut Self::Context) {
+    fn handle(&mut self, sig: SignalType) {
         let subscribers = std::mem::replace(&mut self.subscribers, Vec::new());
         for subscr in subscribers {
             if subscr.do_send(Signal(sig)).is_ok() {
@@ -193,7 +193,7 @@ impl Message for Subscribe {
 impl actix::Handler<Subscribe> for ProcessSignals {
     type Result = ();
 
-    fn handle(&mut self, msg: Subscribe, _: &mut Self::Context) {
+    fn handle(&mut self, msg: Subscribe) {
         self.subscribers.push(msg.0);
     }
 }
@@ -218,7 +218,7 @@ impl Actor for DefaultSignalsHandler {
             .map(|_| ())
             .map_err(|_| ())
             .into_actor(self)
-            .wait(ctx)
+            .spawn_and_wait(ctx)
     }
 }
 
@@ -227,7 +227,7 @@ impl Actor for DefaultSignalsHandler {
 impl actix::Handler<Signal> for DefaultSignalsHandler {
     type Result = ();
 
-    fn handle(&mut self, msg: Signal, _: &mut Self::Context) {
+    fn handle(&mut self, msg: Signal) {
         match msg.0 {
             SignalType::Int => {
                 info!("SIGINT received, exiting");

@@ -40,7 +40,7 @@ impl Actor for MyActor {
                     ()
                 }
             })
-            .wait(ctx)
+            .spawn_and_wait(ctx)
     }
 }
 
@@ -79,7 +79,7 @@ impl Actor for MyStreamActor {
                 }
             })
             .finish()
-            .wait(ctx)
+            .spawn_and_wait(ctx)
     }
 }
 

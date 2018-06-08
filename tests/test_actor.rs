@@ -30,17 +30,19 @@ impl Actor for MyActor {
 }
 
 impl StreamHandler<Num, ()> for MyActor {
-    fn handle(&mut self, msg: Num, _: &mut Context<MyActor>) {
-        self.0.fetch_add(msg.0, Ordering::Relaxed);
-    }
-
-    fn error(&mut self, _: (), _: &mut Context<MyActor>) -> Running {
-        self.0.fetch_add(1, Ordering::Relaxed);
-        self.2
-    }
-
-    fn finished(&mut self, _: &mut Context<MyActor>) {
-        self.1.store(true, Ordering::Relaxed);
+    fn handle(&mut self, msg: Result<Option<Num>, ()>, ctx: &mut Self::Context) {
+        match msg {
+            Ok(Some(msg)) => {
+                self.0.fetch_add(msg.0, Ordering::Relaxed);
+            }
+            Ok(None) => self.1.store(true, Ordering::Relaxed),
+            Err(_) => {
+                self.0.fetch_add(1, Ordering::Relaxed);
+                if self.2 == Running::Stop {
+                    ctx.stop();
+                }
+            }
+        }
     }
 }
 
@@ -54,8 +56,8 @@ fn test_stream() {
     let act_err = Arc::clone(&err);
 
     System::run(move || {
-        MyActor::create(move |ctx| {
-            MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
+        MyActor::create(move |mut ctx| {
+            MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), &mut ctx);
             MyActor(act_count, act_err, Running::Stop)
         });
     });
@@ -83,8 +85,8 @@ fn test_stream_with_error() {
     let act_error = Arc::clone(&error);
 
     System::run(move || {
-        MyActor::create(move |ctx| {
-            MyActor::add_stream(futures::stream::iter_result(items), ctx);
+        MyActor::create(move |mut ctx| {
+            MyActor::add_stream(futures::stream::iter_result(items), &mut ctx);
             MyActor(act_count, act_error, Running::Stop)
         });
     });
@@ -112,8 +114,8 @@ fn test_stream_with_error_no_stop() {
     let act_error = Arc::clone(&error);
 
     System::run(move || {
-        MyActor::create(move |ctx| {
-            MyActor::add_stream(futures::stream::iter_result(items), ctx);
+        MyActor::create(move |mut ctx| {
+            MyActor::add_stream(futures::stream::iter_result(items), &mut ctx);
             MyActor(act_count, act_error, Running::Continue)
         });
     });
@@ -127,6 +129,7 @@ struct MySyncActor {
     stopped: Arc<AtomicUsize>,
     msgs: Arc<AtomicUsize>,
     stop: bool,
+    ctx: Ctx<MySyncActor>,
 }
 
 impl Actor for MySyncActor {
@@ -147,10 +150,10 @@ impl Actor for MySyncActor {
 impl actix::Handler<Num> for MySyncActor {
     type Result = ();
 
-    fn handle(&mut self, msg: Num, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: Num) {
         self.msgs.fetch_add(msg.0, Ordering::Relaxed);
         if self.stop {
-            ctx.stop();
+            self.ctx.stop();
         }
     }
 }
@@ -168,7 +171,8 @@ fn test_restart_sync_actor() {
     let msgs1 = Arc::clone(&msgs);
 
     System::run(move || {
-        let addr = SyncArbiter::start(1, move || MySyncActor {
+        let addr = SyncArbiter::start(1, move |ctx| MySyncActor {
+            ctx,
             started: Arc::clone(&started1),
             stopping: Arc::clone(&stopping1),
             stopped: Arc::clone(&stopped1),

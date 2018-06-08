@@ -80,7 +80,7 @@ where
         match self.timeout.poll() {
             Ok(Async::NotReady) => Ok(Async::NotReady),
             Ok(Async::Ready(_)) => {
-                let fut = A::handle(act, self.msg.take().unwrap(), ctx);
+                let fut = A::handle(act, self.msg.take().unwrap());
                 fut.handle::<()>(ctx, None);
                 Ok(Async::Ready(()))
             }
@@ -124,7 +124,7 @@ where
     fn poll(
         &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
-        let fut = Handler::handle(act, self.msg.take().unwrap(), ctx);
+        let fut = Handler::handle(act, self.msg.take().unwrap());
         fut.handle::<()>(ctx, None);
         Ok(Async::Ready(()))
     }
@@ -171,7 +171,7 @@ where
         loop {
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    let fut = Handler::handle(act, msg, ctx);
+                    let fut = Handler::handle(act, msg);
                     fut.handle::<()>(ctx, None);
                     if ctx.waiting() {
                         return Ok(Async::NotReady);

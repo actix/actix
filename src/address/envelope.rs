@@ -99,7 +99,7 @@ where
         }
 
         if let Some(msg) = self.msg.take() {
-            let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
+            let fut = <Self::Actor as Handler<M>>::handle(act, msg);
             fut.handle(ctx, tx)
         }
     }

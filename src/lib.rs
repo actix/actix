@@ -78,7 +78,7 @@ pub mod sync;
 pub mod utils;
 
 pub use actor::{
-    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+    Actor, ActorContext, ActorState, AsyncContext, Ctx, Running, SpawnHandle, Supervised,
 };
 pub use address::{Addr, MailboxError, Recipient};
 pub use arbiter::Arbiter;
@@ -111,7 +111,8 @@ pub mod prelude {
     pub use actix_derive::*;
 
     pub use actor::{
-        Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+        Actor, ActorContext, ActorState, AsyncContext, Ctx, Running, SpawnHandle,
+        Supervised,
     };
     pub use address::{
         Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,

@@ -1,7 +1,7 @@
 use futures::{Async, Poll, Stream};
 use std::marker::PhantomData;
 
-use actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle};
+use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use fut::ActorFuture;
 
 /// Stream handler
@@ -20,26 +20,9 @@ where
     Self: Actor,
 {
     /// Method is called for every message received by this Actor
-    fn handle(&mut self, item: I, ctx: &mut Self::Context);
-
-    /// Method is called when stream get polled first time.
-    fn started(&mut self, ctx: &mut Self::Context) {}
-
-    /// Method is called when stream emits error.
     ///
-    /// If this method returns `ErrorAction::Continue` stream processing
-    /// continues otherwise stream processing stops. Default method
-    /// implementation returns `ErrorAction::Stop`
-    fn error(&mut self, err: E, ctx: &mut Self::Context) -> Running {
-        Running::Stop
-    }
-
-    /// Method is called when stream finishes.
-    ///
-    /// By default this method stops actor execution.
-    fn finished(&mut self, ctx: &mut Self::Context) {
-        ctx.stop()
-    }
+    /// `Ok(None)` - indicates end of stream
+    fn handle(&mut self, item: Result<Option<I>, E>, ctx: &mut Self::Context);
 
     /// This method register stream to an actor context and
     /// allows to handle `Stream` in similar way as normal actor messages.
@@ -57,13 +40,13 @@ where
     /// struct MyActor;
     ///
     /// impl StreamHandler<Ping, io::Error> for MyActor {
-    ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
-    ///         println!("PING");
+    ///     fn handle(&mut self, msg: io::Result<Option<Ping>>, ctx: &mut Self::Context) {
+    ///         match msg {
+    ///           Ok(Some(_)) => println!("PING"),
+    ///           Ok(None) => println!("FINISHED"),
+    ///           Err(_) => println!("ERROR"),
+    ///         }
     /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
-    ///     }
-    ///
-    ///     fn finished(&mut self, ctx: &mut Self::Context) {
-    ///         println!("finished");
     ///     }
     /// }
     ///
@@ -100,7 +83,6 @@ where
 
 pub(crate) struct ActorStream<A, M, E, S> {
     stream: S,
-    started: bool,
     act: PhantomData<A>,
     msg: PhantomData<M>,
     error: PhantomData<E>,
@@ -110,7 +92,6 @@ impl<A, M, E, S> ActorStream<A, M, E, S> {
     pub fn new(fut: S) -> Self {
         ActorStream {
             stream: fut,
-            started: false,
             act: PhantomData,
             msg: PhantomData,
             error: PhantomData,
@@ -131,27 +112,28 @@ where
     fn poll(
         &mut self, act: &mut A, ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
-        if !self.started {
-            self.started = true;
-            <A as StreamHandler<M, E>>::started(act, ctx);
-        }
-
         loop {
             match self.stream.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    A::handle(act, msg, ctx);
+                    A::handle(act, Ok(Some(msg)), ctx);
+                    if ctx.state().stopping() {
+                        A::handle(act, Ok(None), ctx);
+                    }
                     if ctx.waiting() {
                         return Ok(Async::NotReady);
                     }
                 }
                 Err(err) => {
-                    if A::error(act, err, ctx) == Running::Stop {
-                        A::finished(act, ctx);
-                        return Ok(Async::Ready(()));
+                    A::handle(act, Err(err), ctx);
+                    if ctx.state().stopping() {
+                        A::handle(act, Ok(None), ctx);
+                    }
+                    if ctx.waiting() {
+                        return Ok(Async::NotReady);
                     }
                 }
                 Ok(Async::Ready(None)) => {
-                    A::finished(act, ctx);
+                    A::handle(act, Ok(None), ctx);
                     return Ok(Async::Ready(()));
                 }
                 Ok(Async::NotReady) => return Ok(Async::NotReady),

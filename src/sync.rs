@@ -31,7 +31,7 @@
 //! impl Handler<Fibonacci> for SyncActor {
 //!     type Result = Result<u64, ()>;
 //!
-//!     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
+//!     fn handle(&mut self, msg: Fibonacci) -> Self::Result {
 //!         if msg.0 == 0 {
 //!             Err(())
 //!         } else if msg.0 == 1 {
@@ -55,7 +55,7 @@
 //! fn main() {
 //!     System::run(|| {
 //!         // start sync arbiter with 2 threads
-//!         let addr = SyncArbiter::start(2, || SyncActor);
+//!         let addr = SyncArbiter::start(2, |_| SyncActor);
 //!
 //!         // send 5 messages
 //!         for n in 5..10 {
@@ -66,6 +66,7 @@
 //!     });
 //! }
 //! ```
+use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::thread;
@@ -75,7 +76,7 @@ use futures::sync::oneshot::Sender as SyncSender;
 use futures::{Async, Future, Poll, Stream};
 use tokio;
 
-use actor::{Actor, ActorContext, ActorState, Running};
+use actor::{Actor, ActorContext, ActorState, Ctx, Running};
 use address::channel;
 use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
 use context::Context;
@@ -99,7 +100,7 @@ where
     /// Returns address of the started actor.
     pub fn start<F>(threads: usize, factory: F) -> Addr<A>
     where
-        F: Fn() -> A + Send + Sync + 'static,
+        F: Fn(Ctx<A>) -> A + Send + Sync + 'static,
     {
         let factory = Arc::new(factory);
         let (sender, receiver) = cb_channel::unbounded();
@@ -186,11 +187,15 @@ pub struct SyncContext<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
-    act: A,
+    inner: Arc<UnsafeCell<InnerSyncContext<A>>>,
+}
+
+struct InnerSyncContext<A: Actor<Context = SyncContext<A>>> {
+    act: Option<A>,
     queue: cb_channel::Receiver<SyncContextProtocol<A>>,
     stopping: bool,
     state: ActorState,
-    factory: Arc<Fn() -> A>,
+    factory: Arc<Fn(Ctx<A>) -> A>,
 }
 
 impl<A> SyncContext<A>
@@ -199,63 +204,76 @@ where
 {
     /// Create new SyncContext
     fn new(
-        factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<SyncContextProtocol<A>>,
+        factory: Arc<Fn(Ctx<A>) -> A>,
+        queue: cb_channel::Receiver<SyncContextProtocol<A>>,
     ) -> Self {
-        let act = factory();
-        SyncContext {
-            act,
+        let inner = InnerSyncContext {
             queue,
             factory,
             stopping: false,
             state: ActorState::Started,
-        }
+            act: None,
+        };
+        let ctx = SyncContext {
+            inner: Arc::new(UnsafeCell::new(inner)),
+        };
+        let link = Ctx::new(SyncContext {
+            inner: ctx.inner.clone(),
+        });
+        let inner = unsafe { &mut *ctx.inner.get() };
+        inner.act = Some((*inner.factory)(link));
+        ctx
     }
 
     fn run(&mut self) {
+        let inner = unsafe { &mut *self.inner.get() };
         let ctx: &mut SyncContext<A> = unsafe { &mut *(self as *mut _) };
 
         // started
-        A::started(&mut self.act, ctx);
-        self.state = ActorState::Running;
+        A::started(inner.act.as_mut().unwrap(), ctx);
+        inner.state = ActorState::Running;
 
         loop {
-            match self.queue.recv() {
+            match inner.queue.recv() {
                 Ok(SyncContextProtocol::Stop) => {
-                    self.state = ActorState::Stopping;
-                    if A::stopping(&mut self.act, ctx) != Running::Stop {
+                    inner.state = ActorState::Stopping;
+                    if A::stopping(inner.act.as_mut().unwrap(), ctx) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
                     }
-                    self.state = ActorState::Stopped;
-                    A::stopped(&mut self.act, ctx);
+                    inner.state = ActorState::Stopped;
+                    A::stopped(inner.act.as_mut().unwrap(), ctx);
                     return;
                 }
                 Ok(SyncContextProtocol::Envelope(mut env)) => {
-                    env.handle(&mut self.act, ctx);
+                    env.handle(inner.act.as_mut().unwrap(), ctx);
                 }
                 Err(_) => {
-                    self.state = ActorState::Stopping;
-                    if A::stopping(&mut self.act, ctx) != Running::Stop {
+                    inner.state = ActorState::Stopping;
+                    if A::stopping(inner.act.as_mut().unwrap(), ctx) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
                     }
-                    self.state = ActorState::Stopped;
-                    A::stopped(&mut self.act, ctx);
+                    inner.state = ActorState::Stopped;
+                    A::stopped(inner.act.as_mut().unwrap(), ctx);
                     return;
                 }
             }
 
-            if self.stopping {
-                self.stopping = false;
+            if inner.stopping {
+                inner.stopping = false;
 
                 // stop old actor
-                A::stopping(&mut self.act, ctx);
-                self.state = ActorState::Stopped;
-                A::stopped(&mut self.act, ctx);
+                A::stopping(inner.act.as_mut().unwrap(), ctx);
+                inner.state = ActorState::Stopped;
+                A::stopped(inner.act.as_mut().unwrap(), ctx);
 
                 // start new actor
-                self.state = ActorState::Started;
-                self.act = (*self.factory)();
-                A::started(&mut self.act, ctx);
-                self.state = ActorState::Running;
+                inner.state = ActorState::Started;
+                let link = Ctx::new(SyncContext {
+                    inner: self.inner.clone(),
+                });
+                inner.act = Some((*inner.factory)(link));
+                A::started(inner.act.as_mut().unwrap(), ctx);
+                inner.state = ActorState::Running;
             }
         }
     }
@@ -267,19 +285,22 @@ where
 {
     /// Stop current actor. SyncContext creates and starts new actor.
     fn stop(&mut self) {
-        self.stopping = true;
-        self.state = ActorState::Stopping;
+        let inner = unsafe { &mut *self.inner.get() };
+        inner.stopping = true;
+        inner.state = ActorState::Stopping;
     }
 
     /// Terminate actor execution. SyncContext creates and starts new actor.
     fn terminate(&mut self) {
-        self.stopping = true;
-        self.state = ActorState::Stopping;
+        let inner = unsafe { &mut *self.inner.get() };
+        inner.stopping = true;
+        inner.state = ActorState::Stopping;
     }
 
     /// Actor execution state
     fn state(&self) -> ActorState {
-        self.state
+        let inner = unsafe { &*self.inner.get() };
+        inner.state
     }
 }
 
@@ -330,7 +351,7 @@ where
         }
 
         if let Some(msg) = self.msg.take() {
-            <A as Handler<M>>::handle(act, msg, ctx).handle(ctx, tx)
+            <A as Handler<M>>::handle(act, msg).handle(ctx, tx)
         }
     }
 }

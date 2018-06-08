@@ -36,7 +36,7 @@ impl Actor for SyncActor {
 impl Handler<Fibonacci> for SyncActor {
     type Result = Result<u64, ()>;
 
-    fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: Fibonacci) -> Self::Result {
         let old = self.messages.fetch_add(1, Ordering::Relaxed);
         if old == 4 {
             self.addr.do_send(actix::msgs::SystemExit(0));
@@ -77,7 +77,7 @@ fn test_sync() {
 
     System::run(move || {
         let s_addr = Arbiter::system();
-        let addr = SyncArbiter::start(2, move || SyncActor {
+        let addr = SyncArbiter::start(2, move |_| SyncActor {
             cond: Arc::clone(&cond_c),
             cond_l: Arc::clone(&cond_l_c),
             counter: Arc::clone(&counter_c),
