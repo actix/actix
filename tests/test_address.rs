@@ -5,8 +5,9 @@ extern crate tokio_core;
 
 use actix::prelude::*;
 use futures::{future, Future};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::thread;
 use std::time::Duration;
 use tokio_core::reactor::Timeout;
 
@@ -111,21 +112,10 @@ fn test_sync_address() {
     let addr3 = addr.clone();
     addr.do_send(Ping(1));
 
-    arbiter.do_send(actix::msgs::Execute::new(
-        move || -> Result<(), ()> {
-            addr3.do_send(Ping(2));
-
-            Arbiter::handle().spawn_fn(move || {
-                Timeout::new(Duration::new(0, 1000), Arbiter::handle())
-                    .unwrap()
-                    .then(move |_| {
-                        Arbiter::system().do_send(actix::msgs::SystemExit(0));
-                        future::result(Ok(()))
-                    })
-            });
-            Ok(())
-        },
-    ));
+    arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+        addr3.do_send(Ping(2));
+        Ok(())
+    }));
 
     Arbiter::handle().spawn_fn(move || {
         addr2.do_send(Ping(3));
@@ -134,11 +124,22 @@ fn test_sync_address() {
             .unwrap()
             .then(move |_| {
                 addr2.do_send(Ping(4));
+
+                Arbiter::handle().spawn_fn(move || {
+                    Timeout::new(Duration::new(0, 1000), Arbiter::handle())
+                        .unwrap()
+                        .then(move |_| {
+                            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                            future::result(Ok(()))
+                        })
+                });
                 future::result(Ok(()))
             })
     });
 
     sys.run();
+    thread::sleep(Duration::from_millis(200));
+
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }
 

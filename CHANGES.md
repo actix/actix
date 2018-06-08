@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.5.8 (2018-06-08)
+
+* Allow to create `Connector` actor with custom configuration
+
+
 ## 0.5.7 (2018-05-17)
 
 * Stop sync actor if sender is dead.

@@ -6,8 +6,8 @@
 //! # extern crate actix;
 //! # extern crate futures;
 //! # use futures::{future, Future};
-//! use actix::prelude::*;
 //! use actix::actors;
+//! use actix::prelude::*;
 //!
 //! fn main() {
 //!     let sys = System::new("test");
@@ -22,7 +22,7 @@
 //! #                   Arbiter::system().do_send(actix::msgs::SystemExit(0));
 //!                     Ok::<_, ()>(())
 //!                 })
-//!    });
+//!     });
 //!
 //!     Arbiter::handle().spawn({
 //!         let resolver: Addr<Unsync, _> = actors::Connector::from_registry();
@@ -33,9 +33,9 @@
 //!                     println!("RESULT: {:?}", stream);
 //!                     Ok::<_, ()>(())
 //!                 })
-//!    });
+//!     });
 //!
-//!    sys.run();
+//!     sys.run();
 //! }
 //! ```
 use std::collections::VecDeque;
@@ -46,9 +46,9 @@ use std::time::Duration;
 use futures::{Async, Future, Poll};
 use tokio_core::net::{TcpStream, TcpStreamNew};
 use tokio_core::reactor::Timeout;
-use trust_dns_resolver::ResolverFuture;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::lookup_ip::LookupIpFuture;
+use trust_dns_resolver::ResolverFuture;
 
 use prelude::*;
 
@@ -154,13 +154,11 @@ impl Supervised for Connector {}
 impl actix::ArbiterService for Connector {}
 
 impl Connector {
+    /// Create `Connector` with custom configuration
     pub fn new(config: ResolverConfig, options: ResolverOpts) -> Connector {
-        Connector{
-            resolver: ResolverFuture::new(
-            config,
-            options,
-            Arbiter::handle(),
-        )}
+        Connector {
+            resolver: ResolverFuture::new(config, options, Arbiter::handle()),
+        }
     }
 }
 
@@ -188,9 +186,7 @@ impl Default for Connector {
             ResolverOpts::default(),
             Arbiter::handle(),
         );
-        Connector {
-            resolver: resolver,
-        }
+        Connector { resolver: resolver }
     }
 }
 
@@ -238,7 +234,7 @@ struct Resolver {
 
 impl Resolver {
     pub fn new<S: AsRef<str>>(
-        addr: S, port: u16, resolver: &ResolverFuture
+        addr: S, port: u16, resolver: &ResolverFuture,
     ) -> Resolver {
         // try to parse as a regular SocketAddr first
         if let Ok(addr) = addr.as_ref().parse() {
@@ -296,7 +292,7 @@ impl ActorFuture for Resolver {
     type Actor = Connector;
 
     fn poll(
-        &mut self, _: &mut Connector, _: &mut Context<Connector>
+        &mut self, _: &mut Connector, _: &mut Context<Connector>,
     ) -> Poll<Self::Item, Self::Error> {
         if let Some(err) = self.error.take() {
             Err(err)
@@ -306,7 +302,8 @@ impl ActorFuture for Resolver {
             match self.lookup.as_mut().unwrap().poll() {
                 Ok(Async::NotReady) => Ok(Async::NotReady),
                 Ok(Async::Ready(ips)) => {
-                    let addrs: VecDeque<_> = ips.iter()
+                    let addrs: VecDeque<_> = ips
+                        .iter()
                         .map(|ip| SocketAddr::new(ip, self.port))
                         .collect();
                     if addrs.is_empty() {
@@ -350,7 +347,7 @@ impl ActorFuture for TcpConnector {
     type Actor = Connector;
 
     fn poll(
-        &mut self, _: &mut Connector, _: &mut Context<Connector>
+        &mut self, _: &mut Connector, _: &mut Context<Connector>,
     ) -> Poll<Self::Item, Self::Error> {
         // timeout
         if let Ok(Async::Ready(_)) = self.timeout.poll() {
