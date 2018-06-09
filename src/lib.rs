@@ -23,7 +23,12 @@
 //! * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
 //! * Actor supervision.
 //! * Typed messages (No `Any` type). Generic messages are allowed.
-
+//!
+//! ## Package feature
+//!
+//! * `resolver` - enables dns resolver actor, `actix::actors::resolver`
+//! * `signal` - enables signals handling actor
+//!
 #[macro_use]
 extern crate log;
 extern crate bytes;
@@ -39,11 +44,9 @@ extern crate tokio;
 extern crate tokio_executor;
 extern crate tokio_io;
 extern crate tokio_reactor;
-extern crate tokio_signal;
 extern crate tokio_tcp;
 extern crate tokio_threadpool;
 extern crate tokio_timer;
-extern crate trust_dns_resolver;
 
 #[macro_use]
 extern crate failure;

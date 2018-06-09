@@ -59,12 +59,13 @@
 //!     std::process::exit(0);
 //! }
 //! ```
+extern crate tokio_signal;
+
+#[cfg(unix)]
+use self::tokio_signal::unix;
 use futures::{Future, Stream};
 use libc;
 use std;
-use tokio_signal;
-#[cfg(unix)]
-use tokio_signal::unix;
 
 use prelude::*;
 

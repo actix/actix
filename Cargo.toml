@@ -21,11 +21,17 @@ codecov = { repository = "actix/actix", branch = "master", service = "github" }
 name = "actix"
 path = "src/lib.rs"
 
-[features]
-default = []
-
 [workspace]
 members = ["examples/chat"]
+
+[features]
+default = ["signal", "resolver"]
+
+# dns resolver
+resolver = ["trust-dns-resolver"]
+
+# signal handling
+signal = ["tokio-signal"]
 
 [dependencies]
 actix_derive = "0.2"
@@ -39,7 +45,6 @@ tokio-executor = "0.1"
 tokio-reactor = "0.1"
 tokio-tcp = "0.1"
 tokio-timer = "0.2"
-tokio-signal = "0.2"
 tokio-threadpool = "0.1"
 
 # other
@@ -51,8 +56,11 @@ crossbeam-channel = "0.1"
 libc = { version = "0.2" }
 uuid = { version = "0.6", features = ["v4"] }
 
+# signal handling
+tokio-signal = { version = "0.2", optional = true }
+
 # dns resolver
-trust-dns-resolver = "0.9"
+trust-dns-resolver = { version = "0.9", optional = true }
 
 [profile.release]
 lto = true

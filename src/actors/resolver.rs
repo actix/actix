@@ -38,18 +38,20 @@
 //!    });
 //! }
 //! ```
+extern crate trust_dns_resolver;
+
 use std::collections::VecDeque;
 use std::io;
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
+use self::trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
+use self::trust_dns_resolver::error::ResolveError;
+use self::trust_dns_resolver::lookup_ip::LookupIpFuture;
+use self::trust_dns_resolver::ResolverFuture;
 use futures::{Async, Future, Poll};
 use tokio_tcp::{ConnectFuture, TcpStream};
 use tokio_timer::Delay;
-use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
-use trust_dns_resolver::error::ResolveError;
-use trust_dns_resolver::lookup_ip::LookupIpFuture;
-use trust_dns_resolver::ResolverFuture;
 
 use prelude::*;
 
