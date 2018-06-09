@@ -132,22 +132,24 @@ impl Handler<ClientCommand> for ChatClient {
 
 /// Server communication
 impl StreamHandler<codec::ChatResponse, io::Error> for ChatClient {
-    fn handle(&mut self, msg: codec::ChatResponse, _: &mut Context<Self>) {
+    fn handle(
+        &mut self, msg: io::Result<Option<codec::ChatResponse>>, ctx: &mut Context<Self>,
+    ) {
         match msg {
-            codec::ChatResponse::Message(ref msg) => {
+            Ok(Some(codec::ChatResponse::Message(ref msg))) => {
                 println!("message: {}", msg);
             }
-            codec::ChatResponse::Joined(ref msg) => {
+            Ok(Some(codec::ChatResponse::Joined(ref msg))) => {
                 println!("!!! joined: {}", msg);
             }
-            codec::ChatResponse::Rooms(rooms) => {
+            Ok(Some(codec::ChatResponse::Rooms(rooms))) => {
                 println!("\n!!! Available rooms:");
                 for room in rooms {
                     println!("{}", room);
                 }
                 println!();
             }
-            _ => (),
+            _ => ctx.stop(),
         }
     }
 }
