@@ -38,11 +38,11 @@ fn test_signal() {
         let _addr = signal::DefaultSignalsHandler::start_default();
         let sig = Arbiter::registry().get::<signal::ProcessSignals>();
 
-        // FIXME: this is timing issue, needs to be fixed
-        thread::sleep(Duration::from_millis(100));
-
         // send SIGTERM
         std::thread::spawn(move || {
+            // we need this because DefaultSignalsHandler starts a bit later
+            thread::sleep(Duration::from_millis(100));
+
             // emulate SIGNTERM
             sig.do_send(signal::SignalType::Quit);
         });
