@@ -71,7 +71,20 @@ impl System {
     /// This method panics if it can not create tokio runtime
     pub fn new<T: Into<String>>(name: T) -> SystemRuntime {
         let (rt, stop) =
-            System::create_runtime(&format!("{}-thread-pool-", name.into()), || {});
+            System::create_runtime(&format!("{}-thread-pool-", name.into()), 1, || {});
+
+        SystemRuntime { rt, stop }
+    }
+
+    /// Create new system and set tokio runtime pool size.
+    ///
+    /// By default pool size is 1. This method panics if it can not create tokio runtime
+    pub fn with_pool_size<T: Into<String>>(name: T, size: usize) -> SystemRuntime {
+        let (rt, stop) = System::create_runtime(
+            &format!("{}-thread-pool-", name.into()),
+            size,
+            || {},
+        );
 
         SystemRuntime { rt, stop }
     }
@@ -83,7 +96,7 @@ impl System {
     where
         F: FnOnce() + Send + 'static,
     {
-        let (_rt, stop) = System::create_runtime("actix-thread-pool-", f);
+        let (_rt, stop) = System::create_runtime("actix-thread-pool-", 1, f);
 
         match stop.wait() {
             Ok(code) => code,
@@ -91,7 +104,7 @@ impl System {
         }
     }
 
-    fn create_runtime<F>(name: &str, f: F) -> (Runtime, Receiver<i32>)
+    fn create_runtime<F>(name: &str, pool_size: usize, f: F) -> (Runtime, Receiver<i32>)
     where
         F: FnOnce() + Send + 'static,
     {
@@ -112,11 +125,14 @@ impl System {
         let reg = Arbiter::system_reg();
 
         let mut threadpool = ThreadPoolBuilder::new();
-        threadpool.name_prefix(name).after_start(move || {
-            Arbiter::set_system_ref(saddr.clone());
-            Arbiter::set_system_arb_ref(sarb2.clone());
-            Arbiter::set_system_reg(reg.clone());
-        });
+        threadpool
+            .name_prefix(name)
+            .pool_size(pool_size)
+            .after_start(move || {
+                Arbiter::set_system_ref(saddr.clone());
+                Arbiter::set_system_arb_ref(sarb2.clone());
+                Arbiter::set_system_reg(reg.clone());
+            });
 
         let mut rt = Builder::new()
             .threadpool_builder(threadpool)
