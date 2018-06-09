@@ -46,7 +46,6 @@ use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
 use self::trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
-use self::trust_dns_resolver::error::ResolveError;
 use self::trust_dns_resolver::lookup_ip::LookupIpFuture;
 use self::trust_dns_resolver::ResolverFuture;
 use futures::{Async, Future, Poll};
@@ -152,15 +151,17 @@ pub enum ResolverError {
 
 pub struct Resolver {
     resolver: Option<ResolverFuture>,
+    cfg: Option<(ResolverConfig, ResolverOpts)>,
+    err: Option<String>,
 }
 
 impl Resolver {
-    pub fn new(
-        config: ResolverConfig, options: ResolverOpts,
-    ) -> Result<Resolver, ResolveError> {
-        Ok(Resolver {
-            resolver: Some(ResolverFuture::new(config, options).wait()?),
-        })
+    pub fn new(config: ResolverConfig, options: ResolverOpts) -> Resolver {
+        Resolver {
+            resolver: None,
+            cfg: Some((config, options)),
+            err: None,
+        }
     }
 }
 
@@ -169,37 +170,48 @@ impl Actor for Resolver {
 
     #[cfg(unix)]
     fn started(&mut self, ctx: &mut Self::Context) {
-        let resolver = match ResolverFuture::from_system_conf() {
-            Ok(resolver) => resolver,
-            Err(err) => {
-                warn!("Can not create system dns resolver: {}", err);
-                ResolverFuture::new(ResolverConfig::default(), ResolverOpts::default())
+        let resolver = if let Some(cfg) = self.cfg.take() {
+            ResolverFuture::new(cfg.0, cfg.1)
+        } else {
+            match ResolverFuture::from_system_conf() {
+                Ok(resolver) => resolver,
+                Err(err) => {
+                    warn!("Can not create system dns resolver: {}", err);
+                    ResolverFuture::new(
+                        ResolverConfig::default(),
+                        ResolverOpts::default(),
+                    )
+                }
             }
         };
+
         resolver
             .into_actor(self)
             .map(|resolver, act, _| {
                 act.resolver = Some(resolver);
             })
-            .map_err(|err, _, ctx| {
+            .map_err(|err, act, _| {
                 error!("Can not create resolver: {}", err);
-                ctx.stop()
+                act.err = Some(format!("Can not create resolver: {}", err));
             })
             .wait(ctx);
     }
 
     #[cfg(not(unix))]
     fn started(&mut self, ctx: &mut Self::Context) {
-        let resolver =
-            ResolverFuture::new(ResolverConfig::default(), ResolverOpts::default());
+        let resolver = if let Some(cfg) = self.cfg.take() {
+            ResolverFuture::new(cfg.0, cfg.1)
+        } else {
+            ResolverFuture::new(ResolverConfig::default(), ResolverOpts::default())
+        };
         resolver
             .into_actor(self)
             .map(|resolver, act, _| {
                 act.resolver = Some(resolver);
             })
-            .map_err(|err, _, ctx| {
+            .map_err(|err, act, _| {
                 error!("Can not create resolver: {}", err);
-                ctx.stop()
+                act.err = Some(format!("Can not create resolver: {}", err));
             })
             .wait(ctx);
     }
@@ -211,7 +223,11 @@ impl actix::SystemService for Resolver {}
 
 impl Default for Resolver {
     fn default() -> Resolver {
-        Resolver { resolver: None }
+        Resolver {
+            resolver: None,
+            cfg: None,
+            err: None,
+        }
     }
 }
 
@@ -219,11 +235,15 @@ impl Handler<Resolve> for Resolver {
     type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ResolverError>;
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
-        Box::new(ResolveFut::new(
-            msg.name,
-            msg.port.unwrap_or(0),
-            self.resolver.as_ref().unwrap(),
-        ))
+        if let Some(ref err) = self.err {
+            Box::new(ResolveFut::err(err.clone()))
+        } else {
+            Box::new(ResolveFut::new(
+                msg.name,
+                msg.port.unwrap_or(0),
+                self.resolver.as_ref().unwrap(),
+            ))
+        }
     }
 }
 
@@ -258,6 +278,7 @@ struct ResolveFut {
     port: u16,
     addrs: Option<VecDeque<SocketAddr>>,
     error: Option<ResolverError>,
+    error2: Option<String>,
 }
 
 impl ResolveFut {
@@ -274,6 +295,7 @@ impl ResolveFut {
                 lookup: None,
                 addrs: Some(addrs),
                 error: None,
+                error2: None,
             }
         } else {
             // we need to do dns resolution
@@ -283,14 +305,26 @@ impl ResolveFut {
                     lookup: Some(resolver.lookup_ip(host)),
                     addrs: None,
                     error: None,
+                    error2: None,
                 },
                 Err(err) => ResolveFut {
                     port,
                     lookup: None,
                     addrs: None,
                     error: Some(err),
+                    error2: None,
                 },
             }
+        }
+    }
+
+    pub fn err(err: String) -> ResolveFut {
+        ResolveFut {
+            port: 0,
+            lookup: None,
+            addrs: None,
+            error: None,
+            error2: Some(err),
         }
     }
 
@@ -324,6 +358,8 @@ impl ActorFuture for ResolveFut {
     ) -> Poll<Self::Item, Self::Error> {
         if let Some(err) = self.error.take() {
             Err(err)
+        } else if let Some(err) = self.error2.take() {
+            Err(ResolverError::Resolver(err))
         } else if let Some(addrs) = self.addrs.take() {
             Ok(Async::Ready(addrs))
         } else {
