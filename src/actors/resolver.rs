@@ -14,7 +14,7 @@
 //!     System::run(|| {
 //!
 //!         tokio::spawn({
-//!             let resolver = resolver::Connector::from_registry();
+//!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(
 //!                 resolver::Resolve::host("localhost"))       // <- resolve "localhost"
@@ -26,10 +26,10 @@
 //!         });
 //!
 //!         tokio::spawn({
-//!             let resolver = resolver::Connector::from_registry();
+//!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(
-//!                 resolver::Connect::host("localhost:5000"))  // <- connect to a "localhost"
+//!                 resolver::Resolve::host("localhost:5000"))  // <- connect to a "localhost"
 //!                     .then(|stream| {
 //!                         println!("RESULT: {:?}", stream);
 //!                         Ok::<_, ()>(())
@@ -52,6 +52,12 @@ use trust_dns_resolver::lookup_ip::LookupIpFuture;
 use trust_dns_resolver::ResolverFuture;
 
 use prelude::*;
+
+#[deprecated(since = "0.7", note = "please use `Resolver` instead")]
+pub type Connector = Resolver;
+
+#[deprecated(since = "0.7", note = "please use `ResolverError` instead")]
+pub type ConnectorError = ResolverError;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Resolve {
@@ -76,7 +82,7 @@ impl Resolve {
 }
 
 impl Message for Resolve {
-    type Result = Result<VecDeque<SocketAddr>, ConnectorError>;
+    type Result = Result<VecDeque<SocketAddr>, ResolverError>;
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -113,18 +119,18 @@ impl Connect {
 }
 
 impl Message for Connect {
-    type Result = Result<TcpStream, ConnectorError>;
+    type Result = Result<TcpStream, ResolverError>;
 }
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct ConnectAddr(pub SocketAddr);
 
 impl Message for ConnectAddr {
-    type Result = Result<TcpStream, ConnectorError>;
+    type Result = Result<TcpStream, ResolverError>;
 }
 
 #[derive(Fail, Debug)]
-pub enum ConnectorError {
+pub enum ResolverError {
     /// Failed to resolve the hostname
     #[fail(display = "Failed resolving hostname: {}", _0)]
     Resolver(String),
@@ -142,21 +148,21 @@ pub enum ConnectorError {
     IoError(io::Error),
 }
 
-pub struct Connector {
+pub struct Resolver {
     resolver: Option<ResolverFuture>,
 }
 
-impl Connector {
+impl Resolver {
     pub fn new(
         config: ResolverConfig, options: ResolverOpts,
-    ) -> Result<Connector, ResolveError> {
-        Ok(Connector {
+    ) -> Result<Resolver, ResolveError> {
+        Ok(Resolver {
             resolver: Some(ResolverFuture::new(config, options).wait()?),
         })
     }
 }
 
-impl Actor for Connector {
+impl Actor for Resolver {
     type Context = Context<Self>;
 
     #[cfg(unix)]
@@ -197,21 +203,21 @@ impl Actor for Connector {
     }
 }
 
-impl Supervised for Connector {}
+impl Supervised for Resolver {}
 
-impl actix::SystemService for Connector {}
+impl actix::SystemService for Resolver {}
 
-impl Default for Connector {
-    fn default() -> Connector {
-        Connector { resolver: None }
+impl Default for Resolver {
+    fn default() -> Resolver {
+        Resolver { resolver: None }
     }
 }
 
-impl Handler<Resolve> for Connector {
-    type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ConnectorError>;
+impl Handler<Resolve> for Resolver {
+    type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ResolverError>;
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
-        Box::new(Resolver::new(
+        Box::new(ResolveFut::new(
             msg.name,
             msg.port.unwrap_or(0),
             self.resolver.as_ref().unwrap(),
@@ -219,13 +225,13 @@ impl Handler<Resolve> for Connector {
     }
 }
 
-impl Handler<Connect> for Connector {
-    type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
+impl Handler<Connect> for Resolver {
+    type Result = ResponseActFuture<Self, TcpStream, ResolverError>;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         let timeout = msg.timeout;
         Box::new(
-            Resolver::new(
+            ResolveFut::new(
                 msg.name,
                 msg.port.unwrap_or(0),
                 self.resolver.as_ref().unwrap(),
@@ -234,8 +240,8 @@ impl Handler<Connect> for Connector {
     }
 }
 
-impl Handler<ConnectAddr> for Connector {
-    type Result = ResponseActFuture<Self, TcpStream, ConnectorError>;
+impl Handler<ConnectAddr> for Resolver {
+    type Result = ResponseActFuture<Self, TcpStream, ResolverError>;
 
     fn handle(&mut self, msg: ConnectAddr, _: &mut Self::Context) -> Self::Result {
         let mut v = VecDeque::new();
@@ -245,23 +251,23 @@ impl Handler<ConnectAddr> for Connector {
 }
 
 /// Resolver future
-struct Resolver {
+struct ResolveFut {
     lookup: Option<LookupIpFuture>,
     port: u16,
     addrs: Option<VecDeque<SocketAddr>>,
-    error: Option<ConnectorError>,
+    error: Option<ResolverError>,
 }
 
-impl Resolver {
+impl ResolveFut {
     pub fn new<S: AsRef<str>>(
         addr: S, port: u16, resolver: &ResolverFuture,
-    ) -> Resolver {
+    ) -> ResolveFut {
         // try to parse as a regular SocketAddr first
         if let Ok(addr) = addr.as_ref().parse() {
             let mut addrs = VecDeque::new();
             addrs.push_back(addr);
 
-            Resolver {
+            ResolveFut {
                 port,
                 lookup: None,
                 addrs: Some(addrs),
@@ -269,14 +275,14 @@ impl Resolver {
             }
         } else {
             // we need to do dns resolution
-            match Resolver::parse(addr.as_ref(), port) {
-                Ok((host, port)) => Resolver {
+            match ResolveFut::parse(addr.as_ref(), port) {
+                Ok((host, port)) => ResolveFut {
                     port,
                     lookup: Some(resolver.lookup_ip(host)),
                     addrs: None,
                     error: None,
                 },
-                Err(err) => Resolver {
+                Err(err) => ResolveFut {
                     port,
                     lookup: None,
                     addrs: None,
@@ -286,12 +292,12 @@ impl Resolver {
         }
     }
 
-    fn parse(addr: &str, port: u16) -> Result<(&str, u16), ConnectorError> {
+    fn parse(addr: &str, port: u16) -> Result<(&str, u16), ResolverError> {
         macro_rules! try_opt {
             ($e:expr, $msg:expr) => {
                 match $e {
                     Some(r) => r,
-                    None => return Err(ConnectorError::InvalidInput($msg)),
+                    None => return Err(ResolverError::InvalidInput($msg)),
                 }
             };
         }
@@ -306,13 +312,13 @@ impl Resolver {
     }
 }
 
-impl ActorFuture for Resolver {
+impl ActorFuture for ResolveFut {
     type Item = VecDeque<SocketAddr>;
-    type Error = ConnectorError;
-    type Actor = Connector;
+    type Error = ResolverError;
+    type Actor = Resolver;
 
     fn poll(
-        &mut self, _: &mut Connector, _: &mut Context<Connector>,
+        &mut self, _: &mut Resolver, _: &mut Context<Resolver>,
     ) -> Poll<Self::Item, Self::Error> {
         if let Some(err) = self.error.take() {
             Err(err)
@@ -327,14 +333,14 @@ impl ActorFuture for Resolver {
                         .map(|ip| SocketAddr::new(ip, self.port))
                         .collect();
                     if addrs.is_empty() {
-                        Err(ConnectorError::Resolver(
+                        Err(ResolverError::Resolver(
                             "Expect at least one A dns record".to_owned(),
                         ))
                     } else {
                         Ok(Async::Ready(addrs))
                     }
                 }
-                Err(err) => Err(ConnectorError::Resolver(format!("{}", err))),
+                Err(err) => Err(ResolverError::Resolver(format!("{}", err))),
             }
         }
     }
@@ -363,15 +369,15 @@ impl TcpConnector {
 
 impl ActorFuture for TcpConnector {
     type Item = TcpStream;
-    type Error = ConnectorError;
-    type Actor = Connector;
+    type Error = ResolverError;
+    type Actor = Resolver;
 
     fn poll(
-        &mut self, _: &mut Connector, _: &mut Context<Connector>,
+        &mut self, _: &mut Resolver, _: &mut Context<Resolver>,
     ) -> Poll<Self::Item, Self::Error> {
         // timeout
         if let Ok(Async::Ready(_)) = self.timeout.poll() {
-            return Err(ConnectorError::Timeout);
+            return Err(ResolverError::Timeout);
         }
 
         // connect
@@ -382,7 +388,7 @@ impl ActorFuture for TcpConnector {
                     Ok(Async::NotReady) => return Ok(Async::NotReady),
                     Err(err) => {
                         if self.addrs.is_empty() {
-                            return Err(ConnectorError::IoError(err));
+                            return Err(ResolverError::IoError(err));
                         }
                     }
                 }

@@ -13,7 +13,7 @@ use futures::Future;
 fn test_resolver() {
     System::run(|| {
         tokio::spawn({
-            let resolver = Arbiter::registry().get::<resolver::Connector>();
+            let resolver = Arbiter::registry().get::<resolver::Resolver>();
             resolver
                 .send(resolver::Resolve::host("localhost"))
                 .then(|_| {
@@ -23,7 +23,7 @@ fn test_resolver() {
         });
 
         tokio::spawn({
-            let resolver = Arbiter::registry().get::<resolver::Connector>();
+            let resolver = Arbiter::registry().get::<resolver::Resolver>();
             resolver
                 .send(resolver::Connect::host("localhost:5000"))
                 .then(|_| Ok::<_, ()>(()))
