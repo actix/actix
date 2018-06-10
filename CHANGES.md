@@ -11,6 +11,7 @@
 * `Arbiter::handle()` is not available anymore. 
   Use `Arbiter::spawn()` and `Arbiter::spawn_fn()` instead.
 
+* `StreamHandler` trait refactored
 
 
 ## 0.5.7 (2018-05-17)

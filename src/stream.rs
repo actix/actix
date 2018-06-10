@@ -8,12 +8,6 @@ use fut::ActorFuture;
 ///
 /// This is helper trait that allows to handle `Stream` in
 /// a similar way as normal actor messages.
-/// When stream resolves to a next item, `handle()` method of this trait
-/// get called. If stream produces error, `error()` method get called.
-/// Depends on result of the `error()` method, actor could continue to
-/// process stream items or stop stream processing.
-/// When stream completes, `finished()` method get called. By default
-/// `finished()` method stops actor execution.
 #[allow(unused_variables)]
 pub trait StreamHandler<I, E>
 where
