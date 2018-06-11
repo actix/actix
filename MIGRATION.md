@@ -40,6 +40,6 @@
 * Use `actix::actors::resolver` instead of
   `actix::actors::resolver::{Connect, ConnectAddr, Connector, ConnectorError, Resolve};`
   
-* `actix::actors::resolver::Connector` renmaed to `actix::actors::resolver::Resolver`
+* `actix::actors::resolver::Connector` renamed to `actix::actors::resolver::Resolver`
 
-* `actix::actors::resolver::ConnectorError` renmaed to `actix::actors::resolver::ResolverError`
+* `actix::actors::resolver::ConnectorError` renamed to `actix::actors::resolver::ResolverError`
