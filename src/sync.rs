@@ -140,10 +140,9 @@ where
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         loop {
             match self.msgs.poll() {
-                Ok(Async::Ready(Some(msg))) => self
-                    .queue
-                    .send(SyncContextProtocol::Envelope(msg))
-                    .expect("Should not fail"),
+                Ok(Async::Ready(Some(msg))) => {
+                    self.queue.send(SyncContextProtocol::Envelope(msg))
+                }
                 Ok(Async::NotReady) => break,
                 Ok(Async::Ready(None)) | Err(_) => unreachable!(),
             }
@@ -155,7 +154,7 @@ where
         } else {
             // stop sync arbiters
             for _ in 0..self.threads {
-                let _ = self.queue.send(SyncContextProtocol::Stop);
+                self.queue.send(SyncContextProtocol::Stop);
             }
             Ok(Async::Ready(()))
         }
@@ -220,7 +219,7 @@ where
 
         loop {
             match self.queue.recv() {
-                Ok(SyncContextProtocol::Stop) => {
+                Some(SyncContextProtocol::Stop) => {
                     self.state = ActorState::Stopping;
                     if A::stopping(&mut self.act, ctx) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
@@ -229,10 +228,10 @@ where
                     A::stopped(&mut self.act, ctx);
                     return;
                 }
-                Ok(SyncContextProtocol::Envelope(mut env)) => {
+                Some(SyncContextProtocol::Envelope(mut env)) => {
                     env.handle(&mut self.act, ctx);
                 }
-                Err(_) => {
+                None => {
                     self.state = ActorState::Stopping;
                     if A::stopping(&mut self.act, ctx) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
@@ -297,8 +296,7 @@ unsafe impl<A, M> Send for SyncContextEnvelope<A, M>
 where
     A: Actor<Context = SyncContext<A>> + Handler<M>,
     M: Message + Send,
-{
-}
+{}
 
 impl<A, M> SyncContextEnvelope<A, M>
 where

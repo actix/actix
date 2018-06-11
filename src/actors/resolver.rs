@@ -54,10 +54,10 @@ use tokio_timer::Delay;
 
 use prelude::*;
 
-#[deprecated(since = "0.7", note = "please use `Resolver` instead")]
+#[deprecated(since = "0.7.0", note = "please use `Resolver` instead")]
 pub type Connector = Resolver;
 
-#[deprecated(since = "0.7", note = "please use `ResolverError` instead")]
+#[deprecated(since = "0.7.0", note = "please use `ResolverError` instead")]
 pub type ConnectorError = ResolverError;
 
 #[derive(Eq, PartialEq, Debug)]
