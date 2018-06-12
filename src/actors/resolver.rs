@@ -168,7 +168,6 @@ impl Resolver {
 impl Actor for Resolver {
     type Context = Context<Self>;
 
-    #[cfg(unix)]
     fn started(&mut self, ctx: &mut Self::Context) {
         let resolver = if let Some(cfg) = self.cfg.take() {
             ResolverFuture::new(cfg.0, cfg.1)
@@ -185,25 +184,6 @@ impl Actor for Resolver {
             }
         };
 
-        resolver
-            .into_actor(self)
-            .map(|resolver, act, _| {
-                act.resolver = Some(resolver);
-            })
-            .map_err(|err, act, _| {
-                error!("Can not create resolver: {}", err);
-                act.err = Some(format!("Can not create resolver: {}", err));
-            })
-            .wait(ctx);
-    }
-
-    #[cfg(not(unix))]
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let resolver = if let Some(cfg) = self.cfg.take() {
-            ResolverFuture::new(cfg.0, cfg.1)
-        } else {
-            ResolverFuture::new(ResolverConfig::default(), ResolverOpts::default())
-        };
         resolver
             .into_actor(self)
             .map(|resolver, act, _| {
