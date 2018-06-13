@@ -15,13 +15,14 @@ use context::Context;
 use handler::Handler;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::{Execute, StartActor, StopArbiter};
-use registry::SystemRegistry;
+use registry::{Registry, SystemRegistry};
 use system::{RegisterArbiter, System, UnregisterArbiter};
 
 thread_local!(
     static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
     static ADDR: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
+    static REG: RefCell<Option<Registry>> = RefCell::new(None);
 
     static SYS: RefCell<Arc<Mutex<Option<Addr<System>>>>> =
         RefCell::new(Arc::new(Mutex::new(None)));
@@ -70,6 +71,8 @@ impl Arbiter {
             let (stop_tx, stop_rx) = channel();
             STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
+            REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
+
             SYS.with(|cell| *cell.borrow_mut() = sys);
             SYSARB.with(|cell| *cell.borrow_mut() = sys_arbiter);
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sysreg));
@@ -147,7 +150,7 @@ impl Arbiter {
     }
 
     /// Returns current arbiter's address
-    pub fn arbiter() -> Addr<Arbiter> {
+    pub fn current() -> Addr<Arbiter> {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("Arbiter is not running"),
@@ -179,9 +182,17 @@ impl Arbiter {
     }
 
     /// This function returns arbiter's registry
-    pub fn registry() -> &'static SystemRegistry {
+    pub fn system_registry() -> &'static SystemRegistry {
         SYSREG.with(|cell| match *cell.borrow() {
             Some(ref reg) => unsafe { &*(reg as *const _) },
+            None => panic!("System is not running: {}", Arbiter::name()),
+        })
+    }
+
+    /// This function returns arbiter's registry,
+    pub fn registry() -> &'static Registry {
+        REG.with(|cell| match *cell.borrow() {
+            Some(ref reg) => unsafe { std::mem::transmute(reg) },
             None => panic!("System is not running: {}", Arbiter::name()),
         })
     }

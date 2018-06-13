@@ -1,5 +1,6 @@
 use futures::{Async, Future, Poll};
 use tokio;
+use tokio::executor::current_thread;
 
 use actor::{Actor, AsyncContext, Supervised};
 use address::{channel, Addr};
@@ -70,9 +71,9 @@ where
 
 impl<A> Supervisor<A>
 where
-    A: Supervised + Actor<Context = Context<A>> + Send,
+    A: Supervised + Actor<Context = Context<A>>,
 {
-    /// Start new supervised actor in current Arbiter.
+    /// Start new supervised actor in current tokio runtime.
     ///
     /// Type of returned address depends on variable type. For example to get
     /// `Addr<Syn, _>` of newly created actor, use explicitly `Addr<Syn,
@@ -98,7 +99,7 @@ where
     pub fn start<F>(f: F) -> Addr<A>
     where
         F: FnOnce(&mut A::Context) -> A + 'static,
-        A: Actor<Context = Context<A>>,
+        A: Actor<Context = Context<A>> + Send,
     {
         // create actor
         let mut ctx = Context::new(None);
@@ -129,6 +130,24 @@ where
         }));
 
         Addr::new(tx)
+    }
+
+    /// Start new supervised actor in current thread.
+    pub fn start_in_current<F>(f: F) -> Addr<A>
+    where
+        A: Actor<Context = Context<A>>,
+        F: FnOnce(&mut Context<A>) -> A + 'static,
+    {
+        // create actor
+        let mut ctx = Context::new(None);
+        let act = f(&mut ctx);
+        let addr = ctx.address();
+        ctx.set_actor(act);
+
+        // create supervisor
+        current_thread::spawn(Supervisor::<A> { ctx });
+
+        addr
     }
 }
 
