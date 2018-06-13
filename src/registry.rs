@@ -21,6 +21,8 @@ use supervisor::Supervisor;
 /// `ArbiterService` which is unique per arbiter or `SystemService` which is
 /// unique per system.
 ///
+/// If arbiter service is used outside of runnig arbiter, it panics.
+///
 /// # Example
 ///
 /// ```rust
@@ -59,6 +61,7 @@ use supervisor::Supervisor;
 ///    type Context = Context<Self>;
 ///
 ///    fn started(&mut self, _: &mut Context<Self>) {
+///       // get MyActor1 addres from the registry
 ///       let act = Arbiter::registry().get::<MyActor1>();
 ///       act.do_send(Ping);
 ///    }
@@ -66,18 +69,14 @@ use supervisor::Supervisor;
 ///
 ///
 /// fn main() {
-///    // initialize system
-///    let sys = System::new("test");
+///     // initialize system
+///     let code = System::run(|| {
 ///
-///    // Start MyActor1
-///    let _:() = MyActor1.start();
-///
-///    // Start MyActor2
-///    let _:() = MyActor2.start();
-///
-///    // Run system, this function blocks current thread
-///    let code = sys.run();
-/// #  std::process::exit(code);
+///         // Start MyActor1 in new Arbiter
+///         Arbiter::start(|_| {
+///             MyActor2
+///         });
+///     });
 /// }
 /// ```
 pub struct Registry {
@@ -130,23 +129,19 @@ impl Registry {
     pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
-            match addr.downcast_ref::<Addr<A>>() {
-                Some(_) => panic!("Actor already started"),
-                None => {}
+            if addr.downcast_ref::<Addr<A>>().is_some() {
+                panic!("Actor already started");
             }
         }
 
-        self.registry
-            .borrow_mut()
-            .insert(id, Box::new(addr.clone()));
+        self.registry.borrow_mut().insert(id, Box::new(addr));
     }
 }
 
-/// Actors registry
+/// System wide actors registry
 ///
-/// Actor can register itself as a service. Service can be defined as
-/// `ArbiterService` which is unique per arbiter or `SystemService` which is
-/// unique per system.
+/// System registry serves same purpose as [Registry](struct.Registry.html),
+/// except it is shared across all arbiters.
 ///
 /// # Example
 ///
@@ -176,7 +171,7 @@ impl Registry {
 ///
 ///     fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
 ///         println!("ping");
-/// #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
+/// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
 ///     }
 /// }
 ///
@@ -186,7 +181,7 @@ impl Registry {
 ///     type Context = Context<Self>;
 ///
 ///     fn started(&mut self, _: &mut Context<Self>) {
-///         let act = Arbiter::registry().get::<MyActor1>();
+///         let act = Arbiter::system_registry().get::<MyActor1>();
 ///         act.do_send(Ping);
 ///     }
 /// }
@@ -200,13 +195,8 @@ impl Registry {
 ///         // Start MyActor2
 ///         let addr = MyActor2.start();
 ///     });
-/// #   std::process::exit(code);
 /// }
 /// ```
-/// System wide actors registry
-///
-/// System registry serves same purpose as [Registry](struct.Registry.html),
-/// except it is shared across all arbiters.
 pub struct SystemRegistry {
     arbiter: Arc<Mutex<Option<Addr<Arbiter>>>>,
     registry: Arc<Mutex<HashMap<TypeId, Box<Any + Send>>>>,
@@ -224,15 +214,6 @@ pub trait SystemService:
     fn from_registry() -> Addr<Self> {
         Arbiter::system_reg().get::<Self>()
     }
-
-    /*
-    /// Create an SystemService with a closure
-    fn init_actor<F>(f: F) -> Addr<Self>
-    where
-        F: FnOnce(&mut Self::Context) -> Self + Send + 'static,
-    {
-        Arbiter::registry().init_actor::<Self, F>(f)
-    }*/
 }
 
 impl SystemRegistry {
@@ -258,19 +239,11 @@ impl SystemRegistry {
                         None => error!("Got unknown value: {:?}", addr),
                     }
                 }
-                let addr = if let Some(addr) = self.arbiter.lock().unwrap().as_ref() {
-                    Supervisor::start_in(addr, |ctx| {
-                        let mut act = A::default();
-                        act.service_started(ctx);
-                        act
-                    })
-                } else {
-                    Supervisor::start(|ctx| {
-                        let mut act = A::default();
-                        act.service_started(ctx);
-                        act
-                    })
-                };
+                let addr = Supervisor::start_in_system(|ctx| {
+                    let mut act = A::default();
+                    act.service_started(ctx);
+                    act
+                });
                 hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
                 return addr;
             } else {

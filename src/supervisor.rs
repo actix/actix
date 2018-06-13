@@ -114,14 +114,14 @@ where
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in<F>(addr: &Addr<Arbiter>, f: F) -> Addr<A>
+    pub fn start_in_system<F>(f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>> + Send,
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
-        addr.do_send(Execute::new(move || -> Result<(), ()> {
+        Arbiter::system().do_send(Execute::new(move || -> Result<(), ()> {
             let mut ctx = Context::with_receiver(None, rx);
             let act = f(&mut ctx);
             ctx.set_actor(act);

@@ -10,7 +10,7 @@ use address::Addr;
 use arbiter::Arbiter;
 use context::Context;
 use handler::{Handler, Message};
-use msgs::{StopArbiter, SystemExit};
+use msgs::{Execute, StopArbiter, SystemExit};
 
 /// System is an actor which manages runtime.
 ///
@@ -239,5 +239,14 @@ impl Handler<UnregisterArbiter> for System {
 
     fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>) {
         self.arbiters.remove(&msg.0);
+    }
+}
+
+/// Execute function in arbiter's thread
+impl<I: Send, E: Send> Handler<Execute<I, E>> for System {
+    type Result = Result<I, E>;
+
+    fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>) -> Result<I, E> {
+        msg.exec()
     }
 }

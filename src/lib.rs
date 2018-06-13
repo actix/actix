@@ -91,6 +91,7 @@ pub use handler::{
     ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
     ResponseFuture,
 };
+pub use registry::{ArbiterService, SystemService};
 pub use stream::StreamHandler;
 pub use supervisor::Supervisor;
 pub use sync::{SyncArbiter, SyncContext};
@@ -126,7 +127,7 @@ pub mod prelude {
         ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
         ResponseFuture,
     };
-    pub use registry::SystemService;
+    pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
     pub use supervisor::Supervisor;
     pub use sync::{SyncArbiter, SyncContext};
