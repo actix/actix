@@ -86,6 +86,15 @@ pub struct Registry {
 /// Trait defines arbiter's service.
 #[allow(unused_variables)]
 pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default {
+    /// Construct and srtart arbiter service
+    fn start_service() -> Addr<Self> {
+        Supervisor::start_in_current(|ctx| {
+            let mut act = Self::default();
+            act.service_started(ctx);
+            act
+        })
+    }
+
     /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 
@@ -112,11 +121,7 @@ impl Registry {
                 return addr.clone();
             }
         }
-        let addr: Addr<A> = Supervisor::start_in_current(|ctx| {
-            let mut act = A::default();
-            act.service_started(ctx);
-            act
-        });
+        let addr: Addr<A> = A::start_service();
 
         self.registry
             .borrow_mut()
@@ -207,6 +212,15 @@ pub struct SystemRegistry {
 pub trait SystemService:
     Actor<Context = Context<Self>> + Supervised + Send + Default
 {
+    /// Construct and srtart system service
+    fn start_service() -> Addr<Self> {
+        Supervisor::start_in_system(|ctx| {
+            let mut act = Self::default();
+            act.service_started(ctx);
+            act
+        })
+    }
+
     /// Method is called during service initialization.
     fn service_started(&mut self, ctx: &mut Context<Self>) {}
 
@@ -239,11 +253,7 @@ impl SystemRegistry {
                         None => error!("Got unknown value: {:?}", addr),
                     }
                 }
-                let addr = Supervisor::start_in_system(|ctx| {
-                    let mut act = A::default();
-                    act.service_started(ctx);
-                    act
-                });
+                let addr = A::start_service();
                 hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
                 return addr;
             } else {
@@ -251,46 +261,6 @@ impl SystemRegistry {
             }
         }
     }
-
-    /*
-    /// Initialize a SystemService, panic if already started
-    pub fn init_actor<A: SystemService + Actor<Context = Context<A>>, F>(
-        &self, with: F,
-    ) -> Addr<A>
-    where
-        F: FnOnce(&mut A::Context) -> A + Send + 'static,
-    {
-        let addr = Supervisor::start_in(&Arbiter::system_arbiter(), |ctx| {
-            let mut act = with(ctx);
-            act.service_started(ctx);
-            act
-        });
-
-        self.set(addr.clone());
-        addr
-    }
-
-    /// Initialize a SystemService to a actor address (can be used to start
-    /// SyncActors, panic if already started
-    pub fn set<A: SystemService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
-        {
-            if let Ok(hm) = self.registry.lock() {
-                if let Some(addr) = hm.get(&TypeId::of::<A>()) {
-                    if addr.downcast_ref::<Addr<A>>().is_some() {
-                        panic!("Actor already started");
-                    }
-                }
-            } else {
-                panic!("System registry lock is poisoned");
-            }
-        }
-
-        if let Ok(mut hm) = self.registry.lock() {
-            hm.insert(TypeId::of::<A>(), Box::new(addr));
-        } else {
-            panic!("System registry lock is poisoned");
-        }
-    }*/
 }
 
 impl Clone for SystemRegistry {
