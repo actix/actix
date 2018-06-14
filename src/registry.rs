@@ -7,7 +7,9 @@ use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::default::Default;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+
+use parking_lot::ReentrantMutex;
 
 use actor::{Actor, Supervised};
 use address::Addr;
@@ -203,8 +205,7 @@ impl Registry {
 /// }
 /// ```
 pub struct SystemRegistry {
-    arbiter: Arc<Mutex<Option<Addr<Arbiter>>>>,
-    registry: Arc<Mutex<HashMap<TypeId, Box<Any + Send>>>>,
+    registry: Arc<ReentrantMutex<RefCell<HashMap<TypeId, Box<Any + Send>>>>>,
 }
 
 /// Trait defines system's service.
@@ -233,32 +234,26 @@ pub trait SystemService:
 impl SystemRegistry {
     pub(crate) fn new() -> Self {
         SystemRegistry {
-            arbiter: Arc::new(Mutex::new(None)),
-            registry: Arc::new(Mutex::new(HashMap::new())),
+            registry: Arc::new(ReentrantMutex::new(RefCell::new(HashMap::new()))),
         }
-    }
-
-    pub(crate) fn set_arbiter(&mut self, addr: Addr<Arbiter>) {
-        *self.arbiter.lock().unwrap() = Some(addr);
     }
 
     /// Return address of the service. If service actor is not running
     /// it get started in system arbiter.
     pub fn get<A: SystemService + Actor<Context = Context<A>> + Send>(&self) -> Addr<A> {
         {
-            if let Ok(mut hm) = self.registry.lock() {
-                if let Some(addr) = hm.get(&TypeId::of::<A>()) {
-                    match addr.downcast_ref::<Addr<A>>() {
-                        Some(addr) => return addr.clone(),
-                        None => error!("Got unknown value: {:?}", addr),
-                    }
+            let hm = self.registry.lock();
+            if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
+                match addr.downcast_ref::<Addr<A>>() {
+                    Some(addr) => return addr.clone(),
+                    None => panic!("Got unknown value: {:?}", addr),
                 }
-                let addr = A::start_service();
-                hm.insert(TypeId::of::<A>(), Box::new(addr.clone()));
-                return addr;
-            } else {
-                panic!("System registry lock is poisoned");
             }
+
+            let addr = A::start_service();
+            hm.borrow_mut()
+                .insert(TypeId::of::<A>(), Box::new(addr.clone()));
+            return addr;
         }
     }
 }
@@ -266,7 +261,6 @@ impl SystemRegistry {
 impl Clone for SystemRegistry {
     fn clone(&self) -> Self {
         SystemRegistry {
-            arbiter: self.arbiter.clone(),
             registry: Arc::clone(&self.registry),
         }
     }

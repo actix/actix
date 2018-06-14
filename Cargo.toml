@@ -53,6 +53,7 @@ failure = "0.1.1"
 bitflags = "1.0"
 smallvec = "0.6"
 crossbeam-channel = "0.2"
+parking_lot = "0.5"
 libc = { version = "0.2" }
 uuid = { version = "0.6", features = ["v4"] }
 

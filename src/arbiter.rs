@@ -137,7 +137,6 @@ impl Arbiter {
             sys: true,
             id: Uuid::new_v4(),
         });
-        Arbiter::system_reg().set_arbiter(addr.clone());
         addr
     }
 

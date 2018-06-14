@@ -34,6 +34,7 @@ extern crate log;
 extern crate bytes;
 extern crate crossbeam_channel;
 extern crate libc;
+extern crate parking_lot;
 extern crate smallvec;
 extern crate uuid;
 #[macro_use]
