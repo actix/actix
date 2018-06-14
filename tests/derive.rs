@@ -3,7 +3,7 @@ extern crate futures;
 extern crate actix;
 extern crate tokio;
 
-use actix::{msgs, Actor, Arbiter, Context, Handler, System};
+use actix::{Actor, Context, Handler, System};
 use futures::{future, Future};
 
 #[derive(Message)]
@@ -34,7 +34,7 @@ fn response_derive_empty() {
                 _ => panic!("Something went wrong"),
             }
 
-            Arbiter::system().do_send(msgs::SystemExit(0));
+            System::current().stop();
             future::result(Ok(()))
         }));
     });
@@ -72,7 +72,7 @@ pub fn derive_result() {
                 _ => panic!("Something went wrong"),
             }
 
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            System::current().stop();
             future::result(Ok(()))
         }));
     });
@@ -108,7 +108,7 @@ pub fn response_derive_one() {
                 _ => panic!("Something went wrong"),
             }
 
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            System::current().stop();
             future::result(Ok(()))
         }));
     });

@@ -24,7 +24,7 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
-        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+        System::current().stop();
         Running::Stop
     }
 }
@@ -182,7 +182,7 @@ fn test_restart_sync_actor() {
 
         tokio::spawn(addr.send(Num(4)).then(move |_| {
             Delay::new(Instant::now() + Duration::new(0, 1_000_000)).then(move |_| {
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
                 future::result(Ok(()))
             })
         }));

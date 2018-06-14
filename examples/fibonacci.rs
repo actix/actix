@@ -56,7 +56,7 @@ fn main() {
         }
 
         tokio::spawn(futures::lazy(|| {
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            System::current().stop();
             futures::future::result(Ok(()))
         }));
     });

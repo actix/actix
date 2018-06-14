@@ -62,7 +62,7 @@
 //!             addr.do_send(Fibonacci(n));
 //!         }
 //!
-//! #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//! #       System::current().stop();
 //!     });
 //! }
 //! ```
@@ -80,6 +80,7 @@ use address::channel;
 use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
+use system::System;
 
 /// Sync arbiter
 pub struct SyncArbiter<A>
@@ -106,9 +107,13 @@ where
 
         for _ in 0..threads {
             let f = Arc::clone(&factory);
+            let sys = System::current();
             let actor_queue = receiver.clone();
 
-            thread::spawn(move || SyncContext::new(f, actor_queue).run());
+            thread::spawn(move || {
+                System::set_current(sys);
+                SyncContext::new(f, actor_queue).run();
+            });
         }
 
         let (tx, rx) = channel::channel(0);

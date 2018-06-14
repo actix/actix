@@ -41,7 +41,7 @@ where
     ///             Ok(Some(_)) => println!("PING"),
     ///             _ => println!("finished"),
     ///         }
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #       System::current().stop();
     ///     }
     /// }
     ///
@@ -56,7 +56,7 @@ where
     /// # fn main() {
     /// #    System::run(|| {
     /// #        let addr = MyActor.start();
-    /// #        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #        System::current().stop();
     /// #    });
     /// # }
     /// ```

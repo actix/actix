@@ -40,7 +40,7 @@ impl actix::Handler<Ping> for MyActor3 {
     type Result = ();
 
     fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor3>) -> Self::Result {
-        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+        System::current().stop();
     }
 }
 
@@ -70,7 +70,7 @@ fn test_address() {
 
                 tokio::spawn(Delay::new(Instant::now() + Duration::new(0, 1000)).then(
                     move |_| {
-                        Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                        System::current().stop();
                         Ok(())
                     },
                 ));
@@ -95,7 +95,7 @@ fn test_sync_recipient_call() {
 
         tokio::spawn(addr2.send(Ping(1)).then(move |_| {
             addr2.send(Ping(2)).then(|_| {
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
                 Ok(())
             })
         }));
@@ -154,7 +154,7 @@ fn test_message_timeout() {
                     }
                     _ => panic!("Should not happen"),
                 }
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
                 futures::future::result(Ok(()))
             },
         ));
@@ -182,7 +182,7 @@ impl Actor for TimeoutActor3 {
                     }
                     _ => panic!("Should not happen"),
                 }
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
                 actix::fut::ok(())
             })
             .wait(ctx)

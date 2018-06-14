@@ -9,7 +9,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use actix::msgs::SystemExit;
 use actix::prelude::*;
 use futures::stream::once;
 use futures::unsync::mpsc::unbounded;
@@ -49,7 +48,7 @@ impl Actor for MyActor {
             }
             Op::RunAfter => {
                 ctx.run_later(Duration::new(0, 100), |_, _| {
-                    Arbiter::system().do_send(SystemExit(0));
+                    System::current().stop();
                 });
             }
             Op::RunAfterStop => {
@@ -62,7 +61,7 @@ impl Actor for MyActor {
     }
 
     fn stopped(&mut self, _: &mut Context<MyActor>) {
-        Arbiter::system().do_send(SystemExit(0));
+        System::current().stop();
     }
 }
 
@@ -76,7 +75,7 @@ impl Handler<TimeoutMessage> for MyActor {
         if self.op != Op::Timeout {
             assert!(false, "should not happen {:?}", self.op);
         }
-        Arbiter::system().do_send(SystemExit(0));
+        System::current().stop();
     }
 }
 
@@ -94,7 +93,7 @@ fn test_add_timeout_cancel() {
 
         tokio::spawn(
             Delay::new(Instant::now() + Duration::new(0, 1000)).then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
+                System::current().stop();
                 future::result(Ok(()))
             }),
         );
@@ -148,7 +147,7 @@ impl Handler<Ping> for ContextWait {
         let fut = Delay::new(Instant::now() + Duration::from_secs(10));
         fut.map_err(|_| ()).map(|_| ()).into_actor(self).wait(ctx);
 
-        Arbiter::system().do_send(SystemExit(0));
+        System::current().stop();
     }
 }
 
@@ -238,9 +237,7 @@ fn test_nowait_context() {
         tokio::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
-                .map(|_| {
-                    Arbiter::system().do_send(SystemExit(0));
-                }),
+                .map(|_| System::current().stop()),
         );
     });
 
@@ -265,9 +262,7 @@ fn test_message_stream_nowait_context() {
         tokio::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
-                .map(|_| {
-                    Arbiter::system().do_send(SystemExit(0));
-                }),
+                .map(|_| System::current().stop()),
         );
     });
 
@@ -293,9 +288,7 @@ fn test_stream_nowait_context() {
         tokio::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
-                .map(|_| {
-                    Arbiter::system().do_send(SystemExit(0));
-                }),
+                .map(|_| System::current().stop()),
         );
     });
 
@@ -321,7 +314,7 @@ fn test_notify() {
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
                 .map(|_| {
-                    Arbiter::system().do_send(SystemExit(0));
+                    System::current().stop();
                 }),
         );
     });
@@ -339,7 +332,7 @@ impl Actor for ContextHandle {
 impl StreamHandler<Ping, ()> for ContextHandle {
     fn handle(&mut self, _: Result<Option<Ping>, ()>, ctx: &mut Self::Context) {
         self.h.store(ctx.handle().into_usize(), Ordering::Relaxed);
-        Arbiter::system().do_send(SystemExit(0));
+        System::current().stop();
     }
 }
 
@@ -391,7 +384,7 @@ impl Actor for CancelHandler {
     type Context = Context<Self>;
 
     fn stopped(&mut self, _: &mut Context<Self>) {
-        Arbiter::system().do_send(SystemExit(0));
+        System::current().stop();
     }
 }
 

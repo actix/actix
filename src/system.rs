@@ -1,16 +1,19 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use futures::sync::oneshot::{channel, Receiver, Sender};
 use futures::{future, Future};
+use tokio;
 use tokio::runtime::{Builder, Runtime};
 use tokio_threadpool::Builder as ThreadPoolBuilder;
 
 use actor::Actor;
-use address::Addr;
+use address::{channel as addr_channel, Addr};
 use arbiter::Arbiter;
 use context::Context;
 use handler::{Handler, Message};
-use msgs::{Execute, StopArbiter, SystemExit};
+use msgs::{Execute, StopArbiter};
+use registry::SystemRegistry;
 
 /// System is an actor which manages runtime.
 ///
@@ -36,8 +39,8 @@ use msgs::{Execute, StopArbiter, SystemExit};
 ///     // stop system after `self.dur` seconds
 ///     fn started(&mut self, ctx: &mut Context<Self>) {
 ///         ctx.run_later(self.dur, |act, ctx| {
-///             // send `SystemExit` to `System` actor.
-///             Arbiter::system().do_send(actix::msgs::SystemExit(0));
+///             // Stop current running system.
+///             System::current().stop();
 ///         });
 ///     }
 /// }
@@ -55,38 +58,79 @@ use msgs::{Execute, StopArbiter, SystemExit};
 ///     std::process::exit(code);
 /// }
 /// ```
+#[derive(Clone)]
 pub struct System {
-    stop: Option<Sender<i32>>,
-    arbiters: HashMap<String, Addr<Arbiter>>,
+    arbiter: Addr<SystemArbiter>,
+    registry: SystemRegistry,
 }
 
-impl Actor for System {
-    type Context = Context<Self>;
-}
+thread_local!(static CURRENT: RefCell<Option<System>> = RefCell::new(None););
 
 impl System {
     #[cfg_attr(feature = "cargo-clippy", allow(new_ret_no_self))]
     /// Create new system.
     ///
     /// This method panics if it can not create tokio runtime
-    pub fn new<T: Into<String>>(name: T) -> SystemRuntime {
+    pub fn new<T: Into<String>>(name: T) -> SystemRunner {
         let (rt, stop) =
             System::create_runtime(&format!("{}-thread-pool-", name.into()), 1, || {});
 
-        SystemRuntime { rt, stop }
+        SystemRunner { rt, stop }
     }
 
     /// Create new system and set tokio runtime pool size.
     ///
     /// By default pool size is 1. This method panics if it can not create tokio runtime
-    pub fn with_pool_size<T: Into<String>>(name: T, size: usize) -> SystemRuntime {
+    pub fn with_pool_size<T: Into<String>>(name: T, size: usize) -> SystemRunner {
         let (rt, stop) = System::create_runtime(
             &format!("{}-thread-pool-", name.into()),
             size,
             || {},
         );
 
-        SystemRuntime { rt, stop }
+        SystemRunner { rt, stop }
+    }
+
+    /// Get current running system.
+    pub fn current() -> System {
+        CURRENT.with(|cell| match *cell.borrow() {
+            Some(ref sys) => sys.clone(),
+            None => panic!("System is not running"),
+        })
+    }
+
+    /// Set current running system.
+    #[doc(hidden)]
+    pub fn set_current(sys: System) {
+        CURRENT.with(|s| {
+            *s.borrow_mut() = Some(sys);
+        })
+    }
+
+    /// Execute function with system reference.
+    pub fn with_current<F, R>(f: F) -> R
+    where
+        F: FnOnce(&System) -> R,
+    {
+        CURRENT.with(|cell| match *cell.borrow() {
+            Some(ref sys) => f(sys),
+            None => panic!("System is not running"),
+        })
+    }
+
+    /// Stop the system
+    pub fn stop(&self) {
+        self.arbiter.do_send(SystemExit(0));
+    }
+
+    #[doc(hidden)]
+    pub fn arbiter(&self) -> &Addr<SystemArbiter> {
+        &self.arbiter
+    }
+
+    /// Get current system registry.
+    pub fn registry(&self) -> &SystemRegistry {
+        &self.registry
     }
 
     /// This function will start tokio runtime and will finish once the
@@ -109,25 +153,27 @@ impl System {
         F: FnOnce() + Send + 'static,
     {
         let (stop_tx, stop) = channel();
+        let (addr_sender, addr_receiver) = addr_channel::channel(16);
 
-        // start system
-        let sys = System {
+        let addr = Addr::new(addr_sender);
+        let system = System {
+            arbiter: addr.clone(),
+            registry: SystemRegistry::new(addr),
+        };
+        System::set_current(system.clone());
+
+        // system arbiter
+        let arb = SystemArbiter {
             arbiters: HashMap::new(),
             stop: Some(stop_tx),
         };
-
-        let saddr = Arbiter::system_ref();
-        let system = saddr.clone();
-
-        let reg = Arbiter::system_reg();
 
         let mut threadpool = ThreadPoolBuilder::new();
         threadpool
             .name_prefix(name)
             .pool_size(pool_size)
             .after_start(move || {
-                Arbiter::set_system_ref(saddr.clone());
-                Arbiter::set_system_reg(reg.clone());
+                System::set_current(system.clone());
             });
 
         let mut rt = Builder::new()
@@ -138,8 +184,7 @@ impl System {
         // init system arbiter and run configuration method
         let (tx, rx) = channel();
         let _ = rt.spawn(future::lazy(move || {
-            let addr = sys.start();
-            *system.lock().unwrap() = Some(addr);
+            tokio::spawn(Context::with_receiver(Some(arb), addr_receiver));
 
             f();
             let _ = tx.send(());
@@ -153,12 +198,12 @@ impl System {
 
 /// Helper object that runs System's event loop
 #[must_use = "SystemRunner must be run"]
-pub struct SystemRuntime {
+pub struct SystemRunner {
     rt: Runtime,
     stop: Receiver<i32>,
 }
 
-impl SystemRuntime {
+impl SystemRunner {
     /// This function will start event loop and will finish once the
     /// `SystemExit` message get received.
     pub fn run(self) -> i32 {
@@ -186,7 +231,23 @@ impl SystemRuntime {
     }
 }
 
-impl Handler<SystemExit> for System {
+pub struct SystemArbiter {
+    stop: Option<Sender<i32>>,
+    arbiters: HashMap<String, Addr<Arbiter>>,
+}
+
+impl Actor for SystemArbiter {
+    type Context = Context<Self>;
+}
+
+/// Stop system execution
+struct SystemExit(pub i32);
+
+impl Message for SystemExit {
+    type Result = ();
+}
+
+impl Handler<SystemExit> for SystemArbiter {
     type Result = ();
 
     fn handle(&mut self, msg: SystemExit, _: &mut Context<Self>) {
@@ -210,7 +271,7 @@ impl Message for RegisterArbiter {
 }
 
 #[doc(hidden)]
-impl Handler<RegisterArbiter> for System {
+impl Handler<RegisterArbiter> for SystemArbiter {
     type Result = ();
 
     fn handle(&mut self, msg: RegisterArbiter, _: &mut Context<Self>) {
@@ -227,7 +288,7 @@ impl Message for UnregisterArbiter {
 }
 
 #[doc(hidden)]
-impl Handler<UnregisterArbiter> for System {
+impl Handler<UnregisterArbiter> for SystemArbiter {
     type Result = ();
 
     fn handle(&mut self, msg: UnregisterArbiter, _: &mut Context<Self>) {
@@ -236,7 +297,7 @@ impl Handler<UnregisterArbiter> for System {
 }
 
 /// Execute function in arbiter's thread
-impl<I: Send, E: Send> Handler<Execute<I, E>> for System {
+impl<I: Send, E: Send> Handler<Execute<I, E>> for SystemArbiter {
     type Result = Result<I, E>;
 
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>) -> Result<I, E> {

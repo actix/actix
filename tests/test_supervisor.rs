@@ -62,7 +62,7 @@ fn test_supervisor_restart() {
 
         tokio::spawn(Delay::new(Instant::now() + Duration::new(0, 100_000)).then(
             |_| {
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
                 future::result(Ok(()))
             },
         ));

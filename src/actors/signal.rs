@@ -25,18 +25,18 @@
 //!         match msg.0 {
 //!             signal::SignalType::Int => {
 //!                 println!("SIGINT received, exiting");
-//!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//!                 System::current().stop();
 //!             }
 //!             signal::SignalType::Hup => {
 //!                 println!("SIGHUP received, reloading");
 //!             }
 //!             signal::SignalType::Term => {
 //!                 println!("SIGTERM received, stopping");
-//!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//!                 System::current().stop();
 //!             }
 //!             signal::SignalType::Quit => {
 //!                 println!("SIGQUIT received, exiting");
-//!                 Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//!                 System::current().stop();
 //!             }
 //!             _ => (),
 //!         }
@@ -213,7 +213,7 @@ impl Actor for DefaultSignalsHandler {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let addr = Arbiter::system_registry().get::<ProcessSignals>();
+        let addr = System::current().registry().get::<ProcessSignals>();
         let slf = ctx.address();
         addr.send(Subscribe(slf.recipient()))
             .map(|_| ())
@@ -232,18 +232,18 @@ impl actix::Handler<Signal> for DefaultSignalsHandler {
         match msg.0 {
             SignalType::Int => {
                 info!("SIGINT received, exiting");
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
             }
             SignalType::Hup => {
                 info!("SIGHUP received, reloading");
             }
             SignalType::Term => {
                 info!("SIGTERM received, stopping");
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
             }
             SignalType::Quit => {
                 info!("SIGQUIT received, exiting");
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
             }
             _ => (),
         }

@@ -7,13 +7,6 @@ use address::Addr;
 use context::Context;
 use handler::Message;
 
-/// Stop system execution
-pub struct SystemExit(pub i32);
-
-impl Message for SystemExit {
-    type Result = ();
-}
-
 /// Stop arbiter execution
 pub struct StopArbiter(pub i32);
 

@@ -3,7 +3,7 @@ extern crate futures;
 extern crate tokio;
 use futures::{future, Future};
 
-use actix::msgs::{Execute, SystemExit};
+use actix::msgs::Execute;
 use actix::prelude::*;
 
 #[test]
@@ -13,7 +13,7 @@ fn test_execute() {
 
         tokio::spawn(addr.send(Execute::new(|| Ok(Arbiter::name()))).then(
             |res: Result<Result<_, ()>, _>| {
-                Arbiter::system().do_send(SystemExit(0));
+                System::current().stop();
 
                 match res {
                     Ok(Ok(name)) => assert_ne!(name, "test"),
@@ -32,11 +32,12 @@ fn test_system_execute() {
 
         addr.do_send(Execute::new(|| -> Result<(), ()> {
             tokio::spawn(futures::lazy(|| {
-                Arbiter::system_arbiter().do_send(Execute::new(|| -> Result<(), ()> {
-                    Arbiter::system().do_send(SystemExit(0));
-
-                    Ok(())
-                }));
+                System::current().arbiter().do_send(Execute::new(
+                    || -> Result<(), ()> {
+                        System::current().stop();
+                        Ok(())
+                    },
+                ));
                 future::ok(())
             }));
             Ok(())

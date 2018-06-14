@@ -20,7 +20,7 @@
 //!                 resolver::Resolve::host("localhost"))       // <- resolve "localhost"
 //!                     .then(|addrs| {
 //!                         println!("RESULT: {:?}", addrs);
-//! #                       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+//! #                       System::current().stop();
 //!                         Ok::<_, ()>(())
 //!                     })
 //!         });

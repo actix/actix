@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use actix::msgs::SystemExit;
 use actix::prelude::*;
 use futures::stream::futures_ordered;
 use futures::{Future, Stream};
@@ -28,7 +27,7 @@ impl Actor for MyActor {
     fn started(&mut self, ctx: &mut Self::Context) {
         Delay::new(Instant::now() + Duration::new(0, 5_000_000))
             .then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
+                System::current().stop();
                 Ok::<_, Error>(())
             })
             .into_actor(self)
@@ -36,7 +35,7 @@ impl Actor for MyActor {
             .map_err(|e, act, _| {
                 if e == Error::Timeout {
                     act.timeout.store(true, Ordering::Relaxed);
-                    Arbiter::system().do_send(SystemExit(0));
+                    System::current().stop();
                     ()
                 }
             })
@@ -75,7 +74,7 @@ impl Actor for MyStreamActor {
             .map_err(|e, act, _| {
                 if e == Error::Timeout {
                     act.timeout.store(true, Ordering::Relaxed);
-                    Arbiter::system().do_send(SystemExit(0));
+                    System::current().stop();
                 }
             })
             .finish()

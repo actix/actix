@@ -47,7 +47,7 @@ fn main() {
                 println!("RESULT: {}", res == 20);
 
                 // stop system and exit
-                Arbiter::system().do_send(actix::msgs::SystemExit(0));
+                System::current().stop();
             }).map_err(|_| ()),
         );
     });

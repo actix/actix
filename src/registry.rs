@@ -16,6 +16,7 @@ use address::Addr;
 use arbiter::Arbiter;
 use context::Context;
 use supervisor::Supervisor;
+use system::{System, SystemArbiter};
 
 /// Actors registry
 ///
@@ -54,7 +55,7 @@ use supervisor::Supervisor;
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
 ///       println!("ping");
-/// #     Arbiter::system().do_send(actix::msgs::SystemExit(0));
+/// #     System::current().stop();
 ///    }
 /// }
 ///
@@ -179,7 +180,7 @@ impl Registry {
 ///
 ///     fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
 ///         println!("ping");
-/// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+/// #       System::current().stop();
 ///     }
 /// }
 ///
@@ -189,7 +190,7 @@ impl Registry {
 ///     type Context = Context<Self>;
 ///
 ///     fn started(&mut self, _: &mut Context<Self>) {
-///         let act = Arbiter::system_registry().get::<MyActor1>();
+///         let act = System::current().registry().get::<MyActor1>();
 ///         act.do_send(Ping);
 ///     }
 /// }
@@ -206,6 +207,7 @@ impl Registry {
 /// }
 /// ```
 pub struct SystemRegistry {
+    system: Addr<SystemArbiter>,
     registry: InnerRegistry,
 }
 
@@ -217,8 +219,8 @@ pub trait SystemService:
     Actor<Context = Context<Self>> + Supervised + Send + Default
 {
     /// Construct and srtart system service
-    fn start_service() -> Addr<Self> {
-        Supervisor::start_in_system(|ctx| {
+    fn start_service(sys: &Addr<SystemArbiter>) -> Addr<Self> {
+        Supervisor::start_in_system(sys, |ctx| {
             let mut act = Self::default();
             act.service_started(ctx);
             act
@@ -230,13 +232,14 @@ pub trait SystemService:
 
     /// Get actor's address from system registry
     fn from_registry() -> Addr<Self> {
-        Arbiter::system_reg().get::<Self>()
+        System::with_current(|sys| sys.registry().get::<Self>())
     }
 }
 
 impl SystemRegistry {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(system: Addr<SystemArbiter>) -> Self {
         SystemRegistry {
+            system,
             registry: Arc::new(ReentrantMutex::new(RefCell::new(HashMap::new()))),
         }
     }
@@ -252,7 +255,7 @@ impl SystemRegistry {
             }
         }
 
-        let addr = A::start_service();
+        let addr = A::start_service(&self.system);
         hm.borrow_mut()
             .insert(TypeId::of::<A>(), Box::new(addr.clone()));
         addr
@@ -262,6 +265,7 @@ impl SystemRegistry {
 impl Clone for SystemRegistry {
     fn clone(&self) -> Self {
         SystemRegistry {
+            system: self.system.clone(),
             registry: Arc::clone(&self.registry),
         }
     }

@@ -182,19 +182,6 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>
     (tx, rx)
 }
 
-/*
-impl<A, M> MessageDestinationTransport<Syn, A, M> for AddressSender<A>
-where
-    A: Actor + Handler<M>,
-    A::Context: ToEnvelope<A, M>,
-    M: Message + Send + 'static,
-    M::Result: Send,
-{
-    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
-        AddressSender::send(self, msg)
-    }
-}*/
-
 //
 //
 // ===== impl Sender =====
@@ -851,7 +838,7 @@ mod tests {
             };
             assert!(p.is_none());
 
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            System::current().stop();
         });
     }
 }

@@ -9,7 +9,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use actix::msgs::SystemExit;
 use actix::prelude::*;
 use futures::sync::oneshot::{channel, Sender};
 use futures::{future, Future};
@@ -101,7 +100,7 @@ fn test_active_address() {
 
         tokio::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
+                System::current().stop();
                 future::result(Ok(()))
             }),
         );
@@ -134,7 +133,7 @@ fn test_stop_after_drop_address() {
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
                 drop(addr);
                 Delay::new(Instant::now() + Duration::new(0, 10_000)).then(|_| {
-                    Arbiter::system().do_send(SystemExit(0));
+                    System::current().stop();
                     future::result(Ok(()))
                 })
             })
@@ -167,7 +166,7 @@ fn test_stop_after_drop_sync_address() {
         tokio::spawn(futures::lazy(move || {
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
                 drop(addr);
-                Arbiter::system().do_send(SystemExit(0));
+                System::current().stop();
                 future::result(Ok(()))
             })
         }));
@@ -208,7 +207,7 @@ fn test_stop_after_drop_sync_actor() {
                 drop(addr);
 
                 Delay::new(Instant::now() + Duration::from_secs(2)).then(move |_| {
-                    Arbiter::system().do_send(SystemExit(0));
+                    System::current().stop();
                     future::result(Ok(()))
                 })
             })
@@ -240,7 +239,7 @@ fn test_stop() {
 
         tokio::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
+                System::current().stop();
                 future::result(Ok(()))
             }),
         );
@@ -271,7 +270,7 @@ fn test_stop_restore_after_stopping() {
 
         tokio::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
-                Arbiter::system().do_send(SystemExit(0));
+                System::current().stop();
                 future::result(Ok(()))
             }),
         );

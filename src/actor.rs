@@ -103,7 +103,7 @@ pub trait Actor: Sized + 'static {
     ///     // initialize system
     ///     System::run(|| {
     ///         let addr = MyActor.start(); // <- start actor and get it's address
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #       System::current().stop();
     ///     });
     /// }
     /// ```
@@ -144,7 +144,7 @@ pub trait Actor: Sized + 'static {
     ///     // initialize system
     ///     System::run(|| {
     ///         let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #       System::current().stop();
     ///     });
     /// }
     /// ```
@@ -273,7 +273,7 @@ where
     ///             Ok(Some(_)) => println!("PING"),
     ///             _ => println!("finished"),
     ///         }
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #       System::current().stop();
     ///     }
     /// }
     ///
@@ -317,7 +317,7 @@ where
     ///
     ///     fn handle(&mut self, msg: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    /// #       Arbiter::system().do_send(actix::msgs::SystemExit(0));
+    /// #       System::current().stop();
     ///     }
     /// }
     ///

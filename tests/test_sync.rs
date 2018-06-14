@@ -18,7 +18,6 @@ struct SyncActor {
     cond_l: Arc<Mutex<bool>>,
     counter: Arc<AtomicUsize>,
     messages: Arc<AtomicUsize>,
-    addr: Addr<System>,
 }
 
 impl Actor for SyncActor {
@@ -39,7 +38,7 @@ impl Handler<Fibonacci> for SyncActor {
     fn handle(&mut self, msg: Fibonacci, _: &mut Self::Context) -> Self::Result {
         let old = self.messages.fetch_add(1, Ordering::Relaxed);
         if old == 4 {
-            self.addr.do_send(actix::msgs::SystemExit(0));
+            System::current().stop();
         }
 
         if msg.0 == 0 {
@@ -76,13 +75,11 @@ fn test_sync() {
     let messages_c = Arc::clone(&messages);
 
     System::run(move || {
-        let s_addr = Arbiter::system();
         let addr = SyncArbiter::start(2, move || SyncActor {
             cond: Arc::clone(&cond_c),
             cond_l: Arc::clone(&cond_l_c),
             counter: Arc::clone(&counter_c),
             messages: Arc::clone(&messages_c),
-            addr: s_addr.clone(),
         });
 
         let mut started = l.lock().unwrap();

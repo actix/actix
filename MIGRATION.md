@@ -29,6 +29,8 @@
 
 * `Arbiter` uses `tokio::runtime::current_thread`
 
+* `Arbiter::arbiter()` renamed to `Arbiter::current()`
+
 * `Arbiter::handle()` get removed use `tokio::spawn()` instead or you can send
   `Execute` message to the `System`.
 
