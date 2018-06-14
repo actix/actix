@@ -134,7 +134,7 @@ impl System {
     }
 
     /// This function will start tokio runtime and will finish once the
-    /// `SystemExit` message get received.
+    /// `System::stop()` message get called.
     /// Function `f` get called within tokio runtime context.
     pub fn run<F>(f: F) -> i32
     where

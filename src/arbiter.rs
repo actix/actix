@@ -18,7 +18,6 @@ use registry::Registry;
 use system::{RegisterArbiter, System, UnregisterArbiter};
 
 thread_local!(
-    static STOP: RefCell<Option<Sender<i32>>> = RefCell::new(None);
     static ADDR: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
     static REG: RefCell<Option<Registry>> = RefCell::new(None);
@@ -31,6 +30,7 @@ thread_local!(
 /// can belongs to specific `System` actor.
 pub struct Arbiter {
     id: Uuid,
+    stop: Option<Sender<i32>>,
 }
 
 impl Actor for Arbiter {
@@ -57,8 +57,7 @@ impl Arbiter {
         let _ = thread::Builder::new().name(name.clone()).spawn(move || {
             let mut rt = Runtime::new().unwrap();
 
-            let (stop_tx, stop_rx) = channel();
-            STOP.with(|cell| *cell.borrow_mut() = Some(stop_tx));
+            let (stop, stop_rx) = channel();
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
             REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
 
@@ -67,7 +66,10 @@ impl Arbiter {
             // start arbiter
             let addr =
                 rt.block_on(future::lazy(move || {
-                    let addr = Actor::start(Arbiter { id });
+                    let addr = Actor::start(Arbiter {
+                        id,
+                        stop: Some(stop),
+                    });
                     Ok::<_, ()>(addr)
                 })).unwrap();
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
@@ -144,11 +146,9 @@ impl Handler<StopArbiter> for Arbiter {
     type Result = ();
 
     fn handle(&mut self, msg: StopArbiter, _: &mut Context<Self>) {
-        STOP.with(|cell| {
-            if let Some(stop) = cell.borrow_mut().take() {
-                let _ = stop.send(msg.0);
-            }
-        });
+        if let Some(stop) = self.stop.take() {
+            let _ = stop.send(msg.0);
+        }
     }
 }
 
