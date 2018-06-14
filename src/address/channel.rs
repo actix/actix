@@ -2,12 +2,14 @@
 use std::cell::Cell;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{thread, usize};
 
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
 use futures::task::{self, Task};
 use futures::{Async, Poll, Stream};
+
+use parking_lot::Mutex;
 
 use actor::Actor;
 use handler::{Handler, Message};
@@ -371,7 +373,7 @@ impl<A: Actor> AddressSender<A> {
         // Do this step first so that the lock is dropped when
         // `unpark` is called
         let task = {
-            let mut recv_task = self.inner.recv_task.lock().unwrap();
+            let mut recv_task = self.inner.recv_task.lock();
 
             // If the receiver has already been unparked, then there is nothing
             // more to do
@@ -400,7 +402,7 @@ impl<A: Actor> AddressSender<A> {
         };
 
         {
-            let mut sender = self.sender_task.lock().unwrap();
+            let mut sender = self.sender_task.lock();
             sender.task = task;
             sender.is_parked = true;
         }
@@ -419,7 +421,7 @@ impl<A: Actor> AddressSender<A> {
         // lock in most cases
         if self.maybe_parked.get() {
             // Get a lock on the task handle
-            let mut task = self.sender_task.lock().unwrap();
+            let mut task = self.sender_task.lock();
 
             if !task.is_parked {
                 self.maybe_parked.set(false);
@@ -531,7 +533,7 @@ impl<A: Actor> AddressReceiver<A> {
             loop {
                 match unsafe { self.inner.parked_queue.pop() } {
                     PopResult::Data(task) => {
-                        task.lock().unwrap().notify();
+                        task.lock().notify();
                     }
                     PopResult::Empty => {
                         // Queue empty, no task to wake up.
@@ -608,7 +610,7 @@ impl<A: Actor> AddressReceiver<A> {
         loop {
             match unsafe { self.inner.parked_queue.pop() } {
                 PopResult::Data(task) => {
-                    task.lock().unwrap().notify();
+                    task.lock().notify();
                     return;
                 }
                 PopResult::Empty => {
@@ -626,7 +628,7 @@ impl<A: Actor> AddressReceiver<A> {
     // Try to park the receiver task
     fn try_park(&self) -> TryPark {
         // First, track the task in the `recv_task` slot
-        let mut recv_task = self.inner.recv_task.lock().unwrap();
+        let mut recv_task = self.inner.recv_task.lock();
 
         if recv_task.unparked {
             // Consume the `unpark` signal without actually parking
@@ -728,7 +730,7 @@ impl<A: Actor> Drop for AddressReceiver<A> {
         loop {
             match unsafe { self.inner.parked_queue.pop() } {
                 PopResult::Data(task) => {
-                    task.lock().unwrap().notify();
+                    task.lock().notify();
                 }
                 PopResult::Empty => break,
                 PopResult::Inconsistent => thread::yield_now(),

@@ -49,6 +49,7 @@ use supervisor::Supervisor;
 /// }
 ///
 /// impl Handler<Ping> for MyActor1 {
+
 ///    type Result = ();
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
@@ -205,8 +206,10 @@ impl Registry {
 /// }
 /// ```
 pub struct SystemRegistry {
-    registry: Arc<ReentrantMutex<RefCell<HashMap<TypeId, Box<Any + Send>>>>>,
+    registry: InnerRegistry,
 }
+
+type InnerRegistry = Arc<ReentrantMutex<RefCell<HashMap<TypeId, Box<Any + Send>>>>>;
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
@@ -239,22 +242,20 @@ impl SystemRegistry {
     }
 
     /// Return address of the service. If service actor is not running
-    /// it get started in system arbiter.
+    /// it get started in the system.
     pub fn get<A: SystemService + Actor<Context = Context<A>> + Send>(&self) -> Addr<A> {
-        {
-            let hm = self.registry.lock();
-            if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
-                match addr.downcast_ref::<Addr<A>>() {
-                    Some(addr) => return addr.clone(),
-                    None => panic!("Got unknown value: {:?}", addr),
-                }
+        let hm = self.registry.lock();
+        if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
+            match addr.downcast_ref::<Addr<A>>() {
+                Some(addr) => return addr.clone(),
+                None => panic!("Got unknown value: {:?}", addr),
             }
-
-            let addr = A::start_service();
-            hm.borrow_mut()
-                .insert(TypeId::of::<A>(), Box::new(addr.clone()));
-            return addr;
         }
+
+        let addr = A::start_service();
+        hm.borrow_mut()
+            .insert(TypeId::of::<A>(), Box::new(addr.clone()));
+        addr
     }
 }
 

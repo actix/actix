@@ -133,11 +133,10 @@ impl Arbiter {
 
     pub(crate) fn new_system() -> Addr<Arbiter> {
         // start arbiter
-        let addr = Actor::start(Arbiter {
+        Actor::start(Arbiter {
             sys: true,
             id: Uuid::new_v4(),
-        });
-        addr
+        })
     }
 
     /// Returns current arbiter's address
