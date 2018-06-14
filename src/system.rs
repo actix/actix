@@ -148,11 +148,24 @@ impl System {
         }
     }
 
-    fn create_runtime<F>(name: &str, pool_size: usize, f: F) -> (Runtime, Receiver<i32>)
+    ///Runs future with minimal runtime.
+    ///
+    ///Once future is complete runtime shall be shutdown.
+    ///
+    ///NOTE: Actual System is not created so it cannot be stopped by means of [stop](struct.System.html#method.stop)
+    ///Instead it is stopped as soon as future is resolved.
+    ///Due to that [current](struct.System.html#method.current) shall panic on attempt to access it.
+    pub fn run_until_complete<I, E, F>(f: F) -> Result<I, E>
     where
-        F: FnOnce() + Send + 'static,
+        I: Send + 'static,
+        E: Send + 'static,
+        F: Send + 'static + Future<Item=I, Error=E>
     {
-        let (stop_tx, stop) = channel();
+        let (mut rt, _) = Self::create_tokio_rt("actix-thread-pool-", 1);
+        rt.block_on(f)
+    }
+
+    fn create_tokio_rt(name: &str, pool_size: usize) -> (Runtime, addr_channel::AddressReceiver<SystemArbiter>) {
         let (addr_sender, addr_receiver) = addr_channel::channel(16);
 
         let addr = Addr::new(addr_sender);
@@ -162,12 +175,6 @@ impl System {
         };
         System::set_current(system.clone());
 
-        // system arbiter
-        let arb = SystemArbiter {
-            arbiters: HashMap::new(),
-            stop: Some(stop_tx),
-        };
-
         let mut threadpool = ThreadPoolBuilder::new();
         threadpool
             .name_prefix(name)
@@ -176,10 +183,26 @@ impl System {
                 System::set_current(system.clone());
             });
 
-        let mut rt = Builder::new()
+        let rt = Builder::new()
             .threadpool_builder(threadpool)
             .build()
             .unwrap();
+
+        (rt, addr_receiver)
+    }
+
+    fn create_runtime<F>(name: &str, pool_size: usize, f: F) -> (Runtime, Receiver<i32>)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let (stop_tx, stop) = channel();
+        let (mut rt, addr_receiver) = Self::create_tokio_rt(name, pool_size);
+
+        // system arbiter
+        let arb = SystemArbiter {
+            arbiters: HashMap::new(),
+            stop: Some(stop_tx),
+        };
 
         // init system arbiter and run configuration method
         let (tx, rx) = channel();
