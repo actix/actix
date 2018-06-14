@@ -26,8 +26,6 @@ thread_local!(
 
     static SYS: RefCell<Arc<Mutex<Option<Addr<System>>>>> =
         RefCell::new(Arc::new(Mutex::new(None)));
-    static SYSARB: RefCell<Arc<Mutex<Option<Addr<Arbiter>>>>> =
-        RefCell::new(Arc::new(Mutex::new(None)));
     static SYSREG: RefCell<Option<SystemRegistry>> = RefCell::new(None);
 );
 
@@ -63,7 +61,6 @@ impl Arbiter {
         let name = format!("arbiter:{}:{}", id.hyphenated().to_string(), name.into());
         let sys = Arbiter::system_ref();
         let sysreg = Arbiter::system_reg();
-        let sys_arbiter = Arbiter::system_arb_ref();
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move || {
             let mut rt = Runtime::new().unwrap();
@@ -74,7 +71,6 @@ impl Arbiter {
             REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
 
             SYS.with(|cell| *cell.borrow_mut() = sys);
-            SYSARB.with(|cell| *cell.borrow_mut() = sys_arbiter);
             SYSREG.with(|cell| *cell.borrow_mut() = Some(sysreg));
 
             // start arbiter
@@ -106,10 +102,6 @@ impl Arbiter {
         SYS.with(|s| s.borrow().clone())
     }
 
-    pub(crate) fn system_arb_ref() -> Arc<Mutex<Option<Addr<Arbiter>>>> {
-        SYSARB.with(|s| s.borrow().clone())
-    }
-
     pub(crate) fn system_reg() -> SystemRegistry {
         SYSREG.with(|s| {
             if s.borrow().is_none() {
@@ -123,20 +115,8 @@ impl Arbiter {
         SYS.with(move |cell| *cell.borrow_mut() = addr);
     }
 
-    pub(crate) fn set_system_arb_ref(addr: Arc<Mutex<Option<Addr<Arbiter>>>>) {
-        SYSARB.with(move |cell| *cell.borrow_mut() = addr);
-    }
-
     pub fn set_system_reg(reg: SystemRegistry) {
         SYSREG.with(|cell| *cell.borrow_mut() = Some(reg));
-    }
-
-    pub(crate) fn new_system() -> Addr<Arbiter> {
-        // start arbiter
-        Actor::start(Arbiter {
-            sys: true,
-            id: Uuid::new_v4(),
-        })
     }
 
     /// Returns current arbiter's address
@@ -158,18 +138,6 @@ impl Arbiter {
     /// This function returns system address,
     pub fn system() -> Addr<System> {
         SYS.with(|cell| {
-            let b = cell.borrow();
-            if let Some(a) = b.as_ref().lock().unwrap().clone() {
-                return a;
-            } else {
-                panic!("System is not running");
-            };
-        })
-    }
-
-    /// This function returns system address,
-    pub fn system_arbiter() -> Addr<Arbiter> {
-        SYSARB.with(|cell| {
             let b = cell.borrow();
             if let Some(a) = b.as_ref().lock().unwrap().clone() {
                 return a;
@@ -251,7 +219,6 @@ where
     }
 }
 
-/// Execute function in arbiter's thread
 impl<I: Send, E: Send> Handler<Execute<I, E>> for Arbiter {
     type Result = Result<I, E>;
 

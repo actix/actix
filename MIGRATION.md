@@ -29,7 +29,10 @@
 
 * `Arbiter` uses `tokio::runtime::current_thread`
 
-* `Arbiter::handle()` get removed use `tokio::spawn()` instead.
+* `Arbiter::handle()` get removed use `tokio::spawn()` instead or you can send
+  `Execute` message to the `System`.
+
+* `Arbiter::system_arbiter()` get removed. `System` does not run `Arbiter`.
 
 * Actor can be started only within running tokio runtime or
   with `System::run()` or `SystemRuntime::config()`

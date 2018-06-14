@@ -119,9 +119,6 @@ impl System {
         let saddr = Arbiter::system_ref();
         let system = saddr.clone();
 
-        let sarb = Arbiter::system_arb_ref();
-        let sarb2 = sarb.clone();
-
         let reg = Arbiter::system_reg();
 
         let mut threadpool = ThreadPoolBuilder::new();
@@ -130,7 +127,6 @@ impl System {
             .pool_size(pool_size)
             .after_start(move || {
                 Arbiter::set_system_ref(saddr.clone());
-                Arbiter::set_system_arb_ref(sarb2.clone());
                 Arbiter::set_system_reg(reg.clone());
             });
 
@@ -144,9 +140,6 @@ impl System {
         let _ = rt.spawn(future::lazy(move || {
             let addr = sys.start();
             *system.lock().unwrap() = Some(addr);
-
-            let addr = Arbiter::new_system();
-            *sarb.lock().unwrap() = Some(addr);
 
             f();
             let _ = tx.send(());
