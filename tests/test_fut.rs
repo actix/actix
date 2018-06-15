@@ -93,3 +93,10 @@ fn test_stream_timeout() {
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }
+
+#[test]
+fn test_run_until() {
+    let result: Result<&str, ()> = System::run_until_complete(futures::future::ok("result"));
+    let result = result.expect("Ok result");
+    assert_eq!(result, "result");
+}
