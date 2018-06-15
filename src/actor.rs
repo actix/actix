@@ -6,10 +6,10 @@ use tokio;
 use address::Addr;
 use context::Context;
 use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
-use fut::ActorFuture;
+use fut::{ActorFuture, ActorStream};
 use handler::{Handler, Message};
 use stream::StreamHandler;
-use utils::TimerFunc;
+use utils::{TimerFunc, IntervalFunc};
 
 #[allow(unused_variables)]
 /// Actors are objects which encapsulate state and behavior.
@@ -386,6 +386,15 @@ where
     {
         self.spawn(TimerFunc::new(dur, f))
     }
+
+    ///Spawns job to execute closure with specified interval
+    fn run_interval<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
+    where
+        F: FnMut(&mut A, &mut A::Context) + 'static,
+    {
+        self.spawn(IntervalFunc::new(dur, f).finish())
+    }
+
 }
 
 /// Spawned future handle. Could be used for cancelling spawned future.

@@ -192,3 +192,39 @@ fn test_restart_sync_actor() {
     assert_eq!(stopped.load(Ordering::Relaxed), 2);
     assert_eq!(msgs.load(Ordering::Relaxed), 6);
 }
+
+struct IntervalActor(Arc<AtomicUsize>);
+
+impl Actor for IntervalActor {
+    type Context = actix::Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.run_interval(Duration::from_millis(5), move |act, ctx| {
+            act.0.fetch_add(1, Ordering::Relaxed);
+
+            if act.0.load(Ordering::Relaxed) == 10 {
+                ctx.stop();
+            }
+        });
+    }
+
+    fn stopping(&mut self, _: &mut Self::Context) -> Running {
+        System::current().stop();
+        Running::Stop
+    }
+}
+
+#[test]
+fn test_run_interval() {
+    let counter = Arc::new(AtomicUsize::new(0));
+    let counter_clone = counter.clone();
+    System::run(move || {
+        let addr = IntervalActor(counter_clone).start();
+        let delay = Delay::new(Instant::now() + Duration::from_millis(1_000_000));
+        tokio::spawn(delay.then(move |_| {
+            let _addr = addr;
+            Ok(())
+        }));
+    });
+    assert_eq!(counter.load(Ordering::Relaxed), 10);
+}
