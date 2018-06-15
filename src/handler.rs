@@ -98,6 +98,18 @@ where
     }
 }
 
+impl<A, M, I: 'static> MessageResponse<A, M> for Option<I>
+where
+    A: Actor,
+    M: Message<Result = Option<I>>,
+{
+    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
+        if let Some(tx) = tx {
+            tx.send(self);
+        }
+    }
+}
+
 impl<A, M, B> MessageResponse<A, M> for Addr<B>
 where
     A: Actor,
