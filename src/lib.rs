@@ -92,7 +92,7 @@ pub use handler::{
     ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
     ResponseFuture,
 };
-pub use registry::{ArbiterService, SystemService};
+pub use registry::{ArbiterService, Registry, SystemRegistry, SystemService};
 pub use stream::StreamHandler;
 pub use supervisor::Supervisor;
 pub use sync::{SyncArbiter, SyncContext};
@@ -163,4 +163,5 @@ pub mod dev {
     pub use address::{Envelope, RecipientRequest, Request, ToEnvelope};
     pub use contextimpl::ContextImpl;
     pub use handler::{MessageResponse, ResponseChannel};
+    pub use registry::{Registry, SystemRegistry};
 }
