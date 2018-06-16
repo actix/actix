@@ -1,13 +1,11 @@
 use futures::{Async, Future, Poll};
-use tokio;
-use tokio::executor::current_thread;
 
 use actor::{Actor, AsyncContext, Supervised};
 use address::{channel, Addr};
+use arbiter::Arbiter;
 use context::Context;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::Execute;
-use system::SystemArbiter;
 
 /// Actor supervisor
 ///
@@ -99,7 +97,7 @@ where
     pub fn start<F>(f: F) -> Addr<A>
     where
         F: FnOnce(&mut A::Context) -> A + 'static,
-        A: Actor<Context = Context<A>> + Send,
+        A: Actor<Context = Context<A>>,
     {
         // create actor
         let mut ctx = Context::new(None);
@@ -108,15 +106,15 @@ where
         ctx.set_actor(act);
 
         // create supervisor
-        tokio::spawn(Supervisor::<A> { ctx });
+        Arbiter::spawn(Supervisor::<A> { ctx });
 
         addr
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in_system<F>(sys: &Addr<SystemArbiter>, f: F) -> Addr<A>
+    pub fn start_in_arbiter<F>(sys: &Addr<Arbiter>, f: F) -> Addr<A>
     where
-        A: Actor<Context = Context<A>> + Send,
+        A: Actor<Context = Context<A>>,
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
@@ -125,29 +123,11 @@ where
             let mut ctx = Context::with_receiver(None, rx);
             let act = f(&mut ctx);
             ctx.set_actor(act);
-            tokio::spawn(Supervisor::<A> { ctx });
+            Arbiter::spawn(Supervisor::<A> { ctx });
             Ok(())
         }));
 
         Addr::new(tx)
-    }
-
-    /// Start new supervised actor in current thread.
-    pub fn start_in_current<F>(f: F) -> Addr<A>
-    where
-        A: Actor<Context = Context<A>>,
-        F: FnOnce(&mut Context<A>) -> A + 'static,
-    {
-        // create actor
-        let mut ctx = Context::new(None);
-        let act = f(&mut ctx);
-        let addr = ctx.address();
-        ctx.set_actor(act);
-
-        // create supervisor
-        current_thread::spawn(Supervisor::<A> { ctx });
-
-        addr
     }
 }
 

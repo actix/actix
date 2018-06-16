@@ -1,9 +1,9 @@
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::Future;
-use tokio;
 
 use actor::{Actor, AsyncContext};
 use address::Addr;
+use arbiter::Arbiter;
 use context::Context;
 use fut::{self, ActorFuture};
 
@@ -43,7 +43,7 @@ pub type ResponseActFuture<A, I, E> = Box<ActorFuture<Item = I, Error = E, Actor
 pub type ResponseFuture<I, E> = Box<Future<Item = I, Error = E>>;
 
 /// Trait defines message response channel
-pub trait ResponseChannel<M: Message>: Send + 'static {
+pub trait ResponseChannel<M: Message>: 'static {
     fn is_canceled(&self) -> bool;
 
     fn send(self, response: M::Result);
@@ -141,14 +141,13 @@ where
 
 impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<I, E>
 where
-    Self: Send,
     A: Actor,
     M::Result: Send,
     M: Message<Result = Result<I, E>>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        tokio::spawn(self.then(move |res| {
+        Arbiter::spawn(self.then(move |res| {
             if let Some(tx) = tx {
                 tx.send(res)
             }
@@ -159,7 +158,7 @@ where
 
 enum ResponseTypeItem<I, E> {
     Result(Result<I, E>),
-    Fut(Box<Future<Item = I, Error = E> + Send>),
+    Fut(Box<Future<Item = I, Error = E>>),
 }
 
 /// Helper type for representing different type of message responses
@@ -171,7 +170,7 @@ impl<I, E> Response<I, E> {
     /// Create async response
     pub fn async<T>(fut: T) -> Self
     where
-        T: Future<Item = I, Error = E> + Send + 'static,
+        T: Future<Item = I, Error = E> + 'static,
     {
         Response {
             item: ResponseTypeItem::Fut(Box::new(fut)),
@@ -195,7 +194,7 @@ where
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         match self.item {
             ResponseTypeItem::Fut(fut) => {
-                tokio::spawn(fut.then(move |res| {
+                Arbiter::spawn(fut.then(move |res| {
                     if let Some(tx) = tx {
                         tx.send(res);
                     }

@@ -12,7 +12,7 @@ use futures::Future;
 #[test]
 fn test_resolver() {
     System::run(|| {
-        tokio::spawn({
+        Arbiter::spawn({
             let resolver = System::current().registry().get::<resolver::Resolver>();
             resolver
                 .send(resolver::Resolve::host("localhost"))
@@ -22,7 +22,7 @@ fn test_resolver() {
                 })
         });
 
-        tokio::spawn({
+        Arbiter::spawn({
             let resolver = System::current().registry().get::<resolver::Resolver>();
             resolver
                 .send(resolver::Connect::host("localhost:5000"))
@@ -54,7 +54,7 @@ fn test_signal() {
 fn test_signal_term() {
     System::run(|| {
         let _addr = signal::DefaultSignalsHandler::start_default();
-        tokio::spawn(futures::lazy(move || {
+        Arbiter::spawn(futures::lazy(move || {
             let sig = System::current().registry().get::<signal::ProcessSignals>();
             sig.do_send(signal::SignalType::Term);
             Ok(())
@@ -67,7 +67,7 @@ fn test_signal_term() {
 fn test_signal_int() {
     System::run(|| {
         let _addr = signal::DefaultSignalsHandler::start_default();
-        tokio::spawn(futures::lazy(move || {
+        Arbiter::spawn(futures::lazy(move || {
             let sig = System::current().registry().get::<signal::ProcessSignals>();
             sig.do_send(signal::SignalType::Hup);
             sig.do_send(signal::SignalType::Int);

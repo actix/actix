@@ -6,7 +6,7 @@
 
 * Use tokio
 
-* `System` and `Arbiter` refactored to accommodate tokio runtime.
+* `System` and `Arbiter` refactored
 
 * `Arbiter::handle()` is not available anymore. 
   Use `Arbiter::spawn()` and `Arbiter::spawn_fn()` instead.

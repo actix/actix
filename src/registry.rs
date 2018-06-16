@@ -16,7 +16,7 @@ use address::Addr;
 use arbiter::Arbiter;
 use context::Context;
 use supervisor::Supervisor;
-use system::{System, SystemArbiter};
+use system::System;
 
 /// Actors registry
 ///
@@ -92,7 +92,7 @@ pub struct Registry {
 pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default {
     /// Construct and srtart arbiter service
     fn start_service() -> Addr<Self> {
-        Supervisor::start_in_current(|ctx| {
+        Supervisor::start(|ctx| {
             let mut act = Self::default();
             act.service_started(ctx);
             act
@@ -207,7 +207,7 @@ impl Registry {
 /// }
 /// ```
 pub struct SystemRegistry {
-    system: Addr<SystemArbiter>,
+    system: Addr<Arbiter>,
     registry: InnerRegistry,
 }
 
@@ -215,12 +215,10 @@ type InnerRegistry = Arc<ReentrantMutex<RefCell<HashMap<TypeId, Box<Any + Send>>
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
-pub trait SystemService:
-    Actor<Context = Context<Self>> + Supervised + Send + Default
-{
+pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     /// Construct and srtart system service
-    fn start_service(sys: &Addr<SystemArbiter>) -> Addr<Self> {
-        Supervisor::start_in_system(sys, |ctx| {
+    fn start_service(sys: &Addr<Arbiter>) -> Addr<Self> {
+        Supervisor::start_in_arbiter(sys, |ctx| {
             let mut act = Self::default();
             act.service_started(ctx);
             act
@@ -237,7 +235,7 @@ pub trait SystemService:
 }
 
 impl SystemRegistry {
-    pub(crate) fn new(system: Addr<SystemArbiter>) -> Self {
+    pub(crate) fn new(system: Addr<Arbiter>) -> Self {
         SystemRegistry {
             system,
             registry: Arc::new(ReentrantMutex::new(RefCell::new(HashMap::new()))),
@@ -246,7 +244,7 @@ impl SystemRegistry {
 
     /// Return address of the service. If service actor is not running
     /// it get started in the system.
-    pub fn get<A: SystemService + Actor<Context = Context<A>> + Send>(&self) -> Addr<A> {
+    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&self) -> Addr<A> {
         let hm = self.registry.lock();
         if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
             match addr.downcast_ref::<Addr<A>>() {

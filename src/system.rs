@@ -3,9 +3,8 @@ use std::collections::HashMap;
 
 use futures::sync::oneshot::{channel, Receiver, Sender};
 use futures::{future, Future};
-use tokio;
-use tokio::runtime::{Builder, Runtime};
-use tokio_threadpool::Builder as ThreadPoolBuilder;
+use tokio::executor::current_thread::spawn;
+use tokio::runtime::current_thread::Runtime;
 
 use actor::Actor;
 use address::{channel as addr_channel, Addr};
@@ -60,7 +59,8 @@ use registry::SystemRegistry;
 /// ```
 #[derive(Clone)]
 pub struct System {
-    arbiter: Addr<SystemArbiter>,
+    sys: Addr<SystemArbiter>,
+    arbiter: Addr<Arbiter>,
     registry: SystemRegistry,
 }
 
@@ -72,23 +72,7 @@ impl System {
     ///
     /// This method panics if it can not create tokio runtime
     pub fn new<T: Into<String>>(name: T) -> SystemRunner {
-        let (rt, stop) =
-            System::create_runtime(&format!("{}-thread-pool-", name.into()), 1, || {});
-
-        SystemRunner { rt, stop }
-    }
-
-    /// Create new system and set tokio runtime pool size.
-    ///
-    /// By default pool size is 1. This method panics if it can not create tokio runtime
-    pub fn with_pool_size<T: Into<String>>(name: T, size: usize) -> SystemRunner {
-        let (rt, stop) = System::create_runtime(
-            &format!("{}-thread-pool-", name.into()),
-            size,
-            || {},
-        );
-
-        SystemRunner { rt, stop }
+        System::create_runtime(name.into(), || {})
     }
 
     /// Get current running system.
@@ -120,11 +104,15 @@ impl System {
 
     /// Stop the system
     pub fn stop(&self) {
-        self.arbiter.do_send(SystemExit(0));
+        self.sys.do_send(SystemExit(0));
     }
 
-    #[doc(hidden)]
-    pub fn arbiter(&self) -> &Addr<SystemArbiter> {
+    pub(crate) fn sys(&self) -> &Addr<SystemArbiter> {
+        &self.sys
+    }
+
+    /// System arbiter
+    pub fn arbiter(&self) -> &Addr<Arbiter> {
         &self.arbiter
     }
 
@@ -138,25 +126,22 @@ impl System {
     /// Function `f` get called within tokio runtime context.
     pub fn run<F>(f: F) -> i32
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() + 'static,
     {
-        let (_rt, stop) = System::create_runtime("actix-thread-pool-", 1, f);
-
-        match stop.wait() {
-            Ok(code) => code,
-            Err(_) => 1,
-        }
+        System::create_runtime("actix".to_owned(), f).run()
     }
 
-    fn create_runtime<F>(name: &str, pool_size: usize, f: F) -> (Runtime, Receiver<i32>)
+    fn create_runtime<F>(name: String, f: F) -> SystemRunner
     where
-        F: FnOnce() + Send + 'static,
+        F: FnOnce() + 'static,
     {
         let (stop_tx, stop) = channel();
         let (addr_sender, addr_receiver) = addr_channel::channel(16);
+        let (arb_sender, arb_receiver) = addr_channel::channel(16);
 
-        let addr = Addr::new(addr_sender);
+        let addr = Addr::new(arb_sender);
         let system = System {
+            sys: Addr::new(addr_sender),
             arbiter: addr.clone(),
             registry: SystemRegistry::new(addr),
         };
@@ -168,31 +153,18 @@ impl System {
             stop: Some(stop_tx),
         };
 
-        let mut threadpool = ThreadPoolBuilder::new();
-        threadpool
-            .name_prefix(name)
-            .pool_size(pool_size)
-            .after_start(move || {
-                System::set_current(system.clone());
-            });
-
-        let mut rt = Builder::new()
-            .threadpool_builder(threadpool)
-            .build()
-            .unwrap();
+        let mut rt = Runtime::new().unwrap();
 
         // init system arbiter and run configuration method
-        let (tx, rx) = channel();
-        let _ = rt.spawn(future::lazy(move || {
-            tokio::spawn(Context::with_receiver(Some(arb), addr_receiver));
+        let _ = rt.block_on(future::lazy(move || {
+            Arbiter::new_system(arb_receiver, name);
+            spawn(Context::with_receiver(Some(arb), addr_receiver));
 
             f();
-            let _ = tx.send(());
             Ok::<_, ()>(())
         }));
-        let _ = rx.wait();
 
-        (rt, stop)
+        SystemRunner { rt, stop }
     }
 }
 
@@ -205,33 +177,42 @@ pub struct SystemRunner {
 
 impl SystemRunner {
     /// This function will start event loop and will finish once the
-    /// `SystemExit` message get received.
+    /// `System::stop()` function get called.
     pub fn run(self) -> i32 {
-        // run loop
-        match self.stop.wait() {
-            Ok(code) => code,
-            Err(_) => 1,
-        }
-    }
+        let SystemRunner { mut rt, stop, .. } = self;
 
-    pub fn config<F>(mut self, f: F) -> Self
-    where
-        F: FnOnce() + Send + 'static,
-    {
-        // run config fn
-        let (tx, rx) = channel();
-        self.rt.spawn(future::lazy(move || {
-            f();
-            let _ = tx.send(());
+        // run loop
+        let _ = rt.block_on(future::lazy(move || {
+            Arbiter::run_system();
             Ok::<_, ()>(())
         }));
-        let _ = rx.wait();
+        let code = match rt.block_on(stop) {
+            Ok(code) => code,
+            Err(_) => 1,
+        };
+        Arbiter::stop_system();
+        code
+    }
 
-        self
+    /// Execute a future and wait for result.
+    pub fn block_on<F, I, E>(&mut self, fut: F) -> Result<I, E>
+    where
+        F: Future<Item = I, Error = E>,
+    {
+        let _ = self.rt.block_on(future::lazy(move || {
+            Arbiter::run_system();
+            Ok::<_, ()>(())
+        }));
+        let res = self.rt.block_on(fut);
+        let _ = self.rt.block_on(future::lazy(move || {
+            Arbiter::stop_system();
+            Ok::<_, ()>(())
+        }));
+        res
     }
 }
 
-pub struct SystemArbiter {
+pub(crate) struct SystemArbiter {
     stop: Option<Sender<i32>>,
     arbiters: HashMap<String, Addr<Arbiter>>,
 }

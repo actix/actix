@@ -73,11 +73,11 @@ use std::thread;
 use crossbeam_channel as cb_channel;
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::{Async, Future, Poll, Stream};
-use tokio;
 
 use actor::{Actor, ActorContext, ActorState, Running};
 use address::channel;
 use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
+use arbiter::Arbiter;
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
 use system::System;
@@ -94,7 +94,7 @@ where
 
 impl<A> SyncArbiter<A>
 where
-    A: Actor<Context = SyncContext<A>> + Send,
+    A: Actor<Context = SyncContext<A>>,
 {
     /// Start new sync arbiter with specified number of worker threads.
     /// Returns address of the started actor.
@@ -117,7 +117,7 @@ where
         }
 
         let (tx, rx) = channel::channel(0);
-        tokio::spawn(SyncArbiter {
+        Arbiter::spawn(SyncArbiter {
             queue: sender,
             msgs: rx,
             threads,

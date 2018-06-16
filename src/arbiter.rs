@@ -1,15 +1,15 @@
-use futures::sync::oneshot::{channel, Sender};
 use std;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::thread;
 
-use futures::{future, Future};
+use futures::sync::oneshot::{channel, Sender};
+use futures::{future, Future, IntoFuture};
 use tokio::executor::current_thread::spawn;
 use tokio::runtime::current_thread::Runtime;
 use uuid::Uuid;
 
 use actor::{Actor, AsyncContext};
-use address::{channel, Addr};
+use address::{channel, Addr, AddressReceiver};
 use context::Context;
 use handler::Handler;
 use mailbox::DEFAULT_CAPACITY;
@@ -21,6 +21,8 @@ thread_local!(
     static ADDR: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);
     static NAME: RefCell<Option<String>> = RefCell::new(None);
     static REG: RefCell<Option<Registry>> = RefCell::new(None);
+    static RUNNING: Cell<bool> = Cell::new(false);
+    static Q: RefCell<Vec<Box<Future<Item=(), Error=()>>>> = RefCell::new(Vec::new());
 );
 
 /// Event loop controller
@@ -29,19 +31,11 @@ thread_local!(
 /// thread. Arbiter provides several api for event loop access. Each arbiter
 /// can belongs to specific `System` actor.
 pub struct Arbiter {
-    id: Uuid,
     stop: Option<Sender<i32>>,
 }
 
 impl Actor for Arbiter {
     type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Context<Self>) {
-        // register arbiter within system
-        System::current()
-            .arbiter()
-            .do_send(RegisterArbiter(self.id.simple().to_string(), ctx.address()));
-    }
 }
 
 impl Arbiter {
@@ -60,19 +54,22 @@ impl Arbiter {
             let (stop, stop_rx) = channel();
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
             REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
+            RUNNING.with(|cell| cell.set(true));
 
             System::set_current(sys);
 
             // start arbiter
             let addr =
                 rt.block_on(future::lazy(move || {
-                    let addr = Actor::start(Arbiter {
-                        id,
-                        stop: Some(stop),
-                    });
+                    let addr = Actor::start(Arbiter { stop: Some(stop) });
                     Ok::<_, ()>(addr)
                 })).unwrap();
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
+
+            // register arbiter
+            System::current()
+                .sys()
+                .do_send(RegisterArbiter(id.simple().to_string(), addr.clone()));
 
             if tx.send(addr).is_err() {
                 error!("Can not start Arbiter, remote side is dead");
@@ -86,11 +83,37 @@ impl Arbiter {
 
             // unregister arbiter
             System::current()
-                .arbiter()
+                .sys()
                 .do_send(UnregisterArbiter(id.simple().to_string()));
         });
 
         rx.recv().unwrap()
+    }
+
+    pub(crate) fn new_system(rx: AddressReceiver<Arbiter>, name: String) {
+        NAME.with(|cell| *cell.borrow_mut() = Some(name));
+        REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
+        RUNNING.with(|cell| cell.set(false));
+
+        // start arbiter
+        let ctx = Context::with_receiver(Some(Arbiter { stop: None }), rx);
+        let addr = ctx.address();
+        Arbiter::spawn(ctx);
+        ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
+    }
+
+    pub(crate) fn run_system() {
+        RUNNING.with(|cell| cell.set(true));
+        Q.with(|cell| {
+            let mut v = cell.borrow_mut();
+            for fut in v.drain(..) {
+                spawn(fut);
+            }
+        });
+    }
+
+    pub(crate) fn stop_system() {
+        RUNNING.with(|cell| cell.set(false));
     }
 
     /// Returns current arbiter's address
@@ -115,6 +138,29 @@ impl Arbiter {
             Some(ref reg) => unsafe { std::mem::transmute(reg) },
             None => panic!("System is not running: {}", Arbiter::name()),
         })
+    }
+
+    /// Executes a future on the current thread.
+    pub fn spawn<F>(future: F)
+    where
+        F: Future<Item = (), Error = ()> + 'static,
+    {
+        RUNNING.with(move |cell| {
+            if cell.get() {
+                spawn(Box::new(future));
+            } else {
+                Q.with(move |cell| cell.borrow_mut().push(Box::new(future)));
+            }
+        });
+    }
+
+    /// Executes a future on the current thread.
+    pub fn spawn_fn<F, R>(f: F)
+    where
+        F: FnOnce() -> R + 'static,
+        R: IntoFuture<Item = (), Error = ()> + 'static,
+    {
+        Arbiter::spawn(future::lazy(f))
     }
 
     /// Start new arbiter and then start actor in created arbiter.
@@ -154,7 +200,7 @@ impl Handler<StopArbiter> for Arbiter {
 
 impl<A> Handler<StartActor<A>> for Arbiter
 where
-    A: Actor<Context = Context<A>> + Send,
+    A: Actor<Context = Context<A>>,
 {
     type Result = Addr<A>;
 

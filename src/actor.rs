@@ -1,15 +1,15 @@
 use std::time::Duration;
 
 use futures::Stream;
-use tokio;
 
 use address::Addr;
+use arbiter::Arbiter;
 use context::Context;
 use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
 use fut::{ActorFuture, ActorStream};
 use handler::{Handler, Message};
 use stream::StreamHandler;
-use utils::{TimerFunc, IntervalFunc};
+use utils::{IntervalFunc, TimerFunc};
 
 #[allow(unused_variables)]
 /// Actors are objects which encapsulate state and behavior.
@@ -109,7 +109,7 @@ pub trait Actor: Sized + 'static {
     /// ```
     fn start(self) -> Addr<Self>
     where
-        Self: Actor<Context = Context<Self>> + Send,
+        Self: Actor<Context = Context<Self>>,
     {
         let ctx = Context::new(Some(self));
         let addr = ctx.address();
@@ -120,7 +120,7 @@ pub trait Actor: Sized + 'static {
     /// Start new asynchronous actor, returns address of newly created actor.
     fn start_default() -> Addr<Self>
     where
-        Self: Actor<Context = Context<Self>> + Default + Send,
+        Self: Actor<Context = Context<Self>> + Default,
     {
         Self::default().start()
     }
@@ -150,13 +150,13 @@ pub trait Actor: Sized + 'static {
     /// ```
     fn create<F>(f: F) -> Addr<Self>
     where
-        Self: Actor<Context = Context<Self>> + Send,
-        F: FnOnce(&mut Context<Self>) -> Self + Send + 'static,
+        Self: Actor<Context = Context<Self>>,
+        F: FnOnce(&mut Context<Self>) -> Self + 'static,
     {
         let ctx = Context::create(f);
         let addr = ctx.address();
 
-        tokio::spawn(ctx);
+        Arbiter::spawn(ctx);
         addr
     }
 }
@@ -394,7 +394,6 @@ where
     {
         self.spawn(IntervalFunc::new(dur, f).finish())
     }
-
 }
 
 /// Spawned future handle. Could be used for cancelling spawned future.

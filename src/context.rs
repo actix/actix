@@ -1,10 +1,10 @@
 use std::fmt;
 
 use futures::{Future, Poll};
-use tokio;
 
 use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle, Supervised};
 use address::{Addr, AddressReceiver};
+use arbiter::Arbiter;
 use contextimpl::ContextImpl;
 use fut::ActorFuture;
 
@@ -132,11 +132,8 @@ where
     }
 
     #[inline]
-    pub(crate) fn run(self)
-    where
-        A: Send,
-    {
-        tokio::spawn(self.map(|_| ()).map_err(|_| ()));
+    pub(crate) fn run(self) {
+        Arbiter::spawn(self.map(|_| ()).map_err(|_| ()));
     }
 
     #[inline]

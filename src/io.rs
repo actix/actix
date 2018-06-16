@@ -62,8 +62,6 @@ impl<T: AsyncWrite, E: From<io::Error>> Clone for UnsafeWriter<T, E> {
     }
 }
 
-unsafe impl<T: AsyncWrite, E: From<io::Error>> Send for UnsafeWriter<T, E> {}
-
 struct InnerWriter<T: AsyncWrite, E: From<io::Error>> {
     flags: Flags,
     io: T,
