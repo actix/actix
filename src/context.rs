@@ -75,25 +75,7 @@ where
     A: Actor<Context = Self>,
 {
     /// Create `Context` instance with actor factory method.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// use actix::*;
-    ///
-    /// // initialize system
-    /// System::new("test");
-    ///
-    /// struct MyActor {
-    ///     val: usize,
-    /// };
-    /// impl Actor for MyActor {
-    ///     type Context = Context<Self>;
-    /// }
-    ///
-    /// let ctx = Context::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
-    /// ```
-    pub fn create<F>(f: F) -> Self
+    pub(crate) fn create<F>(f: F) -> Self
     where
         F: FnOnce(&mut Self) -> A + 'static,
     {
