@@ -7,8 +7,10 @@ use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::default::Default;
+use std::hash::BuildHasherDefault;
 use std::sync::Arc;
 
+use fnv::FnvHasher;
 use parking_lot::ReentrantMutex;
 
 use actor::{Actor, Supervised};
@@ -17,6 +19,8 @@ use arbiter::Arbiter;
 use context::Context;
 use supervisor::Supervisor;
 use system::System;
+
+type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 
 /// Actors registry
 ///
@@ -84,7 +88,7 @@ use system::System;
 /// }
 /// ```
 pub struct Registry {
-    registry: RefCell<HashMap<TypeId, Box<Any>>>,
+    registry: RefCell<AnyMap>,
 }
 
 /// Trait defines arbiter's service.
@@ -111,7 +115,7 @@ pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default 
 impl Registry {
     pub(crate) fn new() -> Self {
         Registry {
-            registry: RefCell::new(HashMap::new()),
+            registry: RefCell::new(HashMap::default()),
         }
     }
 
@@ -211,7 +215,8 @@ pub struct SystemRegistry {
     registry: InnerRegistry,
 }
 
-type InnerRegistry = Arc<ReentrantMutex<RefCell<HashMap<TypeId, Box<Any + Send>>>>>;
+type AnyMapSend = HashMap<TypeId, Box<Any + Send>, BuildHasherDefault<FnvHasher>>;
+type InnerRegistry = Arc<ReentrantMutex<RefCell<AnyMapSend>>>;
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
@@ -238,7 +243,7 @@ impl SystemRegistry {
     pub(crate) fn new(system: Addr<Arbiter>) -> Self {
         SystemRegistry {
             system,
-            registry: Arc::new(ReentrantMutex::new(RefCell::new(HashMap::new()))),
+            registry: Arc::new(ReentrantMutex::new(RefCell::new(HashMap::default()))),
         }
     }
 

@@ -33,6 +33,7 @@
 extern crate log;
 extern crate bytes;
 extern crate crossbeam_channel;
+extern crate fnv;
 extern crate libc;
 extern crate parking_lot;
 extern crate smallvec;
