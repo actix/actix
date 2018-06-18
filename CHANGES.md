@@ -13,6 +13,8 @@
 
 * `StreamHandler` trait refactored.
 
+* Min rustc version - 1.26
+
 
 ## 0.5.7 (2018-05-17)
 

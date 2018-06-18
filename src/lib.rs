@@ -9,7 +9,7 @@
 //!
 //! ## Documentation
 //!
-//! * [User Guide](http://actix.github.io/actix/guide/)
+//! * [User Guide](https://actix.rs/book/actix/)
 //! * [Chat on gitter](https://gitter.im/actix/actix)
 //! * [GitHub repository](https://github.com/actix/actix)
 //! * [Cargo package](https://crates.io/crates/actix)
