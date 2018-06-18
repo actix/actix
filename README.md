@@ -67,7 +67,7 @@ impl Actor for MyActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
        println!("I am alive!");
-       Arbiter::system().do_send(msgs::SystemExit(0));
+       System::current().stop(); // <- stop system
     }
 }
 
