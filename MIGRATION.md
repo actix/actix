@@ -1,6 +1,6 @@
 ## 0.6
 
-* `Addr` get refactored. `Syn` and `Unsync` get removed. all addresses are
+* `Addr` get refactored. `Syn` and `Unsync` removed. all addresses are
   `Syn` now, only `Addr<Actor>` exsits
 
 * `Arbiter` uses `tokio::runtime::current_thread`
