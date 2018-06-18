@@ -26,7 +26,7 @@ To use `actix`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-actix = "0.5"
+actix = "0.6"
 ```
 
 ### Initialize Actix
@@ -43,7 +43,7 @@ fn main() {
 }
 ```
 
-Actix uses the [tokio](https://github.com/tokio-rs/tokio-core) event loop. 
+Actix uses the [tokio](https://github.com/tokio-rs/tokio) event loop. 
 `System::new()` creates a new event loop and starts the `System` actor.
 `system.run()` starts the tokio event loop, and will finish once the `System` actor 
 receives the `SystemExit` message.
@@ -74,7 +74,7 @@ impl Actor for MyActor {
 fn main() {
     let system = System::new("test");
 
-    let addr: Addr<Syn, _> = MyActor.start();
+    let addr = MyActor.start();
 
     system.run();
 }
@@ -90,9 +90,9 @@ for more information on the actor lifecycle.
 
 ### Handle messages
 
-An Actor communicates with another Actor by sending messages. In actix all messages are typed.
-Let's define a simple `Sum` message with two `usize` parameters, and an actor which will
-accept this message and return the sum of those two numbers.
+An Actor communicates with another Actor by sending messages. In actix all messages
+are typed. Let's define a simple `Sum` message with two `usize` parameters,
+and an actor which will accept this message and return the sum of those two numbers.
 
 ```rust
 extern crate actix;
@@ -125,32 +125,28 @@ impl Handler<Sum> for Summator {
 }
 
 fn main() {
-    let system = System::new("test");
+    let sys = System::new("test");
 
-    let addr: Addr<Unsync, _> = Summator.start();
+    let addr = Summator.start();
     let res = addr.send(Sum(10, 5));  // <- send message and get future for result
     
-    system.handle().spawn(res.then(|res| {
+    Arbiter.spawn(res.then(|res| {
         match res {
             Ok(result) => println!("SUM: {}", result),
             _ => println!("Something wrong"),
         }
         
-        Arbiter::system().do_send(msgs::SystemExit(0));
+        System::current().stop();
         future::result(Ok(()))
     }));
 
-    system.run();
+    sys.run();
 }
 ```
 
 All communications with actors go through an `Addr` object. You can `do_send` a message
 without waiting for a response, or `send` an actor with specific message. The `Message`
-trait defines the result type for a message. There are different types of addresses.
-[`Unsync`](https://docs.rs/actix/0.5.7/actix/struct.Unsync.html) is an address
-of an actor that runs in the same arbiter (event loop). If an actor is running in a different
-thread, [`Syn`](https://docs.rs/actix/0.5.7/actix/struct.Syn.html)
-has to be used.
+trait defines the result type for a message.
 
 ### Actor state and subscription for specific messages
 
@@ -172,7 +168,7 @@ struct Ping { pub id: usize }
 // Actor definition
 struct Game {
     counter: usize, 
-    addr: Recipient<Unsync, Ping>,
+    addr: Recipient<Ping>,
 }
 
 impl Actor for Game {
@@ -187,7 +183,7 @@ impl Handler<Ping> for Game {
         self.counter += 1;
         
         if self.counter > 10 {
-            Arbiter::system().do_send(actix::msgs::SystemExit(0));
+            System::current().stop();
         } else {
             println!("Ping received {:?}", msg.id);
             
@@ -204,10 +200,10 @@ fn main() {
 
     // To get a Recipient object, we need to use a different builder method
     // which will allow postponing actor creation
-    let _: Addr<Unsync, _> = Game::create(|ctx| {
+    let addr = Game::create(|ctx| {
         // now we can get an address of the first actor and create the second actor
-        let addr: Addr<Unsync, _> = ctx.address();
-        let addr2: Addr<Unsync, _> = Game{counter: 0, addr: addr.recipient()}.start();
+        let addr = ctx.address();
+        let addr2 = Game{counter: 0, addr: addr.recipient()}.start();
         
         // let's start pings
         addr2.do_send(Ping{id: 10});
