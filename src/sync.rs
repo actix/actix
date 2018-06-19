@@ -190,7 +190,7 @@ pub struct SyncContext<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
-    act: A,
+    act: Option<A>,
     queue: cb_channel::Receiver<SyncContextProtocol<A>>,
     stopping: bool,
     state: ActorState,
@@ -207,42 +207,42 @@ where
     ) -> Self {
         let act = factory();
         SyncContext {
-            act,
             queue,
             factory,
+            act: Some(act),
             stopping: false,
             state: ActorState::Started,
         }
     }
 
     fn run(&mut self) {
-        let ctx: &mut SyncContext<A> = unsafe { &mut *(self as *mut _) };
+        let mut act = self.act.take().unwrap();
 
         // started
-        A::started(&mut self.act, ctx);
+        A::started(&mut act, self);
         self.state = ActorState::Running;
 
         loop {
             match self.queue.recv() {
                 Some(SyncContextProtocol::Stop) => {
                     self.state = ActorState::Stopping;
-                    if A::stopping(&mut self.act, ctx) != Running::Stop {
+                    if A::stopping(&mut act, self) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
                     }
                     self.state = ActorState::Stopped;
-                    A::stopped(&mut self.act, ctx);
+                    A::stopped(&mut act, self);
                     return;
                 }
                 Some(SyncContextProtocol::Envelope(mut env)) => {
-                    env.handle(&mut self.act, ctx);
+                    env.handle(&mut act, self);
                 }
                 None => {
                     self.state = ActorState::Stopping;
-                    if A::stopping(&mut self.act, ctx) != Running::Stop {
+                    if A::stopping(&mut act, self) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
                     }
                     self.state = ActorState::Stopped;
-                    A::stopped(&mut self.act, ctx);
+                    A::stopped(&mut act, self);
                     return;
                 }
             }
@@ -251,14 +251,14 @@ where
                 self.stopping = false;
 
                 // stop old actor
-                A::stopping(&mut self.act, ctx);
+                A::stopping(&mut act, self);
                 self.state = ActorState::Stopped;
-                A::stopped(&mut self.act, ctx);
+                A::stopped(&mut act, self);
 
                 // start new actor
                 self.state = ActorState::Started;
-                self.act = (*self.factory)();
-                A::started(&mut self.act, ctx);
+                act = (*self.factory)();
+                A::started(&mut act, self);
                 self.state = ActorState::Running;
             }
         }

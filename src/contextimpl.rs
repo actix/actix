@@ -242,15 +242,15 @@ where
     }
 
     pub fn poll(&mut self, ctx: &mut A::Context) -> Poll<(), ()> {
-        let act: &mut A = if let Some(ref mut act) = self.act {
-            unsafe { &mut *(act as *mut A) }
+        let mut act = if let Some(act) = self.act.take() {
+            act
         } else {
             return Ok(Async::Ready(()));
         };
 
         if !self.flags.contains(ContextFlags::STARTED) {
             self.flags.insert(ContextFlags::STARTED);
-            Actor::started(act, ctx);
+            Actor::started(&mut act, ctx);
 
             // check cancelled handles, just in case
             while self.handles.len() > 2 {
@@ -275,16 +275,19 @@ where
             while !self.wait.is_empty() && !self.stopping() {
                 let idx = self.wait.len() - 1;
                 if let Some(item) = self.wait.last_mut() {
-                    match item.poll(act, ctx) {
+                    match item.poll(&mut act, ctx) {
                         Async::Ready(_) => (),
-                        Async::NotReady => return Ok(Async::NotReady),
+                        Async::NotReady => {
+                            self.act = Some(act);
+                            return Ok(Async::NotReady);
+                        }
                     }
                 }
                 self.wait.remove(idx);
             }
 
             // process mailbox
-            self.mailbox.poll(act, ctx);
+            self.mailbox.poll(&mut act, ctx);
             if !self.wait.is_empty() && !self.stopping() {
                 continue;
             }
@@ -293,7 +296,7 @@ where
             let mut idx = 0;
             while idx < self.items.len() && !self.stopping() {
                 self.handles[1] = self.items[idx].0;
-                match self.items[idx].1.poll(act, ctx) {
+                match self.items[idx].1.poll(&mut act, ctx) {
                     Ok(Async::NotReady) => {
                         // check cancelled handles
                         if self.handles.len() > 2 {
@@ -351,15 +354,15 @@ where
             // check state
             if self.flags.contains(ContextFlags::RUNNING) {
                 // possible stop condition
-                if !self.alive() && Actor::stopping(act, ctx) == Running::Stop {
+                if !self.alive() && Actor::stopping(&mut act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(act, ctx);
+                    Actor::stopped(&mut act, ctx);
                     return Ok(Async::Ready(()));
                 }
             } else if self.flags.contains(ContextFlags::STOPPING) {
-                if Actor::stopping(act, ctx) == Running::Stop {
+                if Actor::stopping(&mut act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(act, ctx);
+                    Actor::stopped(&mut act, ctx);
                     return Ok(Async::Ready(()));
                 } else {
                     self.flags.remove(ContextFlags::STOPPING);
@@ -367,10 +370,11 @@ where
                     continue;
                 }
             } else if self.flags.contains(ContextFlags::STOPPED) {
-                Actor::stopped(act, ctx);
+                Actor::stopped(&mut act, ctx);
                 return Ok(Async::Ready(()));
             }
 
+            self.act = Some(act);
             return Ok(Async::NotReady);
         }
     }

@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::default::Default;
 use std::hash::BuildHasherDefault;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use fnv::FnvHasher;
@@ -87,8 +88,9 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 ///     });
 /// }
 /// ```
+#[derive(Clone)]
 pub struct Registry {
-    registry: RefCell<AnyMap>,
+    registry: Rc<RefCell<AnyMap>>,
 }
 
 /// Trait defines arbiter's service.
@@ -115,7 +117,7 @@ pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default 
 impl Registry {
     pub(crate) fn new() -> Self {
         Registry {
-            registry: RefCell::new(HashMap::default()),
+            registry: Rc::new(RefCell::new(HashMap::default())),
         }
     }
 

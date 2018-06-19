@@ -133,9 +133,9 @@ impl Arbiter {
     }
 
     /// This function returns arbiter's registry,
-    pub fn registry() -> &'static Registry {
+    pub fn registry() -> Registry {
         REG.with(|cell| match *cell.borrow() {
-            Some(ref reg) => unsafe { std::mem::transmute(reg) },
+            Some(ref reg) => reg.clone(),
             None => panic!("System is not running: {}", Arbiter::name()),
         })
     }
