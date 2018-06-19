@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use bytes::BytesMut;
-use futures::{Async, Poll};
+use futures::{Async, Poll, task};
 use tokio_io::codec::Encoder;
 use tokio_io::AsyncWrite;
 
@@ -70,6 +70,7 @@ struct InnerWriter<E: From<io::Error>> {
     low: usize,
     high: usize,
     handle: SpawnHandle,
+    task: Option<task::Task>,
 }
 
 impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
@@ -87,6 +88,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
                 low: LOW_WATERMARK,
                 high: HIGH_WATERMARK,
                 handle: SpawnHandle::default(),
+                task: None,
             })),
             Rc::new(RefCell::new(io)),
         );
@@ -123,6 +125,9 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
     pub fn write(&mut self, msg: &[u8]) {
         let mut inner = self.inner.0.borrow_mut();
         inner.buffer.extend_from_slice(msg);
+        if let Some(task) = inner.task.take() {
+            task.notify();
+        }
     }
 
     /// `SpawnHandle` for this writer
@@ -163,6 +168,7 @@ where
         }
 
         let mut io = self.inner.1.borrow_mut();
+        inner.task = None;
         while !inner.buffer.is_empty() {
             match io.write(&inner.buffer) {
                 Ok(n) => {
@@ -214,6 +220,7 @@ where
             act.finished(ctx);
             Ok(Async::Ready(()))
         } else {
+            inner.task = Some(task::current());
             Ok(Async::NotReady)
         }
     }
@@ -299,6 +306,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
                 low: LOW_WATERMARK,
                 high: HIGH_WATERMARK,
                 handle: SpawnHandle::default(),
+                task: None,
             })),
             Rc::new(RefCell::new(io)),
         );
@@ -329,6 +337,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
                 low: LOW_WATERMARK,
                 high: HIGH_WATERMARK,
                 handle: SpawnHandle::default(),
+                task: None,
             })),
             Rc::new(RefCell::new(io)),
         );
@@ -367,6 +376,9 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
         let _ = self.enc.encode(item, &mut inner.buffer).map_err(|e| {
             inner.error = Some(e);
         });
+        if let Some(task) = inner.task.take() {
+            task.notify();
+        }
     }
 
     /// `SpawnHandle` for this writer
