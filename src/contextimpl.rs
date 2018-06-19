@@ -357,12 +357,14 @@ where
                 if !self.alive() && Actor::stopping(&mut act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut act, ctx);
+                    self.act = Some(act);
                     return Ok(Async::Ready(()));
                 }
             } else if self.flags.contains(ContextFlags::STOPPING) {
                 if Actor::stopping(&mut act, ctx) == Running::Stop {
                     self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut act, ctx);
+                    self.act = Some(act);
                     return Ok(Async::Ready(()));
                 } else {
                     self.flags.remove(ContextFlags::STOPPING);
@@ -371,6 +373,7 @@ where
                 }
             } else if self.flags.contains(ContextFlags::STOPPED) {
                 Actor::stopped(&mut act, ctx);
+                self.act = Some(act);
                 return Ok(Async::Ready(()));
             }
 

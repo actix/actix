@@ -179,16 +179,18 @@ pub mod dev {
 /// # Examples
 ///
 /// ```
-/// extern crate actix;
+/// # extern crate actix;
+/// # extern crate tokio_timer;
 /// # extern crate futures;
 /// # use futures::Future;
-/// use std::time::Duration;
-/// use tokio_timer::{Delay, Interval};
+/// use std::time::{Duration, Instant};
+/// use tokio_timer::Delay;
 ///
 /// fn main() {
 ///   actix::run(
 ///       || Delay::new(Instant::now() + Duration::from_millis(100))
 ///            .map(|_| actix::System::current().stop())
+///            .map_err(|_| ())
 ///   );
 /// }
 /// ```
