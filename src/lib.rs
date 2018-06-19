@@ -165,3 +165,63 @@ pub mod dev {
     pub use handler::{MessageResponse, ResponseChannel};
     pub use registry::{Registry, SystemRegistry};
 }
+
+/// Start the System and execute supplied future.
+///
+/// This function does the following:
+///
+/// * Creates and starts actix System with default configuration.
+/// * Spawn the given future onto the current arbiter.
+/// * Block the current thread until the system shuts down.
+///
+/// `run` functions returns when `System::current().stop()` method get called.
+///
+/// # Examples
+///
+/// ```
+/// extern crate actix;
+/// # extern crate futures;
+/// # use futures::Future;
+/// use std::time::Duration;
+/// use tokio_timer::{Delay, Interval};
+///
+/// fn main() {
+///   actix::run(
+///       || Delay::new(Instant::now() + Duration::from_millis(100))
+///            .map(|_| actix::System::current().stop())
+///   );
+/// }
+/// ```
+///
+/// # Panics
+///
+/// This function panics if actix system is already running.
+pub fn run<F, R>(f: F)
+where
+    F: FnOnce() -> R,
+    R: futures::Future<Item = (), Error = ()> + 'static,
+{
+    if System::is_set() {
+        panic!("System is already running");
+    }
+
+    let sys = System::new("Default");
+    Arbiter::spawn(f());
+    sys.run();
+}
+
+/// Spawns a future on the current arbiter.
+///
+/// # Panics
+///
+/// This function panics if actix system is not running.
+pub fn spawn<F>(f: F)
+where
+    F: futures::Future<Item = (), Error = ()> + 'static,
+{
+    if !System::is_set() {
+        panic!("System is not running");
+    }
+
+    Arbiter::spawn(f);
+}

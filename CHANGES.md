@@ -2,6 +2,11 @@
 
 ## [0.6.1] (2018-06-xx)
 
+### Added
+
+* Added `actix::run()` and `actix::spawn()` helper functions
+
+
 ### Changed
 
 * Use parking_lot 0.6

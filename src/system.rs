@@ -85,6 +85,12 @@ impl System {
 
     /// Set current running system.
     #[doc(hidden)]
+    pub(crate) fn is_set() -> bool {
+        CURRENT.with(|cell| cell.borrow().is_some())
+    }
+
+    /// Set current running system.
+    #[doc(hidden)]
     pub fn set_current(sys: System) {
         CURRENT.with(|s| {
             *s.borrow_mut() = Some(sys);
