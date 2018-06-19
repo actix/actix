@@ -38,8 +38,6 @@ where
 
 pub struct Envelope<A: Actor>(Box<EnvelopeProxy<Actor = A> + Send>);
 
-unsafe impl<A: Actor> Send for Envelope<A> {}
-
 impl<A: Actor> Envelope<A> {
     pub fn new<M>(msg: M, tx: Option<Sender<M::Result>>) -> Envelope<A>
     where
@@ -73,13 +71,18 @@ impl<A: Actor> EnvelopeProxy for Envelope<A> {
 pub struct SyncEnvelopeProxy<A, M>
 where
     M: Message + Send,
+    M::Result: Send,
 {
     act: PhantomData<A>,
     msg: Option<M>,
     tx: Option<Sender<M::Result>>,
 }
 
-unsafe impl<A, M: Message + Send> Send for SyncEnvelopeProxy<A, M> {}
+unsafe impl<A, M> Send for SyncEnvelopeProxy<A, M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{}
 
 impl<A, M> EnvelopeProxy for SyncEnvelopeProxy<A, M>
 where

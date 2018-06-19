@@ -47,8 +47,6 @@ pub struct AddressSender<A: Actor> {
     maybe_parked: Cell<bool>,
 }
 
-unsafe impl<A: Actor> Sync for AddressSender<A> {}
-
 trait AssertKinds: Send + Sync + Clone {}
 
 /// The receiving end of a channel which implements the `Stream` trait.

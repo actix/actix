@@ -136,15 +136,12 @@ impl<A: Actor> Clone for Addr<A> {
 ///
 /// You can get recipient with `Addr<_, _>::recipient()` method.
 /// It is possible to use `Clone::clone()` method to get cloned recipient.
-pub struct Recipient<M: Message> {
-    tx: Box<Sender<M>>,
-}
-
-unsafe impl<M> Send for Recipient<M>
+pub struct Recipient<M: Message>
 where
     M: Message + Send,
     M::Result: Send,
 {
+    tx: Box<Sender<M>>,
 }
 
 impl<M> Recipient<M>
