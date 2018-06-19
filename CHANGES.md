@@ -1,6 +1,6 @@
 # CHANGES
 
-## [0.6.1] (2018-06-xx)
+## [0.6.1] (2018-06-19)
 
 ### Added
 
@@ -10,6 +10,11 @@
 ### Changed
 
 * Use parking_lot 0.6
+
+
+### Fixed
+
+* Fixed potential memory unsafety
 
 
 ## [0.6.0] (2018-06-18)
