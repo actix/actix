@@ -1,6 +1,5 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
-use std::cell::Cell;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicUsize, AtomicBool};
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::Arc;
 use std::{thread, usize};
@@ -44,7 +43,7 @@ pub struct AddressSender<A: Actor> {
 
     // True if the sender might be blocked. This is an optimization to avoid
     // having to lock the mutex most of the time.
-    maybe_parked: Cell<bool>,
+    maybe_parked: AtomicBool,
 }
 
 trait AssertKinds: Send + Sync + Clone {}
@@ -172,7 +171,7 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>
     let tx = AddressSender {
         inner: Arc::clone(&inner),
         sender_task: Arc::new(Mutex::new(SenderTask::new())),
-        maybe_parked: Cell::new(false),
+        maybe_parked: AtomicBool::new(false),
     };
 
     let rx = AddressReceiver { inner };
@@ -398,18 +397,18 @@ impl<A: Actor> AddressSender<A> {
 
         // Check to make sure we weren't closed after we sent our task on the queue
         let state = decode_state(self.inner.state.load(SeqCst));
-        self.maybe_parked.set(state.is_open);
+        self.maybe_parked.store(state.is_open, Relaxed);
     }
 
     fn poll_unparked(&self, do_park: bool) -> Async<()> {
         // First check the `maybe_parked` variable. This avoids acquiring the
         // lock in most cases
-        if self.maybe_parked.get() {
+        if self.maybe_parked.load(Relaxed) {
             // Get a lock on the task handle
             let mut task = self.sender_task.lock();
 
             if !task.is_parked {
-                self.maybe_parked.set(false);
+                self.maybe_parked.store(false, Relaxed);
                 return Async::Ready(());
             }
 
@@ -470,7 +469,7 @@ impl<A: Actor> Clone for AddressSender<A> {
                 return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
-                    maybe_parked: Cell::new(false),
+                    maybe_parked: AtomicBool::new(false),
                 };
             }
 
@@ -553,7 +552,7 @@ impl<A: Actor> AddressReceiver<A> {
                 return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
-                    maybe_parked: Cell::new(false),
+                    maybe_parked: AtomicBool::new(false),
                 };
             }
 
