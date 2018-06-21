@@ -9,7 +9,7 @@ use fut::ActorFuture;
 /// This is helper trait that allows to handle `Stream` in
 /// a similar way as normal actor messages.
 #[allow(unused_variables)]
-pub trait StreamHandler<I, E>
+pub trait StreamHandler2<I, E>
 where
     Self: Actor,
 {
