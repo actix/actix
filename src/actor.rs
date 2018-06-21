@@ -9,6 +9,7 @@ use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStream
 use fut::{ActorFuture, ActorStream};
 use handler::{Handler, Message};
 use stream::StreamHandler;
+use stream2::StreamHandler2;
 use utils::{IntervalFunc, TimerFunc};
 
 #[allow(unused_variables)]
@@ -268,6 +269,55 @@ where
     /// struct MyActor;
     ///
     /// impl StreamHandler<Ping, io::Error> for MyActor {
+    ///
+    ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
+    ///         println!("PING");
+    /// #       System::current().stop();
+    ///     }
+    ///
+    ///     fn finished(&mut self, ctx: &mut Self::Context) {
+    ///         println!("finished");
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    ///
+    ///    fn started(&mut self, ctx: &mut Context<Self>) {
+    ///        // add stream
+    ///        ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
+    ///    }
+    /// }
+    /// # fn main() {
+    /// #    let sys = System::new("example");
+    /// #    let addr = MyActor.start();
+    /// #    sys.run();
+    /// # }
+    /// ```
+    fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
+    where
+        S: Stream + 'static,
+        A: StreamHandler<S::Item, S::Error>,
+    {
+        <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
+    }
+
+    /// This method register stream to an actor context and
+    /// allows to handle `Stream` in similar way as normal actor messages.
+    ///
+    /// ```rust
+    /// # #[macro_use] extern crate actix;
+    /// # extern crate futures;
+    /// # use std::io;
+    /// use actix::prelude::*;
+    /// use futures::stream::once;
+    ///
+    /// #[derive(Message)]
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl StreamHandler2<Ping, io::Error> for MyActor {
     ///     fn handle(&mut self, msg: io::Result<Option<Ping>>, ctx: &mut Context<MyActor>) {
     ///         match msg {
     ///             Ok(Some(_)) => println!("PING"),
@@ -282,7 +332,7 @@ where
     ///
     ///     fn started(&mut self, ctx: &mut Context<Self>) {
     ///         // add stream
-    ///         ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
+    ///         ctx.add_stream2(once::<Ping, io::Error>(Ok(Ping)));
     ///     }
     /// }
     /// # fn main() {
@@ -291,12 +341,12 @@ where
     /// #    });
     /// # }
     /// ```
-    fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
+    fn add_stream2<S>(&mut self, fut: S) -> SpawnHandle
     where
         S: Stream + 'static,
-        A: StreamHandler<S::Item, S::Error>,
+        A: StreamHandler2<S::Item, S::Error>,
     {
-        <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
+        <A as StreamHandler2<S::Item, S::Error>>::add_stream(fut, self)
     }
 
     /// This method is similar to `add_stream` but it skips stream errors.

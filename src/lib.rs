@@ -34,6 +34,7 @@ extern crate log;
 extern crate bytes;
 extern crate crossbeam_channel;
 extern crate fnv;
+#[cfg(unix)]
 extern crate libc;
 extern crate parking_lot;
 extern crate smallvec;
@@ -67,6 +68,7 @@ mod contextimpl;
 mod contextitems;
 mod handler;
 mod stream;
+mod stream2;
 mod supervisor;
 mod system;
 
@@ -94,6 +96,7 @@ pub use handler::{
 };
 pub use registry::{ArbiterService, Registry, SystemRegistry, SystemService};
 pub use stream::StreamHandler;
+pub use stream2::StreamHandler2;
 pub use supervisor::Supervisor;
 pub use sync::{SyncArbiter, SyncContext};
 pub use system::{System, SystemRunner};
@@ -130,6 +133,7 @@ pub mod prelude {
     };
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
+    pub use stream2::StreamHandler2;
     pub use supervisor::Supervisor;
     pub use sync::{SyncArbiter, SyncContext};
     pub use system::System;

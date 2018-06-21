@@ -1,5 +1,12 @@
 # CHANGES
 
+## [0.6.2] (2018-06-xx)
+
+### Changed
+
+* Breaking change: Restore `StreamHandler` from 0.5, new `StreamHandler` renamed to `StreamHandler2`
+
+
 ## [0.6.1] (2018-06-19)
 
 ### Added
