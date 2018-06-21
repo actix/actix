@@ -11,11 +11,12 @@ extern crate tokio_tcp;
 #[macro_use]
 extern crate serde_derive;
 
-use actix::prelude::*;
-use futures::Future;
 use std::str::FromStr;
 use std::time::Duration;
 use std::{io, net, process, thread};
+
+use actix::prelude::*;
+use futures::Future;
 use tokio_io::codec::FramedRead;
 use tokio_io::io::WriteHalf;
 use tokio_io::AsyncRead;
@@ -29,12 +30,12 @@ fn main() {
     actix::System::run(|| {
         // Connect to server
         let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-        tokio::spawn(
+        Arbiter::spawn(
             TcpStream::connect(&addr)
                 .and_then(|stream| {
                     let addr = ChatClient::create(|ctx| {
                         let (r, w) = stream.split();
-                        ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
+                        ctx.add_stream2(FramedRead::new(r, codec::ClientChatCodec));
                         ChatClient {
                             framed: actix::io::FramedWrite::new(
                                 w,
@@ -131,7 +132,7 @@ impl Handler<ClientCommand> for ChatClient {
 }
 
 /// Server communication
-impl StreamHandler<codec::ChatResponse, io::Error> for ChatClient {
+impl StreamHandler2<codec::ChatResponse, io::Error> for ChatClient {
     fn handle(
         &mut self, msg: io::Result<Option<codec::ChatResponse>>, ctx: &mut Context<Self>,
     ) {

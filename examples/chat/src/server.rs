@@ -69,8 +69,8 @@ impl Default for ChatServer {
         rooms.insert("Main".to_owned(), HashSet::new());
 
         ChatServer {
+            rooms,
             sessions: HashMap::new(),
-            rooms: rooms,
         }
     }
 }
