@@ -35,7 +35,7 @@ where
     ///
     /// struct MyActor;
     ///
-    /// impl StreamHandler<Ping, io::Error> for MyActor {
+    /// impl StreamHandler2<Ping, io::Error> for MyActor {
     ///     fn handle(&mut self, msg: io::Result<Option<Ping>>, ctx: &mut Context<MyActor>) {
     ///         match msg {
     ///             Ok(Some(_)) => println!("PING"),
@@ -97,7 +97,7 @@ impl<A, M, E, S> ActorStream<A, M, E, S> {
 impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
 where
     S: Stream<Item = M, Error = E>,
-    A: Actor + StreamHandler<M, E>,
+    A: Actor + StreamHandler2<M, E>,
     A::Context: AsyncContext<A>,
 {
     type Item = ();
