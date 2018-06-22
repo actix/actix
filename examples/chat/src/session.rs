@@ -64,7 +64,7 @@ impl Actor for ChatSession {
 impl actix::io::WriteHandler<io::Error> for ChatSession {}
 
 /// To use `Framed` with an actor, we have to implement `StreamHandler` trait
-impl StreamHandler<ChatRequest, io::Error> for ChatSession {
+impl StreamHandler2<ChatRequest, io::Error> for ChatSession {
     /// This is main event loop for client requests
     fn handle(&mut self, msg: io::Result<Option<ChatRequest>>, ctx: &mut Self::Context) {
         match msg {
@@ -127,11 +127,11 @@ impl ChatSession {
         framed: actix::io::FramedWrite<WriteHalf<TcpStream>, ChatCodec>,
     ) -> ChatSession {
         ChatSession {
+            addr,
+            framed,
             id: 0,
-            addr: addr,
             hb: Instant::now(),
             room: "Main".to_owned(),
-            framed: framed,
         }
     }
 

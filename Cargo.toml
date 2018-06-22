@@ -54,7 +54,6 @@ bitflags = "1.0"
 smallvec = "0.6"
 crossbeam-channel = "0.2"
 parking_lot = "0.6"
-libc = { version = "0.2" }
 uuid = { version = "0.6", features = ["v4"] }
 
 # signal handling
@@ -62,6 +61,9 @@ tokio-signal = { version = "0.2", optional = true }
 
 # dns resolver
 trust-dns-resolver = { version = "0.9", optional = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [profile.release]
 lto = true

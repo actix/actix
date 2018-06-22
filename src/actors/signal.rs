@@ -64,6 +64,7 @@ extern crate tokio_signal;
 #[cfg(unix)]
 use self::tokio_signal::unix;
 use futures::{Future, Stream};
+#[cfg(unix)]
 use libc;
 use std;
 
