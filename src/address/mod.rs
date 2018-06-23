@@ -187,3 +187,64 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use ::futures::Future;
+    use ::prelude::*;
+
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    struct ActorWithSmallMailBox(Arc<AtomicUsize>);
+
+    impl Actor for ActorWithSmallMailBox {
+        type Context = Context<Self>;
+
+        fn started(&mut self, ctx: &mut Self::Context) {
+            ctx.set_mailbox_capacity(1);
+        }
+    }
+
+    pub struct SetCounter(usize);
+    impl Message for SetCounter {
+        type Result = ();
+    }
+
+    impl actix::Handler<SetCounter> for ActorWithSmallMailBox {
+        type Result = <SetCounter as Message>::Result;
+
+        fn handle(&mut self, ping: SetCounter, _: &mut actix::Context<Self>) -> Self::Result {
+            self.0.store(ping.0, Ordering::Relaxed);
+        }
+    }
+
+    #[test]
+    fn test_send_over_limit() {
+        let count = Arc::new(AtomicUsize::new(0));
+        let count2 = Arc::clone(&count);
+
+        System::run(move || {
+            //Actor::started gets called after we relinquish
+            //control to event loop so we just set it ourself.
+            let addr = ActorWithSmallMailBox::create(|ctx| {
+                ctx.set_mailbox_capacity(1);
+                ActorWithSmallMailBox(count2)
+            });
+            //Use clone to make sure that regardless of how many messages
+            //are cloned capacity will be taken into account.
+            let send = addr.clone().send(SetCounter(1));
+            assert!(send.rx_is_some());
+            let send2 = addr.clone().send(SetCounter(2));
+            assert!(!send2.rx_is_some());
+            let send = send.join(send2).map(|_| {
+                System::current().stop();
+            }).map_err(|_| {
+                panic!("Message over limit should be delivered, but it is not!");
+            });
+            Arbiter::spawn(send);
+        });
+
+        assert_eq!(count.load(Ordering::Relaxed), 2);
+    }
+}
