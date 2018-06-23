@@ -43,7 +43,7 @@ pub struct AddressSender<A: Actor> {
 
     // True if the sender might be blocked. This is an optimization to avoid
     // having to lock the mutex most of the time.
-    maybe_parked: AtomicBool,
+    maybe_parked: Arc<AtomicBool>,
 }
 
 trait AssertKinds: Send + Sync + Clone {}
@@ -171,7 +171,7 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>
     let tx = AddressSender {
         inner: Arc::clone(&inner),
         sender_task: Arc::new(Mutex::new(SenderTask::new())),
-        maybe_parked: AtomicBool::new(false),
+        maybe_parked: Arc::new(AtomicBool::new(false)),
     };
 
     let rx = AddressReceiver { inner };
@@ -469,7 +469,7 @@ impl<A: Actor> Clone for AddressSender<A> {
                 return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
-                    maybe_parked: AtomicBool::new(false),
+                    maybe_parked: Arc::new(AtomicBool::new(false)),
                 };
             }
 
@@ -552,7 +552,7 @@ impl<A: Actor> AddressReceiver<A> {
                 return AddressSender {
                     inner: Arc::clone(&self.inner),
                     sender_task: Arc::new(Mutex::new(SenderTask::new())),
-                    maybe_parked: AtomicBool::new(false),
+                    maybe_parked: Arc::new(AtomicBool::new(false)),
                 };
             }
 

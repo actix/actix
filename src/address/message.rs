@@ -42,6 +42,11 @@ where
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn rx_is_some(&self) -> bool {
+        self.rx.is_some()
+    }
+
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
         self.timeout = Some(Delay::new(Instant::now() + dur));
