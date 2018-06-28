@@ -130,7 +130,7 @@ fn main() {
     let addr = Summator.start();
     let res = addr.send(Sum(10, 5));  // <- send message and get future for result
     
-    Arbiter.spawn(res.then(|res| {
+    Arbiter::spawn(res.then(|res| {
         match res {
             Ok(result) => println!("SUM: {}", result),
             _ => println!("Something wrong"),
