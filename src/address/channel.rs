@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicUsize, AtomicBool};
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::Arc;
 use std::{thread, usize};
+use std::hash::{Hash, Hasher};
 
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
 use futures::task::{self, Task};
@@ -496,6 +497,12 @@ impl<A: Actor> PartialEq for AddressSender<A> {
 }
 
 impl<A: Actor> Eq for AddressSender<A> { }
+
+impl<A: Actor> Hash for AddressSender<A> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Arc::into_raw(Arc::clone(&self.inner)).hash(state)
+    }
+}
 
 //
 //

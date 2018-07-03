@@ -1,4 +1,5 @@
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 pub(crate) mod channel;
 mod envelope;
@@ -139,6 +140,12 @@ impl<A: Actor> PartialEq for Addr<A> {
 }
 
 impl<A: Actor> Eq for Addr<A> { }
+
+impl<A: Actor> Hash for Addr<A> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.tx.hash(state)
+    }
+}
 
 /// `Recipient` type allows to send one specific message to an actor.
 ///

@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use std::collections::HashSet;
 
 use actix::prelude::*;
 use futures::Future;
@@ -217,6 +218,39 @@ fn test_address_eq() {
         let addr1 = MyActor(count1).start();
         
         assert!(addr0 != addr1);
+        
+        System::current().stop();
+    });
+}
+
+#[test]
+fn test_address_hash() {
+    let count0 = Arc::new(AtomicUsize::new(0));
+    let count1 = Arc::clone(&count0);
+
+    System::run(move || {
+        let addr0 = MyActor(count0).start();
+        let addr01 = addr0.clone();
+
+        let mut addresses = HashSet::new();
+        addresses.insert(addr0.clone());
+        addresses.insert(addr01.clone());
+
+        assert_eq!(addresses.len(), 1);
+        assert!(addresses.contains(&addr0));
+        assert!(addresses.contains(&addr01));
+        
+        let addr1 = MyActor(count1).start();
+        addresses.insert(addr1.clone());
+
+        assert_eq!(addresses.len(), 2);
+        assert!(addresses.contains(&addr1));
+
+        assert!(addresses.remove(&addr0));
+        assert!(!addresses.contains(&addr0));
+        assert!(!addresses.contains(&addr01));
+        assert_eq!(addresses.len(), 1);
+        assert!(addresses.contains(&addr1));
         
         System::current().stop();
     });
