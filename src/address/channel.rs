@@ -500,7 +500,11 @@ impl<A: Actor> Eq for AddressSender<A> { }
 
 impl<A: Actor> Hash for AddressSender<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Arc::into_raw(Arc::clone(&self.inner)).hash(state)
+        let ptr = Arc::into_raw(Arc::clone(&self.inner));
+        ptr.hash(state);
+
+        // Prevent memory leak.
+        unsafe { Arc::from_raw(ptr); }
     }
 }
 
