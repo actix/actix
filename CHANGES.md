@@ -4,7 +4,7 @@
 
 ### Added
 
-* Implemented `Eq` and `PartialEq` for `actix::Addr`
+* Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Addr`
 
 
 ## [0.6.2] (2018-06-xx)
