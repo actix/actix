@@ -200,3 +200,24 @@ fn test_call_message_timeout() {
     });
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
+
+#[test]
+fn test_address_eq() {
+    let count0 = Arc::new(AtomicUsize::new(0));
+    let count1 = Arc::clone(&count0);
+
+    System::run(move || {
+        let addr0 = MyActor(count0).start();
+        let addr01 = addr0.clone();
+        let addr02 = addr01.clone();
+        
+        assert!(addr0 == addr01);
+        assert!(addr0 == addr02);
+        
+        let addr1 = MyActor(count1).start();
+        
+        assert!(addr0 != addr1);
+        
+        System::current().stop();
+    });
+}

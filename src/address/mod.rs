@@ -132,6 +132,14 @@ impl<A: Actor> Clone for Addr<A> {
     }
 }
 
+impl<A: Actor> PartialEq for Addr<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.tx == other.tx
+    }
+}
+
+impl<A: Actor> Eq for Addr<A> { }
+
 /// `Recipient` type allows to send one specific message to an actor.
 ///
 /// You can get recipient with `Addr<_, _>::recipient()` method.
