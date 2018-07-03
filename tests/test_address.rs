@@ -255,4 +255,3 @@ fn test_address_hash() {
         System::current().stop();
     });
 }
-
