@@ -493,6 +493,14 @@ impl<A: Actor> Drop for AddressSender<A> {
     }
 }
 
+impl<A: Actor> PartialEq for AddressSender<A> {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.inner, &other.inner)
+    }
+}
+
+impl<A: Actor> Eq for AddressSender<A> { }
+
 //
 //
 // ===== impl SenderProducer =====
