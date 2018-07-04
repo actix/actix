@@ -329,8 +329,8 @@ impl Actor for ContextHandle {
     type Context = Context<Self>;
 }
 
-impl StreamHandler2<Ping, ()> for ContextHandle {
-    fn handle(&mut self, _: Result<Option<Ping>, ()>, ctx: &mut Self::Context) {
+impl StreamHandler<Ping, ()> for ContextHandle {
+    fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
         self.h.store(ctx.handle().into_usize(), Ordering::Relaxed);
         System::current().stop();
     }
@@ -367,7 +367,7 @@ fn test_start_from_context() {
     System::run(move || {
         let _addr = ContextHandle::create(move |ctx| {
             h2.store(
-                ctx.add_stream2(once::<Ping, ()>(Ok(Ping))).into_usize(),
+                ctx.add_stream(once::<Ping, ()>(Ok(Ping))).into_usize(),
                 Ordering::Relaxed,
             );
             ContextHandle { h: m2 }
@@ -389,8 +389,8 @@ impl Actor for CancelHandler {
 }
 
 struct CancelPacket;
-impl<K> StreamHandler2<CancelPacket, K> for CancelHandler {
-    fn handle(&mut self, _: Result<Option<CancelPacket>, K>, ctx: &mut Context<Self>) {
+impl<K> StreamHandler<CancelPacket, K> for CancelHandler {
+    fn handle(&mut self, _: CancelPacket, ctx: &mut Context<Self>) {
         ctx.cancel_future(self.source);
     }
 }
@@ -399,7 +399,7 @@ impl<K> StreamHandler2<CancelPacket, K> for CancelHandler {
 fn test_cancel_handler() {
     actix::System::run(|| {
         CancelHandler::create(|ctx| CancelHandler {
-            source: ctx.add_stream2(
+            source: ctx.add_stream(
                 Interval::new(Instant::now(), Duration::from_millis(1))
                     .map(|_| CancelPacket),
             ),
