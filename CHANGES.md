@@ -1,6 +1,10 @@
 # CHANGES
 
-## [0.6.3] (2018-07-04)
+## [0.7.0] (2018-07-xx)
+
+### Changed
+
+* Context impl refactoring, fixed UB
 
 ### Added
 

@@ -1,8 +1,7 @@
 //! Actix system messages
 
-use actor::{Actor, AsyncContext};
+use actor::Actor;
 use address::Addr;
-use arbiter::Arbiter;
 use context::Context;
 use handler::Message;
 
@@ -26,10 +25,9 @@ impl<A: Actor<Context = Context<A>>> StartActor<A> {
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         StartActor(Box::new(|| {
-            let ctx = Context::create(f);
-            let addr = ctx.address();
-            Arbiter::spawn(ctx);
-            addr
+            let mut ctx = Context::new();
+            let act = f(&mut ctx);
+            ctx.run(act)
         }))
     }
 

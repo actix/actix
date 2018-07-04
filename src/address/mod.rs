@@ -13,7 +13,7 @@ use handler::{Handler, Message};
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 pub use self::message::{RecipientRequest, Request};
 
-pub(crate) use self::channel::AddressReceiver;
+pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
 use self::channel::{AddressSender, Sender};
 
 pub enum SendError<T> {
@@ -240,8 +240,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use ::futures::Future;
-    use ::prelude::*;
+    use futures::Future;
+    use prelude::*;
 
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
@@ -264,7 +264,9 @@ mod tests {
     impl actix::Handler<SetCounter> for ActorWithSmallMailBox {
         type Result = <SetCounter as Message>::Result;
 
-        fn handle(&mut self, ping: SetCounter, _: &mut actix::Context<Self>) -> Self::Result {
+        fn handle(
+            &mut self, ping: SetCounter, _: &mut actix::Context<Self>,
+        ) -> Self::Result {
             self.0.store(ping.0, Ordering::Relaxed);
         }
     }
@@ -287,11 +289,14 @@ mod tests {
             assert!(send.rx_is_some());
             let send2 = addr.clone().send(SetCounter(2));
             assert!(!send2.rx_is_some());
-            let send = send.join(send2).map(|_| {
-                System::current().stop();
-            }).map_err(|_| {
-                panic!("Message over limit should be delivered, but it is not!");
-            });
+            let send = send
+                .join(send2)
+                .map(|_| {
+                    System::current().stop();
+                })
+                .map_err(|_| {
+                    panic!("Message over limit should be delivered, but it is not!");
+                });
             Arbiter::spawn(send);
         });
 

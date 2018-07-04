@@ -1,19 +1,18 @@
-use std::fmt;
-
-use futures::{Future, Poll};
-
-use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle, Supervised};
+use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use address::{Addr, AddressReceiver};
 use arbiter::Arbiter;
-use contextimpl::ContextImpl;
 use fut::ActorFuture;
+
+use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
+use mailbox::Mailbox;
 
 /// Actor execution context
 pub struct Context<A>
 where
     A: Actor<Context = Context<A>>,
 {
-    inner: ContextImpl<A>,
+    parts: ContextParts<A>,
+    mb: Option<Mailbox<A>>,
 }
 
 impl<A> ActorContext for Context<A>
@@ -22,15 +21,15 @@ where
 {
     #[inline]
     fn stop(&mut self) {
-        self.inner.stop()
+        self.parts.stop()
     }
     #[inline]
     fn terminate(&mut self) {
-        self.inner.terminate()
+        self.parts.terminate()
     }
     #[inline]
     fn state(&self) -> ActorState {
-        self.inner.state()
+        self.parts.state()
     }
 }
 
@@ -43,7 +42,7 @@ where
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        self.inner.spawn(fut)
+        self.parts.spawn(fut)
     }
 
     #[inline]
@@ -51,22 +50,22 @@ where
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        self.inner.wait(fut)
+        self.parts.wait(fut)
     }
 
     #[inline]
     fn waiting(&self) -> bool {
-        self.inner.waiting()
+        self.parts.waiting()
     }
 
     #[inline]
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
-        self.inner.cancel_future(handle)
+        self.parts.cancel_future(handle)
     }
 
     #[inline]
     fn address(&self) -> Addr<A> {
-        self.inner.address()
+        self.parts.address()
     }
 }
 
@@ -74,86 +73,58 @@ impl<A> Context<A>
 where
     A: Actor<Context = Self>,
 {
-    /// Create `Context` instance with actor factory method.
-    pub(crate) fn create<F>(f: F) -> Self
-    where
-        F: FnOnce(&mut Self) -> A + 'static,
-    {
-        let mut ctx = Context::new(None);
-        let act = f(&mut ctx);
-        ctx.set_actor(act);
-        ctx
+    #[inline]
+    pub(crate) fn new() -> Context<A> {
+        let mb = Mailbox::default();
+        Context {
+            parts: ContextParts::new(mb.sender_producer()),
+            mb: Some(mb),
+        }
+    }
+
+    #[inline]
+    pub fn with_receiver(rx: AddressReceiver<A>) -> Context<A> {
+        let mb = Mailbox::new(rx);
+        Context {
+            parts: ContextParts::new(mb.sender_producer()),
+            mb: Some(mb),
+        }
+    }
+
+    #[inline]
+    pub fn run(self, act: A) -> Addr<A> {
+        let fut = self.into_future(act);
+        let addr = fut.address();
+        Arbiter::spawn(fut);
+        addr
+    }
+
+    pub fn into_future(mut self, act: A) -> ContextFut<A, Self> {
+        let mb = self.mb.take().unwrap();
+        ContextFut::new(self, act, mb)
     }
 
     /// Handle of the running future
     ///
     /// SpawnHandle is the handle returned by `AsyncContext::spawn()` method.
     pub fn handle(&self) -> SpawnHandle {
-        self.inner.curr_handle()
+        self.parts.curr_handle()
     }
 
     /// Set mailbox capacity
     ///
     /// By default mailbox capacity is 16 messages.
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
-        self.inner.set_mailbox_capacity(cap)
-    }
-
-    #[inline]
-    pub(crate) fn new(act: Option<A>) -> Context<A> {
-        Context {
-            inner: ContextImpl::new(act),
-        }
-    }
-
-    #[inline]
-    pub(crate) fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Context<A> {
-        Context {
-            inner: ContextImpl::with_receiver(act, rx),
-        }
-    }
-
-    #[inline]
-    pub(crate) fn run(self) {
-        Arbiter::spawn(self.map(|_| ()).map_err(|_| ()));
-    }
-
-    #[inline]
-    pub(crate) fn restart(&mut self) -> bool
-    where
-        A: Supervised,
-    {
-        let ctx: &mut Context<A> = unsafe { &mut *(self as *mut _) };
-        self.inner.restart(ctx)
-    }
-
-    #[inline]
-    pub(crate) fn set_actor(&mut self, act: A) {
-        self.inner.set_actor(act)
+        self.parts.set_mailbox_capacity(cap)
     }
 }
 
-#[doc(hidden)]
-impl<A> Future for Context<A>
+impl<A> AsyncContextParts<A> for Context<A>
 where
     A: Actor<Context = Self>,
 {
-    type Item = ();
-    type Error = ();
-
-    #[inline]
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        let ctx: &mut Context<A> = unsafe { &mut *(self as *mut _) };
-        self.inner.poll(ctx)
-    }
-}
-
-impl<A> fmt::Debug for Context<A>
-where
-    A: Actor<Context = Self>,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Context({:?})", self as *const _)
+    fn parts(&mut self) -> &mut ContextParts<A> {
+        &mut self.parts
     }
 }
 

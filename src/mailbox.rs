@@ -2,7 +2,7 @@ use futures::{Async, Stream};
 
 use actor::{Actor, AsyncContext};
 use address::EnvelopeProxy;
-use address::{channel, Addr, AddressReceiver};
+use address::{channel, Addr, AddressReceiver, AddressSenderProducer};
 
 /// Maximum number of consecutive polls in a loop
 const MAX_SYNC_POLLS: u32 = 256;
@@ -10,7 +10,7 @@ const MAX_SYNC_POLLS: u32 = 256;
 /// Default address channel capacity
 pub const DEFAULT_CAPACITY: usize = 16;
 
-pub(crate) struct Mailbox<A>
+pub struct Mailbox<A>
 where
     A: Actor,
     A::Context: AsyncContext<A>,
@@ -64,6 +64,10 @@ where
 
     pub fn address(&self) -> Addr<A> {
         Addr::new(self.msgs.sender())
+    }
+
+    pub fn sender_producer(&self) -> AddressSenderProducer<A> {
+        self.msgs.sender_producer()
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {

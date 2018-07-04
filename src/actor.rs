@@ -3,7 +3,6 @@ use std::time::Duration;
 use futures::Stream;
 
 use address::Addr;
-use arbiter::Arbiter;
 use context::Context;
 use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
 use fut::{ActorFuture, ActorStream};
@@ -112,10 +111,7 @@ pub trait Actor: Sized + 'static {
     where
         Self: Actor<Context = Context<Self>>,
     {
-        let ctx = Context::new(Some(self));
-        let addr = ctx.address();
-        ctx.run();
-        addr
+        Context::new().run(self)
     }
 
     /// Start new asynchronous actor, returns address of newly created actor.
@@ -154,11 +150,9 @@ pub trait Actor: Sized + 'static {
         Self: Actor<Context = Context<Self>>,
         F: FnOnce(&mut Context<Self>) -> Self + 'static,
     {
-        let ctx = Context::create(f);
-        let addr = ctx.address();
-
-        Arbiter::spawn(ctx);
-        addr
+        let mut ctx = Context::new();
+        let act = f(&mut ctx);
+        ctx.run(act)
     }
 }
 
