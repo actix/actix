@@ -1,4 +1,3 @@
-use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -93,6 +92,20 @@ impl<A: Actor> Addr<A> {
         let _ = self.tx.do_send(msg);
     }
 
+    /// Try send message
+    ///
+    /// This method fails if actor's mailbox is full or closed. This method
+    /// register current task in receivers queue.
+    pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
+    where
+        M: Message + Send + 'static,
+        M::Result: Send,
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
+    {
+        self.tx.try_send(msg, true)
+    }
+
     #[inline]
     /// Send asynchronous message and wait for response.
     ///
@@ -140,7 +153,7 @@ impl<A: Actor> PartialEq for Addr<A> {
     }
 }
 
-impl<A: Actor> Eq for Addr<A> { }
+impl<A: Actor> Eq for Addr<A> {}
 
 impl<A: Actor> Hash for Addr<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -177,6 +190,14 @@ where
         self.tx.do_send(msg)
     }
 
+    /// Try send message
+    ///
+    /// This method fails if actor's mailbox is full or closed. This method
+    /// register current task in receivers queue.
+    pub fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.tx.try_send(msg)
+    }
+
     /// Send message and asynchronously wait for response.
     ///
     /// Communication channel to the actor is bounded. if returned `Request`
@@ -210,13 +231,7 @@ where
     M::Result: Send,
 {
     fn eq(&self, other: &Self) -> bool {
-        let mut self_hash = DefaultHasher::new();
-        self.hash(&mut self_hash);
-        
-        let mut other_hash = DefaultHasher::new();
-        other.hash(&mut other_hash);
-
-        self_hash.finish() == other_hash.finish()
+        self.tx.hash() == other.tx.hash()
     }
 }
 
@@ -233,8 +248,7 @@ where
     M::Result: Send,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut state_boxed = Box::from(state as &mut Hasher);
-        self.tx.hash_inner(&mut state_boxed);
+        self.tx.hash().hash(state)
     }
 }
 

@@ -1,10 +1,9 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
+use std::hash::{Hash, Hasher};
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::Arc;
 use std::{thread, usize};
-use std::hash::{Hash, Hasher};
-use std::ops::DerefMut;
 
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
 use futures::task::{self, Task};
@@ -26,11 +25,13 @@ where
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
 
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
+
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
 
     fn boxed(&self) -> Box<Sender<M>>;
-    
-    fn hash_inner(&self, state: &mut Box<&mut Hasher>);
+
+    fn hash(&self) -> usize;
 }
 
 /// The transmission end of a channel which is used to send values.
@@ -445,15 +446,18 @@ where
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.do_send(msg)
     }
+    fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
+        self.try_send(msg, true)
+    }
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         self.send(msg)
     }
     fn boxed(&self) -> Box<Sender<M>> {
         Box::new(self.clone())
     }
-    
-    fn hash_inner(&self, state: &mut Box<&mut Hasher>) {
-        self.hash(state.deref_mut())
+
+    fn hash(&self) -> usize {
+        self.inner.as_ref() as *const _ as usize
     }
 }
 
@@ -507,12 +511,11 @@ impl<A: Actor> PartialEq for AddressSender<A> {
     }
 }
 
-impl<A: Actor> Eq for AddressSender<A> { }
+impl<A: Actor> Eq for AddressSender<A> {}
 
 impl<A: Actor> Hash for AddressSender<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        let ptr = format!("{:p}", self.inner);
-        ptr.hash(state);
+        (self.inner.as_ref() as *const Inner<A>).hash(state);
     }
 }
 
