@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use std::collections::HashSet;
 
 use actix::prelude::*;
 use futures::Future;
@@ -217,6 +218,98 @@ fn test_address_eq() {
         let addr1 = MyActor(count1).start();
         
         assert!(addr0 != addr1);
+        
+        System::current().stop();
+    });
+}
+
+#[test]
+fn test_address_hash() {
+    let count0 = Arc::new(AtomicUsize::new(0));
+    let count1 = Arc::clone(&count0);
+
+    System::run(move || {
+        let addr0 = MyActor(count0).start();
+        let addr01 = addr0.clone();
+
+        let mut addresses = HashSet::new();
+        addresses.insert(addr0.clone());
+        addresses.insert(addr01.clone());
+
+        assert_eq!(addresses.len(), 1);
+        assert!(addresses.contains(&addr0));
+        assert!(addresses.contains(&addr01));
+        
+        let addr1 = MyActor(count1).start();
+        addresses.insert(addr1.clone());
+
+        assert_eq!(addresses.len(), 2);
+        assert!(addresses.contains(&addr1));
+
+        assert!(addresses.remove(&addr0));
+        assert!(!addresses.contains(&addr0));
+        assert!(!addresses.contains(&addr01));
+        assert_eq!(addresses.len(), 1);
+        assert!(addresses.contains(&addr1));
+        
+        System::current().stop();
+    });
+}
+
+#[test]
+fn test_recipient_eq() {
+    let count0 = Arc::new(AtomicUsize::new(0));
+    let count1 = Arc::clone(&count0);
+
+    System::run(move || {
+        let addr0 = MyActor(count0).start();
+        let recipient01 = addr0.clone().recipient::<Ping>();
+        let recipient02 = addr0.clone().recipient::<Ping>();
+        
+        assert!(recipient01 == recipient02);
+        
+        let recipient03 = recipient01.clone();
+        assert!(recipient01 == recipient03);
+        
+        let addr1 = MyActor(count1).start();
+        let recipient11 = addr1.clone().recipient::<Ping>();
+        
+        assert!(recipient01 != recipient11);
+        
+        System::current().stop();
+    });
+}
+
+#[test]
+fn test_recipient_hash() {
+    let count0 = Arc::new(AtomicUsize::new(0));
+    let count1 = Arc::clone(&count0);
+
+    System::run(move || {
+        let addr0 = MyActor(count0).start();
+        let recipient01 = addr0.clone().recipient::<Ping>();
+        let recipient02 = addr0.clone().recipient::<Ping>();
+
+        let mut recipients = HashSet::new();
+        recipients.insert(recipient01.clone());
+        recipients.insert(recipient02.clone());
+
+        assert_eq!(recipients.len(), 1);
+        assert!(recipients.contains(&recipient01));
+        assert!(recipients.contains(&recipient02));
+        
+        let addr1 = MyActor(count1).start();
+        let recipient11 = addr1.clone().recipient::<Ping>();
+        recipients.insert(recipient11.clone());
+
+        assert_eq!(recipients.len(), 2);
+        assert!(recipients.contains(&recipient11));
+
+        assert!(recipients.remove(&recipient01));
+        assert!(!recipients.contains(&recipient01));
+        assert!(!recipients.contains(&recipient02));
+        assert_eq!(recipients.len(), 1);
+        assert!(recipients.contains(&recipient11));
         
         System::current().stop();
     });

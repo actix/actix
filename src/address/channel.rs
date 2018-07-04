@@ -3,6 +3,8 @@ use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::Arc;
 use std::{thread, usize};
+use std::hash::{Hash, Hasher};
+use std::ops::DerefMut;
 
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
 use futures::task::{self, Task};
@@ -27,6 +29,8 @@ where
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
 
     fn boxed(&self) -> Box<Sender<M>>;
+    
+    fn hash_inner(&self, state: &mut Box<&mut Hasher>);
 }
 
 /// The transmission end of a channel which is used to send values.
@@ -447,6 +451,10 @@ where
     fn boxed(&self) -> Box<Sender<M>> {
         Box::new(self.clone())
     }
+    
+    fn hash_inner(&self, state: &mut Box<&mut Hasher>) {
+        self.hash(state.deref_mut())
+    }
 }
 
 impl<A: Actor> Clone for AddressSender<A> {
@@ -500,6 +508,13 @@ impl<A: Actor> PartialEq for AddressSender<A> {
 }
 
 impl<A: Actor> Eq for AddressSender<A> { }
+
+impl<A: Actor> Hash for AddressSender<A> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let ptr = format!("{:p}", self.inner);
+        ptr.hash(state);
+    }
+}
 
 //
 //
