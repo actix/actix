@@ -1,3 +1,4 @@
+use std::collections::hash_map::DefaultHasher;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -200,6 +201,40 @@ where
         Recipient {
             tx: self.tx.boxed(),
         }
+    }
+}
+
+impl<M> PartialEq for Recipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn eq(&self, other: &Self) -> bool {
+        let mut self_hash = DefaultHasher::new();
+        self.hash(&mut self_hash);
+        
+        let mut other_hash = DefaultHasher::new();
+        other.hash(&mut other_hash);
+
+        self_hash.finish() == other_hash.finish()
+    }
+}
+
+impl<M> Eq for Recipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+}
+
+impl<M> Hash for Recipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut state_boxed = Box::from(state as &mut Hasher);
+        self.tx.hash_inner(&mut state_boxed);
     }
 }
 

@@ -255,3 +255,62 @@ fn test_address_hash() {
         System::current().stop();
     });
 }
+
+#[test]
+fn test_recipient_eq() {
+    let count0 = Arc::new(AtomicUsize::new(0));
+    let count1 = Arc::clone(&count0);
+
+    System::run(move || {
+        let addr0 = MyActor(count0).start();
+        let recipient01 = addr0.clone().recipient::<Ping>();
+        let recipient02 = addr0.clone().recipient::<Ping>();
+        
+        assert!(recipient01 == recipient02);
+        
+        let recipient03 = recipient01.clone();
+        assert!(recipient01 == recipient03);
+        
+        let addr1 = MyActor(count1).start();
+        let recipient11 = addr1.clone().recipient::<Ping>();
+        
+        assert!(recipient01 != recipient11);
+        
+        System::current().stop();
+    });
+}
+
+#[test]
+fn test_recipient_hash() {
+    let count0 = Arc::new(AtomicUsize::new(0));
+    let count1 = Arc::clone(&count0);
+
+    System::run(move || {
+        let addr0 = MyActor(count0).start();
+        let recipient01 = addr0.clone().recipient::<Ping>();
+        let recipient02 = addr0.clone().recipient::<Ping>();
+
+        let mut recipients = HashSet::new();
+        recipients.insert(recipient01.clone());
+        recipients.insert(recipient02.clone());
+
+        assert_eq!(recipients.len(), 1);
+        assert!(recipients.contains(&recipient01));
+        assert!(recipients.contains(&recipient02));
+        
+        let addr1 = MyActor(count1).start();
+        let recipient11 = addr1.clone().recipient::<Ping>();
+        recipients.insert(recipient11.clone());
+
+        assert_eq!(recipients.len(), 2);
+        assert!(recipients.contains(&recipient11));
+
+        assert!(recipients.remove(&recipient01));
+        assert!(!recipients.contains(&recipient01));
+        assert!(!recipients.contains(&recipient02));
+        assert_eq!(recipients.len(), 1);
+        assert!(recipients.contains(&recipient11));
+        
+        System::current().stop();
+    });
+}

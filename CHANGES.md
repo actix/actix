@@ -1,10 +1,12 @@
 # CHANGES
 
-## [0.6.3] (2018-07-03)
+## [0.6.3] (2018-07-04)
 
 ### Added
 
 * Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Addr`
+
+* Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Recipient`
 
 
 ## [0.6.2] (2018-06-xx)
