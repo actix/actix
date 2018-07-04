@@ -8,7 +8,7 @@ use tokio::executor::current_thread::spawn;
 use tokio::runtime::current_thread::Runtime;
 use uuid::Uuid;
 
-use actor::{Actor, AsyncContext};
+use actor::Actor;
 use address::{channel, Addr, AddressReceiver};
 use context::Context;
 use handler::Handler;
@@ -96,9 +96,10 @@ impl Arbiter {
         RUNNING.with(|cell| cell.set(false));
 
         // start arbiter
-        let ctx = Context::with_receiver(Some(Arbiter { stop: None }), rx);
-        let addr = ctx.address();
-        Arbiter::spawn(ctx);
+        let ctx = Context::with_receiver(rx);
+        let fut = ctx.into_future(Arbiter { stop: None });
+        let addr = fut.address();
+        Arbiter::spawn(fut);
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
     }
 
@@ -177,10 +178,10 @@ impl Arbiter {
 
         // create actor
         addr.do_send::<Execute>(Execute::new(move || {
-            let mut ctx = Context::with_receiver(None, srx);
+            let mut ctx = Context::with_receiver(srx);
             let act = f(&mut ctx);
-            ctx.set_actor(act);
-            spawn(ctx.map(|_| ()).map_err(|_| ()));
+            let fut = ctx.into_future(act);
+            spawn(fut);
             Ok(())
         }));
 

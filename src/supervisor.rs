@@ -4,6 +4,7 @@ use actor::{Actor, AsyncContext, Supervised};
 use address::{channel, Addr};
 use arbiter::Arbiter;
 use context::Context;
+use contextimpl::ContextFut;
 use mailbox::DEFAULT_CAPACITY;
 use msgs::Execute;
 
@@ -64,7 +65,7 @@ pub struct Supervisor<A>
 where
     A: Supervised + Actor<Context = Context<A>>,
 {
-    ctx: A::Context,
+    fut: ContextFut<A, Context<A>>,
 }
 
 impl<A> Supervisor<A>
@@ -100,13 +101,13 @@ where
         A: Actor<Context = Context<A>>,
     {
         // create actor
-        let mut ctx = Context::new(None);
+        let mut ctx = Context::new();
         let act = f(&mut ctx);
         let addr = ctx.address();
-        ctx.set_actor(act);
+        let fut = ctx.into_future(act);
 
         // create supervisor
-        Arbiter::spawn(Supervisor::<A> { ctx });
+        Arbiter::spawn(Supervisor::<A> { fut });
 
         addr
     }
@@ -120,10 +121,11 @@ where
         let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
         sys.do_send(Execute::new(move || -> Result<(), ()> {
-            let mut ctx = Context::with_receiver(None, rx);
+            let mut ctx = Context::with_receiver(rx);
             let act = f(&mut ctx);
-            ctx.set_actor(act);
-            Arbiter::spawn(Supervisor::<A> { ctx });
+            let fut = ctx.into_future(act);
+
+            Arbiter::spawn(Supervisor::<A> { fut });
             Ok(())
         }));
 
@@ -141,11 +143,11 @@ where
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         loop {
-            match self.ctx.poll() {
+            match self.fut.poll() {
                 Ok(Async::NotReady) => return Ok(Async::NotReady),
                 Ok(Async::Ready(_)) | Err(_) => {
                     // stop if context's address is not connected
-                    if !self.ctx.restart() {
+                    if !self.fut.restart() {
                         return Ok(Async::Ready(()));
                     }
                 }

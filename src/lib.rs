@@ -165,8 +165,9 @@ pub mod dev {
     pub use prelude::*;
 
     pub use address::{Envelope, RecipientRequest, Request, ToEnvelope};
-    pub use contextimpl::ContextImpl;
+    pub use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
     pub use handler::{MessageResponse, ResponseChannel};
+    pub use mailbox::Mailbox;
     pub use registry::{Registry, SystemRegistry};
 }
 

@@ -1,24 +1,22 @@
-#![cfg_attr(
-    feature = "cargo-clippy", allow(redundant_field_names, suspicious_arithmetic_impl)
-)]
-
-use futures::{Async, Poll};
+use futures::{Async, Future, Poll};
 use smallvec::SmallVec;
 
-use actor::{Actor, ActorState, AsyncContext, Running, SpawnHandle, Supervised};
-use address::{Addr, AddressReceiver};
+use actor::{
+    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+};
+use address::{Addr, AddressSenderProducer};
 use contextitems::ActorWaitItem;
 use fut::ActorFuture;
 use mailbox::Mailbox;
 
 /// internal context state
 bitflags! {
-    struct ContextFlags: u8 {
+    pub struct ContextFlags: u8 {
         const STARTED =  0b0000_0001;
         const RUNNING =  0b0000_0010;
         const STOPPING = 0b0000_0100;
         const STOPPED =  0b0001_0000;
-        const MODIFIED = 0b0010_0000;
+        const MB_CAP_CHANGED = 0b0010_0000;
     }
 }
 
@@ -27,78 +25,43 @@ type Item<A> = (
     Box<ActorFuture<Item = (), Error = (), Actor = A>>,
 );
 
-/// Actor execution context impl
-///
-/// This is base Context implementation. Multiple cell's could be added.
-pub struct ContextImpl<A>
+pub trait AsyncContextParts<A>: ActorContext + AsyncContext<A>
+where
+    A: Actor<Context = Self>,
+{
+    fn parts(&mut self) -> &mut ContextParts<A>;
+}
+
+pub struct ContextParts<A>
 where
     A: Actor,
     A::Context: AsyncContext<A>,
 {
-    act: Option<A>,
+    addr: AddressSenderProducer<A>,
     flags: ContextFlags,
-    mailbox: Mailbox<A>,
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
     items: SmallVec<[Item<A>; 3]>,
     handles: SmallVec<[SpawnHandle; 2]>,
 }
 
-impl<A> ContextImpl<A>
+impl<A> ContextParts<A>
 where
     A: Actor,
     A::Context: AsyncContext<A>,
 {
     #[inline]
-    pub fn new(act: Option<A>) -> ContextImpl<A> {
-        ContextImpl {
-            act,
+    /// Create new ContextParts instance
+    pub fn new(addr: AddressSenderProducer<A>) -> Self {
+        ContextParts {
+            addr,
+            flags: ContextFlags::RUNNING,
             wait: SmallVec::new(),
             items: SmallVec::new(),
-            flags: ContextFlags::RUNNING,
-            mailbox: Mailbox::default(),
             handles: SmallVec::from_slice(&[
                 SpawnHandle::default(),
                 SpawnHandle::default(),
             ]),
         }
-    }
-
-    #[inline]
-    pub fn with_receiver(act: Option<A>, rx: AddressReceiver<A>) -> Self {
-        ContextImpl {
-            act,
-            wait: SmallVec::new(),
-            items: SmallVec::new(),
-            flags: ContextFlags::RUNNING,
-            mailbox: Mailbox::new(rx),
-            handles: SmallVec::from_slice(&[
-                SpawnHandle::default(),
-                SpawnHandle::default(),
-            ]),
-        }
-    }
-
-    #[inline]
-    /// Mutable reference to an actor.
-    ///
-    /// It panics if actor is not set
-    pub fn actor(&mut self) -> &mut A {
-        self.act.as_mut().unwrap()
-    }
-
-    #[inline]
-    /// Mark context as modified, this cause extra poll loop over all items
-    pub fn modify(&mut self) {
-        self.flags.insert(ContextFlags::MODIFIED);
-    }
-
-    #[inline]
-    /// Is context waiting for future completion
-    pub fn waiting(&self) -> bool {
-        !self.wait.is_empty()
-            || self
-                .flags
-                .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
     }
 
     #[inline]
@@ -108,8 +71,7 @@ where
     /// `Actor::stopping()` method.
     pub fn stop(&mut self) {
         if self.flags.contains(ContextFlags::RUNNING) {
-            self.flags
-                .remove(ContextFlags::RUNNING | ContextFlags::MODIFIED);
+            self.flags.remove(ContextFlags::RUNNING);
             self.flags.insert(ContextFlags::STOPPING);
         }
     }
@@ -135,6 +97,15 @@ where
     }
 
     #[inline]
+    /// Is context waiting for future completion
+    pub fn waiting(&self) -> bool {
+        !self.wait.is_empty()
+            || self
+                .flags
+                .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
+    }
+
+    #[inline]
     /// Handle of the running future
     pub fn curr_handle(&self) -> SpawnHandle {
         self.handles[1]
@@ -146,7 +117,6 @@ where
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        self.modify();
         let handle = self.handles[0].next();
         self.handles[0] = handle;
         let fut: Box<ActorFuture<Item = (), Error = (), Actor = A>> = Box::new(fut);
@@ -162,7 +132,6 @@ where
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        self.modify();
         self.wait.push(ActorWaitItem::new(f));
     }
 
@@ -175,13 +144,65 @@ where
 
     #[inline]
     pub fn capacity(&mut self) -> usize {
-        self.mailbox.capacity()
+        self.addr.capacity()
     }
 
     #[inline]
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
-        self.modify();
-        self.mailbox.set_capacity(cap);
+        self.flags.insert(ContextFlags::MB_CAP_CHANGED);
+        self.addr.set_capacity(cap);
+    }
+
+    #[inline]
+    pub fn address(&self) -> Addr<A> {
+        Addr::new(self.addr.sender())
+    }
+
+    /// Restart context. Cleanup all futures, except address queue.
+    #[inline]
+    pub(crate) fn restart(&mut self) {
+        self.flags = ContextFlags::RUNNING;
+        self.wait = SmallVec::new();
+        self.items = SmallVec::new();
+        self.handles[0] = SpawnHandle::default();
+    }
+
+    #[inline]
+    pub fn started(&mut self) -> bool {
+        self.flags.contains(ContextFlags::STARTED)
+    }
+}
+
+pub struct ContextFut<A, C>
+where
+    C: AsyncContextParts<A>,
+    A: Actor<Context = C>,
+{
+    ctx: C,
+    act: A,
+    mailbox: Mailbox<A>,
+    wait: SmallVec<[ActorWaitItem<A>; 2]>,
+    items: SmallVec<[Item<A>; 3]>,
+}
+
+impl<A, C> ContextFut<A, C>
+where
+    C: AsyncContextParts<A>,
+    A: Actor<Context = C>,
+{
+    pub fn new(ctx: C, act: A, mailbox: Mailbox<A>) -> Self {
+        ContextFut {
+            ctx,
+            act,
+            mailbox,
+            wait: SmallVec::new(),
+            items: SmallVec::new(),
+        }
+    }
+
+    #[inline]
+    pub fn ctx(&mut self) -> &mut C {
+        &mut self.ctx
     }
 
     #[inline]
@@ -190,104 +211,116 @@ where
     }
 
     #[inline]
-    pub fn alive(&self) -> bool {
-        if self.flags.contains(ContextFlags::STOPPED) {
+    fn stopping(&mut self) -> bool {
+        self.ctx
+            .parts()
+            .flags
+            .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
+    }
+
+    #[inline]
+    pub fn alive(&mut self) -> bool {
+        if self.ctx.parts().flags.contains(ContextFlags::STOPPED) {
             false
         } else {
-            !self.flags.contains(ContextFlags::STARTED)
+            !self.ctx.parts().flags.contains(ContextFlags::STARTED)
                 || self.mailbox.connected()
                 || !self.items.is_empty()
                 || !self.wait.is_empty()
         }
     }
 
-    #[inline]
-    fn stopping(&self) -> bool {
-        self.flags
-            .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
-    }
-
     /// Restart context. Cleanup all futures, except address queue.
     #[inline]
-    pub fn restart(&mut self, ctx: &mut A::Context) -> bool
+    pub(crate) fn restart(&mut self) -> bool
     where
         A: Supervised,
     {
-        if self.act.is_none() || !self.mailbox.connected() {
-            false
-        } else {
-            self.flags = ContextFlags::RUNNING;
+        if self.mailbox.connected() {
             self.wait = SmallVec::new();
             self.items = SmallVec::new();
-            self.handles[0] = SpawnHandle::default();
-            self.actor().restarting(ctx);
+            self.ctx.parts().restart();
+            self.act.restarting(&mut self.ctx);
             true
+        } else {
+            false
         }
     }
 
-    #[inline]
-    pub fn set_actor(&mut self, act: A) {
-        self.act = Some(act);
-        self.modify();
+    fn merge(&mut self) -> bool {
+        let mut modified = false;
+
+        let parts = self.ctx.parts();
+        if !parts.wait.is_empty() {
+            modified = true;
+            self.wait.extend(parts.wait.drain());
+        }
+        if !parts.items.is_empty() {
+            modified = true;
+            self.items.extend(parts.items.drain());
+        }
+        //
+        if parts.flags.contains(ContextFlags::MB_CAP_CHANGED) {
+            modified = true;
+            parts.flags.remove(ContextFlags::MB_CAP_CHANGED);
+        }
+        if parts.handles.len() > 2 {
+            modified = true;
+        }
+
+        modified
     }
+}
+
+#[doc(hidden)]
+impl<A, C> Future for ContextFut<A, C>
+where
+    C: AsyncContextParts<A>,
+    A: Actor<Context = C>,
+{
+    type Item = ();
+    type Error = ();
 
     #[inline]
-    pub fn into_inner(self) -> Option<A> {
-        self.act
-    }
-
-    #[inline]
-    pub fn started(&mut self) -> bool {
-        self.flags.contains(ContextFlags::STARTED)
-    }
-
-    pub fn poll(&mut self, ctx: &mut A::Context) -> Poll<(), ()> {
-        let mut act = if let Some(act) = self.act.take() {
-            act
-        } else {
-            return Ok(Async::Ready(()));
-        };
-
-        if !self.flags.contains(ContextFlags::STARTED) {
-            self.flags.insert(ContextFlags::STARTED);
-            Actor::started(&mut act, ctx);
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        if !self.ctx.parts().flags.contains(ContextFlags::STARTED) {
+            self.ctx.parts().flags.insert(ContextFlags::STARTED);
+            Actor::started(&mut self.act, &mut self.ctx);
 
             // check cancelled handles, just in case
-            while self.handles.len() > 2 {
-                let handle = self.handles.pop().unwrap();
-                let mut idx = 0;
-                while idx < self.items.len() {
-                    if self.items[idx].0 == handle {
-                        self.items.swap_remove(idx);
-                    } else {
-                        idx += 1;
+            if self.merge() {
+                while self.ctx.parts().handles.len() > 2 {
+                    let handle = self.ctx.parts().handles.pop().unwrap();
+                    let mut idx = 0;
+                    while idx < self.items.len() {
+                        if self.items[idx].0 == handle {
+                            self.items.swap_remove(idx);
+                        } else {
+                            idx += 1;
+                        }
                     }
                 }
             }
         }
 
         'outer: loop {
-            self.flags.remove(ContextFlags::MODIFIED);
-
             // check wait futures. order does matter
             // ctx.wait() always add to the back of the list
             // and we always have to check most recent future
             while !self.wait.is_empty() && !self.stopping() {
                 let idx = self.wait.len() - 1;
                 if let Some(item) = self.wait.last_mut() {
-                    match item.poll(&mut act, ctx) {
+                    match item.poll(&mut self.act, &mut self.ctx) {
                         Async::Ready(_) => (),
-                        Async::NotReady => {
-                            self.act = Some(act);
-                            return Ok(Async::NotReady);
-                        }
+                        Async::NotReady => return Ok(Async::NotReady),
                     }
                 }
                 self.wait.remove(idx);
+                self.merge();
             }
 
             // process mailbox
-            self.mailbox.poll(&mut act, ctx);
+            self.mailbox.poll(&mut self.act, &mut self.ctx);
             if !self.wait.is_empty() && !self.stopping() {
                 continue;
             }
@@ -295,16 +328,16 @@ where
             // process items
             let mut idx = 0;
             while idx < self.items.len() && !self.stopping() {
-                self.handles[1] = self.items[idx].0;
-                match self.items[idx].1.poll(&mut act, ctx) {
+                self.ctx.parts().handles[1] = self.items[idx].0;
+                match self.items[idx].1.poll(&mut self.act, &mut self.ctx) {
                     Ok(Async::NotReady) => {
                         // check cancelled handles
-                        if self.handles.len() > 2 {
+                        if self.ctx.parts().handles.len() > 2 {
                             // this code is not very efficient, relaying on fact that
                             // cancellation should be rear also number of futures
                             // in actor context should be small
-                            while self.handles.len() > 2 {
-                                let handle = self.handles.pop().unwrap();
+                            while self.ctx.parts().handles.len() > 2 {
+                                let handle = self.ctx.parts().handles.pop().unwrap();
                                 let mut idx = 0;
                                 while idx < self.items.len() {
                                     if self.items[idx].0 == handle {
@@ -341,43 +374,40 @@ where
                     }
                 }
             }
-            self.handles[1] = SpawnHandle::default();
+            self.ctx.parts().handles[1] = SpawnHandle::default();
 
-            // ContextFlags::MODIFIED indicates that new IO item has
-            // been added during poll process
-            if self.flags.contains(ContextFlags::MODIFIED)
-                && !self.flags.contains(ContextFlags::STOPPING)
-            {
+            // merge returns true if context contains new items
+            if self.merge() && !self.ctx.parts().flags.contains(ContextFlags::STOPPING) {
                 continue;
             }
 
             // check state
-            if self.flags.contains(ContextFlags::RUNNING) {
+            if self.ctx.parts().flags.contains(ContextFlags::RUNNING) {
                 // possible stop condition
-                if !self.alive() && Actor::stopping(&mut act, ctx) == Running::Stop {
-                    self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(&mut act, ctx);
-                    self.act = Some(act);
+                if !self.alive()
+                    && Actor::stopping(&mut self.act, &mut self.ctx) == Running::Stop
+                {
+                    self.ctx.parts().flags =
+                        ContextFlags::STOPPED | ContextFlags::STARTED;
+                    Actor::stopped(&mut self.act, &mut self.ctx);
                     return Ok(Async::Ready(()));
                 }
-            } else if self.flags.contains(ContextFlags::STOPPING) {
-                if Actor::stopping(&mut act, ctx) == Running::Stop {
-                    self.flags = ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(&mut act, ctx);
-                    self.act = Some(act);
+            } else if self.ctx.parts().flags.contains(ContextFlags::STOPPING) {
+                if Actor::stopping(&mut self.act, &mut self.ctx) == Running::Stop {
+                    self.ctx.parts().flags =
+                        ContextFlags::STOPPED | ContextFlags::STARTED;
+                    Actor::stopped(&mut self.act, &mut self.ctx);
                     return Ok(Async::Ready(()));
                 } else {
-                    self.flags.remove(ContextFlags::STOPPING);
-                    self.flags.insert(ContextFlags::RUNNING);
+                    self.ctx.parts().flags.remove(ContextFlags::STOPPING);
+                    self.ctx.parts().flags.insert(ContextFlags::RUNNING);
                     continue;
                 }
-            } else if self.flags.contains(ContextFlags::STOPPED) {
-                Actor::stopped(&mut act, ctx);
-                self.act = Some(act);
+            } else if self.ctx.parts().flags.contains(ContextFlags::STOPPED) {
+                Actor::stopped(&mut self.act, &mut self.ctx);
                 return Ok(Async::Ready(()));
             }
 
-            self.act = Some(act);
             return Ok(Async::NotReady);
         }
     }

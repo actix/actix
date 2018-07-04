@@ -3,7 +3,6 @@ use std::collections::HashMap;
 
 use futures::sync::oneshot::{channel, Receiver, Sender};
 use futures::{future, Future};
-use tokio::executor::current_thread::spawn;
 use tokio::runtime::current_thread::Runtime;
 
 use actor::Actor;
@@ -164,7 +163,8 @@ impl System {
         // init system arbiter and run configuration method
         let _ = rt.block_on(future::lazy(move || {
             Arbiter::new_system(arb_receiver, name);
-            spawn(Context::with_receiver(Some(arb), addr_receiver));
+            let ctx = Context::with_receiver(addr_receiver);
+            ctx.run(arb);
 
             f();
             Ok::<_, ()>(())
