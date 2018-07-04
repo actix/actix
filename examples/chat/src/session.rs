@@ -64,11 +64,11 @@ impl Actor for ChatSession {
 impl actix::io::WriteHandler<io::Error> for ChatSession {}
 
 /// To use `Framed` with an actor, we have to implement `StreamHandler` trait
-impl StreamHandler2<ChatRequest, io::Error> for ChatSession {
+impl StreamHandler<ChatRequest, io::Error> for ChatSession {
     /// This is main event loop for client requests
-    fn handle(&mut self, msg: io::Result<Option<ChatRequest>>, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: ChatRequest, ctx: &mut Self::Context) {
         match msg {
-            Ok(Some(ChatRequest::List)) => {
+            ChatRequest::List => {
                 // Send ListRooms message to chat server and wait for response
                 println!("List rooms");
                 self.addr.send(server::ListRooms)
@@ -83,7 +83,7 @@ impl StreamHandler2<ChatRequest, io::Error> for ChatSession {
                 // .wait(ctx) pauses all events in context,
                 // so actor wont receive any new messages until it get list of rooms back
             }
-            Ok(Some(ChatRequest::Join(name))) => {
+            ChatRequest::Join(name) => {
                 println!("Join to room: {}", name);
                 self.room = name.clone();
                 self.addr.do_send(server::Join {
@@ -92,7 +92,7 @@ impl StreamHandler2<ChatRequest, io::Error> for ChatSession {
                 });
                 self.framed.write(ChatResponse::Joined(name));
             }
-            Ok(Some(ChatRequest::Message(message))) => {
+            ChatRequest::Message(message) => {
                 // send message to chat server
                 println!("Peer message: {}", message);
                 self.addr.do_send(server::Message {
@@ -102,9 +102,7 @@ impl StreamHandler2<ChatRequest, io::Error> for ChatSession {
                 })
             }
             // we update heartbeat time on ping from peer
-            Ok(Some(ChatRequest::Ping)) => self.hb = Instant::now(),
-            // stop on error
-            _ => ctx.stop(),
+            ChatRequest::Ping => self.hb = Instant::now(),
         }
     }
 }

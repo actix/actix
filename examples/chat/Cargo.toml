@@ -18,6 +18,7 @@ bytes = "0.4"
 byteorder = "1.1"
 futures = "0.1"
 tokio = "0.1"
+tokio-codec = "0.1"
 tokio-io = "0.1"
 tokio-tcp = "0.1"
 

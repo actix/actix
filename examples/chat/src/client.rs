@@ -6,6 +6,7 @@ extern crate futures;
 extern crate serde;
 extern crate serde_json;
 extern crate tokio;
+extern crate tokio_codec;
 extern crate tokio_io;
 extern crate tokio_tcp;
 #[macro_use]
@@ -17,7 +18,7 @@ use std::{io, net, process, thread};
 
 use actix::prelude::*;
 use futures::Future;
-use tokio_io::codec::FramedRead;
+use tokio_codec::FramedRead;
 use tokio_io::io::WriteHalf;
 use tokio_io::AsyncRead;
 use tokio_tcp::TcpStream;
@@ -35,7 +36,7 @@ fn main() {
                 .and_then(|stream| {
                     let addr = ChatClient::create(|ctx| {
                         let (r, w) = stream.split();
-                        ctx.add_stream2(FramedRead::new(r, codec::ClientChatCodec));
+                        ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
                         ChatClient {
                             framed: actix::io::FramedWrite::new(
                                 w,
@@ -132,25 +133,23 @@ impl Handler<ClientCommand> for ChatClient {
 }
 
 /// Server communication
-impl StreamHandler2<codec::ChatResponse, io::Error> for ChatClient {
-    fn handle(
-        &mut self, msg: io::Result<Option<codec::ChatResponse>>, ctx: &mut Context<Self>,
-    ) {
+impl StreamHandler<codec::ChatResponse, io::Error> for ChatClient {
+    fn handle(&mut self, msg: codec::ChatResponse, _: &mut Context<Self>) {
         match msg {
-            Ok(Some(codec::ChatResponse::Message(ref msg))) => {
+            codec::ChatResponse::Message(ref msg) => {
                 println!("message: {}", msg);
             }
-            Ok(Some(codec::ChatResponse::Joined(ref msg))) => {
+            codec::ChatResponse::Joined(ref msg) => {
                 println!("!!! joined: {}", msg);
             }
-            Ok(Some(codec::ChatResponse::Rooms(rooms))) => {
+            codec::ChatResponse::Rooms(rooms) => {
                 println!("\n!!! Available rooms:");
                 for room in rooms {
                     println!("{}", room);
                 }
                 println!();
             }
-            _ => ctx.stop(),
+            _ => (),
         }
     }
 }
