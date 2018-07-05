@@ -4,11 +4,11 @@ extern crate futures;
 extern crate tokio;
 extern crate tokio_timer;
 
+use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use std::collections::HashSet;
 
 use actix::prelude::*;
 use futures::Future;
@@ -69,7 +69,7 @@ fn test_address() {
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
                 addr2.do_send(Ping(4));
 
-                tokio::spawn(Delay::new(Instant::now() + Duration::new(0, 1000)).then(
+                tokio::spawn(Delay::new(Instant::now() + Duration::new(0, 2000)).then(
                     move |_| {
                         System::current().stop();
                         Ok(())
@@ -79,7 +79,7 @@ fn test_address() {
             })
         }));
     });
-    thread::sleep(Duration::from_millis(200));
+    thread::sleep(Duration::from_millis(400));
 
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }
@@ -211,14 +211,14 @@ fn test_address_eq() {
         let addr0 = MyActor(count0).start();
         let addr01 = addr0.clone();
         let addr02 = addr01.clone();
-        
+
         assert!(addr0 == addr01);
         assert!(addr0 == addr02);
-        
+
         let addr1 = MyActor(count1).start();
-        
+
         assert!(addr0 != addr1);
-        
+
         System::current().stop();
     });
 }
@@ -239,7 +239,7 @@ fn test_address_hash() {
         assert_eq!(addresses.len(), 1);
         assert!(addresses.contains(&addr0));
         assert!(addresses.contains(&addr01));
-        
+
         let addr1 = MyActor(count1).start();
         addresses.insert(addr1.clone());
 
@@ -251,7 +251,7 @@ fn test_address_hash() {
         assert!(!addresses.contains(&addr01));
         assert_eq!(addresses.len(), 1);
         assert!(addresses.contains(&addr1));
-        
+
         System::current().stop();
     });
 }
@@ -265,17 +265,17 @@ fn test_recipient_eq() {
         let addr0 = MyActor(count0).start();
         let recipient01 = addr0.clone().recipient::<Ping>();
         let recipient02 = addr0.clone().recipient::<Ping>();
-        
+
         assert!(recipient01 == recipient02);
-        
+
         let recipient03 = recipient01.clone();
         assert!(recipient01 == recipient03);
-        
+
         let addr1 = MyActor(count1).start();
         let recipient11 = addr1.clone().recipient::<Ping>();
-        
+
         assert!(recipient01 != recipient11);
-        
+
         System::current().stop();
     });
 }
@@ -297,7 +297,7 @@ fn test_recipient_hash() {
         assert_eq!(recipients.len(), 1);
         assert!(recipients.contains(&recipient01));
         assert!(recipients.contains(&recipient02));
-        
+
         let addr1 = MyActor(count1).start();
         let recipient11 = addr1.clone().recipient::<Ping>();
         recipients.insert(recipient11.clone());
@@ -310,7 +310,7 @@ fn test_recipient_hash() {
         assert!(!recipients.contains(&recipient02));
         assert_eq!(recipients.len(), 1);
         assert!(recipients.contains(&recipient11));
-        
+
         System::current().stop();
     });
 }

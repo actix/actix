@@ -4,8 +4,8 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use bytes::BytesMut;
-use futures::{Async, Poll, task};
-use tokio_io::codec::Encoder;
+use futures::{task, Async, Poll};
+use tokio_codec::Encoder;
 use tokio_io::AsyncWrite;
 
 use actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};

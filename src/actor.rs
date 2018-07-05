@@ -192,12 +192,12 @@ pub enum Running {
 
 impl ActorState {
     /// Indicates if actor is alive
-    pub fn alive(&self) -> bool {
-        *self == ActorState::Started || *self == ActorState::Running
+    pub fn alive(self) -> bool {
+        self == ActorState::Started || self == ActorState::Running
     }
     /// Indicates if actor is stopped of stopping
-    pub fn stopping(&self) -> bool {
-        *self == ActorState::Stopping || *self == ActorState::Stopped
+    pub fn stopping(self) -> bool {
+        self == ActorState::Stopping || self == ActorState::Stopped
     }
 }
 
