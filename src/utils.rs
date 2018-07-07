@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use futures::unsync::oneshot;
-use futures::{Async, Future, Stream, Poll};
+use futures::{Async, Future, Poll, Stream};
 use tokio_timer::{Delay, Interval};
 
 use actor::Actor;
@@ -135,7 +135,8 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
     type Error = ();
     type Actor = A;
 
-    fn poll(&mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
+    fn poll(
+        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Option<Self::Item>, Self::Error> {
         loop {
             match self.interval.poll() {
@@ -149,4 +150,3 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
         }
     }
 }
-
