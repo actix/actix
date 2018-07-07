@@ -139,8 +139,7 @@ impl Registry {
         addr
     }
 
-    /// Add new actor to the registry using the initialization function provided, panic if actor
-    /// is already running
+    /// Add new actor to the registry by address, panic if actor is already running
     pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
@@ -264,6 +263,19 @@ impl SystemRegistry {
         hm.borrow_mut()
             .insert(TypeId::of::<A>(), Box::new(addr.clone()));
         addr
+    }
+
+    /// Add new actor to the registry by address, panic if actor is already running
+    pub fn set<A: SystemService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
+        let hm = self.registry.lock();
+        if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
+            if let Some(_) = addr.downcast_ref::<Addr<A>>() {
+                panic!("Actor already started");
+            }
+        }
+
+        hm.borrow_mut()
+            .insert(TypeId::of::<A>(), Box::new(addr.clone()));
     }
 }
 
