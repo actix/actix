@@ -7,7 +7,6 @@ extern crate tokio_timer;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::thread;
 use std::time::{Duration, Instant};
 
 use actix::prelude::*;
@@ -60,26 +59,19 @@ fn test_address() {
 
         arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
             addr3.do_send(Ping(2));
+
+            let send_ping = addr2.send(Ping(3)).map_err(|_| panic!("Unable to send ping 3"))
+                .then(move |_| addr2.send(Ping(4)).map_err(|_| panic!("Unable to send ping 4")))
+                .then(|_| {
+                    System::current().stop();
+                    Ok(())
+                });
+            Arbiter::spawn(send_ping);
+
             Ok(())
         }));
 
-        tokio::spawn(futures::lazy(move || {
-            addr2.do_send(Ping(3));
-
-            Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
-                addr2.do_send(Ping(4));
-
-                tokio::spawn(Delay::new(Instant::now() + Duration::new(0, 2000)).then(
-                    move |_| {
-                        System::current().stop();
-                        Ok(())
-                    },
-                ));
-                Ok(())
-            })
-        }));
     });
-    thread::sleep(Duration::from_millis(400));
 
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }

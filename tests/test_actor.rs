@@ -4,8 +4,10 @@ extern crate tokio;
 extern crate tokio_timer;
 
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use std::thread;
 
 use actix::prelude::*;
 use futures::{future, Future};
@@ -190,38 +192,52 @@ fn test_restart_sync_actor() {
     assert_eq!(msgs.load(Ordering::Relaxed), 6);
 }
 
-struct IntervalActor(Arc<AtomicUsize>);
+struct IntervalActor {
+    elapses_left: usize,
+    sender: sync::mpsc::Sender<Instant>,
+    instant: Option<Instant>
+}
+
+impl IntervalActor {
+    pub fn new(elapses_left: usize, sender: sync::mpsc::Sender<Instant>) -> Self {
+        Self {
+            //We stop at 0, so add 1 to make number of intervals equal to elapses_left
+            elapses_left: elapses_left + 1,
+            sender,
+            instant: None
+        }
+    }
+}
 
 impl Actor for IntervalActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        ctx.run_interval(Duration::from_millis(5), move |act, ctx| {
-            act.0.fetch_add(1, Ordering::Relaxed);
+        self.instant = Some(Instant::now());
 
-            if act.0.load(Ordering::Relaxed) == 10 {
+        ctx.run_interval(Duration::from_millis(110), move |act, ctx| {
+            act.elapses_left -= 1;
+
+            if act.elapses_left == 0 {
+                act.sender.send(act.instant.take().expect("To have Instant")).expect("To send result");
                 ctx.stop();
+                System::current().stop();
             }
         });
-    }
-
-    fn stopping(&mut self, _: &mut Self::Context) -> Running {
-        System::current().stop();
-        Running::Stop
     }
 }
 
 #[test]
 fn test_run_interval() {
-    let counter = Arc::new(AtomicUsize::new(0));
-    let counter_clone = counter.clone();
-    System::run(move || {
-        let addr = IntervalActor(counter_clone).start();
-        let delay = Delay::new(Instant::now() + Duration::from_millis(1_000_000));
-        tokio::spawn(delay.then(move |_| {
-            let _addr = addr;
-            Ok(())
-        }));
+    const MAX_WAIT: Duration = Duration::from_millis(10_000);
+
+    let (sender, receiver) = sync::mpsc::channel();
+    thread::spawn(move || {
+        System::run(move || {
+            let _addr = IntervalActor::new(10, sender).start();
+        });
     });
-    assert_eq!(counter.load(Ordering::Relaxed), 10);
+    let result = receiver.recv_timeout(MAX_WAIT).expect("To receive response in time");
+    //We wait 10 intervals by ~100ms
+    assert_eq!(result.elapsed().as_secs(), 1);
 }
