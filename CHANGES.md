@@ -1,5 +1,12 @@
 # CHANGES
 
+## [0.7.1] (2018-07-xx)
+
+### Added
+
+* Arbiter now has `Arbiter::builder()` which allows opt-in of behavior to stop
+  the actor system on uncaught panic in any arbiter thread. See #111 for examples.
+
 ## [0.7.0] (2018-07-05)
 
 ### Changed
