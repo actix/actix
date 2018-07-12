@@ -139,6 +139,19 @@ impl Registry {
         addr
     }
 
+    /// Add new actor to the registry with a closure returning address, return true if actor was added
+    pub fn init_actor<A: ArbiterService + Actor<Context = Context<A>>>(&self, init: impl FnOnce() -> Addr<A>) -> bool{
+        let id = TypeId::of::<A>();
+        if let Some(addr) = self.registry.borrow().get(&id) {
+            if addr.downcast_ref::<Addr<A>>().is_some() {
+                return false
+            }
+        }
+
+        self.registry.borrow_mut().insert(id, Box::new(init()));
+        true
+    }
+
     /// Add new actor to the registry by address, panic if actor is already running
     pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
         let id = TypeId::of::<A>();
@@ -263,6 +276,21 @@ impl SystemRegistry {
         hm.borrow_mut()
             .insert(TypeId::of::<A>(), Box::new(addr.clone()));
         addr
+    }
+
+    /// Add new actor to the registry with a closure that returns an address, return true if success
+    pub fn init_actor<A: SystemService + Actor<Context = Context<A>>>(&self, init: impl FnOnce() -> Addr<A>) -> bool {
+        let hm = self.registry.lock();
+        if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
+            if let Some(_) = addr.downcast_ref::<Addr<A>>() {
+                return false;
+            }
+        }
+
+        hm.borrow_mut()
+            .insert(TypeId::of::<A>(), Box::new(init()));
+
+        true
     }
 
     /// Add new actor to the registry by address, panic if actor is already running
