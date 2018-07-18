@@ -156,7 +156,7 @@ impl Arbiter {
         RUNNING.with(|cell| cell.set(false));
     }
 
-    /// Returns current arbiter's address
+    /// Returns current arbiter's name
     pub fn name() -> String {
         NAME.with(|cell| match *cell.borrow() {
             Some(ref name) => name.clone(),
