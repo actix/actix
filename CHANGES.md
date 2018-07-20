@@ -7,7 +7,7 @@
 * Arbiter now has `Arbiter::builder()` which allows opt-in of behavior to stop
   the actor system on uncaught panic in any arbiter thread. See #111 for examples.
 
-### Changed
+### Fixed
 
 * `AsyncContext::run_interval` does not fire callback immediately, instead it fires after specified duration.
 
