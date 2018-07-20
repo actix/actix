@@ -1,11 +1,14 @@
 # CHANGES
 
-## [0.7.1] (2018-07-xx)
+## [0.7.1] (2018-07-20)
 
 ### Added
 
 * Arbiter now has `Arbiter::builder()` which allows opt-in of behavior to stop
   the actor system on uncaught panic in any arbiter thread. See #111 for examples.
+
+* Allow to set custom system service actor via `SystemRegistry::set()` method.
+
 
 ## [0.7.0] (2018-07-05)
 
