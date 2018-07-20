@@ -9,6 +9,10 @@
 
 * Allow to set custom system service actor via `SystemRegistry::set()` method.
 
+### Fixed
+
+* `AsyncContext::run_interval` does not fire callback immediately, instead it fires after specified duration.
+
 
 ## [0.7.0] (2018-07-05)
 
@@ -55,7 +59,7 @@
 
 * `System` and `Arbiter` refactored
 
-* `Arbiter::handle()` is not available anymore. 
+* `Arbiter::handle()` is not available anymore.
   Use `Arbiter::spawn()` and `Arbiter::spawn_fn()` instead.
 
 * `StreamHandler` trait refactored.
