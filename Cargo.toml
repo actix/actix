@@ -34,7 +34,7 @@ resolver = ["trust-dns-resolver"]
 signal = ["tokio-signal"]
 
 [dependencies]
-actix_derive = "0.2"
+actix_derive = "0.3"
 
 # io
 bytes = "0.4"
