@@ -1,5 +1,12 @@
 # CHANGES
 
+## [0.7.2]
+
+### Changed
+
+* Use actix-derive 0.3
+
+
 ## [0.7.1] (2018-07-20)
 
 ### Added
