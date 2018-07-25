@@ -2,7 +2,6 @@
 
 Actix is a Rust actors framework.
 
-* [User Guide](https://actix.rs/book/actix/)
 * [API Documentation (Development)](http://actix.github.io/actix/actix/)
 * [API Documentation (Releases)](https://docs.rs/actix/)
 * Cargo package: [actix](https://crates.io/crates/actix)

@@ -21,7 +21,6 @@ clippy:
 
 doc: build
 	cargo doc --no-deps $(CARGO_FLAGS)
-	cd guide; mdbook build -d ../target/doc/guide/; cd ..
 
 clean:
 	rm -r target
