@@ -1,5 +1,12 @@
 # CHANGES
 
+## [0.7.3] (2018-07-30)
+
+### Fixed
+
+* Parked messages not getting processed #120
+
+
 ## [0.7.2] (2018-07-24)
 
 ### Changed

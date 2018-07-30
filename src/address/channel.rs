@@ -138,11 +138,14 @@ impl SenderTask {
         }
     }
 
-    fn notify(&mut self) {
+    fn notify(&mut self) -> bool {
         self.is_parked = false;
 
         if let Some(task) = self.task.take() {
             task.notify();
+            true
+        } else {
+            false
         }
     }
 }
@@ -232,13 +235,11 @@ impl<A: Actor> AddressSender<A> {
         // be parked. This will send the task handle on the parked task queue.
         if park_self {
             self.park(true);
-            Err(SendError::Full(msg))
-        } else {
-            let (tx, rx) = sync_channel();
-            let env = <A::Context as ToEnvelope<A, M>>::pack(msg, Some(tx));
-            self.queue_push_and_signal(env);
-            Ok(rx)
         }
+        let (tx, rx) = sync_channel();
+        let env = <A::Context as ToEnvelope<A, M>>::pack(msg, Some(tx));
+        self.queue_push_and_signal(env);
+        Ok(rx)
     }
 
     /// Attempts to send a message on this `Sender<A>` without blocking.
@@ -263,12 +264,10 @@ impl<A: Actor> AddressSender<A> {
             if park {
                 self.park(true);
             }
-            Err(SendError::Full(msg))
-        } else {
-            let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
-            self.queue_push_and_signal(env);
-            Ok(())
         }
+        let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
+        self.queue_push_and_signal(env);
+        Ok(())
     }
 
     /// Send a message on this `Sender<A>` without blocking.
@@ -281,7 +280,7 @@ impl<A: Actor> AddressSender<A> {
         M::Result: Send,
         M: Message + Send,
     {
-        if self.inc_num_messages_force().is_none() {
+        if self.inc_num_messages().is_none() {
             Err(SendError::Closed(msg))
         } else {
             let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
@@ -309,36 +308,6 @@ impl<A: Actor> AddressSender<A> {
             if !state.is_open {
                 return None;
             }
-
-            // receiver is full
-            let buffer = self.inner.buffer.load(Relaxed);
-            let park_self = buffer != 0 && state.num_messages >= buffer;
-            if park_self {
-                return Some(true);
-            }
-
-            state.num_messages += 1;
-
-            let next = encode_state(&state);
-            match self
-                .inner
-                .state
-                .compare_exchange(curr, next, SeqCst, SeqCst)
-            {
-                Ok(_) => return Some(false),
-                Err(actual) => curr = actual,
-            }
-        }
-    }
-
-    // Increment the number of queued messages. Returns if the sender should block.
-    fn inc_num_messages_force(&self) -> Option<bool> {
-        let mut curr = self.inner.state.load(SeqCst);
-        loop {
-            let mut state = decode_state(curr);
-            if !state.is_open {
-                return None;
-            }
             state.num_messages += 1;
 
             let next = encode_state(&state);
@@ -348,6 +317,7 @@ impl<A: Actor> AddressSender<A> {
                 .compare_exchange(curr, next, SeqCst, SeqCst)
             {
                 Ok(_) => {
+                    // receiver is full
                     let buffer = self.inner.buffer.load(Relaxed);
                     let park_self = buffer != 0 && state.num_messages >= buffer;
                     return Some(park_self);
@@ -401,8 +371,7 @@ impl<A: Actor> AddressSender<A> {
         }
 
         // Send handle over queue
-        let t = Arc::clone(&self.sender_task);
-        self.inner.parked_queue.push(t);
+        self.inner.parked_queue.push(Arc::clone(&self.sender_task));
 
         // Check to make sure we weren't closed after we sent our task on the queue
         let state = decode_state(self.inner.state.load(SeqCst));
@@ -703,8 +672,9 @@ impl<A: Actor> AddressReceiver<A> {
         loop {
             match unsafe { self.inner.parked_queue.pop() } {
                 PopResult::Data(task) => {
-                    task.lock().notify();
-                    return;
+                    if task.lock().notify() {
+                        return;
+                    }
                 }
                 PopResult::Empty => {
                     // Queue empty, no task to wake up.
@@ -911,12 +881,13 @@ mod tests {
             let arb2 = Arbiter::new("s1");
             arb2.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
                 let _ = s2.send(Ping);
+                let _ = s2.send(Ping);
                 Ok(())
             }));
 
             thread::sleep(time::Duration::from_millis(100));
             let state = decode_state(recv.inner.state.load(SeqCst));
-            assert_eq!(state.num_messages, 1);
+            assert_eq!(state.num_messages, 2);
 
             let p = loop {
                 match unsafe { recv.inner.parked_queue.pop() } {
@@ -933,7 +904,7 @@ mod tests {
 
             thread::sleep(time::Duration::from_millis(100));
             let state = decode_state(recv.inner.state.load(SeqCst));
-            assert_eq!(state.num_messages, 1);
+            assert_eq!(state.num_messages, 2);
 
             let p = loop {
                 match unsafe { recv.inner.parked_queue.pop() } {

@@ -301,10 +301,14 @@ mod tests {
             //are cloned capacity will be taken into account.
             let send = addr.clone().send(SetCounter(1));
             assert!(send.rx_is_some());
-            let send2 = addr.clone().send(SetCounter(2));
-            assert!(!send2.rx_is_some());
+            let addr2 = addr.clone();
+            let send2 = addr2.send(SetCounter(2));
+            assert!(send2.rx_is_some());
+            let send3 = addr2.send(SetCounter(3));
+            assert!(!send3.rx_is_some());
             let send = send
                 .join(send2)
+                .join(send3)
                 .map(|_| {
                     System::current().stop();
                 })
@@ -314,6 +318,6 @@ mod tests {
             Arbiter::spawn(send);
         });
 
-        assert_eq!(count.load(Ordering::Relaxed), 2);
+        assert_eq!(count.load(Ordering::Relaxed), 3);
     }
 }
