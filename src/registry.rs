@@ -29,7 +29,7 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 /// `ArbiterService` which is unique per arbiter or `SystemService` which is
 /// unique per system.
 ///
-/// If arbiter service is used outside of runnig arbiter, it panics.
+/// If arbiter service is used outside of running arbiter, it panics.
 ///
 /// # Example
 ///
@@ -96,7 +96,7 @@ pub struct Registry {
 /// Trait defines arbiter's service.
 #[allow(unused_variables)]
 pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default {
-    /// Construct and srtart arbiter service
+    /// Construct and start arbiter service
     fn start_service() -> Addr<Self> {
         Supervisor::start(|ctx| {
             let mut act = Self::default();
@@ -222,7 +222,7 @@ type InnerRegistry = Arc<ReentrantMutex<RefCell<AnyMapSend>>>;
 /// Trait defines system's service.
 #[allow(unused_variables)]
 pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
-    /// Construct and srtart system service
+    /// Construct and start system service
     fn start_service(sys: &Addr<Arbiter>) -> Addr<Self> {
         Supervisor::start_in_arbiter(sys, |ctx| {
             let mut act = Self::default();
