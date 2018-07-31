@@ -101,7 +101,7 @@ pub trait Actor: Sized + 'static {
     /// fn main() {
     ///     // initialize system
     ///     System::run(|| {
-    ///         let addr = MyActor.start(); // <- start actor and get it's address
+    ///         let addr = MyActor.start(); // <- start actor and get its address
     /// #       System::current().stop();
     ///     });
     /// }

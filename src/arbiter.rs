@@ -27,7 +27,7 @@ thread_local!(
 
 /// Event loop controller
 ///
-/// Arbiter controls event loop in it's thread. Each arbiter runs in separate
+/// Arbiter controls event loop in its thread. Each arbiter runs in separate
 /// thread. Arbiter provides several api for event loop access. Each arbiter
 /// can belongs to specific `System` actor.
 ///

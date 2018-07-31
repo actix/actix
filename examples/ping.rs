@@ -17,7 +17,7 @@ struct MyActor {
     count: usize,
 }
 
-/// Declare actor and it's context
+/// Declare actor and its context
 impl Actor for MyActor {
     type Context = Context<Self>;
 }
