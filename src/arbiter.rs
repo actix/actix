@@ -27,25 +27,58 @@ thread_local!(
 
 /// Event loop controller
 ///
-/// Arbiter controls event loop in it's thread. Each arbiter runs in separate
+/// Arbiter controls event loop in its thread. Each arbiter runs in separate
 /// thread. Arbiter provides several api for event loop access. Each arbiter
 /// can belongs to specific `System` actor.
+///
+/// By default, a panic in an Arbiter does _not_ stop the rest of the System,
+/// unless the panic is in the System actor. Users of Arbiter can opt into
+/// shutting down the system on panic by using `Arbiter::builder()` and enabling
+/// `stop_system_on_panic`.
 pub struct Arbiter {
     stop: Option<Sender<i32>>,
+    stop_system_on_panic: bool,
 }
 
 impl Actor for Arbiter {
     type Context = Context<Self>;
 }
 
+impl Drop for Arbiter {
+    fn drop(&mut self) {
+        if self.stop_system_on_panic && thread::panicking() {
+            eprintln!("Panic in Arbiter thread, shutting down system.");
+            System::current().stop_with_code(1)
+        }
+    }
+}
+
 impl Arbiter {
     /// Spawn new thread and run event loop in spawned thread.
     /// Returns address of newly created arbiter.
+    /// Does not stop the system on panic.
+    pub fn builder() -> Builder {
+        Builder::new()
+    }
+
+    /// Spawn new thread and run event loop in spawned thread.
+    /// Returns address of newly created arbiter.
+    /// Does not stop the system on panic.
     pub fn new<T: Into<String>>(name: T) -> Addr<Arbiter> {
+        Arbiter::new_with_builder(Arbiter::builder().name(name))
+    }
+
+    /// Spawn new thread and run event loop in spawned thread.
+    /// Returns address of newly created arbiter.
+    fn new_with_builder(builder: Builder) -> Addr<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
 
         let id = Uuid::new_v4();
-        let name = format!("arbiter:{}:{}", id.hyphenated().to_string(), name.into());
+        let name = format!(
+            "arbiter:{}:{}",
+            id.hyphenated().to_string(),
+            builder.name.as_ref().unwrap_or(&"actor".into())
+        );
         let sys = System::current();
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move || {
@@ -61,7 +94,10 @@ impl Arbiter {
             // start arbiter
             let addr =
                 rt.block_on(future::lazy(move || {
-                    let addr = Actor::start(Arbiter { stop: Some(stop) });
+                    let addr = Actor::start(Arbiter {
+                        stop: Some(stop),
+                        stop_system_on_panic: builder.stop_system_on_panic,
+                    });
                     Ok::<_, ()>(addr)
                 })).unwrap();
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
@@ -97,7 +133,10 @@ impl Arbiter {
 
         // start arbiter
         let ctx = Context::with_receiver(rx);
-        let fut = ctx.into_future(Arbiter { stop: None });
+        let fut = ctx.into_future(Arbiter {
+            stop: None,
+            stop_system_on_panic: true, // If the system Arbiter panics, stop the system.
+        });
         let addr = fut.address();
         Arbiter::spawn(fut);
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
@@ -117,7 +156,7 @@ impl Arbiter {
         RUNNING.with(|cell| cell.set(false));
     }
 
-    /// Returns current arbiter's address
+    /// Returns current arbiter's name
     pub fn name() -> String {
         NAME.with(|cell| match *cell.borrow() {
             Some(ref name) => name.clone(),
@@ -167,14 +206,22 @@ impl Arbiter {
     /// Start new arbiter and then start actor in created arbiter.
     /// Returns `Addr<Syn, A>` of created actor.
     pub fn start<A, F>(f: F) -> Addr<A>
-    where
-        A: Actor<Context = Context<A>>,
-        F: FnOnce(&mut A::Context) -> A + Send + 'static,
+        where
+            A: Actor<Context = Context<A>>,
+            F: FnOnce(&mut A::Context) -> A + Send + 'static,
+    {
+        Arbiter::builder().start(f)
+    }
+
+    fn start_with_builder<A, F>(builder: Builder, f: F) -> Addr<A>
+        where
+            A: Actor<Context = Context<A>>,
+            F: FnOnce(&mut A::Context) -> A + Send + 'static,
     {
         let (stx, srx) = channel::channel(DEFAULT_CAPACITY);
 
         // new arbiter
-        let addr = Arbiter::new("actor");
+        let addr = Arbiter::new_with_builder(builder);
 
         // create actor
         addr.do_send::<Execute>(Execute::new(move || {
@@ -215,5 +262,54 @@ impl<I: Send, E: Send> Handler<Execute<I, E>> for Arbiter {
 
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>) -> Result<I, E> {
         msg.exec()
+    }
+}
+
+/// Builder struct for an Arbiter.
+pub struct Builder {
+    /// Name of the Arbiter. Defaults to "actor" if unset.
+    name: Option<String>,
+
+    /// Whether the Arbiter will stop the whole System on uncaught panic. Defaults to false.
+    stop_system_on_panic: bool,
+}
+
+impl Builder {
+    fn new() -> Self {
+        Builder {
+            name: None,
+            stop_system_on_panic: false,
+        }
+    }
+
+    /// Sets the name of the Arbiter.
+    pub fn name<T: Into<String>>(mut self, name: T) -> Self {
+        self.name = Some(name.into());
+        self
+    }
+
+    /// Sets the option 'stop_system_on_panic' which controls whether the System is stopped when an
+    /// uncaught panic is thrown from an Actor in the Arbiter.
+    ///
+    /// Defaults to false.
+    pub fn stop_system_on_panic(mut self, stop_system_on_panic: bool) -> Self {
+        self.stop_system_on_panic = stop_system_on_panic;
+        self
+    }
+
+    /// Spawn new thread and run event loop in spawned thread.
+    /// Returns address of newly created arbiter.
+    pub fn build(self) -> Addr<Arbiter> {
+        Arbiter::new_with_builder(self)
+    }
+
+    /// Start new arbiter and then start actor in created arbiter.
+    /// Returns `Addr<Syn, A>` of created actor.
+    pub fn start<A, F>(self, f: F) -> Addr<A>
+        where
+            A: Actor<Context = Context<A>>,
+            F: FnOnce(&mut A::Context) -> A + Send + 'static,
+    {
+        Arbiter::start_with_builder(self, f)
     }
 }

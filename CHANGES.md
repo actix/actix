@@ -1,5 +1,33 @@
 # CHANGES
 
+## [0.7.3] (2018-07-30)
+
+### Fixed
+
+* Parked messages not getting processed #120
+
+
+## [0.7.2] (2018-07-24)
+
+### Changed
+
+* Use actix-derive 0.3
+
+
+## [0.7.1] (2018-07-20)
+
+### Added
+
+* Arbiter now has `Arbiter::builder()` which allows opt-in of behavior to stop
+  the actor system on uncaught panic in any arbiter thread. See #111 for examples.
+
+* Allow to set custom system service actor via `SystemRegistry::set()` method.
+
+### Fixed
+
+* `AsyncContext::run_interval` does not fire callback immediately, instead it fires after specified duration.
+
+
 ## [0.7.0] (2018-07-05)
 
 ### Changed
@@ -45,7 +73,7 @@
 
 * `System` and `Arbiter` refactored
 
-* `Arbiter::handle()` is not available anymore. 
+* `Arbiter::handle()` is not available anymore.
   Use `Arbiter::spawn()` and `Arbiter::spawn_fn()` instead.
 
 * `StreamHandler` trait refactored.

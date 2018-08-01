@@ -109,7 +109,12 @@ impl System {
 
     /// Stop the system
     pub fn stop(&self) {
-        self.sys.do_send(SystemExit(0));
+        self.stop_with_code(0)
+    }
+
+    /// Stop the system with a particular exit code.
+    pub(crate) fn stop_with_code(&self, code: i32) {
+        self.sys.do_send(SystemExit(code));
     }
 
     pub(crate) fn sys(&self) -> &Addr<SystemArbiter> {
@@ -183,7 +188,7 @@ pub struct SystemRunner {
 
 impl SystemRunner {
     /// This function will start event loop and will finish once the
-    /// `System::stop()` function get called.
+    /// `System::stop()` function is called.
     pub fn run(self) -> i32 {
         let SystemRunner { mut rt, stop, .. } = self;
 
