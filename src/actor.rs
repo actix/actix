@@ -383,7 +383,8 @@ where
         self.spawn(TimerFunc::new(dur, f))
     }
 
-    ///Spawns job to execute closure with specified interval
+    /// Spawns a job to execute the given closure periodically, at a specified
+    /// fixed interval
     fn run_interval<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
     where
         F: FnMut(&mut A, &mut A::Context) + 'static,
