@@ -44,7 +44,38 @@ use actor::Actor;
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.
 ///
-/// This is similar to `futures::Future` trait, except it works with `Actor`
+/// `ActorFuture` is very similar to a regular `Future`, only with subsequent combinator closures accepting the actor and its context, in addition to the result.
+///
+/// `ActorFuture` allows for use cases where future processing requires access to the actor ot its context.
+///
+/// Here is an example of a handler on a single actor, deferring work to another actor, and
+/// then updating the initiating actor's state:
+///
+/// ```rust,ignore
+/// impl Message for SomeMessage {
+///     type Result = ();
+/// }
+///
+/// impl Handler<DeferredWork> for OriginalActor {
+///     type Result = ResponseActFuture<Self, (), Error>;
+///
+///     fn handle(&mut self, _msg: Refresh, ctx: &mut Context<Self>) -> Self::Result {
+///         let send_to_other = self.other_actor_addr
+///             .send(OtherMessage::new())
+///             .map_err(Error::from);
+///
+///         let update_self =
+///             wrap_future::<_, Self>(send_to_other).map(|result, actor, _ctx| {
+///                 // Actor's state updated here
+///                 actor.inner_state.update_from(result);
+///             });
+///         // return the wrapping future
+///         Box::new(returned_future);
+///     }
+/// }
+/// ```
+///
+/// See also [into_actor](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
 pub trait ActorFuture {
     /// The type of value that this future will resolved with if it is
     /// successful.
@@ -58,7 +89,9 @@ pub trait ActorFuture {
     type Actor: Actor;
 
     fn poll(
-        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        srv: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error>;
 
     /// Map this future's result to a different type, returning a new future of
@@ -150,7 +183,9 @@ pub trait ActorStream {
     type Actor: Actor;
 
     fn poll(
-        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        srv: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Option<Self::Item>, Self::Error>;
 
     /// Converts a stream of type `T` to a stream of type `U`.
@@ -270,7 +305,9 @@ impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
     type Actor = F::Actor;
 
     fn poll(
-        &mut self, srv: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        srv: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error> {
         (**self).poll(srv, ctx)
     }
@@ -319,7 +356,11 @@ where
     act: PhantomData<A>,
 }
 
-/// Converts normal future into `ActorFuture`
+/// Converts normal future into `ActorFuture`, allowing its processing to
+/// use the actor's state.
+///
+/// See the documentation for [ActorFuture](trait.ActorFuture.html) for a practical example involving both
+/// `wrap_future` and `ActorFuture`
 pub fn wrap_future<F, A>(f: F) -> FutureWrap<F, A>
 where
     F: Future,
@@ -340,7 +381,9 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        _: &mut Self::Actor,
+        _: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error> {
         self.fut.poll()
     }
@@ -410,7 +453,9 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        _: &mut Self::Actor,
+        _: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Option<Self::Item>, Self::Error> {
         self.st.poll()
     }
