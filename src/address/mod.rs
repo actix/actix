@@ -128,7 +128,7 @@ impl<A: Actor> Addr<A> {
     }
 
     /// Get `Recipient` for specific message type
-    pub fn recipient<M: 'static>(self) -> Recipient<M>
+    pub fn recipient<M: 'static>(&self) -> Recipient<M>
     where
         A: Handler<M>,
         A::Context: ToEnvelope<A, M>,
