@@ -249,6 +249,6 @@ at your option.
 
 ## Code of Conduct
 
-Contribution to the actix-web crate is organized under the terms of the
+Contribution to the actix crate is organized under the terms of the
 Contributor Covenant, the maintainer of actix, @fafhrd91, promises to
 intervene to uphold that code of conduct.
