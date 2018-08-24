@@ -82,7 +82,8 @@ unsafe impl<A, M> Send for SyncEnvelopeProxy<A, M>
 where
     M: Message + Send,
     M::Result: Send,
-{}
+{
+}
 
 impl<A, M> EnvelopeProxy for SyncEnvelopeProxy<A, M>
 where
