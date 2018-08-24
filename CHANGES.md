@@ -1,5 +1,13 @@
 # CHANGES
 
+## [0.x.x] (2018-0x-xx)
+
+### Added
+
+* Introduce method `query` to determine whether there is running actor in registry.
+
+* Return back `mocker` module.
+
 ## [0.7.3] (2018-07-30)
 
 ### Fixed
