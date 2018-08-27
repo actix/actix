@@ -135,7 +135,7 @@ impl<A: Actor> Addr<A> {
         M: Message + Send,
         M::Result: Send,
     {
-        Recipient::new(Box::new(self.tx.clone()))
+        Recipient::new(Box::new(self.tx))
     }
 }
 
