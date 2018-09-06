@@ -5,11 +5,12 @@ use std::thread;
 use futures::sync::oneshot::{channel, Sender};
 use futures::{future, Future, IntoFuture};
 use tokio::executor::current_thread::spawn;
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::current_thread::Builder as RuntimeBuilder;
 use uuid::Uuid;
 
 use actor::Actor;
 use address::{channel, Addr, AddressReceiver};
+use clock::Clock;
 use context::Context;
 use handler::Handler;
 use mailbox::DEFAULT_CAPACITY;
@@ -70,18 +71,18 @@ impl Arbiter {
 
     /// Spawn new thread and run event loop in spawned thread.
     /// Returns address of newly created arbiter.
-    fn new_with_builder(builder: Builder) -> Addr<Arbiter> {
+    fn new_with_builder(mut builder: Builder) -> Addr<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
         let id = Uuid::new_v4();
         let name = format!(
             "arbiter:{}:{}",
             id.to_hyphenated_ref().to_string(),
-            builder.name.as_ref().unwrap_or(&"actor".into())
+            builder.name.take().unwrap_or_else(|| "actor".into())
         );
         let sys = System::current();
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move || {
-            let mut rt = Runtime::new().unwrap();
+            let mut rt = builder.runtime.build().unwrap();
 
             let (stop, stop_rx) = channel();
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
@@ -91,8 +92,8 @@ impl Arbiter {
             System::set_current(sys);
 
             // start arbiter
-            let addr =
-                rt.block_on(future::lazy(move || {
+            let addr = rt
+                .block_on(future::lazy(move || {
                     let addr = Actor::start(Arbiter {
                         stop: Some(stop),
                         stop_system_on_panic: builder.stop_system_on_panic,
@@ -102,9 +103,10 @@ impl Arbiter {
             ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
 
             // register arbiter
-            System::current()
-                .sys()
-                .do_send(RegisterArbiter(id.to_simple_ref().to_string(), addr.clone()));
+            System::current().sys().do_send(RegisterArbiter(
+                id.to_simple_ref().to_string(),
+                addr.clone(),
+            ));
 
             if tx.send(addr).is_err() {
                 error!("Can not start Arbiter, remote side is dead");
@@ -205,17 +207,17 @@ impl Arbiter {
     /// Start new arbiter and then start actor in created arbiter.
     /// Returns `Addr<Syn, A>` of created actor.
     pub fn start<A, F>(f: F) -> Addr<A>
-        where
-            A: Actor<Context = Context<A>>,
-            F: FnOnce(&mut A::Context) -> A + Send + 'static,
+    where
+        A: Actor<Context = Context<A>>,
+        F: FnOnce(&mut A::Context) -> A + Send + 'static,
     {
         Arbiter::builder().start(f)
     }
 
     fn start_with_builder<A, F>(builder: Builder, f: F) -> Addr<A>
-        where
-            A: Actor<Context = Context<A>>,
-            F: FnOnce(&mut A::Context) -> A + Send + 'static,
+    where
+        A: Actor<Context = Context<A>>,
+        F: FnOnce(&mut A::Context) -> A + Send + 'static,
     {
         let (stx, srx) = channel::channel(DEFAULT_CAPACITY);
 
@@ -271,6 +273,9 @@ pub struct Builder {
 
     /// Whether the Arbiter will stop the whole System on uncaught panic. Defaults to false.
     stop_system_on_panic: bool,
+
+    /// Tokio runtime builder.
+    runtime: RuntimeBuilder,
 }
 
 impl Builder {
@@ -278,6 +283,7 @@ impl Builder {
         Builder {
             name: None,
             stop_system_on_panic: false,
+            runtime: RuntimeBuilder::new(),
         }
     }
 
@@ -296,6 +302,14 @@ impl Builder {
         self
     }
 
+    /// Set the Clock instance that will be used by this Arbiter.
+    ///
+    /// Defaults to the clock used by the actix `System`, which defaults to the system clock.
+    pub fn clock(mut self, clock: Clock) -> Self {
+        self.runtime.clock(clock);
+        self
+    }
+
     /// Spawn new thread and run event loop in spawned thread.
     /// Returns address of newly created arbiter.
     pub fn build(self) -> Addr<Arbiter> {
@@ -305,9 +319,9 @@ impl Builder {
     /// Start new arbiter and then start actor in created arbiter.
     /// Returns `Addr<Syn, A>` of created actor.
     pub fn start<A, F>(self, f: F) -> Addr<A>
-        where
-            A: Actor<Context = Context<A>>,
-            F: FnOnce(&mut A::Context) -> A + Send + 'static,
+    where
+        A: Actor<Context = Context<A>>,
+        F: FnOnce(&mut A::Context) -> A + Send + 'static,
     {
         Arbiter::start_with_builder(self, f)
     }
