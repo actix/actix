@@ -308,7 +308,7 @@ impl<I: Send, E: Send> Handler<Execute<I, E>> for SystemArbiter {
 ///     // initialize system and run it
 ///     // This function blocks current thread
 ///     let code = System::builder().clock(clock).run(|| {
-///         // Start `Timer` actor
+///         // Start `Timer` actor. It will use the provided clock instance.
 ///         Timer {
 ///             dur: Duration::new(0, 1),
 ///         }.start();

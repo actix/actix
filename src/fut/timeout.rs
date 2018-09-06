@@ -1,9 +1,10 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
 use actor::Actor;
+use clock;
 use fut::ActorFuture;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
@@ -28,7 +29,7 @@ where
     Timeout {
         fut: future,
         err: Some(err),
-        timeout: Delay::new(Instant::now() + timeout),
+        timeout: Delay::new(clock::now() + timeout),
     }
 }
 

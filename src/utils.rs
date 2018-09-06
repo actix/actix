@@ -1,10 +1,11 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use futures::unsync::oneshot;
 use futures::{Async, Future, Poll, Stream};
 use tokio_timer::{Delay, Interval};
 
 use actor::Actor;
+use clock;
 use fut::{ActorFuture, ActorStream};
 
 pub struct Condition<T>
@@ -60,7 +61,7 @@ where
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: Delay::new(Instant::now() + timeout),
+            timeout: Delay::new(clock::now() + timeout),
         }
     }
 }
@@ -113,7 +114,7 @@ impl<A: Actor> IntervalFunc<A> {
     {
         Self {
             f: Box::new(f),
-            interval: Interval::new(Instant::now() + timeout, timeout),
+            interval: Interval::new(clock::now() + timeout, timeout),
         }
     }
 }

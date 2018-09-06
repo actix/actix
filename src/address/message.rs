@@ -1,10 +1,11 @@
 use std::marker::PhantomData;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use futures::sync::oneshot;
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
+use clock;
 use handler::{Handler, Message};
 
 use super::channel::{AddressSender, Sender};
@@ -49,7 +50,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(Delay::new(Instant::now() + dur));
+        self.timeout = Some(Delay::new(clock::now() + dur));
         self
     }
 
@@ -130,7 +131,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(Delay::new(Instant::now() + dur));
+        self.timeout = Some(Delay::new(clock::now() + dur));
         self
     }
 
