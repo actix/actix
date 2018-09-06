@@ -76,6 +76,7 @@ mod address;
 mod mailbox;
 
 pub mod actors;
+pub mod clock;
 pub mod fut;
 pub mod io;
 pub mod msgs;
