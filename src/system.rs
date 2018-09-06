@@ -1,13 +1,15 @@
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
 use futures::sync::oneshot::{channel, Receiver, Sender};
 use futures::{future, Future};
-use tokio::runtime::current_thread::Runtime;
+use tokio::runtime::current_thread::{Builder as RuntimeBuilder, Runtime};
 
 use actor::Actor;
 use address::{channel as addr_channel, Addr};
 use arbiter::Arbiter;
+use clock::Clock;
 use context::Context;
 use handler::{Handler, Message};
 use msgs::{Execute, StopArbiter};
@@ -66,12 +68,20 @@ pub struct System {
 thread_local!(static CURRENT: RefCell<Option<System>> = RefCell::new(None););
 
 impl System {
+    /// Build a new system with a customized tokio runtime.
+    ///
+    /// This allows to customize the runtime. See struct level docs on
+    /// `Builder` for more information.
+    pub fn builder() -> Builder {
+        Builder::new()
+    }
+
     #[cfg_attr(feature = "cargo-clippy", allow(new_ret_no_self))]
     /// Create new system.
     ///
     /// This method panics if it can not create tokio runtime
     pub fn new<T: Into<String>>(name: T) -> SystemRunner {
-        System::create_runtime(name.into(), || {})
+        Self::builder().name(name).build()
     }
 
     /// Get current running system.
@@ -138,44 +148,7 @@ impl System {
     where
         F: FnOnce() + 'static,
     {
-        System::create_runtime("actix".to_owned(), f).run()
-    }
-
-    fn create_runtime<F>(name: String, f: F) -> SystemRunner
-    where
-        F: FnOnce() + 'static,
-    {
-        let (stop_tx, stop) = channel();
-        let (addr_sender, addr_receiver) = addr_channel::channel(16);
-        let (arb_sender, arb_receiver) = addr_channel::channel(16);
-
-        let addr = Addr::new(arb_sender);
-        let system = System {
-            sys: Addr::new(addr_sender),
-            arbiter: addr.clone(),
-            registry: SystemRegistry::new(addr),
-        };
-        System::set_current(system.clone());
-
-        // system arbiter
-        let arb = SystemArbiter {
-            arbiters: HashMap::new(),
-            stop: Some(stop_tx),
-        };
-
-        let mut rt = Runtime::new().unwrap();
-
-        // init system arbiter and run configuration method
-        let _ = rt.block_on(future::lazy(move || {
-            Arbiter::new_system(arb_receiver, name);
-            let ctx = Context::with_receiver(addr_receiver);
-            ctx.run(arb);
-
-            f();
-            Ok::<_, ()>(())
-        }));
-
-        SystemRunner { rt, stop }
+        Self::builder().run(f)
     }
 }
 
@@ -294,5 +267,137 @@ impl<I: Send, E: Send> Handler<Execute<I, E>> for SystemArbiter {
 
     fn handle(&mut self, msg: Execute<I, E>, _: &mut Context<Self>) -> Result<I, E> {
         msg.exec()
+    }
+}
+
+/// Builder struct for a System actor.
+///
+/// Either use `Builder::build` to create a system and start actors.
+/// Alternatively, use `Builder::run` to start the tokio runtime and
+/// run a function in its context.
+///
+/// # Examples
+///
+/// ```rust
+/// extern crate actix;
+///
+/// use actix::prelude::*;
+/// use actix::clock::Clock;
+/// use std::time::Duration;
+///
+/// struct Timer {
+///     dur: Duration,
+/// }
+///
+/// impl Actor for Timer {
+///     type Context = Context<Self>;
+///
+///     // stop system after `self.dur` seconds
+///     fn started(&mut self, ctx: &mut Context<Self>) {
+///         ctx.run_later(self.dur, |act, ctx| {
+///             // Stop current running system.
+///             System::current().stop();
+///         });
+///     }
+/// }
+///
+/// fn main() {
+///     // create a custom clock instance
+///     let clock = Clock::new();
+///
+///     // initialize system and run it
+///     // This function blocks current thread
+///     let code = System::builder().clock(clock).run(|| {
+///         // Start `Timer` actor
+///         Timer {
+///             dur: Duration::new(0, 1),
+///         }.start();
+///     });
+///
+///     std::process::exit(code);
+/// }
+/// ```
+pub struct Builder {
+    /// Name of the System. Defaults to "actix" if unset.
+    name: Cow<'static, str>,
+
+    /// Tokio runtime builder.
+    runtime: RuntimeBuilder,
+}
+
+impl Builder {
+    fn new() -> Self {
+        Builder {
+            name: Cow::Borrowed("actix"),
+            runtime: RuntimeBuilder::new(),
+        }
+    }
+
+    /// Sets the name of the System.
+    pub fn name<T: Into<String>>(mut self, name: T) -> Self {
+        self.name = Cow::Owned(name.into());
+        self
+    }
+
+    /// Set the Clock instance that will be used by this System.
+    ///
+    /// Defaults to the system clock.
+    pub fn clock(mut self, clock: Clock) -> Self {
+        self.runtime.clock(clock);
+        self
+    }
+
+    /// Create new System.
+    ///
+    /// This method panics if it can not create tokio runtime
+    pub fn build(self) -> SystemRunner {
+        self.create_runtime(|| {})
+    }
+
+    /// This function will start tokio runtime and will finish once the
+    /// `System::stop()` message get called.
+    /// Function `f` get called within tokio runtime context.
+    pub fn run<F>(self, f: F) -> i32
+    where
+        F: FnOnce() + 'static,
+    {
+        self.create_runtime(f).run()
+    }
+
+    fn create_runtime<F>(mut self, f: F) -> SystemRunner
+    where
+        F: FnOnce() + 'static,
+    {
+        let (stop_tx, stop) = channel();
+        let (addr_sender, addr_receiver) = addr_channel::channel(16);
+        let (arb_sender, arb_receiver) = addr_channel::channel(16);
+
+        let addr = Addr::new(arb_sender);
+        let system = System {
+            sys: Addr::new(addr_sender),
+            arbiter: addr.clone(),
+            registry: SystemRegistry::new(addr),
+        };
+        System::set_current(system.clone());
+
+        // system arbiter
+        let arb = SystemArbiter {
+            arbiters: HashMap::new(),
+            stop: Some(stop_tx),
+        };
+
+        let mut rt = self.runtime.build().unwrap();
+
+        // init system arbiter and run configuration method
+        let _ = rt.block_on(future::lazy(move || {
+            Arbiter::new_system(arb_receiver, self.name.into_owned());
+            let ctx = Context::with_receiver(addr_receiver);
+            ctx.run(arb);
+
+            f();
+            Ok::<_, ()>(())
+        }));
+
+        SystemRunner { rt, stop }
     }
 }
