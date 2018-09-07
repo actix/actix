@@ -139,7 +139,7 @@ pub mod prelude {
         pub use msgs;
         pub use prelude::*;
         pub use registry::SystemService;
-        pub use utils::Condition;
+        pub use utils::{Condition, IntervalFunc, TimerFunc};
     }
 }
 
