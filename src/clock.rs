@@ -8,4 +8,4 @@
 //!
 //! [Module `tokio_timer::clock`]: https://docs.rs/tokio-timer/latest/tokio_timer/clock/index.html
 
-pub use tokio_timer::clock::*;
+pub use tokio_timer::clock::{now, Clock, Now};
