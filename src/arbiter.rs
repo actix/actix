@@ -72,7 +72,6 @@ impl Arbiter {
     /// Returns address of newly created arbiter.
     fn new_with_builder(builder: Builder) -> Addr<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
-
         let id = Uuid::new_v4();
         let name = format!(
             "arbiter:{}:{}",
@@ -120,8 +119,7 @@ impl Arbiter {
             // unregister arbiter
             System::current()
                 .sys()
-                .do_send(UnregisterArbiter(
-                    simple().to_string()));
+                .do_send(UnregisterArbiter(id.to_simple_ref().to_string()));
         });
 
         rx.recv().unwrap()
