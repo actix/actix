@@ -76,7 +76,7 @@ impl Arbiter {
         let id = Uuid::new_v4();
         let name = format!(
             "arbiter:{}:{}",
-            id.hyphenated().to_string(),
+            id.to_hyphenated_ref().to_string(),
             builder.name.as_ref().unwrap_or(&"actor".into())
         );
         let sys = System::current();
@@ -105,7 +105,7 @@ impl Arbiter {
             // register arbiter
             System::current()
                 .sys()
-                .do_send(RegisterArbiter(id.simple().to_string(), addr.clone()));
+                .do_send(RegisterArbiter(id.to_simple_ref().to_string(), addr.clone()));
 
             if tx.send(addr).is_err() {
                 error!("Can not start Arbiter, remote side is dead");
@@ -120,7 +120,8 @@ impl Arbiter {
             // unregister arbiter
             System::current()
                 .sys()
-                .do_send(UnregisterArbiter(id.simple().to_string()));
+                .do_send(UnregisterArbiter(
+                    simple().to_string()));
         });
 
         rx.recv().unwrap()
