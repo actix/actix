@@ -46,7 +46,7 @@ use actor::Actor;
 ///
 /// `ActorFuture` is very similar to a regular `Future`, only with subsequent combinator closures accepting the actor and its context, in addition to the result.
 ///
-/// `ActorFuture` allows for use cases where future processing requires access to the actor ot its context.
+/// `ActorFuture` allows for use cases where future processing requires access to the actor or its context.
 ///
 /// Here is an example of a handler on a single actor, deferring work to another actor, and
 /// then updating the initiating actor's state:
