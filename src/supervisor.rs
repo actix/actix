@@ -12,7 +12,7 @@ use msgs::Execute;
 ///
 /// Supervisor manages incoming message for actor. In case of actor failure,
 /// supervisor creates new execution context and restarts actor lifecycle.
-/// Supervisor does not does not re-create actor, it just calls `restarting()`
+/// Supervisor does not re-create actor, it just calls `restarting()`
 /// method.
 ///
 /// Supervisor has same lifecycle as actor. In situation when all addresses to
