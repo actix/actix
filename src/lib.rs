@@ -162,7 +162,10 @@ pub mod dev {
     pub use prelude::actix::*;
     pub use prelude::*;
 
-    pub use address::{Envelope, RecipientRequest, Request, ToEnvelope};
+    pub use address::{
+        channel, AddressReceiver, Envelope, EnvelopeProxy, RecipientRequest,
+        Request, ToEnvelope,
+    };
     pub use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
     pub use handler::{MessageResponse, ResponseChannel};
     pub use mailbox::Mailbox;

@@ -1,7 +1,7 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-pub(crate) mod channel;
+pub mod channel;
 mod envelope;
 mod message;
 mod queue;
@@ -12,7 +12,8 @@ use handler::{Handler, Message};
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 pub use self::message::{RecipientRequest, Request};
 
-pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
+pub use self::channel::AddressReceiver;
+pub(crate) use self::channel::AddressSenderProducer;
 use self::channel::{AddressSender, Sender};
 
 pub enum SendError<T> {
