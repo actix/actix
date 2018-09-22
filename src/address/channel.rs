@@ -62,6 +62,7 @@ pub struct AddressReceiver<A: Actor> {
     inner: Arc<Inner<A>>,
 }
 
+/// Generate `AddressSenders` for the channel
 pub struct AddressSenderProducer<A: Actor> {
     inner: Arc<Inner<A>>,
 }
@@ -197,6 +198,7 @@ pub fn channel<A: Actor>(buffer: usize) -> (AddressSender<A>, AddressReceiver<A>
 //
 //
 impl<A: Actor> AddressSender<A> {
+    /// Is the channel still open
     pub fn connected(&self) -> bool {
         let curr = self.inner.state.load(SeqCst);
         let state = decode_state(curr);
@@ -494,6 +496,7 @@ impl<A: Actor> Hash for AddressSender<A> {
 //
 //
 impl<A: Actor> AddressSenderProducer<A> {
+    /// Are any senders connected
     pub fn connected(&self) -> bool {
         self.inner.num_senders.load(SeqCst) != 0
     }
@@ -566,6 +569,7 @@ impl<A: Actor> AddressSenderProducer<A> {
 //
 //
 impl<A: Actor> AddressReceiver<A> {
+    /// Are any senders still connected
     pub fn connected(&self) -> bool {
         self.inner.num_senders.load(SeqCst) != 0
     }

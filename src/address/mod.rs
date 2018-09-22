@@ -1,7 +1,7 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-pub mod channel;
+pub(crate) mod channel;
 mod envelope;
 mod message;
 mod queue;
@@ -12,8 +12,7 @@ use handler::{Handler, Message};
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 pub use self::message::{RecipientRequest, Request};
 
-pub use self::channel::AddressReceiver;
-pub(crate) use self::channel::AddressSenderProducer;
+pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
 use self::channel::{AddressSender, Sender};
 
 pub enum SendError<T> {
@@ -121,9 +120,7 @@ impl<A: Actor> Addr<A> {
     {
         match self.tx.send(msg) {
             Ok(rx) => Request::new(Some(rx), None),
-            Err(SendError::Full(msg)) => {
-                Request::new(None, Some((self.tx.clone(), msg)))
-            }
+            Err(SendError::Full(msg)) => Request::new(None, Some((self.tx.clone(), msg))),
             Err(SendError::Closed(_)) => Request::new(None, None),
         }
     }
@@ -206,9 +203,7 @@ where
     pub fn send(&self, msg: M) -> RecipientRequest<M> {
         match self.tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) => {
-                RecipientRequest::new(None, Some((self.tx.boxed(), msg)))
-            }
+            Err(SendError::Full(msg)) => RecipientRequest::new(None, Some((self.tx.boxed(), msg))),
             Err(SendError::Closed(_)) => RecipientRequest::new(None, None),
         }
     }
@@ -279,9 +274,7 @@ mod tests {
     impl actix::Handler<SetCounter> for ActorWithSmallMailBox {
         type Result = <SetCounter as Message>::Result;
 
-        fn handle(
-            &mut self, ping: SetCounter, _: &mut actix::Context<Self>,
-        ) -> Self::Result {
+        fn handle(&mut self, ping: SetCounter, _: &mut actix::Context<Self>) -> Self::Result {
             self.0.store(ping.0, Ordering::Relaxed);
         }
     }
@@ -312,8 +305,7 @@ mod tests {
                 .join(send3)
                 .map(|_| {
                     System::current().stop();
-                })
-                .map_err(|_| {
+                }).map_err(|_| {
                     panic!("Message over limit should be delivered, but it is not!");
                 });
             Arbiter::spawn(send);
