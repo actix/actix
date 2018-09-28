@@ -10,7 +10,7 @@ use actor::Actor;
 use handler::{Handler, Message};
 
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
-pub use self::message::{RecipientRequest, Request};
+pub use self::message::{RecipientRequest, RecipientRequest2, Request, Request2};
 
 pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
 use self::channel::{AddressSender, Sender};
@@ -120,8 +120,33 @@ impl<A: Actor> Addr<A> {
     {
         match self.tx.send(msg) {
             Ok(rx) => Request::new(Some(rx), None),
-            Err(SendError::Full(msg)) => Request::new(None, Some((self.tx.clone(), msg))),
+            Err(SendError::Full(msg)) => {
+                Request::new(None, Some((self.tx.clone(), msg)))
+            }
             Err(SendError::Closed(_)) => Request::new(None, None),
+        }
+    }
+
+    #[inline]
+    /// Send asynchronous message and wait for response.
+    ///
+    /// Communication channel to the actor is bounded. if returned `Future`
+    /// object get dropped, message cancels.
+    ///
+    /// This variant helps unwrap success result for messages which has `Result` type as Result.
+    pub fn send2<M, T, E>(&self, msg: M) -> Request2<A, M, T, E>
+    where
+        M: Message<Result = Result<T, E>> + Send,
+        M::Result: Send,
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
+    {
+        match self.tx.send(msg) {
+            Ok(rx) => Request2::new(Some(rx), None),
+            Err(SendError::Full(msg)) => {
+                Request2::new(None, Some((self.tx.clone(), msg)))
+            }
+            Err(SendError::Closed(_)) => Request2::new(None, None),
         }
     }
 
@@ -203,8 +228,31 @@ where
     pub fn send(&self, msg: M) -> RecipientRequest<M> {
         match self.tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) => RecipientRequest::new(None, Some((self.tx.boxed(), msg))),
+            Err(SendError::Full(msg)) => {
+                RecipientRequest::new(None, Some((self.tx.boxed(), msg)))
+            }
             Err(SendError::Closed(_)) => RecipientRequest::new(None, None),
+        }
+    }
+
+    /// Send message and asynchronously wait for response.
+    ///
+    /// Communication channel to the actor is bounded. if returned `Request`
+    /// object get dropped, message cancels.
+    ///
+    /// This variant helps unwrap success result for messages which has `Result` type as Result.
+    pub fn send2<T, E>(&self, msg: M) -> RecipientRequest2<M, T, E>
+    where
+        M: Message<Result = Result<T, E>>,
+        T: 'static,
+        E: 'static,
+    {
+        match self.tx.send(msg) {
+            Ok(rx) => RecipientRequest2::new(Some(rx), None),
+            Err(SendError::Full(msg)) => {
+                RecipientRequest2::new(None, Some((self.tx.boxed(), msg)))
+            }
+            Err(SendError::Closed(_)) => RecipientRequest2::new(None, None),
         }
     }
 }
@@ -250,6 +298,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use futures::future::Either;
     use futures::Future;
     use prelude::*;
 
@@ -274,7 +323,11 @@ mod tests {
     impl actix::Handler<SetCounter> for ActorWithSmallMailBox {
         type Result = <SetCounter as Message>::Result;
 
-        fn handle(&mut self, ping: SetCounter, _: &mut actix::Context<Self>) -> Self::Result {
+        fn handle(
+            &mut self,
+            ping: SetCounter,
+            _: &mut actix::Context<Self>,
+        ) -> Self::Result {
             self.0.store(ping.0, Ordering::Relaxed);
         }
     }
@@ -312,5 +365,88 @@ mod tests {
         });
 
         assert_eq!(count.load(Ordering::Relaxed), 3);
+    }
+
+    struct ActorWhichMayFail(Arc<AtomicUsize>);
+
+    impl Actor for ActorWhichMayFail {
+        type Context = Context<Self>;
+    }
+
+    pub struct Accumulate(usize);
+    impl Message for Accumulate {
+        type Result = Result<usize, &'static str>;
+    }
+
+    impl actix::Handler<Accumulate> for ActorWhichMayFail {
+        type Result = <Accumulate as Message>::Result;
+
+        fn handle(
+            &mut self,
+            arg: Accumulate,
+            _: &mut actix::Context<Self>,
+        ) -> Self::Result {
+            let new = self.0.load(Ordering::Relaxed) + arg.0;
+            if new < 10 {
+                self.0.store(new, Ordering::Relaxed);
+                Ok(new)
+            } else {
+                Err("prevented overflow")
+            }
+        }
+    }
+
+    #[test]
+    fn test_send_result_ok() {
+        let count = Arc::new(AtomicUsize::new(0));
+        let count2 = count.clone();
+
+        System::run(move || {
+            let addr = ActorWhichMayFail::create(|_| ActorWhichMayFail(count2));
+
+            let send1 = addr.clone().send2(Accumulate(3));
+            let send2 = addr.clone().send2(Accumulate(4));
+            let send3 = addr.clone().send2(Accumulate(2));
+
+            let send = send1
+                .join(send2)
+                .join(send3)
+                .map(|_| System::current().stop())
+                .map_err(|err| match err {
+                    Either::A(_) => panic!("Unexpected mailbox error"),
+                    Either::B(_) => panic!("Unexpected actor error"),
+                });
+            Arbiter::spawn(send);
+        });
+
+        assert_eq!(count.load(Ordering::Relaxed), 9);
+    }
+
+    #[test]
+    fn test_send_result_err() {
+        let count = Arc::new(AtomicUsize::new(0));
+        let count2 = count.clone();
+
+        System::run(move || {
+            let addr = ActorWhichMayFail::create(|_| ActorWhichMayFail(count2));
+
+            let send1 = addr.clone().send2(Accumulate(3));
+            let send2 = addr.clone().send2(Accumulate(5));
+            let send3 = addr.clone().send2(Accumulate(2));
+
+            let send = send1
+                .join(send2)
+                .join(send3)
+                .map(|_| {
+                    panic!("One of sends should fails");
+                }).map_err(|err| match err {
+                    Either::A(_) => panic!("Unexpected mailbox error"),
+                    Either::B(_) => System::current().stop(),
+                });
+            Arbiter::spawn(send);
+        });
+
+        let val = count.load(Ordering::Relaxed);
+        assert!(val == 5 || val == 7 || val == 8);
     }
 }

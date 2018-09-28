@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
+use futures::future::Either;
 use futures::sync::oneshot;
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
@@ -32,7 +33,8 @@ where
     M: Message,
 {
     pub(crate) fn new(
-        rx: Option<oneshot::Receiver<M::Result>>, info: Option<(AddressSender<A>, M)>,
+        rx: Option<oneshot::Receiver<M::Result>>,
+        info: Option<(AddressSender<A>, M)>,
     ) -> Request<A, M> {
         Request {
             rx,
@@ -119,7 +121,8 @@ where
     M::Result: Send,
 {
     pub fn new(
-        rx: Option<oneshot::Receiver<M::Result>>, info: Option<(Box<Sender<M>>, M)>,
+        rx: Option<oneshot::Receiver<M::Result>>,
+        info: Option<(Box<Sender<M>>, M)>,
     ) -> RecipientRequest<M> {
         RecipientRequest {
             rx,
@@ -178,6 +181,189 @@ where
             }
         } else {
             Err(MailboxError::Closed)
+        }
+    }
+}
+
+/// `Request2` is a `Future` which represents asynchronous message sending
+/// process.
+#[must_use = "You have to wait on request otherwise Message wont be delivered"]
+pub struct Request2<A, M, T, E>
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<A, M>,
+    M: Message<Result = Result<T, E>>,
+    T: 'static,
+    E: 'static,
+{
+    rx: Option<oneshot::Receiver<M::Result>>,
+    info: Option<(AddressSender<A>, M)>,
+    timeout: Option<Delay>,
+    act: PhantomData<A>,
+}
+
+impl<A, M, T, E> Request2<A, M, T, E>
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<A, M>,
+    M: Message<Result = Result<T, E>>,
+    T: 'static,
+    E: 'static,
+{
+    pub(crate) fn new(
+        rx: Option<oneshot::Receiver<M::Result>>,
+        info: Option<(AddressSender<A>, M)>,
+    ) -> Request2<A, M, T, E> {
+        Request2 {
+            rx,
+            info,
+            timeout: None,
+            act: PhantomData,
+        }
+    }
+
+    /// Set message delivery timeout
+    pub fn timeout(mut self, dur: Duration) -> Self {
+        self.timeout = Some(Delay::new(Instant::now() + dur));
+        self
+    }
+
+    fn poll_timeout(&mut self) -> Poll<T, Either<MailboxError, E>> {
+        if let Some(ref mut timeout) = self.timeout {
+            match timeout.poll() {
+                Ok(Async::Ready(())) => Err(Either::A(MailboxError::Timeout)),
+                Ok(Async::NotReady) => Ok(Async::NotReady),
+                Err(_) => unreachable!(),
+            }
+        } else {
+            Ok(Async::NotReady)
+        }
+    }
+}
+
+impl<A, M, T, E> Future for Request2<A, M, T, E>
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<A, M>,
+    M: Message<Result = Result<T, E>> + Send,
+    M::Result: Send,
+    T: 'static,
+    E: 'static,
+{
+    type Item = T;
+    type Error = Either<MailboxError, E>;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        if let Some((sender, msg)) = self.info.take() {
+            match sender.send(msg) {
+                Ok(rx) => self.rx = Some(rx),
+                Err(SendError::Full(msg)) => {
+                    self.info = Some((sender, msg));
+                    return Ok(Async::NotReady);
+                }
+                Err(SendError::Closed(_)) => return Err(Either::A(MailboxError::Closed)),
+            }
+        }
+
+        if self.rx.is_some() {
+            match self.rx.as_mut().unwrap().poll() {
+                Ok(Async::Ready(Ok(item))) => Ok(Async::Ready(item)),
+                Ok(Async::Ready(Err(err))) => Err(Either::B(err)),
+                Ok(Async::NotReady) => self.poll_timeout(),
+                Err(_) => Err(Either::A(MailboxError::Closed)),
+            }
+        } else {
+            Err(Either::A(MailboxError::Closed))
+        }
+    }
+}
+
+/// `RecipientRequest2` is a `Future` which represents asynchronous message
+/// sending process.
+#[must_use = "future do nothing unless polled"]
+pub struct RecipientRequest2<M, T, E>
+where
+    M: Message<Result = Result<T, E>> + Send + 'static,
+    M::Result: Send,
+    T: 'static,
+    E: 'static,
+{
+    rx: Option<oneshot::Receiver<M::Result>>,
+    info: Option<(Box<Sender<M>>, M)>,
+    timeout: Option<Delay>,
+}
+
+impl<M, T, E> RecipientRequest2<M, T, E>
+where
+    M: Message<Result = Result<T, E>> + Send + 'static,
+    M::Result: Send,
+    T: 'static,
+    E: 'static,
+{
+    pub fn new(
+        rx: Option<oneshot::Receiver<M::Result>>,
+        info: Option<(Box<Sender<M>>, M)>,
+    ) -> RecipientRequest2<M, T, E> {
+        RecipientRequest2 {
+            rx,
+            info,
+            timeout: None,
+        }
+    }
+
+    /// Set message delivery timeout
+    pub fn timeout(mut self, dur: Duration) -> Self {
+        self.timeout = Some(Delay::new(Instant::now() + dur));
+        self
+    }
+
+    fn poll_timeout(&mut self) -> Poll<T, Either<MailboxError, E>> {
+        if let Some(ref mut timeout) = self.timeout {
+            match timeout.poll() {
+                Ok(Async::Ready(())) => Err(Either::A(MailboxError::Timeout)),
+                Ok(Async::NotReady) => Ok(Async::NotReady),
+                Err(_) => unreachable!(),
+            }
+        } else {
+            Ok(Async::NotReady)
+        }
+    }
+}
+
+impl<M, T, E> Future for RecipientRequest2<M, T, E>
+where
+    M: Message<Result = Result<T, E>> + Send + 'static,
+    M::Result: Send,
+    T: 'static,
+    E: 'static,
+{
+    type Item = T;
+    type Error = Either<MailboxError, E>;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        if let Some((sender, msg)) = self.info.take() {
+            match sender.send(msg) {
+                Ok(rx) => self.rx = Some(rx),
+                Err(SendError::Full(msg)) => {
+                    self.info = Some((sender, msg));
+                    return Ok(Async::NotReady);
+                }
+                Err(SendError::Closed(_)) => return Err(Either::A(MailboxError::Closed)),
+            }
+        }
+
+        if let Some(mut rx) = self.rx.take() {
+            match rx.poll() {
+                Ok(Async::Ready(Ok(item))) => Ok(Async::Ready(item)),
+                Ok(Async::Ready(Err(err))) => Err(Either::B(err)),
+                Ok(Async::NotReady) => {
+                    self.rx = Some(rx);
+                    self.poll_timeout()
+                }
+                Err(_) => Err(Either::A(MailboxError::Closed)),
+            }
+        } else {
+            Err(Either::A(MailboxError::Closed))
         }
     }
 }
