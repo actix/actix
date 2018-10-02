@@ -76,6 +76,7 @@ mod address;
 mod mailbox;
 
 pub mod actors;
+pub mod clock;
 pub mod fut;
 pub mod io;
 pub mod msgs;
@@ -138,7 +139,7 @@ pub mod prelude {
         pub use msgs;
         pub use prelude::*;
         pub use registry::SystemService;
-        pub use utils::Condition;
+        pub use utils::{Condition, IntervalFunc, TimerFunc};
     }
 }
 

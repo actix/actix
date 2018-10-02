@@ -43,7 +43,7 @@ extern crate trust_dns_resolver;
 use std::collections::VecDeque;
 use std::io;
 use std::net::SocketAddr;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use self::trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use self::trust_dns_resolver::lookup_ip::LookupIpFuture;
@@ -52,6 +52,7 @@ use futures::{Async, Future, Poll};
 use tokio_tcp::{ConnectFuture, TcpStream};
 use tokio_timer::Delay;
 
+use clock;
 use prelude::*;
 
 #[deprecated(since = "0.7.0", note = "please use `Resolver` instead")]
@@ -380,7 +381,7 @@ impl TcpConnector {
         TcpConnector {
             addrs,
             stream: None,
-            timeout: Delay::new(Instant::now() + timeout),
+            timeout: Delay::new(clock::now() + timeout),
         }
     }
 }

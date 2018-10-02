@@ -1,5 +1,16 @@
 # CHANGES
 
+## [0.x.x](2018-1x-xx)
+
+- Introduce the `clock` module to allow overriding and mocking the system clock
+  based on `tokio_timer`.
+
+- System now has `System::builder()` which allows overriding the system clock
+  with a custom instance. `Arbiter::builder()` can now also override the system
+  clock. The default is to inherit from the system.
+
+- New utility classes `TimerFunc` and `IntervalFunc` in the `utils` module.
+
 ## [0.7.4] (2018-08-27)
 
 ### Added
