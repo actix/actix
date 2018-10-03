@@ -1,5 +1,6 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use failure;
 
 pub(crate) mod channel;
 mod envelope;
@@ -53,6 +54,10 @@ impl<T> fmt::Display for SendError<T> {
             SendError::Closed(_) => write!(fmt, "send failed because receiver is gone"),
         }
     }
+}
+
+impl<T> failure::Fail for SendError<T>
+where T: Send + Sync + 'static {
 }
 
 impl fmt::Debug for MailboxError {
