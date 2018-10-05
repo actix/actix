@@ -2,6 +2,8 @@
 
 ## [0.x.x](2018-1x-xx)
 
+### Added
+
 - Introduce the `clock` module to allow overriding and mocking the system clock
   based on `tokio_timer`.
 
@@ -10,6 +12,14 @@
   clock. The default is to inherit from the system.
 
 - New utility classes `TimerFunc` and `IntervalFunc` in the `utils` module.
+
+- Implement `failure::Fail` for `SendError`.
+
+- Implement `Debug` for multiple public types: `AddressSender`, `Addr`, `Arbiter`, `Context`, `ContextParts`, `ContextFut`, `Response`, `ActorResponse`, `Mailbox`, `SystemRegistry`, `Supervisor`, `System`, `SystemRunner`, `SystemArbiter`. #135
+
+### Changed
+
+- No longer perform unnecessary clone of `Addr` in `SystemRegistry::set`.
 
 ## [0.7.4] (2018-08-27)
 
