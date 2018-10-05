@@ -262,10 +262,8 @@ impl<A: Actor> AddressSender<A> {
             None => return Err(SendError::Closed(msg)),
         };
 
-        if park_self {
-            if park {
-                self.park(true);
-            }
+        if park_self && park {
+            self.park(true);
         }
         let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
         self.queue_push_and_signal(env);
