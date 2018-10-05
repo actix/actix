@@ -169,14 +169,11 @@ pub struct Response<I, E> {
 
 impl<I, E> fmt::Debug for Response<I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let item = format!(
-            "{}",
-            match self.item {
-                ResponseTypeItem::Result(_) => "Result(_)",
-                ResponseTypeItem::Fut(_) => "Fut(_)",
-            }
-        );
-        fmt.debug_struct("Response").field("item", &item).finish()
+        let mut fmt = fmt.debug_struct("Response");
+        match self.item {
+                ResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
+                ResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }.finish()
     }
 }
 
@@ -236,16 +233,11 @@ pub struct ActorResponse<A, I, E> {
 
 impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let item = format!(
-            "ActorResponseTypeItem::{}",
-            match self.item {
-                ActorResponseTypeItem::Result(_) => "Result(_)",
-                ActorResponseTypeItem::Fut(_) => "Fut(_)",
-            }
-        );
-        fmt.debug_struct("ActorResponse")
-            .field("item", &item)
-            .finish()
+        let mut fmt = fmt.debug_struct("ActorResponse");
+        match self.item {
+                ActorResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
+                ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }.finish()
     }
 }
 
