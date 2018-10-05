@@ -61,6 +61,7 @@ use msgs::Execute;
 ///     });
 /// }
 /// ```
+#[derive(Debug)]
 pub struct Supervisor<A>
 where
     A: Supervised + Actor<Context = Context<A>>,

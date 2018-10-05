@@ -62,6 +62,7 @@ impl fmt::Debug for MailboxError {
 }
 
 /// Address of the actor
+#[derive(Debug)]
 pub struct Addr<A: Actor> {
     tx: AddressSender<A>,
 }

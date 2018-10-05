@@ -222,6 +222,7 @@ impl Registry {
 ///     });
 /// }
 /// ```
+#[derive(Debug)]
 pub struct SystemRegistry {
     system: Addr<Arbiter>,
     registry: InnerRegistry,

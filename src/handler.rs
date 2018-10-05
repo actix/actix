@@ -1,5 +1,6 @@
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::Future;
+use std::fmt;
 
 use actor::{Actor, AsyncContext};
 use address::Addr;
@@ -166,6 +167,19 @@ pub struct Response<I, E> {
     item: ResponseTypeItem<I, E>,
 }
 
+impl<I, E> fmt::Debug for Response<I, E> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let item = format!(
+            "{}",
+            match self.item {
+                ResponseTypeItem::Result(_) => "Result(_)",
+                ResponseTypeItem::Fut(_) => "Fut(_)",
+            }
+        );
+        fmt.debug_struct("Response").field("item", &item).finish()
+    }
+}
+
 impl<I, E> Response<I, E> {
     /// Create async response
     pub fn async<T>(fut: T) -> Self
@@ -218,6 +232,21 @@ enum ActorResponseTypeItem<A, I, E> {
 /// Helper type for representing different type of message responses
 pub struct ActorResponse<A, I, E> {
     item: ActorResponseTypeItem<A, I, E>,
+}
+
+impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        let item = format!(
+            "ActorResponseTypeItem::{}",
+            match self.item {
+                ActorResponseTypeItem::Result(_) => "Result(_)",
+                ActorResponseTypeItem::Fut(_) => "Fut(_)",
+            }
+        );
+        fmt.debug_struct("ActorResponse")
+            .field("item", &item)
+            .finish()
+    }
 }
 
 impl<A: Actor, I, E> ActorResponse<A, I, E> {

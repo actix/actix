@@ -58,7 +58,7 @@ use registry::SystemRegistry;
 ///     std::process::exit(code);
 /// }
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct System {
     sys: Addr<SystemArbiter>,
     arbiter: Addr<Arbiter>,
@@ -154,6 +154,7 @@ impl System {
 
 /// Helper object that runs System's event loop
 #[must_use = "SystemRunner must be run"]
+#[derive(Debug)]
 pub struct SystemRunner {
     rt: Runtime,
     stop: Receiver<i32>,
@@ -196,6 +197,7 @@ impl SystemRunner {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct SystemArbiter {
     stop: Option<Sender<i32>>,
     arbiters: HashMap<String, Addr<Arbiter>>,

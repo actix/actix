@@ -36,6 +36,7 @@ thread_local!(
 /// unless the panic is in the System actor. Users of Arbiter can opt into
 /// shutting down the system on panic by using `Arbiter::builder()` and enabling
 /// `stop_system_on_panic`.
+#[derive(Debug)]
 pub struct Arbiter {
     stop: Option<Sender<i32>>,
     stop_system_on_panic: bool,
