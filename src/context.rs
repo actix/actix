@@ -18,13 +18,9 @@ where
 
 impl<A: Actor<Context = Context<A>>> fmt::Debug for Context<A> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        let mb = match self.mb {
-            Some(_) => "Some(_)",
-            None => "None",
-        };
         fmt.debug_struct("Context")
             .field("parts", &self.parts)
-            .field("mb", &format!("{}", mb))
+            .field("mb", &self.mb)
             .finish()
     }
 }

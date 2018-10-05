@@ -1,4 +1,5 @@
 use futures::{Async, Stream};
+use std::fmt;
 
 use actor::{Actor, AsyncContext};
 use address::EnvelopeProxy;
@@ -16,6 +17,17 @@ where
     A::Context: AsyncContext<A>,
 {
     msgs: AddressReceiver<A>,
+}
+
+impl<A> fmt::Debug for Mailbox<A> where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Mailbox")
+            .field("capacity", &self.capacity())
+            .finish()
+    }
 }
 
 impl<A> Default for Mailbox<A>

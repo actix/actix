@@ -52,7 +52,7 @@ where
 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("ContextParts")
-            .field("flags", &format!("{:?}", self.flags))
+            .field("flags", &self.flags)
             .finish()
     }
 }
