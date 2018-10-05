@@ -2,6 +2,7 @@ use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use address::{Addr, AddressReceiver};
 use arbiter::Arbiter;
 use fut::ActorFuture;
+use std::fmt;
 
 use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
 use mailbox::Mailbox;
@@ -13,6 +14,15 @@ where
 {
     parts: ContextParts<A>,
     mb: Option<Mailbox<A>>,
+}
+
+impl<A: Actor<Context = Context<A>>> fmt::Debug for Context<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Context")
+            .field("parts", &self.parts)
+            .field("mb", &self.mb)
+            .finish()
+    }
 }
 
 impl<A> ActorContext for Context<A>

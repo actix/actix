@@ -1,5 +1,6 @@
 use futures::{Async, Future, Poll};
 use smallvec::SmallVec;
+use std::fmt;
 
 use actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
@@ -42,6 +43,18 @@ where
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
     items: SmallVec<[Item<A>; 3]>,
     handles: SmallVec<[SpawnHandle; 2]>,
+}
+
+impl<A> fmt::Debug for ContextParts<A>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+{
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("ContextParts")
+            .field("flags", &self.flags)
+            .finish()
+    }
 }
 
 impl<A> ContextParts<A>
@@ -183,6 +196,16 @@ where
     mailbox: Mailbox<A>,
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
     items: SmallVec<[Item<A>; 3]>,
+}
+
+impl<A, C> fmt::Debug for ContextFut<A, C>
+where
+    C: AsyncContextParts<A>,
+    A: Actor<Context = C>,
+{
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "ContextFut {{ /* omitted */ }}")
+    }
 }
 
 impl<A, C> ContextFut<A, C>
