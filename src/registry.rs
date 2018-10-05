@@ -293,13 +293,13 @@ impl SystemRegistry {
     pub fn set<A: SystemService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
         let hm = self.registry.lock();
         if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
-            if let Some(_) = addr.downcast_ref::<Addr<A>>() {
+            if addr.downcast_ref::<Addr<A>>().is_some() {
                 panic!("Actor already started");
             }
         }
 
         hm.borrow_mut()
-            .insert(TypeId::of::<A>(), Box::new(addr.clone()));
+            .insert(TypeId::of::<A>(), Box::new(addr));
     }
 }
 

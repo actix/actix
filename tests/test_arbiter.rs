@@ -1,5 +1,4 @@
 extern crate futures;
-#[macro_use]
 extern crate actix;
 extern crate tokio;
 
