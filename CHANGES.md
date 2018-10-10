@@ -1,6 +1,6 @@
 # CHANGES
 
-## [0.x.x](2018-1x-xx)
+## [0.7.5] (2018-10-10)
 
 ### Added
 
@@ -17,9 +17,18 @@
 
 - Implement `Debug` for multiple public types: `AddressSender`, `Addr`, `Arbiter`, `Context`, `ContextParts`, `ContextFut`, `Response`, `ActorResponse`, `Mailbox`, `SystemRegistry`, `Supervisor`, `System`, `SystemRunner`, `SystemArbiter`. #135
 
+
 ### Changed
 
 - No longer perform unnecessary clone of `Addr` in `SystemRegistry::set`.
+
+- Set min trust-dns version
+
+
+### Fixed
+
+- fix infinite loop in ContextFut::poll() caused by late cancel_future() #147
+
 
 ## [0.7.4] (2018-08-27)
 

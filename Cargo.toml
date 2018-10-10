@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.7.4"
+version = "0.7.5"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -28,7 +28,7 @@ members = ["examples/chat"]
 default = ["signal", "resolver"]
 
 # dns resolver
-resolver = ["trust-dns-resolver"]
+resolver = ["trust-dns-resolver", "trust-dns-proto"]
 
 # signal handling
 signal = ["tokio-signal"]
@@ -61,7 +61,8 @@ uuid = { version = "0.7", features = ["v4"] }
 tokio-signal = { version = "0.2", optional = true }
 
 # dns resolver
-trust-dns-resolver = { version = "0.9", optional = true }
+trust-dns-proto = { version = "^0.4.3", optional = true }
+trust-dns-resolver = { version = "^0.9.1", optional = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
