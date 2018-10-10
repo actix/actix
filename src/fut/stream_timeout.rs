@@ -1,9 +1,10 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
 use actor::Actor;
+use clock;
 use fut::ActorStream;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
@@ -57,7 +58,7 @@ where
         }
 
         if self.timeout.is_none() {
-            self.timeout = Some(Delay::new(Instant::now() + self.dur));
+            self.timeout = Some(Delay::new(clock::now() + self.dur));
         }
 
         // check timeout

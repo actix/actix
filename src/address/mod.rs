@@ -1,5 +1,6 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use failure;
 
 pub(crate) mod channel;
 mod envelope;
@@ -55,6 +56,10 @@ impl<T> fmt::Display for SendError<T> {
     }
 }
 
+impl<T> failure::Fail for SendError<T>
+where T: Send + Sync + 'static {
+}
+
 impl fmt::Debug for MailboxError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "MailboxError({})", self)
@@ -62,6 +67,7 @@ impl fmt::Debug for MailboxError {
 }
 
 /// Address of the actor
+#[derive(Debug)]
 pub struct Addr<A: Actor> {
     tx: AddressSender<A>,
 }

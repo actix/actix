@@ -1,5 +1,4 @@
 #![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
-#[macro_use]
 extern crate actix;
 extern crate futures;
 extern crate tokio;

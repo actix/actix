@@ -1,9 +1,10 @@
 use futures::{Async, Future, Poll, Stream};
 use std::marker::PhantomData;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio_timer::Delay;
 
 use actor::{Actor, ActorContext, AsyncContext};
+use clock;
 use fut::ActorFuture;
 use handler::{Handler, Message, MessageResponse};
 
@@ -57,7 +58,7 @@ where
     pub fn new(msg: M, timeout: Duration) -> Self {
         ActorDelayedMessageItem {
             msg: Some(msg),
-            timeout: Delay::new(Instant::now() + timeout),
+            timeout: Delay::new(clock::now() + timeout),
             act: PhantomData,
             m: PhantomData,
         }

@@ -3,6 +3,7 @@ use std::hash::{Hash, Hasher};
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::Arc;
+use std::fmt;
 use std::{thread, usize};
 
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
@@ -49,6 +50,15 @@ pub struct AddressSender<A: Actor> {
     // True if the sender might be blocked. This is an optimization to avoid
     // having to lock the mutex most of the time.
     maybe_parked: Arc<AtomicBool>,
+}
+
+impl<A: Actor> fmt::Debug for AddressSender<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("AddressSender")
+            .field("sender_task", &self.sender_task)
+            .field("maybe_parked", &self.maybe_parked)
+            .finish()
+    }
 }
 
 trait AssertKinds: Send + Sync + Clone {}
@@ -262,10 +272,8 @@ impl<A: Actor> AddressSender<A> {
             None => return Err(SendError::Closed(msg)),
         };
 
-        if park_self {
-            if park {
-                self.park(true);
-            }
+        if park_self && park {
+            self.park(true);
         }
         let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
         self.queue_push_and_signal(env);
