@@ -405,3 +405,50 @@ fn test_cancel_handler() {
         });
     });
 }
+
+struct CancelLater {
+    handle: Option<SpawnHandle>,
+}
+
+impl Actor for CancelLater {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Context<Self>) {
+        // nothing spawned other than the future to be canceled after completion
+        self.handle = Some(ctx.spawn(future::ok(()).into_actor(self)));
+    }
+}
+
+#[derive(Message)]
+struct CancelMessage;
+
+impl Handler<CancelMessage> for CancelLater {
+    type Result = ();
+
+    fn handle(&mut self, _: CancelMessage, ctx: &mut Self::Context) {
+        ctx.cancel_future(self.handle.take().unwrap());
+    }
+}
+
+#[test]
+fn test_cancel_completed_with_no_context_item() {
+    actix::System::run(|| {
+        // first, spawn future that will complete immediately
+        let addr = CancelLater { handle: None }.start();
+
+        // then, cancel the future which would already be completed
+        tokio::spawn(
+            Delay::new(Instant::now() + Duration::from_millis(100))
+                .map_err(|_| ())
+                .map(move |_| addr.do_send(CancelMessage))
+        );
+
+        // finally, terminate the actor, which shouldn't be blocked unless
+        // the actor context ate up CPU time
+        tokio::spawn(
+            Delay::new(Instant::now() + Duration::from_millis(200))
+                .map_err(|_| ())
+                .map(|_| System::current().stop())
+        );
+   });
+}

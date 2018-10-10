@@ -399,8 +399,15 @@ where
             }
             self.ctx.parts().handles[1] = SpawnHandle::default();
 
-            // merge returns true if context contains new items
+            // merge returns true if context contains new items or handles to be cancelled
             if self.merge() && !self.ctx.parts().flags.contains(ContextFlags::STOPPING) {
+                // if we have no item to process, cancelled handles wouldn't be
+                // reaped in the above loop. this means self.merge() will never
+                // be false and the poll() never ends. so, discard the handles
+                // as we're sure there are no more items to be cancelled.
+                if self.items.is_empty() {
+                    self.ctx.parts().handles.truncate(2);
+                }
                 continue;
             }
 
