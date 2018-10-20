@@ -17,7 +17,8 @@
 //!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(
-//!                 resolver::Resolve::host("localhost"))       // <- resolve "localhost"
+//!                 // resolve "localhost"
+//!                 resolver::Resolve::host("localhost"))
 //!                     .then(|addrs| {
 //!                         println!("RESULT: {:?}", addrs);
 //! #                       System::current().stop();
@@ -29,7 +30,8 @@
 //!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(
-//!                 resolver::Resolve::host("localhost:5000"))  // <- connect to a "localhost"
+//!                 // connect to a "localhost:5000"
+//!                 resolver::Connect::host_and_port("localhost", 5000))
 //!                     .then(|stream| {
 //!                         println!("RESULT: {:?}", stream);
 //!                         Ok::<_, ()>(())
