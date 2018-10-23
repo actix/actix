@@ -69,8 +69,9 @@ use actor::Actor;
 ///                 // Actor's state updated here
 ///                 actor.inner_state.update_from(result);
 ///             });
+///
 ///         // return the wrapping future
-///         Box::new(returned_future);
+///         Box::new(update_self);
 ///     }
 /// }
 /// ```
