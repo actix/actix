@@ -1,3 +1,9 @@
+## 0.7.6
+
+- `trust-dns-resolver` dependency was bumped to version 0.10.0. If you use a
+  custom resolver, you will need to switch your `ResolverConfig` and
+  `ResolverOpts` to `trust-dns-resolver` 0.10.0 instead of 0.9.1.
+
 ## 0.7
 
 * `Addr` get refactored. `Syn` and `Unsync` removed. all addresses are

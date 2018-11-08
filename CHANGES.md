@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.7.6] (2018-11-08)
+
+### Changed
+
+- Use `trust-dns-resolver` 0.10.0.
+
 ## [0.7.5] (2018-10-10)
 
 ### Added
