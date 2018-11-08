@@ -123,7 +123,7 @@ impl System {
     }
 
     /// Stop the system with a particular exit code.
-    pub(crate) fn stop_with_code(&self, code: i32) {
+    pub fn stop_with_code(&self, code: i32) {
         self.sys.do_send(SystemExit(code));
     }
 
