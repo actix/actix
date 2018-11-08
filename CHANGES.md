@@ -1,10 +1,11 @@
 # CHANGES
 
-## [0.7.6] (2018-11-08)
+## [0.7.6] (2018-11-xx)
 
 ### Changed
 
 - Use `trust-dns-resolver` 0.10.0.
+- Make `System::stop_with_code` public.
 
 ## [0.7.5] (2018-10-10)
 
