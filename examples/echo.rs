@@ -55,6 +55,10 @@ impl Actor for Stdout {
         trace!("STDOUT started");
     }
 
+    fn stopping(&mut sef, _ctx: &mut Self::Context) {
+        trace!("STDOUT stopping");
+    }
+
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         trace!("STDOUT stopped");
     }
@@ -104,6 +108,10 @@ impl Actor for Stdin {
 
     fn started(&mut self, _ctx: &mut Self::Context) {
         trace!("STDIN started");
+    }
+
+    fn stopping(&mut sef, _ctx: &mut Self::Context) {
+        trace!("STDIN stopping");
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
