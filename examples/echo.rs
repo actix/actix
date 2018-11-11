@@ -79,6 +79,14 @@ impl Default for Stdout {
     }
 }
 
+impl<E> From<E> for Stdout
+    where E: Encoder<Item=String, Error=Error> + Send + Clone + 'static
+{
+    fn from(e: E) -> Self {
+        Stdout::new(System::current(), e)
+    }
+}
+
 struct Stdin<D> {
     recipient: Recipient<Message>,
     codec: D,
