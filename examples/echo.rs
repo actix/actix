@@ -14,11 +14,11 @@ use tokio::codec::{Decoder, Encoder, FramedRead, FramedWrite, LinesCodec};
 use tokio::io;
 
 #[derive(Message)]
-struct Message(pub String);
+struct Output(pub String);
 
-impl From<String> for Message {
+impl From<String> for Output {
     fn from(s: String) -> Self {
-        Message(s)
+        Output(s)
     }
 }
 
@@ -65,10 +65,10 @@ impl Actor for Stdout {
     }
 }
 
-impl Handler<Message> for Stdout {
+impl Handler<Output> for Stdout {
     type Result = ();
 
-    fn handle(&mut self, msg: Message, _ctx: &mut Context<Self>) {
+    fn handle(&mut self, msg: Output, _ctx: &mut Context<Self>) {
         self.tx.clone().send(msg.0).wait().expect("Send message");
     }
 }
@@ -88,14 +88,14 @@ impl<E> From<E> for Stdout
 }
 
 struct Stdin<D> {
-    recipient: Recipient<Message>,
+    recipient: Recipient<Output>,
     codec: D,
 }
 
 impl<D> Stdin<D>
     where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
 {
-    pub fn new(codec: D, recipient: Recipient<Message>) -> Self {
+    pub fn new(codec: D, recipient: Recipient<Output>) -> Self {
         Stdin {
             recipient: recipient,
             codec: codec,
@@ -140,12 +140,12 @@ impl<D> Actor for Stdin<D>
     }
 }
 
-impl<D> Handler<Message> for Stdin<D>
+impl<D> Handler<Output> for Stdin<D>
     where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
 {
     type Result = ();
 
-    fn handle(&mut self, item: Message, _ctx: &mut Self::Context) {
+    fn handle(&mut self, item: Output, _ctx: &mut Self::Context) {
         self.recipient.do_send(item).unwrap();
     }
 }
