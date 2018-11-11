@@ -8,7 +8,6 @@ extern crate tokio;
 use actix::prelude::*;
 use futures::{Future, Sink, Stream};
 use futures::sync::mpsc::{self, UnboundedSender};
-use log::LevelFilter;
 use std::io::{Error, ErrorKind};
 use std::thread;
 use tokio::codec::{Decoder, Encoder, FramedRead, FramedWrite, LinesCodec};
@@ -33,14 +32,14 @@ impl Stdout {
     {
         let (tx, rx) = mpsc::unbounded();
         thread::spawn(|| {
-            info!("Begin 'blocking' writing to STDOUT");
+            info!("Begin STDOUT thread");
             tokio::run(rx.for_each(move |msg| {
                 FramedWrite::new(io::stdout(), codec.clone())
                     .send(msg)
                     .map(|_| ())
                     .map_err(|err| error!("STDOUT Error = {}", err))
             }));
-            info!("End 'blocking' writing to STDOUT");
+            info!("End STDOUT thread");
         });
         Stdout {
             tx: tx
@@ -55,12 +54,14 @@ impl Actor for Stdout {
         trace!("STDOUT started");
     }
 
-    fn stopping(&mut sef, _ctx: &mut Self::Context) {
+    fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
         trace!("STDOUT stopping");
+        Running::Stop
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         trace!("STDOUT stopped");
+        System::current().stop();
     }
 }
 
@@ -87,7 +88,7 @@ impl Stdin {
               R: Send + 'static
     {
         thread::spawn(|| {
-            info!("Begin 'blocking' reading of STDIN");
+            info!("Begin STDIN thread");
             tokio::run(FramedRead::new(io::stdin(), codec)
                 .for_each(move |msg| {
                     recipient.do_send(msg.into())
@@ -97,7 +98,7 @@ impl Stdin {
                     error!("STDIN Error = {}", err);
                 })
             );
-            info!("End 'blocking' reading of STDIN");
+            info!("End STDIN thread");
         });
         Stdin {}
     }
@@ -110,8 +111,9 @@ impl Actor for Stdin {
         trace!("STDIN started");
     }
 
-    fn stopping(&mut sef, _ctx: &mut Self::Context) {
+    fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
         trace!("STDIN stopping");
+        Running::Stop
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
