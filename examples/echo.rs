@@ -1,4 +1,5 @@
 extern crate actix;
+extern crate env_logger;
 #[macro_use]
 extern crate log;
 extern crate futures;
@@ -7,6 +8,7 @@ extern crate tokio;
 use actix::prelude::*;
 use futures::{Future, Sink, Stream};
 use futures::sync::mpsc::{self, UnboundedSender};
+use log::LevelFilter;
 use std::io::{Error, ErrorKind};
 use std::thread;
 use tokio::codec::{Decoder, Encoder, FramedRead, FramedWrite, LinesCodec};
@@ -31,12 +33,14 @@ impl Stdout {
     {
         let (tx, rx) = mpsc::unbounded();
         thread::spawn(|| {
+            info!("Begin 'blocking' writing to STDOUT");
             tokio::run(rx.for_each(move |msg| {
                 FramedWrite::new(io::stdout(), codec.clone())
                     .send(msg)
                     .map(|_| ())
                     .map_err(|err| error!("STDOUT Error = {}", err))
             }));
+            info!("End 'blocking' writing to STDOUT");
         });
         Stdout {
             tx: tx
@@ -79,6 +83,7 @@ impl Stdin {
               R: Send + 'static
     {
         thread::spawn(|| {
+            info!("Begin 'blocking' reading of STDIN");
             tokio::run(FramedRead::new(io::stdin(), codec)
                 .for_each(move |msg| {
                     recipient.do_send(msg.into())
@@ -88,6 +93,7 @@ impl Stdin {
                     error!("STDIN Error = {}", err);
                 })
             );
+            info!("End 'blocking' reading of STDIN");
         });
         Stdin {}
     }
@@ -106,6 +112,7 @@ impl Actor for Stdin {
 }
 
 fn main() {
+    env_logger::init();
     let code = System::run(|| {
         Stdin::new(
             LinesCodec::new(),
