@@ -14,11 +14,26 @@ use tokio::codec::{Decoder, Encoder, FramedRead, FramedWrite, LinesCodec};
 use tokio::io;
 
 #[derive(Message)]
+struct Input(pub String);
+
+impl From<String> for Input {
+    fn from(s: String) -> Self {
+        Input(s)
+    }
+}
+
+#[derive(Message)]
 struct Output(pub String);
 
 impl From<String> for Output {
     fn from(s: String) -> Self {
         Output(s)
+    }
+}
+
+impl From<Input> for Output {
+    fn from(i: Input) -> Self {
+        Output(i.0)
     }
 }
 
@@ -140,13 +155,13 @@ impl<D> Actor for Stdin<D>
     }
 }
 
-impl<D> Handler<Output> for Stdin<D>
+impl<D> Handler<Input> for Stdin<D>
     where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
 {
     type Result = ();
 
-    fn handle(&mut self, item: Output, _ctx: &mut Self::Context) {
-        self.recipient.do_send(item).unwrap();
+    fn handle(&mut self, item: Input, _ctx: &mut Self::Context) {
+        self.recipient.do_send(item.into()).unwrap();
     }
 }
 
