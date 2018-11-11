@@ -27,11 +27,11 @@ struct Stdout {
 }
 
 impl Stdout {
-    pub fn new<E>(codec: E) -> Self
+    pub fn new<E>(sys: System, codec: E) -> Self
         where E: Encoder<Item=String, Error=Error> + Send + Clone + 'static
     {
         let (tx, rx) = mpsc::unbounded();
-        thread::spawn(|| {
+        thread::spawn(move || {
             info!("Begin STDOUT thread");
             tokio::run(rx.for_each(move |msg| {
                 FramedWrite::new(io::stdout(), codec.clone())
@@ -40,9 +40,10 @@ impl Stdout {
                     .map_err(|err| error!("STDOUT Error = {}", err))
             }));
             info!("End STDOUT thread");
+            sys.stop();
         });
         Stdout {
-            tx: tx
+            tx: tx,
         }
     }
 }
@@ -61,7 +62,6 @@ impl Actor for Stdout {
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         trace!("STDOUT stopped");
-        System::current().stop();
     }
 }
 
@@ -75,23 +75,42 @@ impl Handler<Message> for Stdout {
 
 impl Default for Stdout {
     fn default() -> Self {
-        Stdout::new(LinesCodec::new())
+        Stdout::new(System::current(), LinesCodec::new())
     }
 }
 
-struct Stdin;
+struct Stdin<D> {
+    recipient: Recipient<Message>,
+    codec: D,
+}
 
-impl Stdin {
-    pub fn new<D, M, R>(codec: D, recipient: Recipient<M>) -> Self
-        where D: Decoder<Item=String, Error=Error> + Send + 'static,
-              M: actix::Message<Result=R> + std::convert::From<String> + Send + 'static,
-              R: Send + 'static
-    {
+impl<D> Stdin<D>
+    where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
+{
+    pub fn new(codec: D, recipient: Recipient<Message>) -> Self {
+        Stdin {
+            recipient: recipient,
+            codec: codec,
+        }
+    }
+}
+
+impl<D> Actor for Stdin<D>
+    where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
+{
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        trace!("STDIN started");
+        let (tx, rx) = mpsc::unbounded();
+        let codec = self.codec.clone();
         thread::spawn(|| {
             info!("Begin STDIN thread");
             tokio::run(FramedRead::new(io::stdin(), codec)
                 .for_each(move |msg| {
-                    recipient.do_send(msg.into())
+                    tx.clone()
+                        .send(msg.into())
+                        .map(|_| ())
                         .map_err(|_| Error::new(ErrorKind::Other, "Send Error"))
                 })
                 .map_err(|err| {
@@ -100,15 +119,7 @@ impl Stdin {
             );
             info!("End STDIN thread");
         });
-        Stdin {}
-    }
-}
-
-impl Actor for Stdin {
-    type Context = Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        trace!("STDIN started");
+        ctx.add_message_stream(rx);
     }
 
     fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
@@ -118,6 +129,16 @@ impl Actor for Stdin {
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         trace!("STDIN stopped");
+    }
+}
+
+impl<D> Handler<Message> for Stdin<D>
+    where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
+{
+    type Result = ();
+
+    fn handle(&mut self, item: Message, _ctx: &mut Self::Context) {
+        self.recipient.do_send(item).unwrap();
     }
 }
 
