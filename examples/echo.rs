@@ -1,4 +1,5 @@
 extern crate actix;
+extern crate bytes;
 extern crate env_logger;
 #[macro_use]
 extern crate log;
@@ -6,50 +7,45 @@ extern crate futures;
 extern crate tokio;
 
 use actix::prelude::*;
+use bytes::{Bytes, BytesMut};
 use futures::{Future, Sink, Stream};
 use futures::sync::mpsc::{self, UnboundedSender};
 use std::io::{Error, ErrorKind};
 use std::thread;
-use tokio::codec::{Decoder, Encoder, FramedRead, FramedWrite, LinesCodec};
+use tokio::codec::{Decoder, Encoder, FramedRead, FramedWrite};
 use tokio::io;
 
 #[derive(Message)]
-struct Input(pub String);
+struct Input(pub BytesMut);
 
-impl From<String> for Input {
-    fn from(s: String) -> Self {
-        Input(s)
+impl From<BytesMut> for Input {
+    fn from(b: BytesMut) -> Self {
+        Input(b)
     }
 }
 
 #[derive(Message)]
-struct Output(pub String);
-
-impl From<String> for Output {
-    fn from(s: String) -> Self {
-        Output(s)
-    }
-}
+struct Output(pub Bytes);
 
 impl From<Input> for Output {
     fn from(i: Input) -> Self {
-        Output(i.0)
+        Output(i.0.freeze())
     }
 }
 
 struct Stdout {
-    tx: UnboundedSender<String>,
+    tx: UnboundedSender<Bytes>,
 }
 
 impl Stdout {
-    pub fn new<E>(sys: System, codec: E) -> Self
-        where E: Encoder<Item=String, Error=Error> + Send + Clone + 'static
+    pub fn new<E>(sys: System, encoder: E) -> Self
+        where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
     {
         let (tx, rx) = mpsc::unbounded();
         thread::spawn(move || {
             info!("Begin STDOUT thread");
             tokio::run(rx.for_each(move |msg| {
-                FramedWrite::new(io::stdout(), codec.clone())
+                FramedWrite::new(io::stdout(), encoder.clone())
                     .send(msg)
                     .map(|_| ())
                     .map_err(|err| error!("STDOUT Error = {}", err))
@@ -91,12 +87,12 @@ impl Handler<Output> for Stdout {
 
 impl Default for Stdout {
     fn default() -> Self {
-        Stdout::new(System::current(), LinesCodec::new())
+        Stdout::new(System::current(), LinesCodec::default())
     }
 }
 
 impl<E> From<E> for Stdout
-    where E: Encoder<Item=String, Error=Error> + Send + Clone + 'static
+    where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
 {
     fn from(e: E) -> Self {
         Stdout::new(System::current(), e)
@@ -109,7 +105,7 @@ struct Stdin<D> {
 }
 
 impl<D> Stdin<D>
-    where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
+    where D: Decoder + Send + Clone + 'static
 {
     pub fn new(codec: D, recipient: Recipient<Output>) -> Self {
         Stdin {
@@ -120,7 +116,7 @@ impl<D> Stdin<D>
 }
 
 impl<D> Actor for Stdin<D>
-    where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
+    where D: Decoder<Item=BytesMut, Error=Error> + Send + Clone + 'static
 {
     type Context = Context<Self>;
 
@@ -157,7 +153,7 @@ impl<D> Actor for Stdin<D>
 }
 
 impl<D> Handler<Input> for Stdin<D>
-    where D: Decoder<Item=String, Error=Error> + Send + Clone + 'static
+    where D: Decoder<Item=BytesMut, Error=Error> + Send + Clone + 'static
 {
     type Result = ();
 
@@ -167,11 +163,42 @@ impl<D> Handler<Input> for Stdin<D>
     }
 }
 
+#[derive(Clone)]
+struct LinesCodec {
+    inner: tokio::codec::LinesCodec,
+}
+
+impl Encoder for LinesCodec {
+    type Item = Bytes;
+    type Error = Error;
+
+    fn encode(&mut self, data: Self::Item, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        self.inner.encode(String::from_utf8(data.to_vec()).expect("Valid UTF-8"), buf)
+    }
+}
+
+impl Decoder for LinesCodec {
+    type Item = BytesMut;
+    type Error = Error;
+
+    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        self.inner.decode(src).map(|i| i.map(BytesMut::from))
+    }
+}
+
+impl Default for LinesCodec {
+    fn default() -> Self {
+        LinesCodec {
+            inner: tokio::codec::LinesCodec::new(),
+        }
+    }
+}
+
 fn main() {
     env_logger::init();
     let code = System::run(|| {
         Stdin::new(
-            LinesCodec::new(),
+            LinesCodec::default(),
             Stdout::default().start().recipient()
         ).start();
     });
