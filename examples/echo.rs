@@ -84,6 +84,7 @@ impl Handler<Output> for Stdout {
     type Result = ();
 
     fn handle(&mut self, msg: Output, _ctx: &mut Context<Self>) {
+        trace!("STDOUT handle");
         self.tx.clone().send(msg.0).wait().expect("Send message");
     }
 }
@@ -161,6 +162,7 @@ impl<D> Handler<Input> for Stdin<D>
     type Result = ();
 
     fn handle(&mut self, item: Input, _ctx: &mut Self::Context) {
+        trace!("STDIN handle");
         self.recipient.do_send(item.into()).unwrap();
     }
 }
