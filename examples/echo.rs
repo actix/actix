@@ -85,12 +85,6 @@ impl Handler<Output> for Stdout {
     }
 }
 
-impl Default for Stdout {
-    fn default() -> Self {
-        Stdout::new(System::current(), LinesCodec::default())
-    }
-}
-
 impl<E> From<E> for Stdout
     where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
 {
@@ -199,7 +193,7 @@ fn main() {
     let code = System::run(|| {
         Stdin::new(
             LinesCodec::default(),
-            Stdout::default().start().recipient()
+            Stdout::from(LinesCodec::default()).start().recipient()
         ).start();
     });
     std::process::exit(code);
