@@ -1,24 +1,34 @@
-//! This example copies, or forwards, lines from STDIN to STDOUT until either
-//! the End-of-File (EOF) marker is reached on STDIN or the application is
-//! terminated.
+//! This example echos, forwards, or copies, lines from STDIN to STDOUT until
+//! either the End-of-File (EOF) marker is reached on STDIN or the application
+//! is terminated.
+//!
+//! Two actors are created: (1) [`Stdin`] and (2) [`Stdout`]. The Stdin actor
+//! reads lines from STDIN and sends the lines to a recipient. In this case, the
+//! recipient is the Stdout actor. The Stdin actor only receives [`Input`]
+//! messages, which could come from another actor, but typically only come from
+//! the STDIN thread. The Stdout actor receives [`Output`] messages from any
+//! actor. In this case, the Stdout actor is the recipient of the Stdin actor.
+//! The Stdout actor sends the Output messages to the STDOUT thread via a
+//! channel.
 //!
 //! Reading and writing to STDIN and STDOUT within the [tokio runtime] is not
 //! straight-forward because these are blocking actions. The current
 //! recommendation is to have reading from STDIN and writing to STDOUT in
 //! separate threads from the tokio runtime thread and use channels to pass data
 //! between the three threads. This is discussed in tokio's [Issue 374] and
-//! tokio-process [Issue 7]. The [tokio-stdin] and [tokio-stdout] crates are
+//! tokio-process's [Issue 7]. The [tokio-stdin] and [tokio-stdout] crates are
 //! implementations based on these recommendations for reading and writing from
-//! STDIN and STDOUT with the tokio runtime, respectively. Thus, the [`Stdin`]
+//! STDIN and STDOUT within the tokio runtime, respectively. Thus, the [`Stdin`]
 //! and [`Stdout`] actors are implemented in a similar fashion.
 //!
-//! [tokio runtime]: https://tokio.rs/blog/2018-03-tokio-runtime/
+//! [`Input`]: #struct.input
 //! [Issue 374]: https://github.com/tokio-rs/tokio/issues/374
 //! [Issue 7]: https://github.com/alexcrichton/tokio-process/issues/7
-//! [tokio-stdin]: https://crates.io/crates/tokio-stdin
-//! [tokio-stdout]: https://crates.io/crates/tokio-stdout
 //! [`Stdin`]: #struct.stdin
 //! [`Stdout`]: #struct.stdout
+//! [tokio-stdin]: https://crates.io/crates/tokio-stdin
+//! [tokio-stdout]: https://crates.io/crates/tokio-stdout
+//! [tokio runtime]: https://tokio.rs/blog/2018-03-tokio-runtime/
 
 extern crate actix;
 extern crate bytes;
