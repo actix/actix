@@ -7,9 +7,11 @@
 //! recipient is the Stdout actor. The Stdin actor only receives [`Input`]
 //! messages, which could come from another actor, but typically only come from
 //! the STDIN thread. The Stdout actor receives [`Output`] messages from any
-//! actor. In this case, the Stdout actor is the recipient of the Stdin actor.
+//! actor. In this case, the Stdout actor receives messages from the Stdin actor.
 //! The Stdout actor sends the Output messages to the STDOUT thread via a
 //! channel.
+//!
+//! # Background
 //!
 //! Reading and writing to STDIN and STDOUT within the [tokio runtime] is not
 //! straight-forward because these are blocking actions. The current
@@ -21,11 +23,11 @@
 //! STDIN and STDOUT within the tokio runtime, respectively. Thus, the [`Stdin`]
 //! and [`Stdout`] actors are implemented in a similar fashion.
 //!
-//! [`Input`]: #struct.input
+//! [`Input`]: struct.Input.html
 //! [Issue 374]: https://github.com/tokio-rs/tokio/issues/374
 //! [Issue 7]: https://github.com/alexcrichton/tokio-process/issues/7
-//! [`Stdin`]: #struct.stdin
-//! [`Stdout`]: #struct.stdout
+//! [`Stdin`]: struct.Stdin.html
+//! [`Stdout`]: struct.Stdout.html
 //! [tokio-stdin]: https://crates.io/crates/tokio-stdin
 //! [tokio-stdout]: https://crates.io/crates/tokio-stdout
 //! [tokio runtime]: https://tokio.rs/blog/2018-03-tokio-runtime/
@@ -56,20 +58,61 @@ impl From<BytesMut> for Input {
     }
 }
 
+/// The message received by the [`Stdout`] actor.
+///
+/// The Stdout actor writes the message, which is just a thin wrapper around a
+/// series of bytes, to STDOUT.
+///
+/// [`Stdout`]: struct.Stdout.html
 #[derive(Message)]
 struct Output(pub Bytes);
 
+// A simple conversion of an [`Input`] message to an [`Output`] message so that
+// the Stdin actor can easily "forward" its messages to the Stdout actor.
+//
+// [`Input`]: struct.Input.html
+// [`Output`]: struct.Output.html
 impl From<Input> for Output {
     fn from(i: Input) -> Self {
         Output(i.0.freeze())
     }
 }
 
+/// An actor that writes bytes to STDOUT.
+///
+/// This actor starts a separate thread to avoid blocking and uses a channel to
+/// send bytes it has received as an [`Output`] message to the separate thread.
+/// The channel only has one sender (tx). When this actor is dropped, the sender
+/// is dropped. This causes the receiver, which is implemented as a
+/// [`Stream`]/[`Future`] to become resolved, i.e. completed. The resolution of
+/// the receiver stops the loop within the STDOUT thread and causes the actix
+/// system to shutdown.
+///
+/// [`Future`]: https://docs.rs/futures/0.1.25/futures/future/trait.Future.html
+/// [`Output`]: struct.Output.html
+/// [`Stream`]: https://docs.rs/futures/0.1.25/futures/stream/trait.Stream.html
 struct Stdout {
     tx: UnboundedSender<Bytes>,
 }
 
 impl Stdout {
+    /// Creates a new `Stdout` actor from an actix system and encoder.
+    ///
+    /// This will spawn a separate thread to avoid blocking within the
+    /// asynchronous, single-threaded execution of the actix system/tokio
+    /// runtime. The separate thread will stop when this actor is dropped _and_
+    /// when the separate thread stops, it will shutdown the actix system as
+    /// well. In this way, a "clean" shutdown occurs.
+    ///
+    /// Any encoder that encodes a message as a series of bytes can be used.
+    /// This means any codec provided by the tokio crate under the
+    /// [`tokio::codec`] module can be used, except for the
+    /// [`tokio::codec::LinesCodec`] because it encodes messages as strings and
+    /// not bytes. However, the `tokio::codec::LinesCodec` can be used by
+    /// wrapping it in a new type that converts strings into bytes.
+    ///
+    /// [`tokio::codec`]: https://tokio-rs.github.io/tokio/tokio/codec/index.html
+    /// [`tokio::codec::LinesCodec`]: https://tokio-rs.github.io/tokio/tokio/codec/struct.LinesCodec.html
     pub fn new<E>(sys: System, encoder: E) -> Self
         where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
     {
@@ -91,6 +134,8 @@ impl Stdout {
     }
 }
 
+// Added trace statements to help demonstrate the interaction between the Stdin
+// and Stdout actors.
 impl Actor for Stdout {
     type Context = Context<Self>;
 
@@ -108,6 +153,10 @@ impl Actor for Stdout {
     }
 }
 
+// The Stdout actor receives Output messages.
+//
+// The handler of the Output messages for the Stdout actor is relatively simple.
+// The Output message is sent to the STDOUT thread using the internal channel.
 impl Handler<Output> for Stdout {
     type Result = ();
 
@@ -117,6 +166,8 @@ impl Handler<Output> for Stdout {
     }
 }
 
+// A little conversion helper to clean up creation of a Stdout actor from an
+// encoder/codec. Uses the current actix system.
 impl<E> From<E> for Stdout
     where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
 {
@@ -125,22 +176,53 @@ impl<E> From<E> for Stdout
     }
 }
 
+/// An actor that reads bytes from STDIN.
+///
+/// This actor starts a separate thread to avoid blocking and uses a channel to
+/// receive bytes at an [`Input`] message from the separate thread. The channel
+/// only has one sender (tx). When STDIN receives an End-of-File (EOF) signal,
+/// the sender will be dropped. This causes the receiver within this actor to
+/// become resolved, i.e. completed. The resolution of the receiver stops this
+/// actor.
+///
+/// [`Input`]: struct.Input.html
 struct Stdin<D> {
-    recipient: Recipient<Output>,
-    codec: D,
+    recipient: Recipient<Input>,
+    decoder: D,
 }
 
 impl<D> Stdin<D>
     where D: Decoder + Send + Clone + 'static
 {
-    pub fn new(codec: D, recipient: Recipient<Output>) -> Self {
+    /// Creates a new `Stdin` actor from a decoder and recipient.
+    ///
+    /// The separate thread will be spawn when this actor is started, unlike the
+    /// [`Stdout`] actor, which starts a separate thread when the [`new`] method
+    /// is executed. The separate thread will only stop when it reaches the
+    /// End-of-File (EOF) for STDIN.
+    ///
+    /// Any decoder that decodes data from STDIN into a series of bytes can be
+    /// used. This mean any codec provided by the tokio crate under the
+    /// [`tokio::codec`] module can be used, except for the
+    /// [`tokio::codec::LinesCodec`] because it decodes data into strings and
+    /// not bytes. However, the `tokio::codec::LinesCodec` can be used by
+    /// wrapping it in a new type that converts strings into bytes.
+    ///
+    /// [`Stdout`]: struct.Stdout.html
+    /// [`tokio::codec`]: https://tokio-rs.github.io/tokio/tokio/codec/index.html
+    /// [`tokio::codec::LinesCodec`]: https://tokio-rs.github.io/tokio/tokio/codec/struct.LinesCodec.html
+    pub fn new(decoder: D, recipient: Recipient<Input>) -> Self {
         Stdin {
             recipient: recipient,
-            codec: codec,
+            decoder: decoder,
         }
     }
 }
 
+// A separate thread is started when this actor is started. The separate thread
+// reads bytes from STDIN and sends them to this actor using an internal
+// channel. This implementation of the Actor trait also includes trace
+// logging statements to demonstrate the interaction with the Stdout actor.
 impl<D> Actor for Stdin<D>
     where D: Decoder<Item=BytesMut, Error=Error> + Send + Clone + 'static
 {
@@ -149,7 +231,7 @@ impl<D> Actor for Stdin<D>
     fn started(&mut self, ctx: &mut Self::Context) {
         trace!("STDIN started");
         let (tx, rx) = mpsc::unbounded();
-        let codec = self.codec.clone();
+        let codec = self.decoder.clone();
         thread::spawn(|| {
             info!("Begin STDIN thread");
             tokio::run(FramedRead::new(io::stdin(), codec)
@@ -165,7 +247,7 @@ impl<D> Actor for Stdin<D>
             );
             info!("End STDIN thread");
         });
-        ctx.add_message_stream(rx);
+        ctx.add_stream(rx);
     }
 
     fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
@@ -178,14 +260,43 @@ impl<D> Actor for Stdin<D>
     }
 }
 
-impl<D> Handler<Input> for Stdin<D>
+impl<D> StreamHandler<BytesMut, ()> for Stdin<D>
     where D: Decoder<Item=BytesMut, Error=Error> + Send + Clone + 'static
 {
+    fn handle(&mut self, item: BytesMut, _ctx: &mut Self::Context) {
+        trace!("STDIN stream handle");
+        self.recipient.do_send(item.into()).unwrap();
+    }
+}
+
+struct Echo {
+    stdout: Addr<Stdout>,
+}
+
+impl Echo {
+    pub fn new(stdout: Addr<Stdout>) -> Self {
+        Echo {
+            stdout: stdout,
+        }
+    }
+}
+
+impl Actor for Echo {
+    type Context = Context<Self>;
+}
+
+impl Handler<Input> for Echo {
     type Result = ();
 
     fn handle(&mut self, item: Input, _ctx: &mut Self::Context) {
-        trace!("STDIN handle");
-        self.recipient.do_send(item.into()).unwrap();
+        trace!("ECHO handle");
+        self.stdout.do_send(item.into())
+    }
+}
+
+impl From<Addr<Stdout>> for Echo {
+    fn from(s: Addr<Stdout>) -> Self {
+        Echo::new(s)
     }
 }
 
@@ -225,7 +336,7 @@ fn main() {
     let code = System::run(|| {
         Stdin::new(
             LinesCodec::default(),
-            Stdout::from(LinesCodec::default()).start().recipient()
+            Echo::new(Stdout::from(LinesCodec::default()).start()).start().recipient()
         ).start();
     });
     std::process::exit(code);
