@@ -1,6 +1,6 @@
 //! This example echos, forwards, or copies, lines from STDIN to STDOUT until
-//! either the End-of-File (EOF) marker is reached on STDIN or the application
-//! is terminated.
+//! either the End-of-File (EOF) is reached on STDIN (Ctrl+D) or the application
+//! is terminated (Ctrl+C).
 //!
 //! Three actors are created: (1) [`Stdin`], (2) [`Stdout`], and (3) ['Echo'].
 //! The Stdin actor reads lines from STDIN and sends the lines to a recipient.
