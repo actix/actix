@@ -2,14 +2,18 @@
 //! either the End-of-File (EOF) marker is reached on STDIN or the application
 //! is terminated.
 //!
-//! Two actors are created: (1) [`Stdin`] and (2) [`Stdout`]. The Stdin actor
-//! reads lines from STDIN and sends the lines to a recipient. In this case, the
-//! recipient is the Stdout actor. The Stdin actor only receives [`Input`]
-//! messages, which could come from another actor, but typically only come from
-//! the STDIN thread. The Stdout actor receives [`Output`] messages from any
-//! actor. In this case, the Stdout actor receives messages from the Stdin actor.
-//! The Stdout actor sends the Output messages to the STDOUT thread via a
-//! channel.
+//! Three actors are created: (1) [`Stdin`], (2) [`Stdout`], and (3) ['Echo'].
+//! The Stdin actor reads lines from STDIN and sends the lines to a recipient.
+//! In this case, the recipient is the Echo actor. The Stdin actor handles a
+//! stream of decoded bytes from the STDIN thread and converts them to [`Input`]
+//! messages that are sent to a recipient. The Stdout actor receives [`Output`]
+//! messages from any actor. In this case, the Stdout actor receives messages
+//! from the Echo actor. The Stdout actor sends the Output messages to the
+//! STDOUT thread via a channel. Finally, the Echo actor handles Input message
+//! from the Stdin actor, a.k.a. the recipient, converts the Input messages to
+//! Output messages, and sends Output messages to the Stdout actor. Thus, the
+//! Echo actor implements the main functionality of echoing, forwarding, and/or
+//! copying.
 //!
 //! # Background
 //!
@@ -23,6 +27,7 @@
 //! STDIN and STDOUT within the tokio runtime, respectively. Thus, the [`Stdin`]
 //! and [`Stdout`] actors are implemented in a similar fashion.
 //!
+//! [`Echo`]: struct.Echo.html
 //! [`Input`]: struct.Input.html
 //! [Issue 374]: https://github.com/tokio-rs/tokio/issues/374
 //! [Issue 7]: https://github.com/alexcrichton/tokio-process/issues/7
@@ -49,6 +54,12 @@ use std::thread;
 use tokio::codec::{Decoder, Encoder, FramedRead, FramedWrite};
 use tokio::io;
 
+/// The message sent from the [`Stdin`] actor to a recipient.
+///
+/// The Stdin actor publishes (sends) this message to a subscriber (recipient)
+/// and it is just a thin wrapper around a series of bytes from STDIN.
+///
+/// [`Stdin`]: struct.Stdin.html
 #[derive(Message)]
 struct Input(pub BytesMut);
 
