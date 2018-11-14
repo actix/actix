@@ -89,109 +89,6 @@ impl From<Input> for Output {
     }
 }
 
-/// An actor that writes bytes to STDOUT.
-///
-/// This actor starts a separate thread to avoid blocking and uses a channel to
-/// send bytes it has received as an [`Output`] message to the separate thread.
-/// The channel only has one sender (tx). When this actor is dropped, the sender
-/// is dropped. This causes the receiver, which is implemented as a
-/// [`Stream`]/[`Future`] to become resolved, i.e. completed. The resolution of
-/// the receiver stops the loop within the STDOUT thread and causes the actix
-/// system to shutdown.
-///
-/// [`Future`]: https://docs.rs/futures/0.1.25/futures/future/trait.Future.html
-/// [`Output`]: struct.Output.html
-/// [`Stream`]: https://docs.rs/futures/0.1.25/futures/stream/trait.Stream.html
-struct Stdout {
-    /// The sender of the internal channel used to communicate with the STDOUT
-    /// thread.
-    ///
-    /// When this is dropped, the STDOUT thread will be stopped and the actix
-    /// system is shutdown.
-    tx: UnboundedSender<Bytes>,
-}
-
-impl Stdout {
-    /// Creates a new `Stdout` actor from an actix system and encoder.
-    ///
-    /// This will spawn a separate thread to avoid blocking within the
-    /// asynchronous, single-threaded execution of the actix system/tokio
-    /// runtime. The separate thread will stop when this actor is dropped _and_
-    /// when the separate thread stops, it will shutdown the actix system as
-    /// well. In this way, a "clean" shutdown occurs.
-    ///
-    /// Any encoder that encodes a message as a series of bytes can be used.
-    /// This means any codec provided by the tokio crate under the
-    /// [`tokio::codec`] module can be used, except for the
-    /// [`tokio::codec::LinesCodec`] because it encodes messages as strings and
-    /// not bytes. However, the `tokio::codec::LinesCodec` can be used by
-    /// wrapping it in a new type that converts strings into bytes.
-    ///
-    /// [`tokio::codec`]: https://tokio-rs.github.io/tokio/tokio/codec/index.html
-    /// [`tokio::codec::LinesCodec`]: https://tokio-rs.github.io/tokio/tokio/codec/struct.LinesCodec.html
-    pub fn new<E>(sys: System, encoder: E) -> Self
-        where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
-    {
-        let (tx, rx) = mpsc::unbounded();
-        thread::spawn(move || {
-            info!("Begin STDOUT thread");
-            tokio::run(rx.for_each(move |msg| {
-                FramedWrite::new(io::stdout(), encoder.clone())
-                    .send(msg)
-                    .map(|_| ())
-                    .map_err(|err| error!("STDOUT Error = {}", err))
-            }));
-            info!("End STDOUT thread");
-            sys.stop();
-        });
-        Stdout {
-            tx: tx,
-        }
-    }
-}
-
-// Added trace logging statements to help demonstrate the life-cycle of this
-// actor.
-impl Actor for Stdout {
-    type Context = Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        trace!("STDOUT started");
-    }
-
-    fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
-        trace!("STDOUT stopping");
-        Running::Stop
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        trace!("STDOUT stopped");
-    }
-}
-
-// The Stdout actor handles Output messages.
-//
-// This is relatively simple. Output messages are sent to the STDOUT thread
-// using the internal channel as a series of bytes.
-impl Handler<Output> for Stdout {
-    type Result = ();
-
-    fn handle(&mut self, msg: Output, _ctx: &mut Context<Self>) {
-        trace!("STDOUT handle");
-        self.tx.clone().send(msg.0).wait().expect("Send message");
-    }
-}
-
-// A conversion helper to clean up creation of a Stdout actor from an
-// encoder/codec. Uses the current actix system.
-impl<E> From<E> for Stdout
-    where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
-{
-    fn from(e: E) -> Self {
-        Stdout::new(System::current(), e)
-    }
-}
-
 /// An actor that reads bytes from STDIN.
 ///
 /// This actor starts a separate thread to avoid blocking and uses a channel to
@@ -294,6 +191,109 @@ impl<D> StreamHandler<BytesMut, ()> for Stdin<D>
     fn handle(&mut self, item: BytesMut, _ctx: &mut Self::Context) {
         trace!("STDIN stream handle");
         self.recipient.do_send(item.into()).unwrap();
+    }
+}
+
+/// An actor that writes bytes to STDOUT.
+///
+/// This actor starts a separate thread to avoid blocking and uses a channel to
+/// send bytes it has received as an [`Output`] message to the separate thread.
+/// The channel only has one sender (tx). When this actor is dropped, the sender
+/// is dropped. This causes the receiver, which is implemented as a
+/// [`Stream`]/[`Future`] to become resolved, i.e. completed. The resolution of
+/// the receiver stops the loop within the STDOUT thread and causes the actix
+/// system to shutdown.
+///
+/// [`Future`]: https://docs.rs/futures/0.1.25/futures/future/trait.Future.html
+/// [`Output`]: struct.Output.html
+/// [`Stream`]: https://docs.rs/futures/0.1.25/futures/stream/trait.Stream.html
+struct Stdout {
+    /// The sender of the internal channel used to communicate with the STDOUT
+    /// thread.
+    ///
+    /// When this is dropped, the STDOUT thread will be stopped and the actix
+    /// system is shutdown.
+    tx: UnboundedSender<Bytes>,
+}
+
+impl Stdout {
+    /// Creates a new `Stdout` actor from an actix system and encoder.
+    ///
+    /// This will spawn a separate thread to avoid blocking within the
+    /// asynchronous, single-threaded execution of the actix system/tokio
+    /// runtime. The separate thread will stop when this actor is dropped _and_
+    /// when the separate thread stops, it will shutdown the actix system as
+    /// well. In this way, a "clean" shutdown occurs.
+    ///
+    /// Any encoder that encodes a message as a series of bytes can be used.
+    /// This means any codec provided by the tokio crate under the
+    /// [`tokio::codec`] module can be used, except for the
+    /// [`tokio::codec::LinesCodec`] because it encodes messages as strings and
+    /// not bytes. However, the `tokio::codec::LinesCodec` can be used by
+    /// wrapping it in a new type that converts strings into bytes.
+    ///
+    /// [`tokio::codec`]: https://tokio-rs.github.io/tokio/tokio/codec/index.html
+    /// [`tokio::codec::LinesCodec`]: https://tokio-rs.github.io/tokio/tokio/codec/struct.LinesCodec.html
+    pub fn new<E>(sys: System, encoder: E) -> Self
+        where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
+    {
+        let (tx, rx) = mpsc::unbounded();
+        thread::spawn(move || {
+            info!("Begin STDOUT thread");
+            tokio::run(rx.for_each(move |msg| {
+                FramedWrite::new(io::stdout(), encoder.clone())
+                    .send(msg)
+                    .map(|_| ())
+                    .map_err(|err| error!("STDOUT Error = {}", err))
+            }));
+            info!("End STDOUT thread");
+            sys.stop();
+        });
+        Stdout {
+            tx: tx,
+        }
+    }
+}
+
+// Added trace logging statements to help demonstrate the life-cycle of this
+// actor.
+impl Actor for Stdout {
+    type Context = Context<Self>;
+
+    fn started(&mut self, _ctx: &mut Self::Context) {
+        trace!("STDOUT started");
+    }
+
+    fn stopping(&mut self, _ctx: &mut Self::Context) -> Running {
+        trace!("STDOUT stopping");
+        Running::Stop
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        trace!("STDOUT stopped");
+    }
+}
+
+// The Stdout actor handles Output messages.
+//
+// This is relatively simple. Output messages are sent to the STDOUT thread
+// using the internal channel as a series of bytes.
+impl Handler<Output> for Stdout {
+    type Result = ();
+
+    fn handle(&mut self, msg: Output, _ctx: &mut Context<Self>) {
+        trace!("STDOUT handle");
+        self.tx.clone().send(msg.0).wait().expect("Send message");
+    }
+}
+
+// A conversion helper to clean up creation of a Stdout actor from an
+// encoder/codec. Uses the current actix system.
+impl<E> From<E> for Stdout
+    where E: Encoder<Item=Bytes, Error=Error> + Send + Clone + 'static
+{
+    fn from(e: E) -> Self {
+        Stdout::new(System::current(), e)
     }
 }
 
