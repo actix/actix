@@ -2,6 +2,20 @@
 //! either the End-of-File (EOF) is reached on STDIN (Ctrl+D) or the application
 //! is terminated (Ctrl+C).
 //!
+//! To run the example, start a terminal and navigate to the actix project root
+//! and execute:
+//!
+//! ```text
+//! $ cargo run --example echo
+//! ```
+//!
+//! After executing the above command, text can be typed in the terminal and
+//! will be written/printed on the next line after pressing the `ENTER` key. The
+//! example can be stopped by either sending EOF via Ctrl+D or terminating the
+//! process with Ctrl+C.
+//!
+//! # Details
+//!
 //! Three actors are created: (1) [`Stdin`], (2) [`Stdout`], and (3) ['Echo'].
 //! The Stdin actor reads lines from STDIN and sends the lines to a recipient.
 //! In this case, the recipient is the Echo actor. The Stdin actor handles a
