@@ -14,6 +14,17 @@
 //! example can be stopped by either sending EOF via Ctrl+D or terminating the
 //! process with Ctrl+C.
 //!
+//! To run the example with logging statements for observation of actor
+//! life-cycles, start the example with the following command:
+//!
+//! ```text
+//! $ RUST_LOG=echo=trace cargo run --example echo
+//! ```
+//!
+//! This will print any logging statements within _this_ example. If the
+//! `RUST_LOG=echo=trace` is replaced with `RUST_LOG=trace`, then all logging
+//! statements within all dependencies and _this_ example will be printed.
+//!
 //! # Details
 //!
 //! Three actors are created: (1) [`Stdin`], (2) [`Stdout`], and (3) ['Echo'].
