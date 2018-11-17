@@ -92,7 +92,7 @@ impl From<Input> for Output {
 /// An actor that reads bytes from STDIN.
 ///
 /// This actor starts a separate thread to avoid blocking and uses a channel to
-/// receive a continuous stream of messages from the separate thread. The channel
+/// receive a continuous stream of frames from the separate thread. The channel
 /// only has one sender (tx), which is moved to the separate thread. When STDIN
 /// receives an End-of-File (EOF) signal, the sender will be dropped. This
 /// causes the receiver within this actor to become resolved, i.e. completed.
@@ -106,7 +106,7 @@ impl From<Input> for Output {
 struct Stdin<D> {
     /// The subscriber of the published Input messages.
     recipient: Recipient<Input>,
-    /// Decodes the stream of bytes from STDIN into framed messages.
+    /// Decodes the stream of bytes from STDIN into frames.
     decoder: D,
 }
 
@@ -121,7 +121,7 @@ impl<D> Stdin<D>
     /// End-of-File (EOF) for STDIN.
     ///
     /// Any decoder that decodes data from STDIN into a series of bytes can be
-    /// used. This mean any codec provided by the tokio crate under the
+    /// used. This means any codec provided by the tokio crate under the
     /// [`tokio::codec`] module can be used, except for the
     /// [`tokio::codec::LinesCodec`] because it decodes data into strings and
     /// not bytes. However, the `tokio::codec::LinesCodec` can be used by
@@ -153,6 +153,9 @@ impl<D> Actor for Stdin<D>
         let codec = self.decoder.clone();
         thread::spawn(|| {
             info!("Begin STDIN thread");
+            // The `io::stdin()` method, which returns an asynchronous Stdin
+            // struct, must be used within a tokio runtime to avoid a
+            // BlockingError.
             tokio::run(FramedRead::new(io::stdin(), codec)
                 .for_each(move |msg| {
                     tx.clone()
@@ -240,6 +243,9 @@ impl Stdout {
         let (tx, rx) = mpsc::unbounded();
         thread::spawn(move || {
             info!("Begin STDOUT thread");
+            // The `io::stdout()` method, which returns an asynchronous Stdout
+            // struct, must be used within a tokio runtime to avoid a
+            // BlockingError.
             tokio::run(rx.for_each(move |msg| {
                 FramedWrite::new(io::stdout(), encoder.clone())
                     .send(msg)
