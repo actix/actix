@@ -139,7 +139,7 @@ impl<A: Actor> Addr<A> {
         M: Message + Send,
         M::Result: Send,
     {
-        Recipient::new(Box::new(self.tx))
+        self.into()
     }
 }
 
@@ -212,6 +212,17 @@ where
             Err(SendError::Full(msg)) => RecipientRequest::new(None, Some((self.tx.boxed(), msg))),
             Err(SendError::Closed(_)) => RecipientRequest::new(None, None),
         }
+    }
+}
+
+impl<A: Actor, M: Message + Send + 'static> Into<Recipient<M>> for Addr<A>
+where
+    A: Handler<M>,
+    M::Result: Send,
+    A::Context: ToEnvelope<A, M>,
+{
+    fn into(self) -> Recipient<M> {
+        Recipient::new(Box::new(self.tx))
     }
 }
 
