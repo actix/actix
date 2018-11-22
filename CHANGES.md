@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.7.7] (2018-xx-xx)
+
+### Added
+
+- Impl `Into<Recipient<M>>` for `Addr<A>`
+
 ## [0.7.6] (2018-11-08)
 
 ### Changed
