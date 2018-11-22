@@ -66,8 +66,8 @@ pub type ConnectorError = ResolverError;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Resolve {
-    name: String,
-    port: Option<u16>,
+    pub name: String,
+    pub port: Option<u16>,
 }
 
 impl Resolve {
@@ -92,9 +92,9 @@ impl Message for Resolve {
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Connect {
-    name: String,
-    port: Option<u16>,
-    timeout: Duration,
+    pub name: String,
+    pub port: Option<u16>,
+    pub timeout: Duration,
 }
 
 impl Connect {
