@@ -115,8 +115,9 @@ impl<A: Actor> Addr<A> {
     #[inline]
     /// Send asynchronous message and wait for response.
     ///
-    /// Communication channel to the actor is bounded. if returned `Future`
-    /// object get dropped, message cancels.
+    /// Communication channel to the actor is bounded. If returned `Future`
+    /// object gets dropped, message cancels. For that reason this function
+    /// may not be used in an `Actor` implementation's `stopping()` method.
     pub fn send<M>(&self, msg: M) -> Request<A, M>
     where
         M: Message + Send,
