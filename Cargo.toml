@@ -54,7 +54,7 @@ failure = "0.1.1"
 bitflags = "1.0"
 smallvec = "0.6"
 crossbeam-channel = "0.3"
-parking_lot = "0.6"
+parking_lot = "0.7"
 uuid = { version = "0.7", features = ["v4"] }
 
 # signal handling
