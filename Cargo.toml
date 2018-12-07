@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.7.7"
+version = "0.7.8"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -53,8 +53,8 @@ fnv = "1.0.5"
 failure = "0.1.1"
 bitflags = "1.0"
 smallvec = "0.6"
-crossbeam-channel = "0.2"
-parking_lot = "0.6"
+crossbeam-channel = "0.3"
+parking_lot = "0.7"
 uuid = { version = "0.7", features = ["v4"] }
 
 # signal handling

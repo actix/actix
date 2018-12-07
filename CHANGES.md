@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.7.8] (2018-12-05)
+
+### Changed
+
+- Update `crossbeam-channel` to 0.3 and `parking_lot` to 0.7
+
 ## [0.7.7] (2018-11-22)
 
 ### Added

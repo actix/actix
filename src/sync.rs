@@ -87,9 +87,8 @@ pub struct SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
-    queue: cb_channel::Sender<SyncContextProtocol<A>>,
+    queue: Option<cb_channel::Sender<Envelope<A>>>,
     msgs: AddressReceiver<A>,
-    threads: usize,
 }
 
 impl<A> SyncArbiter<A>
@@ -118,9 +117,8 @@ where
 
         let (tx, rx) = channel::channel(0);
         Arbiter::spawn(SyncArbiter {
-            queue: sender,
+            queue: Some(sender),
             msgs: rx,
-            threads,
         });
 
         Addr::new(tx)
@@ -146,7 +144,9 @@ where
         loop {
             match self.msgs.poll() {
                 Ok(Async::Ready(Some(msg))) => {
-                    self.queue.send(SyncContextProtocol::Envelope(msg))
+                    if let Some(ref queue) = self.queue {
+                        queue.send(msg).is_ok();
+                    }
                 }
                 Ok(Async::NotReady) => break,
                 Ok(Async::Ready(None)) | Err(_) => unreachable!(),
@@ -158,9 +158,7 @@ where
             Ok(Async::NotReady)
         } else {
             // stop sync arbiters
-            for _ in 0..self.threads {
-                self.queue.send(SyncContextProtocol::Stop);
-            }
+            self.queue = None;
             Ok(Async::Ready(()))
         }
     }
@@ -177,21 +175,13 @@ where
     }
 }
 
-enum SyncContextProtocol<A>
-where
-    A: Actor<Context = SyncContext<A>>,
-{
-    Stop,
-    Envelope(Envelope<A>),
-}
-
 /// Sync actor execution context
 pub struct SyncContext<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
     act: Option<A>,
-    queue: cb_channel::Receiver<SyncContextProtocol<A>>,
+    queue: cb_channel::Receiver<Envelope<A>>,
     stopping: bool,
     state: ActorState,
     factory: Arc<Fn() -> A>,
@@ -202,9 +192,7 @@ where
     A: Actor<Context = Self>,
 {
     /// Create new SyncContext
-    fn new(
-        factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<SyncContextProtocol<A>>,
-    ) -> Self {
+    fn new(factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<Envelope<A>>) -> Self {
         let act = factory();
         SyncContext {
             queue,
@@ -224,19 +212,10 @@ where
 
         loop {
             match self.queue.recv() {
-                Some(SyncContextProtocol::Stop) => {
-                    self.state = ActorState::Stopping;
-                    if A::stopping(&mut act, self) != Running::Stop {
-                        warn!("stopping method is not supported for sync actors");
-                    }
-                    self.state = ActorState::Stopped;
-                    A::stopped(&mut act, self);
-                    return;
-                }
-                Some(SyncContextProtocol::Envelope(mut env)) => {
+                Ok(mut env) => {
                     env.handle(&mut act, self);
                 }
-                None => {
+                Err(_) => {
                     self.state = ActorState::Stopping;
                     if A::stopping(&mut act, self) != Running::Stop {
                         warn!("stopping method is not supported for sync actors");
@@ -301,8 +280,7 @@ unsafe impl<A, M> Send for SyncContextEnvelope<A, M>
 where
     A: Actor<Context = SyncContext<A>> + Handler<M>,
     M: Message + Send,
-{
-}
+{}
 
 impl<A, M> SyncContextEnvelope<A, M>
 where
