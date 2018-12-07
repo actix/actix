@@ -1,8 +1,8 @@
 //! Actors registry
 //!
-//! Actor can register itself as a service. Service can be defined as
-//! `ArbiterService` which is unique per arbiter or `SystemService` which is
-//! unique per system.
+//! An Actor can register itself as a service. A Service can be defined as an
+//! `ArbiterService`, which is unique per arbiter, or a `SystemService`, which
+//! is unique per system.
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -25,11 +25,11 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 
 /// Actors registry
 ///
-/// Actor can register itself as a service. Service can be defined as
-/// `ArbiterService` which is unique per arbiter or `SystemService` which is
-/// unique per system.
+/// An Actor can register itself as a service. A Service can be defined as an
+/// `ArbiterService`, which is unique per arbiter, or a `SystemService`, which
+/// is unique per system.
 ///
-/// If arbiter service is used outside of running arbiter, it panics.
+/// If an arbiter service is used outside of a running arbiter, it panics.
 ///
 /// # Example
 ///
@@ -55,7 +55,6 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 /// }
 ///
 /// impl Handler<Ping> for MyActor1 {
-
 ///    type Result = ();
 ///
 ///    fn handle(&mut self, _: Ping, ctx: &mut Context<Self>) {
@@ -70,18 +69,16 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 ///    type Context = Context<Self>;
 ///
 ///    fn started(&mut self, _: &mut Context<Self>) {
-///       // get MyActor1 addres from the registry
+///       // get MyActor1 address from the registry
 ///       let act = Arbiter::registry().get::<MyActor1>();
 ///       act.do_send(Ping);
 ///    }
 /// }
 ///
-///
 /// fn main() {
 ///     // initialize system
 ///     let code = System::run(|| {
-///
-///         // Start MyActor1 in new Arbiter
+///         // Start MyActor2 in new Arbiter
 ///         Arbiter::start(|_| {
 ///             MyActor2
 ///         });
@@ -214,9 +211,6 @@ impl Registry {
 /// fn main() {
 ///     // initialize system
 ///     let code = System::run(|| {
-///         // Start MyActor1
-///         let addr = MyActor1.start();
-///
 ///         // Start MyActor2
 ///         let addr = MyActor2.start();
 ///     });
