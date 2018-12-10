@@ -29,6 +29,17 @@
 //! * `resolver` - enables dns resolver actor, `actix::actors::resolver`
 //! * `signal` - enables signals handling actor
 //!
+//! ## Tokio runtime
+//!
+//! At the moment actix uses
+//! [`current_thread`](https://docs.rs/tokio/0.1.13/tokio/runtime/current_thread/index.html) runtime.
+//!
+//! While it provides minimum overhead, it has its own limits:
+//!
+//! - You cannot use tokio's async file I/O, as it relies on blocking calls that are not available
+//! in `current_thread`
+//! - `Stdin`, `Stderr` and `Stdout` from `tokio::io` are the same as file I/O in that regard and
+//! cannot be used in asynchronous manner in actix.
 #[macro_use]
 extern crate log;
 extern crate bytes;
