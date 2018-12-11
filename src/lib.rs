@@ -142,16 +142,12 @@ pub mod prelude {
     pub use sync::{SyncArbiter, SyncContext};
     pub use system::System;
 
-    pub mod actix {
-        pub use actors;
-        pub use dev;
-        pub use fut;
-        pub use io;
-        pub use msgs;
-        pub use prelude::*;
-        pub use registry::SystemService;
-        pub use utils::{Condition, IntervalFunc, TimerFunc};
-    }
+    pub use actors;
+    pub use dev;
+    pub use fut;
+    pub use io;
+    pub use msgs;
+    pub use utils::{Condition, IntervalFunc, TimerFunc};
 }
 
 pub mod dev {
@@ -165,7 +161,6 @@ pub mod dev {
     //! use actix::dev::*;
     //! ```
 
-    pub use prelude::actix::*;
     pub use prelude::*;
 
     pub use address::{Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope};

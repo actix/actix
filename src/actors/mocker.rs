@@ -49,8 +49,8 @@ impl<T> Mocker<T> {
     }
 }
 
-impl<T: SystemService> actix::SystemService for Mocker<T> {}
-impl<T: ArbiterService> actix::ArbiterService for Mocker<T> {}
+impl<T: SystemService> SystemService for Mocker<T> {}
+impl<T: ArbiterService> ArbiterService for Mocker<T> {}
 impl<T> Supervised for Mocker<T> {}
 
 impl<T> Default for Mocker<T> {
@@ -66,7 +66,7 @@ impl<T: Sized + 'static> Actor for Mocker<T> {
 impl<M: 'static, T: Sized + 'static> Handler<M> for Mocker<T>
 where
     M: Message,
-    <M as actix::Message>::Result: MessageResponse<Mocker<T>, M>,
+    <M as Message>::Result: MessageResponse<Mocker<T>, M>,
 {
     type Result = M::Result;
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> M::Result {
