@@ -1,10 +1,10 @@
 # CHANGES
 
-## [0.x.x] (2018-xx-xx)
+## [0.7.9] (2018-12-11)
 
 ### Changed
 
-- Removed `actix` module from prelude
+- Removed `actix` module from prelude. See rationale in #161
 
 ## [0.7.8] (2018-12-05)
 
@@ -25,7 +25,6 @@
 - Use `trust-dns-resolver` 0.10.0.
 
 - Make `System::stop_with_code` public.
-
 
 ## [0.7.5] (2018-10-10)
 

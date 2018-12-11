@@ -1,3 +1,7 @@
+## 0.7.9
+
+- `actix` no longer re-exports itself in `actix::prelude` to avoid conflicts with 2018 editions. Please access it through your `extern crate actix` import when necessary
+
 ## 0.7.6
 
 - `trust-dns-resolver` dependency was bumped to version 0.10.0. If you use a
@@ -20,7 +24,7 @@
 
 * Use `actix::actors::resolver` instead of
   `actix::actors::resolver::{Connect, ConnectAddr, Connector, ConnectorError, Resolve};`
-  
+
 * `actix::actors::resolver::Connector` renamed to `actix::actors::resolver::Resolver`
 
 * `actix::actors::resolver::ConnectorError` renamed to `actix::actors::resolver::ResolverError`
