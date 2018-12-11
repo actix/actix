@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.x.x] (2018-xx-xx)
+
+### Changed
+
+- Removed `actix` module from prelude
+
 ## [0.7.8] (2018-12-05)
 
 ### Changed

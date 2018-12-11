@@ -288,10 +288,10 @@ mod tests {
         type Result = ();
     }
 
-    impl actix::Handler<SetCounter> for ActorWithSmallMailBox {
+    impl Handler<SetCounter> for ActorWithSmallMailBox {
         type Result = <SetCounter as Message>::Result;
 
-        fn handle(&mut self, ping: SetCounter, _: &mut actix::Context<Self>) -> Self::Result {
+        fn handle(&mut self, ping: SetCounter, _: &mut Context<Self>) -> Self::Result {
             self.0.store(ping.0, Ordering::Relaxed);
         }
     }

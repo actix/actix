@@ -885,13 +885,13 @@ mod tests {
             let s2 = recv.sender();
 
             let arb = Arbiter::new("s1");
-            arb.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+            arb.do_send(msgs::Execute::new(move || -> Result<(), ()> {
                 let _ = s1.send(Ping);
                 Ok(())
             }));
             thread::sleep(time::Duration::from_millis(100));
             let arb2 = Arbiter::new("s1");
-            arb2.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+            arb2.do_send(msgs::Execute::new(move || -> Result<(), ()> {
                 let _ = s2.send(Ping);
                 let _ = s2.send(Ping);
                 Ok(())

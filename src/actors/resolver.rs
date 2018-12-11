@@ -213,7 +213,7 @@ impl Actor for Resolver {
 
 impl Supervised for Resolver {}
 
-impl actix::SystemService for Resolver {}
+impl SystemService for Resolver {}
 
 impl Default for Resolver {
     fn default() -> Resolver {

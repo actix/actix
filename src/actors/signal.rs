@@ -114,15 +114,15 @@ impl Actor for ProcessSignals {
     type Context = Context<Self>;
 }
 
-impl actix::Supervised for ProcessSignals {}
+impl Supervised for ProcessSignals {}
 
-impl actix::SystemService for ProcessSignals {
+impl SystemService for ProcessSignals {
     fn service_started(&mut self, ctx: &mut Self::Context) {
         // SIGINT
         tokio_signal::ctrl_c()
             .map_err(|_| ())
             .actfuture()
-            .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+            .map(|sig, _: &mut Self, ctx: &mut Context<Self>| {
                 ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Int))
             })
             .spawn(ctx);
@@ -133,7 +133,7 @@ impl actix::SystemService for ProcessSignals {
             unix::Signal::new(libc::SIGHUP)
                 .actfuture()
                 .drop_err()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                .map(|sig, _: &mut Self, ctx: &mut Context<Self>| {
                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Hup))
                 })
                 .spawn(ctx);
@@ -142,7 +142,7 @@ impl actix::SystemService for ProcessSignals {
             unix::Signal::new(libc::SIGTERM)
                 .map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                .map(|sig, _: &mut Self, ctx: &mut Context<Self>| {
                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Term))
                 })
                 .spawn(ctx);
@@ -151,7 +151,7 @@ impl actix::SystemService for ProcessSignals {
             unix::Signal::new(libc::SIGQUIT)
                 .map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                .map(|sig, _: &mut Self, ctx: &mut Context<Self>| {
                     ctx.add_message_stream(sig.map_err(|_| ()).map(|_| SignalType::Quit))
                 })
                 .spawn(ctx);
@@ -160,7 +160,7 @@ impl actix::SystemService for ProcessSignals {
             unix::Signal::new(libc::SIGCHLD)
                 .map_err(|_| ())
                 .actfuture()
-                .map(|sig, _: &mut Self, ctx: &mut actix::Context<Self>| {
+                .map(|sig, _: &mut Self, ctx: &mut Context<Self>| {
                     ctx.add_message_stream(
                         sig.map_err(|_| ()).map(|_| SignalType::Child),
                     )
@@ -192,7 +192,7 @@ impl Message for Subscribe {
 }
 
 /// Add subscriber for signals
-impl actix::Handler<Subscribe> for ProcessSignals {
+impl Handler<Subscribe> for ProcessSignals {
     type Result = ();
 
     fn handle(&mut self, msg: Subscribe, _: &mut Self::Context) {
@@ -211,7 +211,7 @@ impl Default for DefaultSignalsHandler {
 }
 
 impl Actor for DefaultSignalsHandler {
-    type Context = actix::Context<Self>;
+    type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let addr = System::current().registry().get::<ProcessSignals>();
@@ -226,7 +226,7 @@ impl Actor for DefaultSignalsHandler {
 
 /// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send `SystemExit(0)`
 /// message to `System` actor.
-impl actix::Handler<Signal> for DefaultSignalsHandler {
+impl Handler<Signal> for DefaultSignalsHandler {
     type Result = ();
 
     fn handle(&mut self, msg: Signal, _: &mut Self::Context) {
