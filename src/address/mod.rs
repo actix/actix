@@ -1,6 +1,6 @@
+use failure;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use failure;
 
 pub(crate) mod channel;
 mod envelope;
@@ -14,7 +14,7 @@ pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 pub use self::message::{RecipientRequest, Request};
 
 pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
-use self::channel::{AddressSender, Sender};
+use self::channel::{AddressSender, Sender, WeakAddressSender};
 
 pub enum SendError<T> {
     Full(T),
@@ -56,9 +56,7 @@ impl<T> fmt::Display for SendError<T> {
     }
 }
 
-impl<T> failure::Fail for SendError<T>
-where T: Send + Sync + 'static {
-}
+impl<T> failure::Fail for SendError<T> where T: Send + Sync + 'static {}
 
 impl fmt::Debug for MailboxError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -126,7 +124,9 @@ impl<A: Actor> Addr<A> {
     {
         match self.tx.send(msg) {
             Ok(rx) => Request::new(Some(rx), None),
-            Err(SendError::Full(msg)) => Request::new(None, Some((self.tx.clone(), msg))),
+            Err(SendError::Full(msg)) => {
+                Request::new(None, Some((self.tx.clone(), msg)))
+            }
             Err(SendError::Closed(_)) => Request::new(None, None),
         }
     }
@@ -140,6 +140,13 @@ impl<A: Actor> Addr<A> {
         M::Result: Send,
     {
         self.into()
+    }
+
+    /// Downgrade to WeakAddr
+    pub fn downgrade(&self) -> WeakAddr<A> {
+        WeakAddr {
+            wtx: self.tx.downgrade(),
+        }
     }
 }
 
@@ -162,6 +169,27 @@ impl<A: Actor> Eq for Addr<A> {}
 impl<A: Actor> Hash for Addr<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.tx.hash(state)
+    }
+}
+
+/// Weak referenced Addr<A>
+#[derive(Debug)]
+pub struct WeakAddr<A: Actor> {
+    wtx: WeakAddressSender<A>,
+}
+
+impl<A: Actor> WeakAddr<A> {
+    pub fn upgrade(&self) -> Option<Addr<A>> {
+        match self.wtx.upgrade() {
+            Some(tx) => {
+                if tx.connected() {
+                    Some(Addr::new(tx))
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
     }
 }
 
@@ -209,7 +237,9 @@ where
     pub fn send(&self, msg: M) -> RecipientRequest<M> {
         match self.tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) => RecipientRequest::new(None, Some((self.tx.boxed(), msg))),
+            Err(SendError::Full(msg)) => {
+                RecipientRequest::new(None, Some((self.tx.boxed(), msg)))
+            }
             Err(SendError::Closed(_)) => RecipientRequest::new(None, None),
         }
     }
@@ -322,7 +352,8 @@ mod tests {
                 .join(send3)
                 .map(|_| {
                     System::current().stop();
-                }).map_err(|_| {
+                })
+                .map_err(|_| {
                     panic!("Message over limit should be delivered, but it is not!");
                 });
             Arbiter::spawn(send);

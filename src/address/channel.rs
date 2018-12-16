@@ -1,9 +1,9 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
-use std::sync::Arc;
-use std::fmt;
+use std::sync::{Arc, Weak};
 use std::{thread, usize};
 
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
@@ -58,6 +58,19 @@ impl<A: Actor> fmt::Debug for AddressSender<A> {
             .field("sender_task", &self.sender_task)
             .field("maybe_parked", &self.maybe_parked)
             .finish()
+    }
+}
+
+/// Weak referenced version of `AddressSender`
+///
+/// This is created by the `AddressSender::downgrade` method.
+pub struct WeakAddressSender<A: Actor> {
+    inner: Weak<Inner<A>>,
+}
+
+impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("AddressSender").finish()
     }
 }
 
@@ -299,6 +312,13 @@ impl<A: Actor> AddressSender<A> {
         }
     }
 
+    /// Downgrade to `WeakAddressSender` which can later be upgraded
+    pub fn downgrade(&self) -> WeakAddressSender<A> {
+        WeakAddressSender {
+            inner: Arc::downgrade(&self.inner),
+        }
+    }
+
     // Push message to the queue and signal to the receiver
     fn queue_push_and_signal(&self, msg: Envelope<A>) {
         // Push the message onto the message queue
@@ -495,6 +515,21 @@ impl<A: Actor> Eq for AddressSender<A> {}
 impl<A: Actor> Hash for AddressSender<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         (self.inner.as_ref() as *const Inner<A>).hash(state);
+    }
+}
+
+//
+//
+// ===== impl WeakSender =====
+//
+//
+impl<A: Actor> WeakAddressSender<A> {
+    /// TODO
+    pub fn upgrade(&self) -> Option<AddressSender<A>> {
+        match Weak::upgrade(&self.inner) {
+            Some(inner) => Some(AddressSenderProducer { inner }.sender()),
+            None => None,
+        }
     }
 }
 
