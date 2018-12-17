@@ -70,7 +70,7 @@ pub struct WeakAddressSender<A: Actor> {
 
 impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        fmt.debug_struct("AddressSender").finish()
+        fmt.debug_struct("WeakAddressSender").finish()
     }
 }
 

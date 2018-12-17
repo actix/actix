@@ -94,10 +94,10 @@ impl Actor for WeakRunner {
         drop(addr1);
 
         ctx.run_later(Duration::new(0, 1000), move |_, _| {
-            match weak1.upgrade() {
-                Some(_) => panic!("Should not be able to upgrade weak1!"),
-                None => (),
-            }
+            assert!(
+                weak1.upgrade().is_none(),
+                "Should not be able to upgrade weak1!"
+            );
             match weak2.upgrade() {
                 Some(addr) => {
                     assert!(addr2 == addr);
