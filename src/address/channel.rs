@@ -524,7 +524,6 @@ impl<A: Actor> Hash for AddressSender<A> {
 //
 //
 impl<A: Actor> WeakAddressSender<A> {
-    /// TODO
     pub fn upgrade(&self) -> Option<AddressSender<A>> {
         match Weak::upgrade(&self.inner) {
             Some(inner) => Some(AddressSenderProducer { inner }.sender()),
