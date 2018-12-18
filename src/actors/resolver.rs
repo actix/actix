@@ -3,6 +3,7 @@
 //! ## Example
 //!
 //! ```rust
+//! #![recursion_limit="128"]
 //! # extern crate actix;
 //! # extern crate futures;
 //! # extern crate tokio;
