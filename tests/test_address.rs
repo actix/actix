@@ -4,6 +4,7 @@ extern crate tokio;
 extern crate tokio_timer;
 
 use std::collections::HashSet;
+use std::mem::drop;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -59,8 +60,14 @@ fn test_address() {
         arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
             addr3.do_send(Ping(2));
 
-            let send_ping = addr2.send(Ping(3)).map_err(|_| panic!("Unable to send ping 3"))
-                .then(move |_| addr2.send(Ping(4)).map_err(|_| panic!("Unable to send ping 4")))
+            let send_ping = addr2
+                .send(Ping(3))
+                .map_err(|_| panic!("Unable to send ping 3"))
+                .then(move |_| {
+                    addr2
+                        .send(Ping(4))
+                        .map_err(|_| panic!("Unable to send ping 4"))
+                })
                 .then(|_| {
                     System::current().stop();
                     Ok(())
@@ -69,10 +76,44 @@ fn test_address() {
 
             Ok(())
         }));
-
     });
 
     assert_eq!(count.load(Ordering::Relaxed), 4);
+}
+
+struct WeakRunner;
+
+impl Actor for WeakRunner {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let addr1 = MyActor3.start();
+        let addr2 = MyActor3.start();
+        let weak1 = addr1.downgrade();
+        let weak2 = addr2.downgrade();
+        drop(addr1);
+
+        ctx.run_later(Duration::new(0, 1000), move |_, _| {
+            assert!(
+                weak1.upgrade().is_none(),
+                "Should not be able to upgrade weak1!"
+            );
+            match weak2.upgrade() {
+                Some(addr) => {
+                    assert!(addr2 == addr);
+                }
+                None => panic!("Should be able to upgrade weak2!"),
+            }
+            System::current().stop();
+        });
+    }
+}
+
+#[test]
+fn test_weak_address() {
+    System::run(move || {
+        WeakRunner.start();
+    });
 }
 
 #[test]
