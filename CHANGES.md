@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.8.0] (2018-12-18)
+
+### Changed
+
+- Added `WeakAddr<A>` to weak reference an actor
+
 ## [0.7.9] (2018-12-11)
 
 ### Changed

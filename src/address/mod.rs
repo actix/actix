@@ -179,6 +179,10 @@ pub struct WeakAddr<A: Actor> {
 }
 
 impl<A: Actor> WeakAddr<A> {
+    /// Attempts to upgrade the `WeakAddr<A>` pointer to an [`Addr<A>`]
+    ///
+    /// Returns [`None`] if the actor has since been dropped or the underlying
+    /// is disconnected.
     pub fn upgrade(&self) -> Option<Addr<A>> {
         match self.wtx.upgrade() {
             Some(tx) => {

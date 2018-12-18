@@ -524,6 +524,9 @@ impl<A: Actor> Hash for AddressSender<A> {
 //
 //
 impl<A: Actor> WeakAddressSender<A> {
+    /// Attempts to upgrade the `WeakAddressSender<A>` pointer to an [`AddressSender<A>`]
+    ///
+    /// Returns [`None`] if the actor has since been dropped.
     pub fn upgrade(&self) -> Option<AddressSender<A>> {
         match Weak::upgrade(&self.inner) {
             Some(inner) => Some(AddressSenderProducer { inner }.sender()),
