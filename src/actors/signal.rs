@@ -1,8 +1,9 @@
-//! An actor implementation of Unix signal handling
+//! An actor implementation of Unix signal handling.
 //!
-//! This module implements asynchronous signal handling for Actix. For each
-//! signal `ProcessSignals` actor sends `Signal` message to all subscriber. To
-//! subscriber, send `Subscribe` message to `ProcessSignals` actor.
+//! This module implements asynchronous signal handling for Actix. For
+//! each signal, the `ProcessSignals` actor sends a `Signal` message
+//! to all subscribers. To subscribe, send a `Subscribe` message to
+//! the `ProcessSignals` actor.
 //!
 //! # Examples
 //!
@@ -70,18 +71,18 @@ use std;
 
 use prelude::*;
 
-/// Different types of process signals
+/// Represents the different types of signals a process can receive.
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum SignalType {
-    /// SIGHUP
+    /// `SIGHUP`
     Hup,
-    /// SIGINT
+    /// `SIGINT`
     Int,
-    /// SIGTERM
+    /// `SIGTERM`
     Term,
-    /// SIGQUIT
+    /// `SIGQUIT`
     Quit,
-    /// SIGCHILD
+    /// `SIGCHLD`
     Child,
 }
 
@@ -89,7 +90,7 @@ impl Message for SignalType {
     type Result = ();
 }
 
-/// Process signal message
+/// A message representing a received signal.
 #[derive(Debug)]
 pub struct Signal(pub SignalType);
 
@@ -97,7 +98,7 @@ impl Message for Signal {
     type Result = ();
 }
 
-/// An actor implementation of Unix signal handling
+/// An actor that handles Unix signals.
 pub struct ProcessSignals {
     subscribers: Vec<Recipient<Signal>>,
 }
@@ -191,7 +192,6 @@ impl Message for Subscribe {
     type Result = ();
 }
 
-/// Add subscriber for signals
 impl Handler<Subscribe> for ProcessSignals {
     type Result = ();
 
@@ -200,8 +200,11 @@ impl Handler<Subscribe> for ProcessSignals {
     }
 }
 
-/// Default signals handler. This actor sends `SystemExit` message to `System`
-/// actor for each of `SIGINT`, `SIGTERM`, `SIGQUIT` signals.
+/// Default signals handler.
+///
+/// This actor sends the `SystemExit` message to the `System` actor
+/// for each of the following signals: `SIGINT`, `SIGTERM` and
+/// `SIGQUIT`.
 pub struct DefaultSignalsHandler;
 
 impl Default for DefaultSignalsHandler {
@@ -224,8 +227,8 @@ impl Actor for DefaultSignalsHandler {
     }
 }
 
-/// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send `SystemExit(0)`
-/// message to `System` actor.
+/// Handle `SIGINT`, `SIGTERM`, `SIGQUIT` signals and send
+/// a `SystemExit(0)` message to the `System` actor.
 impl Handler<Signal> for DefaultSignalsHandler {
     type Result = ();
 

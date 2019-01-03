@@ -26,16 +26,16 @@ thread_local!(
     static Q: RefCell<Vec<Box<Future<Item=(), Error=()>>>> = RefCell::new(Vec::new());
 );
 
-/// Event loop controller
+/// An event loop controller.
 ///
-/// Arbiter controls event loop in its thread. Each arbiter runs in separate
-/// thread. Arbiter provides several api for event loop access. Each arbiter
-/// can belongs to specific `System` actor.
+/// An arbiter controls the event loop in its thread. Each arbiter
+/// runs in a separate thread and provides several methods for event
+/// loop access. Each arbiter can belong to a specific `System` actor.
 ///
-/// By default, a panic in an Arbiter does _not_ stop the rest of the System,
-/// unless the panic is in the System actor. Users of Arbiter can opt into
-/// shutting down the system on panic by using `Arbiter::builder()` and enabling
-/// `stop_system_on_panic`.
+/// By default, a panic in an arbiter does _not_ stop the rest of the
+/// system, unless the panic is in the system actor. Users of an
+/// arbiter can opt into shutting down the system on panic by using
+/// `Arbiter::builder()` and enabling `stop_system_on_panic`.
 #[derive(Debug)]
 pub struct Arbiter {
     stop: Option<Sender<i32>>,
@@ -56,23 +56,23 @@ impl Drop for Arbiter {
 }
 
 impl Arbiter {
-    /// Spawn new thread and run event loop in spawned thread.
-    /// Returns address of newly created arbiter.
-    /// Does not stop the system on panic.
-    pub fn builder() -> Builder {
-        Builder::new()
+    /// Returns a builder object for customized arbiter creation.
+    pub fn builder() -> ArbiterBuilder {
+        ArbiterBuilder::new()
     }
 
-    /// Spawn new thread and run event loop in spawned thread.
-    /// Returns address of newly created arbiter.
-    /// Does not stop the system on panic.
+    /// Spawns a new thread and runs the event loop in the spawned thread.
+    ///
+    /// Returns the address of the newly created arbiter. Does not
+    /// stop the system on panic.
     pub fn new<T: Into<String>>(name: T) -> Addr<Arbiter> {
         Arbiter::new_with_builder(Arbiter::builder().name(name))
     }
 
-    /// Spawn new thread and run event loop in spawned thread.
-    /// Returns address of newly created arbiter.
-    fn new_with_builder(mut builder: Builder) -> Addr<Arbiter> {
+    /// Spawns new thread and runs an event loop in that thread.
+    ///
+    /// Returns the address of the newly created arbiter.
+    fn new_with_builder(mut builder: ArbiterBuilder) -> Addr<Arbiter> {
         let (tx, rx) = std::sync::mpsc::channel();
         let id = Uuid::new_v4();
         let name = format!(
@@ -166,7 +166,7 @@ impl Arbiter {
         })
     }
 
-    /// Returns current arbiter's address
+    /// Returns the current arbiter's address.
     pub fn current() -> Addr<Arbiter> {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
@@ -174,7 +174,7 @@ impl Arbiter {
         })
     }
 
-    /// This function returns arbiter's registry,
+    /// Returns the arbiter's registry,
     pub fn registry() -> Registry {
         REG.with(|cell| match *cell.borrow() {
             Some(ref reg) => reg.clone(),
@@ -196,7 +196,11 @@ impl Arbiter {
         });
     }
 
-    /// Executes a future on the current thread.
+    /// Executes a lazily constructed future on the current thread.
+    ///
+    /// The provided closure is run as part of future execution. After
+    /// it returns, execution will continue with the future created by
+    /// the closure.
     pub fn spawn_fn<F, R>(f: F)
     where
         F: FnOnce() -> R + 'static,
@@ -205,8 +209,9 @@ impl Arbiter {
         Arbiter::spawn(future::lazy(f))
     }
 
-    /// Start new arbiter and then start actor in created arbiter.
-    /// Returns `Addr<Syn, A>` of created actor.
+    /// Starts an actor inside a newly created arbiter.
+    ///
+    /// Returns the address of the actor created.
     pub fn start<A, F>(f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
@@ -215,7 +220,7 @@ impl Arbiter {
         Arbiter::builder().start(f)
     }
 
-    fn start_with_builder<A, F>(builder: Builder, f: F) -> Addr<A>
+    fn start_with_builder<A, F>(builder: ArbiterBuilder, f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
         F: FnOnce(&mut A::Context) -> A + Send + 'static,
@@ -267,8 +272,8 @@ impl<I: Send, E: Send> Handler<Execute<I, E>> for Arbiter {
     }
 }
 
-/// Builder struct for an Arbiter.
-pub struct Builder {
+/// A builder to create a customized arbiter.
+pub struct ArbiterBuilder {
     /// Name of the Arbiter. Defaults to "actor" if unset.
     name: Option<String>,
 
@@ -279,46 +284,51 @@ pub struct Builder {
     runtime: RuntimeBuilder,
 }
 
-impl Builder {
+impl ArbiterBuilder {
     fn new() -> Self {
-        Builder {
+        ArbiterBuilder {
             name: None,
             stop_system_on_panic: false,
             runtime: RuntimeBuilder::new(),
         }
     }
 
-    /// Sets the name of the Arbiter.
+    /// Sets the name of the arbiter.
     pub fn name<T: Into<String>>(mut self, name: T) -> Self {
         self.name = Some(name.into());
         self
     }
 
-    /// Sets the option 'stop_system_on_panic' which controls whether the System is stopped when an
-    /// uncaught panic is thrown from an Actor in the Arbiter.
+    /// Sets the option `stop_system_on_panic` which controls whether
+    /// the system is stopped when an uncaught panic is thrown from an
+    /// actor in the arbiter.
     ///
-    /// Defaults to false.
+    /// Defaults to `false`.
     pub fn stop_system_on_panic(mut self, stop_system_on_panic: bool) -> Self {
         self.stop_system_on_panic = stop_system_on_panic;
         self
     }
 
-    /// Set the Clock instance that will be used by this Arbiter.
+    /// Sets the clock instance that will be used by this arbiter.
     ///
-    /// Defaults to the clock used by the actix `System`, which defaults to the system clock.
+    /// Defaults to the clock used by the actix `System`, which
+    /// defaults to the system clock.
     pub fn clock(mut self, clock: Clock) -> Self {
         self.runtime.clock(clock);
         self
     }
 
-    /// Spawn new thread and run event loop in spawned thread.
+    /// Spawns a new thread and runs the event loop in the spawned
+    /// thread.
+    ///
     /// Returns address of newly created arbiter.
     pub fn build(self) -> Addr<Arbiter> {
         Arbiter::new_with_builder(self)
     }
 
-    /// Start new arbiter and then start actor in created arbiter.
-    /// Returns `Addr<Syn, A>` of created actor.
+    /// Starts an actor inside a newly created arbiter.
+    ///
+    /// Returns the address of the actor created.
     pub fn start<A, F>(self, f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
