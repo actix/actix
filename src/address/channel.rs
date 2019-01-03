@@ -61,7 +61,7 @@ impl<A: Actor> fmt::Debug for AddressSender<A> {
     }
 }
 
-/// Weak referenced version of `AddressSender`
+/// A weakly referenced version of `AddressSender`.
 ///
 /// This is created by the `AddressSender::downgrade` method.
 pub struct WeakAddressSender<A: Actor> {
@@ -98,13 +98,13 @@ struct Inner<A: Actor> {
     // channel as well as a flag signalling that the channel is closed.
     state: AtomicUsize,
 
-    // Atomic, FIFO queue used to send messages to the receiver
+    // Atomic, FIFO queue used to send messages to the receiver.
     message_queue: Queue<Envelope<A>>,
 
     // Atomic, FIFO queue used to send parked task handles to the receiver.
     parked_queue: Queue<Arc<Mutex<SenderTask>>>,
 
-    // Number of senders in existence
+    // Number of senders in existence.
     num_senders: AtomicUsize,
 
     // Handle to the receiver's task.
@@ -231,7 +231,7 @@ impl<A: Actor> AddressSender<A> {
 
     /// Attempts to send a message on this `Sender<A>` with blocking.
     ///
-    /// This function, must be called from inside of a task.
+    /// This function must be called from inside of a task.
     pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
     where
         A: Handler<M>,
@@ -614,20 +614,20 @@ impl<A: Actor> AddressSenderProducer<A> {
 //
 //
 impl<A: Actor> AddressReceiver<A> {
-    /// Are any senders still connected
+    /// Returns whether any senders are still connected.
     pub fn connected(&self) -> bool {
         self.inner.num_senders.load(SeqCst) != 0
     }
 
-    /// Get channel capacity
+    /// Returns the channel capacity.
     pub fn capacity(&self) -> usize {
         self.inner.buffer.load(Relaxed)
     }
 
-    /// Set channel capacity
+    /// Sets the channel capacity.
     ///
-    /// This method wakes up all waiting senders if new capacity is greater
-    /// than current
+    /// This method wakes up all waiting senders if the new capacity
+    /// is greater than the current one.
     pub fn set_capacity(&mut self, cap: usize) {
         let buffer = self.inner.buffer.load(Relaxed);
         self.inner.buffer.store(cap, Relaxed);
@@ -652,7 +652,7 @@ impl<A: Actor> AddressReceiver<A> {
         }
     }
 
-    /// Get sender side of the channel
+    /// Returns the sender side of the channel.
     pub fn sender(&self) -> AddressSender<A> {
         // this code same as Sender::clone
         let mut curr = self.inner.num_senders.load(SeqCst);
@@ -680,7 +680,7 @@ impl<A: Actor> AddressReceiver<A> {
         }
     }
 
-    /// Create sender producer
+    /// Creates the sender producer.
     pub fn sender_producer(&self) -> AddressSenderProducer<A> {
         AddressSenderProducer {
             inner: self.inner.clone(),

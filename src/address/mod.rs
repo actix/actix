@@ -22,7 +22,7 @@ pub enum SendError<T> {
 }
 
 #[derive(Fail)]
-/// Set of error that can occurred during message delivery process
+/// The errors that can occur during the message delivery process.
 pub enum MailboxError {
     #[fail(display = "Mailbox has closed")]
     Closed,
@@ -64,7 +64,7 @@ impl fmt::Debug for MailboxError {
     }
 }
 
-/// Address of the actor
+/// The address of an actor.
 #[derive(Debug)]
 pub struct Addr<A: Actor> {
     tx: AddressSender<A>,
@@ -76,16 +76,16 @@ impl<A: Actor> Addr<A> {
     }
 
     #[inline]
-    /// Indicates if actor is still alive
+    /// Returns whether the actor is still alive.
     pub fn connected(&self) -> bool {
         self.tx.connected()
     }
 
     #[inline]
-    /// Send message unconditionally
+    /// Sends a message unconditionally.
     ///
-    /// This method ignores actor's mailbox capacity, it silently fails if
-    /// mailbox is closed.
+    /// This method ignores actor's mailbox capacity, and silently
+    /// fails if the mailbox is closed.
     pub fn do_send<M>(&self, msg: M)
     where
         M: Message + Send,
@@ -96,10 +96,10 @@ impl<A: Actor> Addr<A> {
         let _ = self.tx.do_send(msg);
     }
 
-    /// Try send message
+    /// Tries to send a message.
     ///
-    /// This method fails if actor's mailbox is full or closed. This method
-    /// register current task in receivers queue.
+    /// This method fails if actor's mailbox is full or closed. This
+    /// method registers the current task in the receiver's queue.
     pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
     where
         M: Message + Send + 'static,
@@ -111,10 +111,11 @@ impl<A: Actor> Addr<A> {
     }
 
     #[inline]
-    /// Send asynchronous message and wait for response.
+    /// Sends an asynchronous message and waits for a response.
     ///
-    /// Communication channel to the actor is bounded. if returned `Future`
-    /// object get dropped, message cancels.
+    /// The communication channel to the actor is bounded. If the
+    /// returned `Future` object gets dropped, the message is
+    /// cancelled.
     pub fn send<M>(&self, msg: M) -> Request<A, M>
     where
         M: Message + Send,
@@ -131,7 +132,7 @@ impl<A: Actor> Addr<A> {
         }
     }
 
-    /// Get `Recipient` for specific message type
+    /// Returns the `Recipient` for a specific message type.
     pub fn recipient<M: 'static>(self) -> Recipient<M>
     where
         A: Handler<M>,
@@ -142,7 +143,7 @@ impl<A: Actor> Addr<A> {
         self.into()
     }
 
-    /// Downgrade to WeakAddr
+    /// Returns a downgraded `WeakAddr`.
     pub fn downgrade(&self) -> WeakAddr<A> {
         WeakAddr {
             wtx: self.tx.downgrade(),
@@ -172,17 +173,17 @@ impl<A: Actor> Hash for Addr<A> {
     }
 }
 
-/// Weak referenced Addr<A>
+/// A weakly referenced counterpart to `Addr<A>`.
 #[derive(Debug)]
 pub struct WeakAddr<A: Actor> {
     wtx: WeakAddressSender<A>,
 }
 
 impl<A: Actor> WeakAddr<A> {
-    /// Attempts to upgrade the `WeakAddr<A>` pointer to an [`Addr<A>`]
+    /// Attempts to upgrade the `WeakAddr<A>` pointer to an `Addr<A>`.
     ///
-    /// Returns [`None`] if the actor has since been dropped or the underlying
-    /// is disconnected.
+    /// Returns `None` if the actor has since been dropped or the
+    /// underlying address is disconnected.
     pub fn upgrade(&self) -> Option<Addr<A>> {
         match self.wtx.upgrade() {
             Some(tx) => {
@@ -197,10 +198,12 @@ impl<A: Actor> WeakAddr<A> {
     }
 }
 
-/// `Recipient` type allows to send one specific message to an actor.
+/// The `Recipient` type allows to send one specific message to an
+/// actor.
 ///
-/// You can get recipient with `Addr<_, _>::recipient()` method.
-/// It is possible to use `Clone::clone()` method to get cloned recipient.
+/// You can get a recipient using the `Addr::recipient()` method. It
+/// is possible to use the `Clone::clone()` method to get a cloned
+/// recipient.
 pub struct Recipient<M: Message>
 where
     M: Message + Send,
@@ -214,30 +217,32 @@ where
     M: Message + Send,
     M::Result: Send,
 {
-    /// Create new recipient
+    /// Creates a new recipient.
     pub(crate) fn new(tx: Box<Sender<M>>) -> Recipient<M> {
         Recipient { tx }
     }
 
-    /// Send message
+    /// Sends a message.
     ///
-    /// Deliver message even if recipient's mailbox is full
+    /// Deliver the message even if the recipient's mailbox is full.
     pub fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.tx.do_send(msg)
     }
 
-    /// Try send message
+    /// Attempts to send a message.
     ///
-    /// This method fails if actor's mailbox is full or closed. This method
-    /// register current task in receivers queue.
+    /// This method fails if the actor's mailbox is full or
+    /// closed. This method registers the current task in the
+    /// receivers queue.
     pub fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.tx.try_send(msg)
     }
 
-    /// Send message and asynchronously wait for response.
+    /// Sends a message and asynchronously wait for a response.
     ///
-    /// Communication channel to the actor is bounded. if returned `Request`
-    /// object get dropped, message cancels.
+    /// The communication channel to the actor is bounded. If the
+    /// returned `Request` object gets dropped, the message is
+    /// cancelled.
     pub fn send(&self, msg: M) -> RecipientRequest<M> {
         match self.tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),
