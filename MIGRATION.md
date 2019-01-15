@@ -1,3 +1,7 @@
+## 0.7.11
+
+- `Response::async` and `ActorResponse::async` are re-named to `future` to avoid collision with 2018 keyword
+
 ## 0.7.9
 
 - `actix` no longer re-exports itself in `actix::prelude` to avoid conflicts with 2018 editions. Please access it through your `extern crate actix` import when necessary
