@@ -179,7 +179,7 @@ impl<I, E> fmt::Debug for Response<I, E> {
 
 impl<I, E> Response<I, E> {
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn future<T>(fut: T) -> Self
     where
         T: Future<Item = I, Error = E> + 'static,
     {
@@ -250,7 +250,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     }
 
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn future<T>(fut: T) -> Self
     where
         T: ActorFuture<Item = I, Error = E, Actor = A> + 'static,
     {
