@@ -8,7 +8,7 @@ use arbiter::Arbiter;
 use context::Context;
 use fut::{self, ActorFuture};
 
-/// A trait for objects which can handle messages of a specific type.
+/// Describes how to handle messages of a specific type.
 ///
 /// Implementing `Handler` is a general way to handle incoming
 /// messages, streams, and futures.
@@ -27,8 +27,7 @@ where
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
 }
 
-/// A trait for objects which represent messages that can be handled
-/// by an actor.
+/// Represent message that can be handled by an actor.
 pub trait Message {
     /// The type of value that this message will resolved with if it is
     /// successful.
