@@ -1,14 +1,12 @@
 # CHANGES
 
-## [0.7.11] (2010-01-16)
-
-- Replace `async` functions of `Response` and `ActorResponse` as `future`
-
-## [0.7.10] (2018-12-18)
+## [0.7.10] (2019-01-16)
 
 ### Changed
 
 - Added `WeakAddr<A>` to weak reference an actor
+
+- Replace `async` functions of `Response` and `ActorResponse` as `future`
 
 ## [0.7.9] (2018-12-11)
 
