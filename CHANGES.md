@@ -1,8 +1,8 @@
 # CHANGES
 
-## [0.7.11] (2010-01-xx)
+## [0.7.11] (2010-01-16)
 
-- Replace `async` functions in `Response` and `ActorResponse` as `future`
+- Replace `async` functions of `Response` and `ActorResponse` as `future`
 
 ## [0.7.10] (2018-12-18)
 
