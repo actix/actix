@@ -6,8 +6,6 @@
 
 - Added `WeakAddr<A>` to weak reference an actor
 
-- Replace `async` functions of `Response` and `ActorResponse` as `future`
-
 ## [0.7.9] (2018-12-11)
 
 ### Changed
