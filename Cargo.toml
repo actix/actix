@@ -33,6 +33,9 @@ resolver = ["trust-dns-resolver", "trust-dns-proto"]
 # signal handling
 signal = ["tokio-signal"]
 
+# Adds assertion to prevent processing too many messages on event loop
+mailbox_assert = []
+
 [dependencies]
 actix_derive = "0.3"
 
