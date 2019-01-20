@@ -171,9 +171,10 @@ impl<I, E> fmt::Debug for Response<I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut fmt = fmt.debug_struct("Response");
         match self.item {
-                ResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-                ResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
-        }.finish()
+            ResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
+            ResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }
+        .finish()
     }
 }
 
@@ -235,9 +236,12 @@ impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut fmt = fmt.debug_struct("ActorResponse");
         match self.item {
-                ActorResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-                ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
-        }.finish()
+            ActorResponseTypeItem::Result(_) => {
+                fmt.field("item", &"Result(_)".to_string())
+            }
+            ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }
+        .finish()
     }
 }
 

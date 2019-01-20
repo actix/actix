@@ -137,7 +137,9 @@ impl Registry {
     }
 
     /// Check if actor is in registry, if so, return its address
-    pub fn query<A: ArbiterService + Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
+    pub fn query<A: ArbiterService + Actor<Context = Context<A>>>(
+        &self,
+    ) -> Option<Addr<A>> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
             if let Some(addr) = addr.downcast_ref::<Addr<A>>() {
@@ -272,7 +274,9 @@ impl SystemRegistry {
     }
 
     /// Check if actor is in registry, if so, return its address
-    pub fn query<A: SystemService + Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
+    pub fn query<A: SystemService + Actor<Context = Context<A>>>(
+        &self,
+    ) -> Option<Addr<A>> {
         let hm = self.registry.lock();
         if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
             match addr.downcast_ref::<Addr<A>>() {
@@ -293,8 +297,7 @@ impl SystemRegistry {
             }
         }
 
-        hm.borrow_mut()
-            .insert(TypeId::of::<A>(), Box::new(addr));
+        hm.borrow_mut().insert(TypeId::of::<A>(), Box::new(addr));
     }
 }
 

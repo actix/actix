@@ -105,7 +105,8 @@ fn test_add_timeout_stop() {
     System::run(|| {
         let _addr = MyActor {
             op: Op::TimeoutStop,
-        }.start();
+        }
+        .start();
     });
 }
 
@@ -121,7 +122,8 @@ fn test_run_after_stop() {
     System::run(|| {
         let _addr = MyActor {
             op: Op::RunAfterStop,
-        }.start();
+        }
+        .start();
     });
 }
 
@@ -440,7 +442,7 @@ fn test_cancel_completed_with_no_context_item() {
         tokio::spawn(
             Delay::new(Instant::now() + Duration::from_millis(100))
                 .map_err(|_| ())
-                .map(move |_| addr.do_send(CancelMessage))
+                .map(move |_| addr.do_send(CancelMessage)),
         );
 
         // finally, terminate the actor, which shouldn't be blocked unless
@@ -448,7 +450,7 @@ fn test_cancel_completed_with_no_context_item() {
         tokio::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
-                .map(|_| System::current().stop())
+                .map(|_| System::current().stop()),
         );
-   });
+    });
 }

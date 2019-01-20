@@ -42,7 +42,9 @@ where
     type Actor = F::Actor;
 
     fn poll(
-        &mut self, act: &mut F::Actor, ctx: &mut <F::Actor as Actor>::Context,
+        &mut self,
+        act: &mut F::Actor,
+        ctx: &mut <F::Actor as Actor>::Context,
     ) -> Poll<F::Item, F::Error> {
         // check timeout
         match self.timeout.poll() {

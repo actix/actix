@@ -33,7 +33,9 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut Self::Actor, ctx: &mut <A::Actor as Actor>::Context,
+        &mut self,
+        act: &mut Self::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<U, A::Error> {
         let e = match self.future.poll(act, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),

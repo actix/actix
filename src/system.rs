@@ -65,7 +65,9 @@ pub struct System {
     registry: SystemRegistry,
 }
 
-thread_local!(static CURRENT: RefCell<Option<System>> = RefCell::new(None););
+thread_local!(
+    static CURRENT: RefCell<Option<System>> = RefCell::new(None);
+);
 
 impl System {
     /// Build a new system with a customized tokio runtime.

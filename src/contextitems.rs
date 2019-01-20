@@ -76,7 +76,9 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context,
+        &mut self,
+        act: &mut A,
+        ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         match self.timeout.poll() {
             Ok(Async::NotReady) => Ok(Async::NotReady),
@@ -123,7 +125,9 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context,
+        &mut self,
+        act: &mut A,
+        ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         let fut = Handler::handle(act, self.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
@@ -167,7 +171,9 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context,
+        &mut self,
+        act: &mut A,
+        ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         loop {
             match self.stream.poll() {

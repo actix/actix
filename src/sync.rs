@@ -280,7 +280,8 @@ unsafe impl<A, M> Send for SyncContextEnvelope<A, M>
 where
     A: Actor<Context = SyncContext<A>> + Handler<M>,
     M: Message + Send,
-{}
+{
+}
 
 impl<A, M> SyncContextEnvelope<A, M>
 where

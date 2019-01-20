@@ -1,5 +1,5 @@
-extern crate futures;
 extern crate actix;
+extern crate futures;
 extern crate tokio;
 
 use actix::prelude::*;

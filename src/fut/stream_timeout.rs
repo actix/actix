@@ -46,7 +46,9 @@ where
     type Actor = S::Actor;
 
     fn poll(
-        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context,
+        &mut self,
+        act: &mut S::Actor,
+        ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<Option<S::Item>, S::Error> {
         match self.stream.poll(act, ctx) {
             Ok(Async::Ready(res)) => {

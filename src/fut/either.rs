@@ -36,7 +36,9 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
+        &mut self,
+        act: &mut A::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, B::Error> {
         match *self {
             Either::A(ref mut a) => a.poll(act, ctx),

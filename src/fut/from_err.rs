@@ -33,7 +33,9 @@ impl<A: ActorFuture, E: From<A::Error>> ActorFuture for FromErr<A, E> {
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
+        &mut self,
+        act: &mut A::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, E> {
         let e = match self.future.poll(act, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),

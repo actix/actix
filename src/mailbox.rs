@@ -20,7 +20,8 @@ where
     msgs: AddressReceiver<A>,
 }
 
-impl<A> fmt::Debug for Mailbox<A> where
+impl<A> fmt::Debug for Mailbox<A>
+where
     A: Actor,
     A::Context: AsyncContext<A>,
 {

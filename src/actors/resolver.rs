@@ -170,7 +170,9 @@ impl Resolver {
     }
 
     fn start_resolver<F>(
-        &self, ctx: &mut <Self as Actor>::Context, parts: (AsyncResolver, F),
+        &self,
+        ctx: &mut <Self as Actor>::Context,
+        parts: (AsyncResolver, F),
     ) -> AsyncResolver
     where
         F: 'static + Future<Item = (), Error = ()>,
@@ -252,7 +254,8 @@ impl Handler<Connect> for Resolver {
                 msg.name,
                 msg.port.unwrap_or(0),
                 self.resolver.as_ref().unwrap(),
-            ).and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
+            )
+            .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
         )
     }
 }
@@ -278,7 +281,9 @@ struct ResolveFut {
 
 impl ResolveFut {
     pub fn new<S: AsRef<str>>(
-        addr: S, port: u16, resolver: &AsyncResolver,
+        addr: S,
+        port: u16,
+        resolver: &AsyncResolver,
     ) -> ResolveFut {
         // try to parse as a regular SocketAddr first
         if let Ok(addr) = addr.as_ref().parse() {
@@ -349,7 +354,9 @@ impl ActorFuture for ResolveFut {
     type Actor = Resolver;
 
     fn poll(
-        &mut self, _: &mut Resolver, _: &mut Context<Resolver>,
+        &mut self,
+        _: &mut Resolver,
+        _: &mut Context<Resolver>,
     ) -> Poll<Self::Item, Self::Error> {
         if let Some(err) = self.error.take() {
             Err(err)
@@ -406,7 +413,9 @@ impl ActorFuture for TcpConnector {
     type Actor = Resolver;
 
     fn poll(
-        &mut self, _: &mut Resolver, _: &mut Context<Resolver>,
+        &mut self,
+        _: &mut Resolver,
+        _: &mut Context<Resolver>,
     ) -> Poll<Self::Item, Self::Error> {
         // timeout
         if let Ok(Async::Ready(_)) = self.timeout.poll() {
