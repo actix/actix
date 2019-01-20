@@ -14,12 +14,12 @@ use std::sync::Arc;
 use fnv::FnvHasher;
 use parking_lot::ReentrantMutex;
 
-use actor::{Actor, Supervised};
-use address::Addr;
-use arbiter::Arbiter;
-use context::Context;
-use supervisor::Supervisor;
-use system::System;
+use crate::actor::{Actor, Supervised};
+use crate::address::Addr;
+use crate::arbiter::Arbiter;
+use crate::context::Context;
+use crate::supervisor::Supervisor;
+use crate::system::System;
 
 type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 

@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 
-use actor::Actor;
-use fut::{ActorFuture, ActorStream, IntoActorFuture};
+use crate::actor::Actor;
+use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 
 /// A stream combinator which chains a computation onto values produced by a
 /// stream.

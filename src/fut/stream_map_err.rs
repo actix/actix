@@ -1,7 +1,7 @@
 use futures::Poll;
 
-use actor::Actor;
-use fut::ActorStream;
+use crate::actor::Actor;
+use crate::fut::ActorStream;
 
 /// A stream combinator which will change the error type of a stream from one
 /// type to another.

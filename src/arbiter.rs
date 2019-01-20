@@ -8,15 +8,15 @@ use tokio::executor::current_thread::spawn;
 use tokio::runtime::current_thread::Builder as RuntimeBuilder;
 use uuid::Uuid;
 
-use actor::Actor;
-use address::{channel, Addr, AddressReceiver};
-use clock::Clock;
-use context::Context;
-use handler::Handler;
-use mailbox::DEFAULT_CAPACITY;
-use msgs::{Execute, StartActor, StopArbiter};
-use registry::Registry;
-use system::{RegisterArbiter, System, UnregisterArbiter};
+use crate::actor::Actor;
+use crate::address::{channel, Addr, AddressReceiver};
+use crate::clock::Clock;
+use crate::context::Context;
+use crate::handler::Handler;
+use crate::mailbox::DEFAULT_CAPACITY;
+use crate::msgs::{Execute, StartActor, StopArbiter};
+use crate::registry::Registry;
+use crate::system::{RegisterArbiter, System, UnregisterArbiter};
 
 thread_local!(
     static ADDR: RefCell<Option<Addr<Arbiter>>> = RefCell::new(None);

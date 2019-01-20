@@ -3,9 +3,9 @@ use std::time::Duration;
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
-use actor::Actor;
-use clock;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::clock;
+use crate::fut::ActorFuture;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
 /// more than `timeout`.

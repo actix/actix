@@ -3,10 +3,10 @@ use std::marker::PhantomData;
 use std::time::Duration;
 use tokio_timer::Delay;
 
-use actor::{Actor, ActorContext, AsyncContext};
-use clock;
-use fut::ActorFuture;
-use handler::{Handler, Message, MessageResponse};
+use crate::actor::{Actor, ActorContext, AsyncContext};
+use crate::clock;
+use crate::fut::ActorFuture;
+use crate::handler::{Handler, Message, MessageResponse};
 
 pub(crate) struct ActorWaitItem<A: Actor>(
     Box<ActorFuture<Item = (), Error = (), Actor = A>>,

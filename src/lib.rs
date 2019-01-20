@@ -43,26 +43,10 @@
 //! cannot be used in asynchronous manner in actix.
 #[macro_use]
 extern crate log;
-extern crate bytes;
-extern crate crossbeam_channel;
-extern crate fnv;
-#[cfg(unix)]
-extern crate libc;
-extern crate parking_lot;
-extern crate smallvec;
-extern crate uuid;
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
 extern crate futures;
-extern crate tokio;
-extern crate tokio_codec;
-extern crate tokio_executor;
-extern crate tokio_io;
-extern crate tokio_reactor;
-extern crate tokio_tcp;
-extern crate tokio_timer;
-
 #[macro_use]
 extern crate failure;
 
@@ -96,25 +80,25 @@ pub mod registry;
 pub mod sync;
 pub mod utils;
 
-pub use actor::{
+pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-pub use address::{Addr, MailboxError, Recipient, WeakAddr};
-pub use arbiter::{Arbiter, ArbiterBuilder};
-pub use context::Context;
-pub use fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
-pub use handler::{
+pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr};
+pub use crate::arbiter::{Arbiter, ArbiterBuilder};
+pub use crate::context::Context;
+pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
+pub use crate::handler::{
     ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
     ResponseFuture,
 };
-pub use registry::{ArbiterService, Registry, SystemRegistry, SystemService};
-pub use stream::StreamHandler;
-pub use supervisor::Supervisor;
-pub use sync::{SyncArbiter, SyncContext};
-pub use system::{System, SystemRunner};
+pub use crate::registry::{ArbiterService, Registry, SystemRegistry, SystemService};
+pub use crate::stream::StreamHandler;
+pub use crate::supervisor::Supervisor;
+pub use crate::sync::{SyncArbiter, SyncContext};
+pub use crate::system::{System, SystemRunner};
 
 #[doc(hidden)]
-pub use context::ContextFutureSpawner;
+pub use crate::context::ContextFutureSpawner;
 
 pub mod prelude {
     //! The `actix` prelude.
@@ -130,31 +114,31 @@ pub mod prelude {
     #[doc(hidden)]
     pub use actix_derive::*;
 
-    pub use actor::{
+    pub use crate::actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
-    pub use address::{
+    pub use crate::address::{
         Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
     };
-    pub use arbiter::Arbiter;
-    pub use context::{Context, ContextFutureSpawner};
-    pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
-    pub use handler::{
+    pub use crate::arbiter::Arbiter;
+    pub use crate::context::{Context, ContextFutureSpawner};
+    pub use crate::fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
+    pub use crate::handler::{
         ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
         ResponseFuture,
     };
-    pub use registry::{ArbiterService, SystemService};
-    pub use stream::StreamHandler;
-    pub use supervisor::Supervisor;
-    pub use sync::{SyncArbiter, SyncContext};
-    pub use system::System;
+    pub use crate::registry::{ArbiterService, SystemService};
+    pub use crate::stream::StreamHandler;
+    pub use crate::supervisor::Supervisor;
+    pub use crate::sync::{SyncArbiter, SyncContext};
+    pub use crate::system::System;
 
-    pub use actors;
-    pub use dev;
-    pub use fut;
-    pub use io;
-    pub use msgs;
-    pub use utils::{Condition, IntervalFunc, TimerFunc};
+    pub use crate::actors;
+    pub use crate::dev;
+    pub use crate::fut;
+    pub use crate::io;
+    pub use crate::msgs;
+    pub use crate::utils::{Condition, IntervalFunc, TimerFunc};
 }
 
 pub mod dev {
@@ -168,16 +152,18 @@ pub mod dev {
     //! use actix::dev::*;
     //! ```
 
-    pub use prelude::*;
+    pub use crate::prelude::*;
 
-    pub use address::{Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope};
+    pub use crate::address::{
+        Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope,
+    };
     pub mod channel {
-        pub use address::channel::{channel, AddressReceiver, AddressSender};
+        pub use crate::address::channel::{channel, AddressReceiver, AddressSender};
     }
-    pub use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
-    pub use handler::{MessageResponse, ResponseChannel};
-    pub use mailbox::Mailbox;
-    pub use registry::{Registry, SystemRegistry};
+    pub use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
+    pub use crate::handler::{MessageResponse, ResponseChannel};
+    pub use crate::mailbox::Mailbox;
+    pub use crate::registry::{Registry, SystemRegistry};
 }
 
 /// Starts the system and executes the supplied future.

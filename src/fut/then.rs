@@ -1,8 +1,8 @@
 use futures::Poll;
 
-use actor::Actor;
-use fut::chain::Chain;
-use fut::{ActorFuture, IntoActorFuture};
+use crate::actor::Actor;
+use crate::fut::chain::Chain;
+use crate::fut::{ActorFuture, IntoActorFuture};
 
 /// Future for the `then` combinator, chaining computations on the end of
 /// another future regardless of its outcome.

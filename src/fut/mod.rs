@@ -39,7 +39,7 @@ pub use self::stream_timeout::StreamTimeout;
 pub use self::then::Then;
 pub use self::timeout::Timeout;
 
-use actor::Actor;
+use crate::actor::Actor;
 
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.

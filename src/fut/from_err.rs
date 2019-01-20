@@ -1,8 +1,8 @@
 use futures::{Async, Poll};
 use std::marker::PhantomData;
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 /// Future for the `from_err` combinator, changing the error type of a future.
 ///

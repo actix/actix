@@ -1,11 +1,11 @@
-use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
-use address::{Addr, AddressReceiver};
-use arbiter::Arbiter;
-use fut::ActorFuture;
+use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
+use crate::address::{Addr, AddressReceiver};
+use crate::arbiter::Arbiter;
+use crate::fut::ActorFuture;
 use std::fmt;
 
-use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
-use mailbox::Mailbox;
+use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
+use crate::mailbox::Mailbox;
 
 /// An actor execution context.
 pub struct Context<A>

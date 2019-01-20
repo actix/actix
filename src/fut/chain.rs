@@ -1,8 +1,8 @@
 use futures::{Async, Poll};
 use std::mem;
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 #[derive(Debug)]
 pub enum Chain<A, B, C>

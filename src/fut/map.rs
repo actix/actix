@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 /// Future for the `map` combinator, changing the type of a future.
 ///

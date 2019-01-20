@@ -55,9 +55,9 @@ use futures::{Async, Future, Poll};
 use tokio_tcp::{ConnectFuture, TcpStream};
 use tokio_timer::Delay;
 
-use clock;
-use fut::wrap_future;
-use prelude::*;
+use crate::clock;
+use crate::fut::wrap_future;
+use crate::prelude::*;
 
 #[deprecated(since = "0.7.0", note = "please use `Resolver` instead")]
 pub type Connector = Resolver;

@@ -5,8 +5,8 @@ use futures::sync::oneshot;
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
-use clock;
-use handler::{Handler, Message};
+use crate::clock;
+use crate::handler::{Handler, Message};
 
 use super::channel::{AddressSender, Sender};
 use super::{MailboxError, SendError, ToEnvelope};

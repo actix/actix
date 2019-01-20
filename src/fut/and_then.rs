@@ -2,7 +2,7 @@ use futures::Poll;
 
 use super::chain::Chain;
 use super::{ActorFuture, IntoActorFuture};
-use actor::Actor;
+use crate::actor::Actor;
 
 /// Future for the `and_then` combinator, chaining a computation onto the end of
 /// another future which completes successfully.

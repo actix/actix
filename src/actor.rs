@@ -2,13 +2,13 @@ use std::time::Duration;
 
 use futures::Stream;
 
-use address::Addr;
-use context::Context;
-use contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
-use fut::{ActorFuture, ActorStream};
-use handler::{Handler, Message};
-use stream::StreamHandler;
-use utils::{IntervalFunc, TimerFunc};
+use crate::address::Addr;
+use crate::context::Context;
+use crate::contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
+use crate::fut::{ActorFuture, ActorStream};
+use crate::handler::{Handler, Message};
+use crate::stream::StreamHandler;
+use crate::utils::{IntervalFunc, TimerFunc};
 
 #[allow(unused_variables)]
 /// Actors are objects which encapsulate state and behavior.

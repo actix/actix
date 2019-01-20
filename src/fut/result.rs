@@ -3,8 +3,8 @@
 use futures::{Async, Poll};
 use std::marker::PhantomData;
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 /// A future representing a value that is immediately ready.
 ///

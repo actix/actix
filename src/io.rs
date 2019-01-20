@@ -8,8 +8,8 @@ use parking_lot::Mutex;
 use tokio_codec::Encoder;
 use tokio_io::AsyncWrite;
 
-use actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
-use fut::ActorFuture;
+use crate::actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
+use crate::fut::ActorFuture;
 
 /// A helper trait for write handling.
 ///

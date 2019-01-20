@@ -1,8 +1,8 @@
 use futures::{Async, Poll};
 use std::mem;
 
-use actor::Actor; //{Future, Poll, IntoFuture, Async};
-use fut::{ActorFuture, ActorStream, IntoActorFuture};
+use crate::actor::Actor; //{Future, Poll, IntoFuture, Async};
+use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 
 /// A future used to collect all the results of a stream into one generic type.
 ///

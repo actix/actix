@@ -1,8 +1,8 @@
 use futures::{Async, Poll, Stream};
 use std::marker::PhantomData;
 
-use actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle};
-use fut::ActorFuture;
+use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle};
+use crate::fut::ActorFuture;
 
 /// Stream handler
 ///

@@ -2,9 +2,9 @@ use futures::sync::oneshot::Sender;
 use std::marker::PhantomData;
 
 // use super::{MessageDestination, MessageDestinationTransport, Syn};
-use actor::{Actor, AsyncContext};
-use context::Context;
-use handler::{Handler, Message, MessageResponse};
+use crate::actor::{Actor, AsyncContext};
+use crate::context::Context;
+use crate::handler::{Handler, Message, MessageResponse};
 
 /// Converter trait, packs message into a suitable envelope.
 pub trait ToEnvelope<A, M: Message>

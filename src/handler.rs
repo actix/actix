@@ -2,11 +2,11 @@ use futures::sync::oneshot::Sender as SyncSender;
 use futures::Future;
 use std::fmt;
 
-use actor::{Actor, AsyncContext};
-use address::Addr;
-use arbiter::Arbiter;
-use context::Context;
-use fut::{self, ActorFuture};
+use crate::actor::{Actor, AsyncContext};
+use crate::address::Addr;
+use crate::arbiter::Arbiter;
+use crate::context::Context;
+use crate::fut::{self, ActorFuture};
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -182,7 +182,7 @@ impl<I, E> fmt::Debug for Response<I, E> {
 
 impl<I, E> Response<I, E> {
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn r#async<T>(fut: T) -> Self
     where
         T: Future<Item = I, Error = E> + 'static,
     {
@@ -256,7 +256,7 @@ impl<A: Actor, I: Send, E: Send> ActorResponse<A, I, E> {
     }
 
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn r#async<T>(fut: T) -> Self
     where
         T: ActorFuture<Item = I, Error = E, Actor = A> + Send + 'static,
     {
