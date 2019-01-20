@@ -84,10 +84,11 @@ where
     /// ```
     fn add_stream<S>(fut: S, ctx: &mut Self::Context) -> SpawnHandle
     where
+        Self: Send,
         Self::Context: AsyncContext<Self>,
-        S: Stream<Item = I, Error = E> + 'static,
-        I: 'static,
-        E: 'static,
+        S: Stream<Item = I, Error = E> + Send + 'static,
+        I: Send + 'static,
+        E: Send + 'static,
     {
         if ctx.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");

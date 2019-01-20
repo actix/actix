@@ -158,9 +158,9 @@ where
 
 impl<A, T> ContextFutureSpawner<A> for T
 where
-    A: Actor,
+    A: Actor + Send,
     A::Context: AsyncContext<A>,
-    T: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
+    T: ActorFuture<Item = (), Error = (), Actor = A> + Send + 'static,
 {
     #[inline]
     fn spawn(self, ctx: &mut A::Context) {

@@ -175,7 +175,7 @@ impl Resolver {
         parts: (AsyncResolver, F),
     ) -> AsyncResolver
     where
-        F: 'static + Future<Item = (), Error = ()>,
+        F: Future<Item = (), Error = ()> + Send + 'static,
     {
         ctx.spawn(wrap_future::<_, Self>(parts.1));
         parts.0

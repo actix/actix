@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::stream::once;
-use futures::unsync::mpsc::unbounded;
+use futures::sync::mpsc::unbounded;
 use futures::{future, Future, Stream};
 use tokio_timer::{Delay, Interval};
 

@@ -41,8 +41,8 @@ where
 
 pub(crate) struct ActorDelayedMessageItem<A, M>
 where
-    A: Actor,
-    M: Message,
+    A: Actor + Send,
+    M: Message + Send,
 {
     msg: Option<M>,
     timeout: Delay,
@@ -52,8 +52,8 @@ where
 
 impl<A, M> ActorDelayedMessageItem<A, M>
 where
-    A: Actor,
-    M: Message,
+    A: Actor + Send,
+    M: Message + Send,
 {
     pub fn new(msg: M, timeout: Duration) -> Self {
         ActorDelayedMessageItem {
@@ -67,9 +67,9 @@ where
 
 impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
 where
-    A: Actor + Handler<M>,
+    A: Actor + Handler<M> + Send,
     A::Context: AsyncContext<A>,
-    M: Message + 'static,
+    M: Message + Send + 'static,
 {
     type Item = ();
     type Error = ();
@@ -137,8 +137,8 @@ where
 
 pub(crate) struct ActorMessageStreamItem<A, M, S>
 where
-    A: Actor,
-    M: Message,
+    A: Actor + Send,
+    M: Message + Send,
 {
     stream: S,
     act: PhantomData<A>,
@@ -147,8 +147,8 @@ where
 
 impl<A, M, S> ActorMessageStreamItem<A, M, S>
 where
-    A: Actor,
-    M: Message,
+    A: Actor + Send,
+    M: Message + Send,
 {
     pub fn new(st: S) -> Self {
         ActorMessageStreamItem {
@@ -159,12 +159,12 @@ where
     }
 }
 
-impl<A, M: 'static, S> ActorFuture for ActorMessageStreamItem<A, M, S>
+impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, M, S>
 where
-    S: Stream<Item = M, Error = ()>,
-    A: Actor + Handler<M>,
+    S: Stream<Item = M, Error = ()> + Send,
+    A: Actor + Handler<M> + Send,
     A::Context: AsyncContext<A>,
-    M: Message,
+    M: Message + Send + 'static,
 {
     type Item = ();
     type Error = ();

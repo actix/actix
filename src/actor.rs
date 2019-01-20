@@ -257,7 +257,7 @@ where
     /// during the actor's stopping stage.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
+        F: ActorFuture<Item = (), Error = (), Actor = A> + Send + 'static;
 
     /// Spawns a future into the context, waiting for it to resolve.
     ///
@@ -265,7 +265,7 @@ where
     /// resolves.
     fn wait<F>(&mut self, fut: F)
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
+        F: ActorFuture<Item = (), Error = (), Actor = A> + Send + 'static;
 
     /// Checks if the context is paused (waiting for future completion or stopping).
     fn waiting(&self) -> bool;
@@ -320,8 +320,10 @@ where
     /// ```
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
     where
-        S: Stream + 'static,
-        A: StreamHandler<S::Item, S::Error>,
+        S: Stream + Send + 'static,
+        S::Item: Send,
+        S::Error: Send,
+        A: StreamHandler<S::Item, S::Error> + Send,
     {
         <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
     }
@@ -367,9 +369,9 @@ where
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
     where
-        S: Stream<Error = ()> + 'static,
-        S::Item: Message,
-        A: Handler<S::Item>,
+        S: Stream<Error = ()> + Send + 'static,
+        S::Item: Message + Send,
+        A: Handler<S::Item> + Send,
     {
         if self.state() == ActorState::Stopped {
             error!("Context::add_message_stream called for stopped actor.");
@@ -381,8 +383,8 @@ where
     /// Sends the message `msg` to self.
     fn notify<M>(&mut self, msg: M)
     where
-        A: Handler<M>,
-        M: Message + 'static,
+        A: Handler<M> + Send,
+        M: Message + Send + 'static,
     {
         if self.state() == ActorState::Stopped {
             error!("Context::notify called for stopped actor.");
@@ -398,8 +400,8 @@ where
     /// called.
     fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
     where
-        A: Handler<M>,
-        M: Message + 'static,
+        A: Handler<M> + Send,
+        M: Message + Send + 'static,
     {
         if self.state() == ActorState::Stopped {
             error!("Context::notify_later called for stopped actor.");
@@ -416,7 +418,8 @@ where
     /// gets called.
     fn run_later<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
     where
-        F: FnOnce(&mut A, &mut A::Context) + 'static,
+        A: Send,
+        F: FnOnce(&mut A, &mut A::Context) + Send + 'static,
     {
         self.spawn(TimerFunc::new(dur, f))
     }
@@ -425,7 +428,8 @@ where
     /// specified fixed interval.
     fn run_interval<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
     where
-        F: FnMut(&mut A, &mut A::Context) + 'static,
+        A: Send,
+        F: FnMut(&mut A, &mut A::Context) + Send + 'static,
     {
         self.spawn(IntervalFunc::new(dur, f).finish())
     }

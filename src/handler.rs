@@ -38,7 +38,8 @@ pub trait Message {
 pub struct MessageResult<M: Message>(pub M::Result);
 
 /// A specialized actor future for asynchronous message handling.
-pub type ResponseActFuture<A, I, E> = Box<ActorFuture<Item = I, Error = E, Actor = A>>;
+pub type ResponseActFuture<A, I, E> =
+    Box<ActorFuture<Item = I, Error = E, Actor = A> + Send>;
 
 /// A specialized future for asynchronous message handling.
 pub type ResponseFuture<I, E> = Box<Future<Item = I, Error = E>>;
@@ -52,7 +53,7 @@ pub trait ResponseChannel<M: Message>: 'static {
 
 /// A trait which defines message responses.
 pub trait MessageResponse<A: Actor, M: Message> {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>);
+    fn handle<R: ResponseChannel<M> + Send>(self, ctx: &mut A::Context, tx: Option<R>);
 }
 
 impl<M: Message + 'static> ResponseChannel<M> for SyncSender<M::Result>
@@ -126,11 +127,12 @@ where
 
 impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseActFuture<A, I, E>
 where
-    A: Actor,
+    Self: Send,
+    A: Actor + Send,
     M: Message<Result = Result<I, E>>,
     A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+    fn handle<R: ResponseChannel<M> + Send>(self, ctx: &mut A::Context, tx: Option<R>) {
         ctx.spawn(self.then(move |res, _, _| {
             if let Some(tx) = tx {
                 tx.send(res);
@@ -222,17 +224,17 @@ where
     }
 }
 
-enum ActorResponseTypeItem<A, I, E> {
+enum ActorResponseTypeItem<A, I: Send, E: Send> {
     Result(Result<I, E>),
-    Fut(Box<ActorFuture<Item = I, Error = E, Actor = A>>),
+    Fut(Box<ActorFuture<Item = I, Error = E, Actor = A> + Send>),
 }
 
 /// A helper type for representing different types of message responses.
-pub struct ActorResponse<A, I, E> {
+pub struct ActorResponse<A, I: Send, E: Send> {
     item: ActorResponseTypeItem<A, I, E>,
 }
 
-impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
+impl<A, I: Send, E: Send> fmt::Debug for ActorResponse<A, I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut fmt = fmt.debug_struct("ActorResponse");
         match self.item {
@@ -245,7 +247,7 @@ impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
     }
 }
 
-impl<A: Actor, I, E> ActorResponse<A, I, E> {
+impl<A: Actor, I: Send, E: Send> ActorResponse<A, I, E> {
     /// Creates a response.
     pub fn reply(val: Result<I, E>) -> Self {
         ActorResponse {
@@ -256,7 +258,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     /// Creates an asynchronous response.
     pub fn async<T>(fut: T) -> Self
     where
-        T: ActorFuture<Item = I, Error = E, Actor = A> + 'static,
+        T: ActorFuture<Item = I, Error = E, Actor = A> + Send + 'static,
     {
         ActorResponse {
             item: ActorResponseTypeItem::Fut(Box::new(fut)),
@@ -264,13 +266,15 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ActorResponse<A, I, E>
+impl<A, M, I, E> MessageResponse<A, M> for ActorResponse<A, I, E>
 where
-    A: Actor,
+    A: Actor + Send,
     M: Message<Result = Result<I, E>>,
     A::Context: AsyncContext<A>,
+    I: Send + 'static,
+    E: Send + 'static,
 {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+    fn handle<R: ResponseChannel<M> + Send>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
                 ctx.spawn(fut.then(move |res, _, _| {

@@ -83,20 +83,20 @@ where
 #[must_use = "future do nothing unless polled"]
 pub struct TimerFunc<A>
 where
-    A: Actor,
+    A: Actor + Send,
 {
-    f: Option<Box<TimerFuncBox<A>>>,
+    f: Option<Box<TimerFuncBox<A> + Send>>,
     timeout: Delay,
 }
 
 impl<A> TimerFunc<A>
 where
-    A: Actor,
+    A: Actor + Send,
 {
     /// Creates a new `TimerFunc` with the given duration.
     pub fn new<F>(timeout: Duration, f: F) -> TimerFunc<A>
     where
-        F: FnOnce(&mut A, &mut A::Context) + 'static,
+        F: FnOnce(&mut A, &mut A::Context) + Send + 'static,
     {
         TimerFunc {
             f: Some(Box::new(f)),
@@ -105,11 +105,13 @@ where
     }
 }
 
-trait TimerFuncBox<A: Actor>: 'static {
+trait TimerFuncBox<A: Actor + Send>: 'static {
     fn call(self: Box<Self>, &mut A, &mut A::Context);
 }
 
-impl<A: Actor, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A> for F {
+impl<A: Actor + Send, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A>
+    for F
+{
     #[cfg_attr(feature = "cargo-clippy", allow(boxed_local))]
     fn call(self: Box<Self>, act: &mut A, ctx: &mut A::Context) {
         (*self)(act, ctx)
@@ -118,7 +120,7 @@ impl<A: Actor, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A> for
 
 impl<A> ActorFuture for TimerFunc<A>
 where
-    A: Actor,
+    A: Actor + Send,
 {
     type Item = ();
     type Error = ();
@@ -182,16 +184,16 @@ where
 /// # }
 /// ```
 #[must_use = "future do nothing unless polled"]
-pub struct IntervalFunc<A: Actor> {
-    f: Box<IntervalFuncBox<A>>,
+pub struct IntervalFunc<A: Actor + Send> {
+    f: Box<IntervalFuncBox<A> + Send>,
     interval: Interval,
 }
 
-impl<A: Actor> IntervalFunc<A> {
+impl<A: Actor + Send> IntervalFunc<A> {
     /// Creates a new `IntervalFunc` with the given interval duration.
     pub fn new<F>(timeout: Duration, f: F) -> IntervalFunc<A>
     where
-        F: FnMut(&mut A, &mut A::Context) + 'static,
+        F: FnMut(&mut A, &mut A::Context) + Send + 'static,
     {
         Self {
             f: Box::new(f),
@@ -200,18 +202,22 @@ impl<A: Actor> IntervalFunc<A> {
     }
 }
 
-trait IntervalFuncBox<A: Actor>: 'static {
+trait IntervalFuncBox<A: Actor + Send>: 'static {
     fn call(&mut self, &mut A, &mut A::Context);
 }
 
-impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {
+impl<A, F> IntervalFuncBox<A> for F
+where
+    A: Actor + Send,
+    F: FnMut(&mut A, &mut A::Context) + 'static,
+{
     #[cfg_attr(feature = "cargo-clippy", allow(boxed_local))]
     fn call(&mut self, act: &mut A, ctx: &mut A::Context) {
         self(act, ctx)
     }
 }
 
-impl<A: Actor> ActorStream for IntervalFunc<A> {
+impl<A: Actor + Send> ActorStream for IntervalFunc<A> {
     type Item = ();
     type Error = ();
     type Actor = A;
