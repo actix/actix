@@ -13,7 +13,7 @@ impl Message for Payload {
     type Result = ();
 }
 
-struct Node { 
+struct Node {
     limit: usize,
     next: Recipient<Payload>,
 }
@@ -45,7 +45,7 @@ fn main() {
     if  args.len() < 3 {
         print_usage_and_exit();
     }
-    let mut num_nodes = 2; 
+    let mut num_nodes = 2;
     if let Ok(arg_num_nodes) = args[1].parse::<usize>() {
         if arg_num_nodes <= 1 {
             eprintln!("Number of nodes must be > 1");
