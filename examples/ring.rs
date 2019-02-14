@@ -1,3 +1,11 @@
+/*
+ * Ring benchmark inspired by Programming Erlang: Software for a
+ * Concurrent World, by Joe Armstrong, Chapter 8.11.2
+ *
+ * "Write a ring benchmark. Create N processes in a ring. Send a
+ * message round the ring M times so that a total of N * M messages
+ * get sent. Time how long this takes for different values of N and M."
+ */
 extern crate actix;
 extern crate futures;
 
