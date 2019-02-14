@@ -71,11 +71,10 @@ fn main() {
 
     let system = System::new("test");
 
-
     println!("Setting up nodes");
-    let _: Addr<_> = Node::create(move|ctx| {
-        let first_addr : Addr<_> = ctx.address();
-        let mut prev_addr: Addr<_> = Node{limit: n_nodes * n_times, next: first_addr.recipient()}.start();
+    let _ = Node::create(move|ctx| {
+        let first_addr = ctx.address();
+        let mut prev_addr = Node{limit: n_nodes * n_times, next: first_addr.recipient()}.start();
         prev_addr.do_send(Payload(0));
 
         for _ in 2..n_nodes {
