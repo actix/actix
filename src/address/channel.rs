@@ -33,6 +33,8 @@ where
     fn boxed(&self) -> Box<Sender<M>>;
 
     fn hash(&self) -> usize;
+
+    fn connected(&self) -> bool;
 }
 
 /// The transmission end of a channel which is used to send values.
@@ -437,6 +439,10 @@ where
 
     fn hash(&self) -> usize {
         self.inner.as_ref() as *const _ as usize
+    }
+
+    fn connected(&self) -> bool {
+        self.connected()
     }
 }
 

@@ -213,6 +213,10 @@ where
             Err(SendError::Closed(_)) => RecipientRequest::new(None, None),
         }
     }
+
+    pub fn connected(&self) -> bool {
+        self.tx.connected()
+    }
 }
 
 impl<A: Actor, M: Message + Send + 'static> Into<Recipient<M>> for Addr<A>
