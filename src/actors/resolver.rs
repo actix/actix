@@ -3,6 +3,7 @@
 //! ## Example
 //!
 //! ```rust
+//! #![recursion_limit="128"]
 //! # extern crate actix;
 //! # extern crate futures;
 //! # extern crate tokio;
@@ -266,7 +267,7 @@ impl Handler<ConnectAddr> for Resolver {
     }
 }
 
-/// Resolver future
+/// A resolver future.
 struct ResolveFut {
     lookup: Option<BackgroundLookupIp>,
     port: u16,
@@ -378,7 +379,7 @@ impl ActorFuture for ResolveFut {
     }
 }
 
-/// Tcp stream connector
+/// A TCP stream connector.
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
     timeout: Delay,

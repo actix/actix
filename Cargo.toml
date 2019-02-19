@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.7.9"
+version = "0.7.11"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -28,10 +28,13 @@ members = ["examples/chat"]
 default = ["signal", "resolver"]
 
 # dns resolver
-resolver = ["trust-dns-resolver", "trust-dns-proto"]
+resolver = ["trust-dns-resolver"]
 
 # signal handling
 signal = ["tokio-signal"]
+
+# Adds assertion to prevent processing too many messages on event loop
+mailbox_assert = []
 
 [dependencies]
 actix_derive = "0.3"
@@ -61,7 +64,6 @@ uuid = { version = "0.7", features = ["v4"] }
 tokio-signal = { version = "0.2", optional = true }
 
 # dns resolver
-trust-dns-proto = { version = "^0.5.0", optional = true }
 trust-dns-resolver = { version = "^0.10.0", optional = true }
 
 [target.'cfg(unix)'.dependencies]

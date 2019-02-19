@@ -293,6 +293,21 @@ where
 
         modified
     }
+
+    fn clean_cancled_handle(&mut self) {
+        while self.ctx.parts().handles.len() > 2 {
+            let handle = self.ctx.parts().handles.pop().unwrap();
+            let mut idx = 0;
+            while idx < self.items.len() {
+                if self.items[idx].0 == handle {
+                    self.items.swap_remove(idx);
+                } else {
+                    idx += 1;
+                }
+            }
+        }
+
+    }
 }
 
 #[doc(hidden)]
@@ -312,17 +327,7 @@ where
 
             // check cancelled handles, just in case
             if self.merge() {
-                while self.ctx.parts().handles.len() > 2 {
-                    let handle = self.ctx.parts().handles.pop().unwrap();
-                    let mut idx = 0;
-                    while idx < self.items.len() {
-                        if self.items[idx].0 == handle {
-                            self.items.swap_remove(idx);
-                        } else {
-                            idx += 1;
-                        }
-                    }
-                }
+                self.clean_cancled_handle();
             }
         }
 
@@ -359,17 +364,8 @@ where
                             // this code is not very efficient, relaying on fact that
                             // cancellation should be rear also number of futures
                             // in actor context should be small
-                            while self.ctx.parts().handles.len() > 2 {
-                                let handle = self.ctx.parts().handles.pop().unwrap();
-                                let mut idx = 0;
-                                while idx < self.items.len() {
-                                    if self.items[idx].0 == handle {
-                                        self.items.swap_remove(idx);
-                                    } else {
-                                        idx += 1;
-                                    }
-                                }
-                            }
+                            self.clean_cancled_handle();
+
                             continue 'outer;
                         }
 

@@ -1,21 +1,21 @@
 use futures::{Async, Future, Poll, Stream};
 
-/// Helper trait that add helper method `finish()` to stream objects.
+/// Helper trait that adds the helper method `finish()` to stream objects.
 #[doc(hidden)]
 pub trait FinishStream: Sized {
     fn finish(self) -> Finish<Self>;
 }
 
 impl<S: Stream> FinishStream for S {
-    /// A combinator used to convert stream into a future, future resolves
-    /// when stream completes.
+    /// A combinator used to convert a stream into a future; the
+    /// future resolves when the stream completes.
     fn finish(self) -> Finish<S> {
         Finish::new(self)
     }
 }
 
-/// A combinator used to convert stream into a future, future resolves
-/// when stream completes.
+/// A combinator used to convert a stream into a future; the future
+/// resolves when the stream completes.
 ///
 /// This structure is produced by the `Stream::finish` method.
 #[derive(Debug)]

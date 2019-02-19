@@ -1,9 +1,9 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
-use std::sync::Arc;
-use std::fmt;
+use std::sync::{Arc, Weak};
 use std::{thread, usize};
 
 use futures::sync::oneshot::{channel as sync_channel, Receiver};
@@ -63,6 +63,19 @@ impl<A: Actor> fmt::Debug for AddressSender<A> {
     }
 }
 
+/// A weakly referenced version of `AddressSender`.
+///
+/// This is created by the `AddressSender::downgrade` method.
+pub struct WeakAddressSender<A: Actor> {
+    inner: Weak<Inner<A>>,
+}
+
+impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("WeakAddressSender").finish()
+    }
+}
+
 trait AssertKinds: Send + Sync + Clone {}
 
 /// The receiving end of a channel which implements the `Stream` trait.
@@ -87,13 +100,13 @@ struct Inner<A: Actor> {
     // channel as well as a flag signalling that the channel is closed.
     state: AtomicUsize,
 
-    // Atomic, FIFO queue used to send messages to the receiver
+    // Atomic, FIFO queue used to send messages to the receiver.
     message_queue: Queue<Envelope<A>>,
 
     // Atomic, FIFO queue used to send parked task handles to the receiver.
     parked_queue: Queue<Arc<Mutex<SenderTask>>>,
 
-    // Number of senders in existence
+    // Number of senders in existence.
     num_senders: AtomicUsize,
 
     // Handle to the receiver's task.
@@ -220,7 +233,7 @@ impl<A: Actor> AddressSender<A> {
 
     /// Attempts to send a message on this `Sender<A>` with blocking.
     ///
-    /// This function, must be called from inside of a task.
+    /// This function must be called from inside of a task.
     pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
     where
         A: Handler<M>,
@@ -298,6 +311,13 @@ impl<A: Actor> AddressSender<A> {
             let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
+        }
+    }
+
+    /// Downgrade to `WeakAddressSender` which can later be upgraded
+    pub fn downgrade(&self) -> WeakAddressSender<A> {
+        WeakAddressSender {
+            inner: Arc::downgrade(&self.inner),
         }
     }
 
@@ -506,6 +526,23 @@ impl<A: Actor> Hash for AddressSender<A> {
 
 //
 //
+// ===== impl WeakSender =====
+//
+//
+impl<A: Actor> WeakAddressSender<A> {
+    /// Attempts to upgrade the `WeakAddressSender<A>` pointer to an [`AddressSender<A>`]
+    ///
+    /// Returns [`None`] if the actor has since been dropped.
+    pub fn upgrade(&self) -> Option<AddressSender<A>> {
+        match Weak::upgrade(&self.inner) {
+            Some(inner) => Some(AddressSenderProducer { inner }.sender()),
+            None => None,
+        }
+    }
+}
+
+//
+//
 // ===== impl SenderProducer =====
 //
 //
@@ -583,20 +620,20 @@ impl<A: Actor> AddressSenderProducer<A> {
 //
 //
 impl<A: Actor> AddressReceiver<A> {
-    /// Are any senders still connected
+    /// Returns whether any senders are still connected.
     pub fn connected(&self) -> bool {
         self.inner.num_senders.load(SeqCst) != 0
     }
 
-    /// Get channel capacity
+    /// Returns the channel capacity.
     pub fn capacity(&self) -> usize {
         self.inner.buffer.load(Relaxed)
     }
 
-    /// Set channel capacity
+    /// Sets the channel capacity.
     ///
-    /// This method wakes up all waiting senders if new capacity is greater
-    /// than current
+    /// This method wakes up all waiting senders if the new capacity
+    /// is greater than the current one.
     pub fn set_capacity(&mut self, cap: usize) {
         let buffer = self.inner.buffer.load(Relaxed);
         self.inner.buffer.store(cap, Relaxed);
@@ -621,7 +658,7 @@ impl<A: Actor> AddressReceiver<A> {
         }
     }
 
-    /// Get sender side of the channel
+    /// Returns the sender side of the channel.
     pub fn sender(&self) -> AddressSender<A> {
         // this code same as Sender::clone
         let mut curr = self.inner.num_senders.load(SeqCst);
@@ -649,7 +686,7 @@ impl<A: Actor> AddressReceiver<A> {
         }
     }
 
-    /// Create sender producer
+    /// Creates the sender producer.
     pub fn sender_producer(&self) -> AddressSenderProducer<A> {
         AddressSenderProducer {
             inner: self.inner.clone(),

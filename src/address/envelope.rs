@@ -6,7 +6,7 @@ use actor::{Actor, AsyncContext};
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
 
-/// Converter trait, packs message to suitable envelope
+/// Converter trait, packs message into a suitable envelope.
 pub trait ToEnvelope<A, M: Message>
 where
     A: Actor + Handler<M>,

@@ -6,7 +6,7 @@ Actix is a Rust actors framework.
 * [API Documentation (Development)](http://actix.github.io/actix/actix/)
 * [API Documentation (Releases)](https://docs.rs/actix/)
 * Cargo package: [actix](https://crates.io/crates/actix)
-* Minimum supported Rust version: 1.26 or later
+* Minimum supported Rust version: 1.31 or later
 
 ---
 
@@ -38,21 +38,21 @@ extern crate actix;
 
 fn main() {
     let system = actix::System::new("test");
-    
+
     system.run();
 }
 ```
 
-Actix uses the [tokio](https://github.com/tokio-rs/tokio) event loop. 
+Actix uses the [tokio](https://github.com/tokio-rs/tokio) event loop.
 `System::new()` creates a new event loop and starts the `System` actor.
-`system.run()` starts the tokio event loop, and will finish once the `System` actor 
+`system.run()` starts the tokio event loop, and will finish once the `System` actor
 receives the `SystemExit` message.
 
 Let's create a simple Actor.
 
 ### Implement an Actor
 
-In order to define an actor you need to define a struct and have it implement 
+In order to define an actor you need to define a struct and have it implement
 the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
 
 
@@ -81,11 +81,11 @@ fn main() {
 ```
 
 Spawning a new actor is achieved via the `start` and `create` methods of
-the [Actor](https://actix.github.io/actix/actix/trait.Actor.html) 
-trait. It provides several different ways of creating actors, for details check docs. 
-You can implement `started`, `stopping` and `stopped` methods of the Actor trait. 
+the [Actor](https://actix.github.io/actix/actix/trait.Actor.html)
+trait. It provides several different ways of creating actors, for details check docs.
+You can implement `started`, `stopping` and `stopped` methods of the Actor trait.
 `started` gets called when actor starts and `stopping` when actor finishes.
-Check [API documentation](https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle) 
+Check [API documentation](https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle)
 for more information on the actor lifecycle.
 
 ### Handle messages
@@ -129,13 +129,13 @@ fn main() {
 
     let addr = Summator.start();
     let res = addr.send(Sum(10, 5));  // <- send message and get future for result
-    
+
     Arbiter::spawn(res.then(|res| {
         match res {
             Ok(result) => println!("SUM: {}", result),
             _ => println!("Something wrong"),
         }
-        
+
         System::current().stop();
         future::result(Ok(()))
     }));
@@ -153,7 +153,7 @@ trait defines the result type for a message.
 You may have noticed that methods of `Actor` and `Handler` traits accept `&mut self`, so you are
 welcome to store anything in an actor and mutate it whenever necessary.
 
-Address objects require an actor type, but if we just want to send a specific message to 
+Address objects require an actor type, but if we just want to send a specific message to
 an actor that can handle the message, we can use the `Recipient` interface. Let's create
 a new actor that uses `Recipient`.
 
@@ -167,7 +167,7 @@ struct Ping { pub id: usize }
 
 // Actor definition
 struct Game {
-    counter: usize, 
+    counter: usize,
     addr: Recipient<Ping>,
 }
 
@@ -181,12 +181,12 @@ impl Handler<Ping> for Game {
 
     fn handle(&mut self, msg: Ping, ctx: &mut Context<Self>) {
         self.counter += 1;
-        
+
         if self.counter > 10 {
             System::current().stop();
         } else {
             println!("Ping received {:?}", msg.id);
-            
+
             // wait 100 nanos
             ctx.run_later(Duration::new(0, 100), move |act, _| {
                 act.addr.do_send(Ping{id: msg.id + 1});
@@ -204,10 +204,10 @@ fn main() {
         // now we can get an address of the first actor and create the second actor
         let addr = ctx.address();
         let addr2 = Game{counter: 0, addr: addr.recipient()}.start();
-        
+
         // let's start pings
         addr2.do_send(Ping{id: 10});
-        
+
         // now we can finally create first actor
         Game{counter: 0, addr: addr2.recipient()}
     });
@@ -223,7 +223,7 @@ More information on signal handling is in the
 ### chat example
 
 There is a
-[chat example](https://github.com/actix/actix/tree/master/examples/chat) 
+[chat example](https://github.com/actix/actix/tree/master/examples/chat)
 which provides a basic example of networking client/server service.
 
 

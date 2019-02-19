@@ -8,49 +8,49 @@ use arbiter::Arbiter;
 use context::Context;
 use fut::{self, ActorFuture};
 
-/// Message handler
+/// Describes how to handle messages of a specific type.
 ///
-/// `Handler` implementation is a general way how to handle
-/// incoming messages, streams, futures.
+/// Implementing `Handler` is a general way to handle incoming
+/// messages, streams, and futures.
 ///
-/// `M` is a message which can be handled by the actor.
+/// The type `M` is a message which can be handled by the actor.
 #[allow(unused_variables)]
 pub trait Handler<M>
 where
     Self: Actor,
     M: Message,
 {
-    /// The type of value that this handle will return
+    /// The type of value that this handler will return.
     type Result: MessageResponse<Self, M>;
 
-    /// Method is called for every message received by this Actor
+    /// This method is called for every message received by this actor.
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result;
 }
 
-/// Message type
+/// Represent message that can be handled by an actor.
 pub trait Message {
     /// The type of value that this message will resolved with if it is
     /// successful.
     type Result: 'static;
 }
 
-/// Helper type that implements `MessageResponse` trait
+/// A helper type that implements the `MessageResponse` trait.
 pub struct MessageResult<M: Message>(pub M::Result);
 
-/// A specialized actor future for async message handler
+/// A specialized actor future for asynchronous message handling.
 pub type ResponseActFuture<A, I, E> = Box<ActorFuture<Item = I, Error = E, Actor = A>>;
 
-/// A specialized future for async message handler
+/// A specialized future for asynchronous message handling.
 pub type ResponseFuture<I, E> = Box<Future<Item = I, Error = E>>;
 
-/// Trait defines message response channel
+/// A trait that defines a message response channel.
 pub trait ResponseChannel<M: Message>: 'static {
     fn is_canceled(&self) -> bool;
 
     fn send(self, response: M::Result);
 }
 
-/// Trait which defines message response
+/// A trait which defines message responses.
 pub trait MessageResponse<A: Actor, M: Message> {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>);
 }
@@ -178,7 +178,7 @@ impl<I, E> fmt::Debug for Response<I, E> {
 }
 
 impl<I, E> Response<I, E> {
-    /// Create async response
+    /// Creates an asynchronous response.
     pub fn async<T>(fut: T) -> Self
     where
         T: Future<Item = I, Error = E> + 'static,
@@ -188,7 +188,7 @@ impl<I, E> Response<I, E> {
         }
     }
 
-    /// Create response
+    /// Creates a response.
     pub fn reply(val: Result<I, E>) -> Self {
         Response {
             item: ResponseTypeItem::Result(val),
@@ -226,7 +226,7 @@ enum ActorResponseTypeItem<A, I, E> {
     Fut(Box<ActorFuture<Item = I, Error = E, Actor = A>>),
 }
 
-/// Helper type for representing different type of message responses
+/// A helper type for representing different types of message responses.
 pub struct ActorResponse<A, I, E> {
     item: ActorResponseTypeItem<A, I, E>,
 }
@@ -242,14 +242,14 @@ impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
 }
 
 impl<A: Actor, I, E> ActorResponse<A, I, E> {
-    /// Create response
+    /// Creates a response.
     pub fn reply(val: Result<I, E>) -> Self {
         ActorResponse {
             item: ActorResponseTypeItem::Result(val),
         }
     }
 
-    /// Create async response
+    /// Creates an asynchronous response.
     pub fn async<T>(fut: T) -> Self
     where
         T: ActorFuture<Item = I, Error = E, Actor = A> + 'static,

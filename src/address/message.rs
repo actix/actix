@@ -11,9 +11,9 @@ use handler::{Handler, Message};
 use super::channel::{AddressSender, Sender};
 use super::{MailboxError, SendError, ToEnvelope};
 
-/// `Request` is a `Future` which represents asynchronous message sending
+/// A `Future` which represents an asynchronous message sending
 /// process.
-#[must_use = "You have to wait on request otherwise Message wont be delivered"]
+#[must_use = "You have to wait on request otherwise the Message wont be delivered"]
 pub struct Request<A, M>
 where
     A: Handler<M>,
@@ -101,8 +101,7 @@ where
     }
 }
 
-/// `RecipientRequest` is a `Future` which represents asynchronous message
-/// sending process.
+/// A `Future` which represents an asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
 pub struct RecipientRequest<M>
 where

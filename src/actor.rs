@@ -13,80 +13,90 @@ use utils::{IntervalFunc, TimerFunc};
 #[allow(unused_variables)]
 /// Actors are objects which encapsulate state and behavior.
 ///
-/// Actors run within specific execution context
-/// [Context<A>](struct.Context.html).
-/// Context object is available only during execution. Each actor has separate
-/// execution context. Also execution context controls lifecycle of an actor.
+/// Actors run within a specific execution context
+/// [`Context<A>`](struct.Context.html). The context object is available
+/// only during execution. Each actor has a separate execution
+/// context. The execution context also controls the lifecycle of an
+/// actor.
 ///
-/// Actors communicate exclusively by exchanging messages. Sender actor can
-/// wait for response. Actors are not referenced directly, but by
-/// address [`Addr`](struct.Addr.html)
-/// To be able to handle specific message actor has to provide
-/// [`Handler<M>`](trait.Handler.html)
-/// implementation for this message. All messages are statically typed. Message
-/// could be handled in asynchronous fashion. Actor can spawn other actors or
-/// add futures or streams to execution context. Actor trait provides several
-/// methods that allow to control actor lifecycle.
+/// Actors communicate exclusively by exchanging messages. The sender
+/// actor can wait for a response. Actors are not referenced directly,
+/// but by address [`Addr`](struct.Addr.html) To be able to handle a
+/// specific message actor has to provide a
+/// [`Handler<M>`](trait.Handler.html) implementation for this
+/// message. All messages are statically typed. A message can be
+/// handled in asynchronous fashion. An actor can spawn other actors
+/// or add futures or streams to the execution context. The actor
+/// trait provides several methods that allow controlling the actor
+/// lifecycle.
 ///
 /// # Actor lifecycle
 ///
 /// ## Started
 ///
-/// Actor starts in `Started` state, during this state `started` method get
-/// called.
+/// An actor starts in the `Started` state, during this state the
+/// `started` method gets called.
 ///
 /// ## Running
 ///
-/// After Actor's method `started` get called, actor transitions to `Running`
-/// state. Actor can stay in `running` state indefinitely long.
+/// After an actor's `started` method got called, the actor
+/// transitions to the `Running` state. An actor can stay in the
+/// `running` state for an indefinite amount of time.
 ///
 /// ## Stopping
 ///
-/// Actor execution state changes to `stopping` state in following situations,
+/// The actor's execution state changes to `stopping` in the following
+/// situations:
 ///
-/// * `Context::stop` get called by actor itself
+/// * `Context::stop` gets called by actor itself
 /// * all addresses to the actor get dropped
-/// * no evented objects are registered in context.
+/// * no evented objects are registered in its context.
 ///
-/// Actor could restore from `stopping` state to `running` state by creating new
-/// address or adding evented object, like future or stream, in
-/// `Actor::stopping` method.
+/// An actor can return from the `stopping` state to the `running`
+/// state by creating a new address or adding an evented object, like
+/// a future or stream, in its `Actor::stopping` method.
 ///
-/// If actor changed state to a `stopping` state because of `Context::stop()`
-/// get called then context immediately stops processing incoming messages and
-/// calls `Actor::stopping()` method. If actor does not restore back to a
-/// `running` state, all unprocessed messages get dropped.
+/// If an actor changed to a `stopping` state because
+/// `Context::stop()` got called, the context then immediately stops
+/// processing incoming messages and calls the `Actor::stopping()`
+/// method. If an actor does not return back to a `running` state,
+/// all unprocessed messages get dropped.
 ///
 /// ## Stopped
 ///
-/// If actor does not modify execution context during stopping state actor
-/// state changes to `Stopped`. This state is considered final and at this
-/// point actor get dropped.
+/// If an actor does not modify execution context while in stopping
+/// state, the actor state changes to `Stopped`. This state is
+/// considered final and at this point the actor gets dropped.
 ///
 pub trait Actor: Sized + 'static {
     /// Actor execution context type
     type Context: ActorContext;
 
-    /// Method is called when actor get polled first time.
+    /// Called when an actor gets polled the first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
 
-    /// Method is called after an actor is in `Actor::Stopping` state. There
-    /// could be several reasons for stopping. `Context::stop` get called
-    /// by the actor itself. All addresses to current actor get dropped and
-    /// no more evented objects left in the context.
+    /// Called after an actor is in `Actor::Stopping` state.
     ///
-    /// Actor could restore from stopping state by returning
-    /// `Running::Continue` value.
+    /// There can be several reasons for stopping:
+    ///
+    /// - `Context::stop` gets called by the actor itself.
+    /// - All addresses to the current actor get dropped and no more
+    ///   evented objects are left in the context.
+    ///
+    /// An actor can return from the stopping state to the running
+    /// state by returning `Running::Continue`.
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         Running::Stop
     }
 
-    /// Method is called after an actor is stopped, it can be used to perform
-    /// any needed cleanup work or spawning more actors. This is final state,
-    /// after this call actor get dropped.
+    /// Called after an actor is stopped.
+    ///
+    /// This method can be used to perform any needed cleanup work or
+    /// to spawn more actors. This is the final state, after this
+    /// method got called, the actor will be dropped.
     fn stopped(&mut self, ctx: &mut Self::Context) {}
 
-    /// Start new asynchronous actor, returns address of newly created actor.
+    /// Start a new asynchronous actor, returning its address.
     ///
     /// # Examples
     ///
@@ -113,7 +123,11 @@ pub trait Actor: Sized + 'static {
         Context::new().run(self)
     }
 
-    /// Start new asynchronous actor, returns address of newly created actor.
+    /// Construct and start a new asynchronous actor, returning its
+    /// address.
+    ///
+    /// This is constructs a new actor using the `Default` trait, and
+    /// invokes its `start` method.
     fn start_default() -> Addr<Self>
     where
         Self: Actor<Context = Context<Self>> + Default,
@@ -121,7 +135,9 @@ pub trait Actor: Sized + 'static {
         Self::default().start()
     }
 
-    /// Use `create` method, if you need `Context` object during actor
+    /// Start a new asynchronous actor given a `Context`.
+    ///
+    /// Use this method if you need the `Context` object during actor
     /// initialization.
     ///
     /// # Examples
@@ -156,18 +172,21 @@ pub trait Actor: Sized + 'static {
 }
 
 #[allow(unused_variables)]
-/// Actors with ability to restart after failure
+/// Actors with the ability to restart after failure.
 ///
-/// Supervised actors can be managed by [Supervisor](struct.Supervisor.html).
-/// Lifecycle events are extended with `restarting` method.
-/// If actor fails, supervisor creates new execution context and restarts actor.
-/// `restarting` method is called during restart. After call to this method
-/// Actor execute state changes to `Started` and normal lifecycle process
-/// starts.
+/// Supervised actors can be managed by a
+/// [`Supervisor`](struct.Supervisor.html). As an additional lifecycle
+/// event, the `restarting` method can be implemented.
 ///
-/// `restarting` method get called with newly constructed `Context` object.
+/// If a supervised actor fails, its supervisor creates new execution
+/// context and restarts the actor, invoking its `restarting` method.
+/// After a call to this method, the actor's execution state changes
+/// to `Started` and the regular lifecycle process starts.
+///
+/// The `restarting` method gets called with the newly constructed
+/// `Context` object.
 pub trait Supervised: Actor {
-    /// Method called when supervisor restarting failed actor
+    /// Called when the supervisor restarts a failed actor.
     fn restarting(&mut self, ctx: &mut <Self as Actor>::Context) {}
 }
 
@@ -191,21 +210,24 @@ pub enum Running {
 }
 
 impl ActorState {
-    /// Indicates if actor is alive
+    /// Indicates whether the actor is alive.
     pub fn alive(self) -> bool {
         self == ActorState::Started || self == ActorState::Running
     }
-    /// Indicates if actor is stopped of stopping
+    /// Indicates whether the actor is stopped or stopping.
     pub fn stopping(self) -> bool {
         self == ActorState::Stopping || self == ActorState::Stopped
     }
 }
 
-/// Actor execution context
+/// Actor execution context.
 ///
-/// Each actor runs within specific execution context. `Actor::Context` defines
-/// context. Execution context defines type of execution, actor communication
-/// channels (message handling).
+/// Each actor runs within a specific execution context. The actor's
+/// associated type `Actor::Context` defines the context to use for
+/// the actor, and must implement the `ActorContext` trait.
+///
+/// The execution context defines the type of execution, and the
+/// actor's communication channels (message handling).
 pub trait ActorContext: Sized {
     /// Immediately stop processing incoming messages and switch to a
     /// `stopping` state
@@ -218,36 +240,45 @@ pub trait ActorContext: Sized {
     fn state(&self) -> ActorState;
 }
 
-/// Asynchronous execution context
+/// Asynchronous execution context.
 pub trait AsyncContext<A>: ActorContext
 where
     A: Actor<Context = Self>,
 {
-    /// Return `Address` of the context
+    /// Returns the address of the context.
     fn address(&self) -> Addr<A>;
 
-    /// Spawn async future into context. Returns handle of the item,
-    /// could be used for cancelling execution.
+    /// Spawns a future into the context.
     ///
-    /// All futures cancel during actor stopping stage.
+    /// Returns a handle of the spawned future, which can be used for
+    /// cancelling its execution.
+    ///
+    /// All futures spawned into an actor's context are cancelled
+    /// during the actor's stopping stage.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
 
-    /// Spawn future into the context. Stop processing any of incoming events
-    /// until this future resolves.
+    /// Spawns a future into the context, waiting for it to resolve.
+    ///
+    /// This stops processing any incoming events until the future
+    /// resolves.
     fn wait<F>(&mut self, fut: F)
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
 
-    /// Check if context is paused (waiting for future completion or stopping)
+    /// Checks if the context is paused (waiting for future completion or stopping).
     fn waiting(&self) -> bool;
 
-    /// Cancel future. handle is a value returned by `spawn` method.
+    /// Cancels a spawned future.
+    ///
+    /// The `handle` is a value returned by the `spawn` method.
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool;
 
-    /// This method register stream to an actor context and
-    /// allows to handle `Stream` in similar way as normal actor messages.
+    /// Registers a stream with the context.
+    ///
+    /// This allows handling a `Stream` in a way similar to normal
+    /// actor messages.
     ///
     /// ```rust
     /// # #[macro_use] extern crate actix;
@@ -295,7 +326,10 @@ where
         <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
     }
 
-    /// This method is similar to `add_stream` but it skips stream errors.
+    /// Registers a stream with the context, ignoring errors.
+    ///
+    /// This method is similar to `add_stream` but it skips stream
+    /// errors.
     ///
     /// ```rust
     /// # #[macro_use] extern crate actix;
@@ -344,38 +378,42 @@ where
         }
     }
 
-    /// Send message `msg` to self.
+    /// Sends the message `msg` to self.
     fn notify<M>(&mut self, msg: M)
     where
         A: Handler<M>,
         M: Message + 'static,
     {
         if self.state() == ActorState::Stopped {
-            error!("Context::add_timeout called for stopped actor.");
+            error!("Context::notify called for stopped actor.");
         } else {
             self.spawn(ActorMessageItem::new(msg));
         }
     }
 
-    /// Send message `msg` to self after specified period of time. Returns
-    /// spawn handle which could be used for cancellation. Notification get
-    /// cancelled if context's stop method get called.
+    /// Sends the message `msg` to self after a specified period of time.
+    ///
+    /// Returns a spawn handle which can be used for cancellation. The
+    /// notification gets cancelled if the context's stop method gets
+    /// called.
     fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
     where
         A: Handler<M>,
         M: Message + 'static,
     {
         if self.state() == ActorState::Stopped {
-            error!("Context::add_timeout called for stopped actor.");
+            error!("Context::notify_later called for stopped actor.");
             SpawnHandle::default()
         } else {
             self.spawn(ActorDelayedMessageItem::new(msg, after))
         }
     }
 
-    /// Execute closure after specified period of time within same Actor and
-    /// Context. Execution get cancelled if context's stop method get
-    /// called.
+    /// Executes a closure after a specified period of time.
+    ///
+    /// The closure gets passed the same actor and its
+    /// context. Execution gets cancelled if the context's stop method
+    /// gets called.
     fn run_later<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
     where
         F: FnOnce(&mut A, &mut A::Context) + 'static,
@@ -383,8 +421,8 @@ where
         self.spawn(TimerFunc::new(dur, f))
     }
 
-    /// Spawns a job to execute the given closure periodically, at a specified
-    /// fixed interval
+    /// Spawns a job to execute the given closure periodically, at a
+    /// specified fixed interval.
     fn run_interval<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
     where
         F: FnMut(&mut A, &mut A::Context) + 'static,
@@ -393,12 +431,14 @@ where
     }
 }
 
-/// Spawned future handle. Could be used for cancelling spawned future.
+/// A handle to a spawned future.
+///
+/// Can be used to cancel the future.
 #[derive(Eq, PartialEq, Debug, Copy, Clone, Hash)]
 pub struct SpawnHandle(usize);
 
 impl SpawnHandle {
-    /// Get next handle
+    /// Gets the next handle.
     pub fn next(self) -> SpawnHandle {
         SpawnHandle(self.0 + 1)
     }

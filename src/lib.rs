@@ -1,11 +1,12 @@
-//! # Actix is a rust actors framework.
+//! # Actix is a rust actors framework
 //!
-//! [Actors](https://actix.github.io/actix/actix/trait.Actor.html) are objects
-//! which encapsulate state and behavior, they communicate exclusively
-//! by exchanging messages. Actix actors are implemented on top of [Tokio](https://tokio.rs).
-//! Multiple actors could run in same thread. Actors could run in multiple
-//! threads with support of [`Arbiter`](https://actix.github.io/actix/actix/struct.Arbiter.html).
-//! Actors exchange typed messages.
+//! [Actors](https://actix.github.io/actix/actix/trait.Actor.html) are
+//! objects which encapsulate state and behavior, they communicate
+//! exclusively by exchanging messages. Actix actors are implemented
+//! on top of [Tokio](https://tokio.rs).  Multiple actors can run in
+//! same thread. Actors can run in multiple threads using the
+//! [`Arbiter`](struct.Arbiter.html) API. Actors exchange typed
+//! messages.
 //!
 //! ## Documentation
 //!
@@ -95,13 +96,16 @@ pub mod registry;
 pub mod sync;
 pub mod utils;
 
-pub use actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised};
-pub use address::{Addr, MailboxError, Recipient};
-pub use arbiter::Arbiter;
+pub use actor::{
+    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+};
+pub use address::{Addr, MailboxError, Recipient, WeakAddr};
+pub use arbiter::{Arbiter, ArbiterBuilder};
 pub use context::Context;
 pub use fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
 pub use handler::{
-    ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture, ResponseFuture,
+    ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
+    ResponseFuture,
 };
 pub use registry::{ArbiterService, Registry, SystemRegistry, SystemService};
 pub use stream::StreamHandler;
@@ -113,7 +117,7 @@ pub use system::{System, SystemRunner};
 pub use context::ContextFutureSpawner;
 
 pub mod prelude {
-    //! The `actix` prelude
+    //! The `actix` prelude.
     //!
     //! The purpose of this module is to alleviate imports of many common actix
     //! traits by adding a glob import to the top of actix heavy modules:
@@ -129,12 +133,15 @@ pub mod prelude {
     pub use actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
-    pub use address::{Addr, MailboxError, Recipient, RecipientRequest, Request, SendError};
+    pub use address::{
+        Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
+    };
     pub use arbiter::Arbiter;
     pub use context::{Context, ContextFutureSpawner};
     pub use fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use handler::{
-        ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture, ResponseFuture,
+        ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
+        ResponseFuture,
     };
     pub use registry::{ArbiterService, SystemService};
     pub use stream::StreamHandler;
@@ -151,7 +158,7 @@ pub mod prelude {
 }
 
 pub mod dev {
-    //! The `actix` prelude for library developers
+    //! The `actix` prelude for library developers.
     //!
     //! The purpose of this module is to alleviate imports of many common actix
     //! traits by adding a glob import to the top of actix heavy modules:
@@ -173,15 +180,16 @@ pub mod dev {
     pub use registry::{Registry, SystemRegistry};
 }
 
-/// Start the System and execute supplied future.
+/// Starts the system and executes the supplied future.
 ///
 /// This function does the following:
 ///
-/// * Creates and starts actix System with default configuration.
-/// * Spawn the given future onto the current arbiter.
-/// * Block the current thread until the system shuts down.
+/// * Creates and starts the actix system with default configuration.
+/// * Spawns the given future onto the current arbiter.
+/// * Blocks the current thread until the system shuts down.
 ///
-/// `run` functions returns when `System::current().stop()` method get called.
+/// The `run` function returns when the `System::current().stop()`
+/// method gets called.
 ///
 /// # Examples
 ///
@@ -204,7 +212,7 @@ pub mod dev {
 ///
 /// # Panics
 ///
-/// This function panics if actix system is already running.
+/// This function panics if the actix system is already running.
 pub fn run<F, R>(f: F)
 where
     F: FnOnce() -> R,
@@ -223,7 +231,7 @@ where
 ///
 /// # Panics
 ///
-/// This function panics if actix system is not running.
+/// This function panics if the actix system is not running.
 pub fn spawn<F>(f: F)
 where
     F: futures::Future<Item = (), Error = ()> + 'static,
