@@ -108,7 +108,7 @@ pub(crate) struct ActorStream<A, M, E, S> {
 
 impl<A, M, E, S> ActorStream<A, M, E, S> {
     pub fn new(fut: S) -> Self {
-        ActorStream {
+        Self {
             stream: fut,
             started: false,
             act: PhantomData,

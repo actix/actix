@@ -84,18 +84,18 @@ where
     A: Actor<Context = Self>,
 {
     #[inline]
-    pub(crate) fn new() -> Context<A> {
+    pub(crate) fn new() -> Self {
         let mb = Mailbox::default();
-        Context {
+        Self {
             parts: ContextParts::new(mb.sender_producer()),
             mb: Some(mb),
         }
     }
 
     #[inline]
-    pub fn with_receiver(rx: AddressReceiver<A>) -> Context<A> {
+    pub fn with_receiver(rx: AddressReceiver<A>) -> Self {
         let mb = Mailbox::new(rx);
-        Context {
+        Self {
             parts: ContextParts::new(mb.sender_producer()),
             mb: Some(mb),
         }

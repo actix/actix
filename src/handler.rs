@@ -64,7 +64,7 @@ where
     }
 
     fn send(self, response: M::Result) {
-        let _ = SyncSender::send(self, response);
+        let _ = Self::send(self, response);
     }
 }
 
@@ -90,7 +90,7 @@ where
 impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for Result<I, E>
 where
     A: Actor,
-    M: Message<Result = Result<I, E>>,
+    M: Message<Result = Self>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -102,7 +102,7 @@ where
 impl<A, M, I: 'static> MessageResponse<A, M> for Option<I>
 where
     A: Actor,
-    M: Message<Result = Option<I>>,
+    M: Message<Result = Self>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -114,7 +114,7 @@ where
 impl<A, M, B> MessageResponse<A, M> for Addr<B>
 where
     A: Actor,
-    M: Message<Result = Addr<B>>,
+    M: Message<Result = Self>,
     B: Actor<Context = Context<B>>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
@@ -183,14 +183,14 @@ impl<I, E> Response<I, E> {
     where
         T: Future<Item = I, Error = E> + 'static,
     {
-        Response {
+        Self {
             item: ResponseTypeItem::Fut(Box::new(fut)),
         }
     }
 
     /// Creates a response.
     pub fn reply(val: Result<I, E>) -> Self {
-        Response {
+        Self {
             item: ResponseTypeItem::Result(val),
         }
     }
@@ -244,7 +244,7 @@ impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
 impl<A: Actor, I, E> ActorResponse<A, I, E> {
     /// Creates a response.
     pub fn reply(val: Result<I, E>) -> Self {
-        ActorResponse {
+        Self {
             item: ActorResponseTypeItem::Result(val),
         }
     }
@@ -254,7 +254,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     where
         T: ActorFuture<Item = I, Error = E, Actor = A> + 'static,
     {
-        ActorResponse {
+        Self {
             item: ActorResponseTypeItem::Fut(Box::new(fut)),
         }
     }

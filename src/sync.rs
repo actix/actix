@@ -116,7 +116,7 @@ where
         }
 
         let (tx, rx) = channel::channel(0);
-        Arbiter::spawn(SyncArbiter {
+        Arbiter::spawn(Self {
             queue: Some(sender),
             msgs: rx,
         });
@@ -166,7 +166,7 @@ where
 
 impl<A, M> ToEnvelope<A, M> for SyncContext<A>
 where
-    A: Actor<Context = SyncContext<A>> + Handler<M>,
+    A: Actor<Context = Self> + Handler<M>,
     M: Message + Send + 'static,
     M::Result: Send,
 {
@@ -178,7 +178,7 @@ where
 /// Sync actor execution context
 pub struct SyncContext<A>
 where
-    A: Actor<Context = SyncContext<A>>,
+    A: Actor<Context = Self>,
 {
     act: Option<A>,
     queue: cb_channel::Receiver<Envelope<A>>,
@@ -194,7 +194,7 @@ where
     /// Create new SyncContext
     fn new(factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<Envelope<A>>) -> Self {
         let act = factory();
-        SyncContext {
+        Self {
             queue,
             factory,
             act: Some(act),
@@ -289,7 +289,7 @@ where
     M::Result: Send,
 {
     pub fn new(msg: M, tx: Option<SyncSender<M::Result>>) -> Self {
-        SyncContextEnvelope {
+        Self {
             tx,
             msg: Some(msg),
             actor: PhantomData,

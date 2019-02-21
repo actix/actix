@@ -50,7 +50,7 @@ where
 {
     #[inline]
     pub fn new(msgs: AddressReceiver<A>) -> Self {
-        Mailbox { msgs }
+        Self { msgs }
     }
 
     pub fn capacity(&self) -> usize {
