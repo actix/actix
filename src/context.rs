@@ -125,6 +125,24 @@ where
     /// Sets the mailbox capacity.
     ///
     /// The default mailbox capacity is 16 messages.
+    /// #Examples
+    /// ```
+    /// # extern crate actix;
+    /// # use actix::prelude::*;
+    /// struct MyActor;
+    /// impl Actor for MyActor {
+    ///     type Context = Context<Self>;
+    ///
+    ///     fn started(&mut self, ctx: &mut Self::Context) {
+    ///         ctx.set_mailbox_capacity(1);
+    ///     }
+    /// }
+    ///
+    /// # fn main() {
+    /// # System::new("test");
+    /// let addr = MyActor.start();
+    /// # }
+    /// ```
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
         self.parts.set_mailbox_capacity(cap)
     }

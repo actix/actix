@@ -230,13 +230,16 @@ impl ActorState {
 /// actor's communication channels (message handling).
 pub trait ActorContext: Sized {
     /// Immediately stop processing incoming messages and switch to a
-    /// `stopping` state
+    /// `stopping` state. This only affectrs actors that are currently
+    /// `running`. Future attempts to queue messages will fail.
     fn stop(&mut self);
 
-    /// Terminate actor execution
+    /// Terminate actor execution unconditionally. This sets the actor
+    /// into the `stopped` state. This causes future attempts to queue
+    /// messages to fail.
     fn terminate(&mut self);
 
-    /// Actor execution state
+    /// View the current Actor execution state.
     fn state(&self) -> ActorState;
 }
 

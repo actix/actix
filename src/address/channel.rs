@@ -306,6 +306,9 @@ impl<A: Actor> AddressSender<A> {
         if self.inc_num_messages().is_none() {
             Err(SendError::Closed(msg))
         } else {
+            // If inc_num_messages returned Some(park_self), then the mailbox is still active.
+            // We ignore the boolean (indicating to park and wait) in the Some, and queue the
+            // message regardless.
             let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
