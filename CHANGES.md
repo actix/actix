@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Introduced methods `Sender::connected()`, `AddressSender::connected()`
+  and `Recipient::connected()` to check availability of alive actor.
+
 - Added `WeakAddr<A>` to weak reference an actor
 
 ## [0.7.9] (2018-12-11)
