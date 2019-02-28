@@ -1,5 +1,12 @@
 # CHANGES
 
+## [TBD] (TBD)
+
+### Changed
+
+- Introduced methods `Sender::connected()`, `AddressSender::connected()`
+  and `Recipient::connected()` to check availability of alive actor.
+
 ## [0.7.10] (2019-01-16)
 
 ### Changed
