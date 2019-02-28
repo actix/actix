@@ -230,7 +230,7 @@ impl ActorState {
 /// actor's communication channels (message handling).
 pub trait ActorContext: Sized {
     /// Immediately stop processing incoming messages and switch to a
-    /// `stopping` state. This only affectrs actors that are currently
+    /// `stopping` state. This only affects actors that are currently
     /// `running`. Future attempts to queue messages will fail.
     fn stop(&mut self);
 
@@ -239,7 +239,7 @@ pub trait ActorContext: Sized {
     /// messages to fail.
     fn terminate(&mut self);
 
-    /// View the current Actor execution state.
+    /// Get or retrieve the current Actor execution state.
     fn state(&self) -> ActorState;
 }
 
@@ -381,7 +381,9 @@ where
         }
     }
 
-    /// Sends the message `msg` to self.
+    /// Sends the message `msg` to self. This bypasses the mailbox capacity, and
+    /// will always queue the message. If the actor is in the `stopped` state, an
+    /// error will be raised.
     fn notify<M>(&mut self, msg: M)
     where
         A: Handler<M>,
@@ -398,7 +400,9 @@ where
     ///
     /// Returns a spawn handle which can be used for cancellation. The
     /// notification gets cancelled if the context's stop method gets
-    /// called.
+    /// called. This bypasses the mailbox capacity, and
+    /// will always queue the message. If the actor is in the `stopped` state, an
+    /// error will be raised.
     fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
     where
         A: Handler<M>,

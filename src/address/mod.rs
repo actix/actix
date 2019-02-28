@@ -82,7 +82,7 @@ impl<A: Actor> Addr<A> {
     }
 
     #[inline]
-    /// Sends a message unconditionally, ignoring any faults that occur.
+    /// Sends a message unconditionally, ignoring any potential errors.
     ///
     /// The message is always queued, even if the mailbox for the receiver is full.
     /// If the mailbox is closed, the message is silently dropped.
