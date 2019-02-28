@@ -59,7 +59,7 @@ struct UnsafeWriter<T: AsyncWrite, E: From<io::Error>>(
 
 impl<T: AsyncWrite, E: From<io::Error>> Clone for UnsafeWriter<T, E> {
     fn clone(&self) -> Self {
-        UnsafeWriter(self.0.clone(), self.1.clone())
+        Self(self.0.clone(), self.1.clone())
     }
 }
 
@@ -74,7 +74,7 @@ struct InnerWriter<E: From<io::Error>> {
 }
 
 impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
-    pub fn new<A, C>(io: T, ctx: &mut C) -> Writer<T, E>
+    pub fn new<A, C>(io: T, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<E>,
         C: AsyncContext<A>,
@@ -97,7 +97,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
             act: PhantomData,
         });
 
-        let writer = Writer { inner };
+        let writer = Self { inner };
         writer.inner.0.borrow_mut().handle = h;
         writer
     }
@@ -291,7 +291,7 @@ pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
 }
 
 impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
-    pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> FramedWrite<T, U>
+    pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
         C: AsyncContext<A>,
@@ -315,14 +315,14 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
             act: PhantomData,
         });
 
-        let writer = FramedWrite { enc, inner };
+        let writer = Self { enc, inner };
         writer.inner.0.borrow_mut().handle = h;
         writer
     }
 
     pub fn from_buffer<A, C>(
         io: T, enc: U, buffer: BytesMut, ctx: &mut C,
-    ) -> FramedWrite<T, U>
+    ) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
         C: AsyncContext<A>,
@@ -346,7 +346,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
             act: PhantomData,
         });
 
-        let writer = FramedWrite { enc, inner };
+        let writer = Self { enc, inner };
         writer.inner.0.borrow_mut().handle = h;
         writer
     }

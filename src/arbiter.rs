@@ -65,14 +65,14 @@ impl Arbiter {
     ///
     /// Returns the address of the newly created arbiter. Does not
     /// stop the system on panic.
-    pub fn new<T: Into<String>>(name: T) -> Addr<Arbiter> {
-        Arbiter::new_with_builder(Arbiter::builder().name(name))
+    pub fn new<T: Into<String>>(name: T) -> Addr<Self> {
+        Self::new_with_builder(Self::builder().name(name))
     }
 
     /// Spawns new thread and runs an event loop in that thread.
     ///
     /// Returns the address of the newly created arbiter.
-    fn new_with_builder(mut builder: ArbiterBuilder) -> Addr<Arbiter> {
+    fn new_with_builder(mut builder: ArbiterBuilder) -> Addr<Self> {
         let (tx, rx) = std::sync::mpsc::channel();
         let id = Uuid::new_v4();
         let name = format!(
@@ -95,7 +95,7 @@ impl Arbiter {
             // start arbiter
             let addr = rt
                 .block_on(future::lazy(move || {
-                    let addr = Actor::start(Arbiter {
+                    let addr = Actor::start(Self {
                         stop: Some(stop),
                         stop_system_on_panic: builder.stop_system_on_panic,
                     });
@@ -128,19 +128,19 @@ impl Arbiter {
         rx.recv().unwrap()
     }
 
-    pub(crate) fn new_system(rx: AddressReceiver<Arbiter>, name: String) {
+    pub(crate) fn new_system(rx: AddressReceiver<Self>, name: String) {
         NAME.with(|cell| *cell.borrow_mut() = Some(name));
         REG.with(|cell| *cell.borrow_mut() = Some(Registry::new()));
         RUNNING.with(|cell| cell.set(false));
 
         // start arbiter
         let ctx = Context::with_receiver(rx);
-        let fut = ctx.into_future(Arbiter {
+        let fut = ctx.into_future(Self {
             stop: None,
             stop_system_on_panic: true, // If the system Arbiter panics, stop the system.
         });
         let addr = fut.address();
-        Arbiter::spawn(fut);
+        Self::spawn(fut);
         ADDR.with(|cell| *cell.borrow_mut() = Some(addr.clone()));
     }
 
@@ -167,7 +167,7 @@ impl Arbiter {
     }
 
     /// Returns the current arbiter's address.
-    pub fn current() -> Addr<Arbiter> {
+    pub fn current() -> Addr<Self> {
         ADDR.with(|cell| match *cell.borrow() {
             Some(ref addr) => addr.clone(),
             None => panic!("Arbiter is not running"),
@@ -178,7 +178,7 @@ impl Arbiter {
     pub fn registry() -> Registry {
         REG.with(|cell| match *cell.borrow() {
             Some(ref reg) => reg.clone(),
-            None => panic!("System is not running: {}", Arbiter::name()),
+            None => panic!("System is not running: {}", Self::name()),
         })
     }
 
@@ -206,7 +206,7 @@ impl Arbiter {
         F: FnOnce() -> R + 'static,
         R: IntoFuture<Item = (), Error = ()> + 'static,
     {
-        Arbiter::spawn(future::lazy(f))
+        Self::spawn(future::lazy(f))
     }
 
     /// Starts an actor inside a newly created arbiter.
@@ -217,7 +217,7 @@ impl Arbiter {
         A: Actor<Context = Context<A>>,
         F: FnOnce(&mut A::Context) -> A + Send + 'static,
     {
-        Arbiter::builder().start(f)
+        Self::builder().start(f)
     }
 
     fn start_with_builder<A, F>(builder: ArbiterBuilder, f: F) -> Addr<A>
@@ -228,7 +228,7 @@ impl Arbiter {
         let (stx, srx) = channel::channel(DEFAULT_CAPACITY);
 
         // new arbiter
-        let addr = Arbiter::new_with_builder(builder);
+        let addr = Self::new_with_builder(builder);
 
         // create actor
         addr.do_send::<Execute>(Execute::new(move || {
@@ -286,7 +286,7 @@ pub struct ArbiterBuilder {
 
 impl ArbiterBuilder {
     fn new() -> Self {
-        ArbiterBuilder {
+        Self {
             name: None,
             stop_system_on_panic: false,
             runtime: RuntimeBuilder::new(),

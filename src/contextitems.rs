@@ -22,7 +22,7 @@ where
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        ActorWaitItem(Box::new(fut))
+        Self(Box::new(fut))
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Async<()> {
@@ -56,7 +56,7 @@ where
     M: Message,
 {
     pub fn new(msg: M, timeout: Duration) -> Self {
-        ActorDelayedMessageItem {
+        Self {
             msg: Some(msg),
             timeout: Delay::new(clock::now() + timeout),
             act: PhantomData,
@@ -105,7 +105,7 @@ where
     M: Message,
 {
     pub fn new(msg: M) -> Self {
-        ActorMessageItem {
+        Self {
             msg: Some(msg),
             act: PhantomData,
         }
@@ -147,7 +147,7 @@ where
     M: Message,
 {
     pub fn new(st: S) -> Self {
-        ActorMessageStreamItem {
+        Self {
             stream: st,
             act: PhantomData,
             msg: PhantomData,
