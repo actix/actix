@@ -239,7 +239,7 @@ pub trait ActorContext: Sized {
     /// messages to fail.
     fn terminate(&mut self);
 
-    /// Get or retrieve the current Actor execution state.
+    /// Retrieve the current Actor execution state.
     fn state(&self) -> ActorState;
 }
 
