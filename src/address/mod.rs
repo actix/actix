@@ -82,10 +82,10 @@ impl<A: Actor> Addr<A> {
     }
 
     #[inline]
-    /// Sends a message unconditionally.
+    /// Sends a message unconditionally, ignoring any potential errors.
     ///
-    /// This method ignores actor's mailbox capacity, and silently
-    /// fails if the mailbox is closed.
+    /// The message is always queued, even if the mailbox for the receiver is full.
+    /// If the mailbox is closed, the message is silently dropped.
     pub fn do_send<M>(&self, msg: M)
     where
         M: Message + Send,
