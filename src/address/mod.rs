@@ -335,7 +335,7 @@ mod tests {
         type Result = <SetCounter as Message>::Result;
 
         fn handle(&mut self, ping: SetCounter, _: &mut Context<Self>) -> Self::Result {
-            self.0.store(ping.0, Ordering::Relaxed);
+            self.0.store(ping.0, Ordering::Relaxed)
         }
     }
 
