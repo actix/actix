@@ -5,6 +5,7 @@ extern crate tokio;
 
 use actix::{Actor, Context, Handler, System};
 use futures::{future, Future};
+use std::ops::Mul;
 
 #[derive(Message)]
 struct Empty;
@@ -105,6 +106,84 @@ pub fn response_derive_one() {
         tokio::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == 10 + 5),
+                _ => panic!("Something went wrong"),
+            }
+
+            System::current().stop();
+            future::result(Ok(()))
+        }));
+    });
+}
+
+#[derive(MessageResponse, PartialEq)]
+struct MulRes(usize);
+
+#[derive(Message)]
+#[rtype(MulRes)]
+struct MulOne(usize, usize);
+
+struct MulOneActor;
+
+impl Actor for MulOneActor {
+    type Context = Context<Self>;
+}
+
+impl Handler<MulOne> for MulOneActor {
+    type Result = MulRes;
+
+    fn handle(&mut self, message: MulOne, _context: &mut Context<Self>) -> Self::Result {
+        MulRes(message.0 * message.1)
+    }
+}
+
+#[test]
+pub fn derive_response_one() {
+    System::run(|| {
+        let addr = MulOneActor.start();
+        let res = addr.send(MulOne(10, 5));
+
+        tokio::spawn(res.then(|res| {
+            match res {
+                Ok(result) => assert!(result == MulRes(10 * 5)),
+                _ => panic!("Something went wrong"),
+            }
+
+            System::current().stop();
+            future::result(Ok(()))
+        }));
+    });
+}
+
+#[derive(MessageResponse, PartialEq)]
+struct MulAny<T: 'static + Mul>(T);
+
+#[derive(Message)]
+#[rtype(result = "MulAny<usize>")]
+struct MulAnyOne(usize, usize);
+
+struct MulAnyOneActor;
+
+impl Actor for MulAnyOneActor {
+    type Context = Context<Self>;
+}
+
+impl Handler<MulAnyOne> for MulAnyOneActor {
+    type Result = MulAny<usize>;
+
+    fn handle(&mut self, message: MulAnyOne, _context: &mut Context<Self>) -> Self::Result {
+        MulAny(message.0 * message.1)
+    }
+}
+
+#[test]
+pub fn derive_response_two() {
+    System::run(|| {
+        let addr = MulAnyOneActor.start();
+        let res = addr.send(MulAnyOne(10, 5));
+
+        tokio::spawn(res.then(|res| {
+            match res {
+                Ok(result) => assert!(result == MulAny(10 * 5)),
                 _ => panic!("Something went wrong"),
             }
 
