@@ -6,7 +6,7 @@ use actor::{Actor, AsyncContext};
 use context::Context;
 use handler::{Handler, Message, MessageResponse};
 
-/// Converter trait, packs message to suitable envelope
+/// Converter trait, packs message into a suitable envelope.
 pub trait ToEnvelope<A, M: Message>
 where
     A: Actor + Handler<M>,
@@ -39,21 +39,21 @@ where
 pub struct Envelope<A: Actor>(Box<EnvelopeProxy<Actor = A> + Send>);
 
 impl<A: Actor> Envelope<A> {
-    pub fn new<M>(msg: M, tx: Option<Sender<M::Result>>) -> Envelope<A>
+    pub fn new<M>(msg: M, tx: Option<Sender<M::Result>>) -> Self
     where
         A: Handler<M>,
         A::Context: AsyncContext<A>,
         M: Message + Send + 'static,
         M::Result: Send,
     {
-        Envelope(Box::new(SyncEnvelopeProxy {
+        Self(Box::new(SyncEnvelopeProxy {
             tx,
             msg: Some(msg),
             act: PhantomData,
         }))
     }
 
-    pub fn with_proxy(proxy: Box<EnvelopeProxy<Actor = A> + Send>) -> Envelope<A> {
+    pub fn with_proxy(proxy: Box<EnvelopeProxy<Actor = A> + Send>) -> Self {
         Envelope(proxy)
     }
 }

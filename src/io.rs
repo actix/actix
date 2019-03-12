@@ -11,7 +11,7 @@ use tokio_io::AsyncWrite;
 use actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
 use fut::ActorFuture;
 
-/// Write handler
+/// A helper trait for write handling.
 ///
 /// `WriteHandler` is a helper for `AsyncWrite` types. Implementation
 /// of this trait is required for `Writer` and `FramedWrite` support.
@@ -21,7 +21,7 @@ where
     Self: Actor,
     Self::Context: ActorContext,
 {
-    /// Method is called when writer emits error.
+    /// Called when the writer emits error.
     ///
     /// If this method returns `ErrorAction::Continue` writer processing
     /// continues otherwise stream processing stops.
@@ -29,7 +29,7 @@ where
         Running::Stop
     }
 
-    /// Method is called when writer finishes.
+    /// Called when the writer finishes.
     ///
     /// By default this method stops actor's `Context`.
     fn finished(&mut self, ctx: &mut Self::Context) {
@@ -47,7 +47,7 @@ bitflags! {
 const LOW_WATERMARK: usize = 4 * 1024;
 const HIGH_WATERMARK: usize = 4 * LOW_WATERMARK;
 
-/// Wrapper for `AsyncWrite` types
+/// A wrapper for `AsyncWrite` types.
 pub struct Writer<T: AsyncWrite, E: From<io::Error>> {
     inner: UnsafeWriter<T, E>,
 }
@@ -59,7 +59,7 @@ struct UnsafeWriter<T: AsyncWrite, E: From<io::Error>>(
 
 impl<T: AsyncWrite, E: From<io::Error>> Clone for UnsafeWriter<T, E> {
     fn clone(&self) -> Self {
-        UnsafeWriter(self.0.clone(), self.1.clone())
+        Self(self.0.clone(), self.1.clone())
     }
 }
 
@@ -74,7 +74,7 @@ struct InnerWriter<E: From<io::Error>> {
 }
 
 impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
-    pub fn new<A, C>(io: T, ctx: &mut C) -> Writer<T, E>
+    pub fn new<A, C>(io: T, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<E>,
         C: AsyncContext<A>,
@@ -97,31 +97,31 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
             act: PhantomData,
         });
 
-        let writer = Writer { inner };
+        let writer = Self { inner };
         writer.inner.0.borrow_mut().handle = h;
         writer
     }
 
-    /// Gracefully close sink
+    /// Gracefully closes the sink.
     ///
-    /// Close process is asynchronous.
+    /// The closing happens asynchronously.
     pub fn close(&mut self) {
         self.inner.0.borrow_mut().flags.insert(Flags::CLOSING);
     }
 
-    /// Check if sink is closed
+    /// Checks if the sink is closed.
     pub fn closed(&self) -> bool {
         self.inner.0.borrow().flags.contains(Flags::CLOSED)
     }
 
-    /// Set write buffer capacity
+    /// Sets the write buffer capacity.
     pub fn set_buffer_capacity(&mut self, low_watermark: usize, high_watermark: usize) {
         let mut inner = self.inner.0.borrow_mut();
         inner.low = low_watermark;
         inner.high = high_watermark;
     }
 
-    /// Send item to a sink.
+    /// Sends an item to the sink.
     pub fn write(&mut self, msg: &[u8]) {
         let mut inner = self.inner.0.borrow_mut();
         inner.buffer.extend_from_slice(msg);
@@ -130,7 +130,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
         }
     }
 
-    /// `SpawnHandle` for this writer
+    /// Returns the `SpawnHandle` for this writer.
     pub fn handle(&self) -> SpawnHandle {
         self.inner.0.borrow().handle
     }
@@ -284,14 +284,14 @@ where
     }
 }
 
-/// Wrapper for `AsyncWrite` and `Encoder` types
+/// A wrapper for the `AsyncWrite` and `Encoder` types.
 pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
     enc: U,
     inner: UnsafeWriter<T, U::Error>,
 }
 
 impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
-    pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> FramedWrite<T, U>
+    pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
         C: AsyncContext<A>,
@@ -315,14 +315,14 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
             act: PhantomData,
         });
 
-        let writer = FramedWrite { enc, inner };
+        let writer = Self { enc, inner };
         writer.inner.0.borrow_mut().handle = h;
         writer
     }
 
     pub fn from_buffer<A, C>(
         io: T, enc: U, buffer: BytesMut, ctx: &mut C,
-    ) -> FramedWrite<T, U>
+    ) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
         C: AsyncContext<A>,
@@ -346,31 +346,31 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
             act: PhantomData,
         });
 
-        let writer = FramedWrite { enc, inner };
+        let writer = Self { enc, inner };
         writer.inner.0.borrow_mut().handle = h;
         writer
     }
 
-    /// Gracefully close sink
+    /// Gracefully closes the sink.
     ///
-    /// Close process is asynchronous.
+    /// The closing happens asynchronously.
     pub fn close(&mut self) {
         self.inner.0.borrow_mut().flags.insert(Flags::CLOSING);
     }
 
-    /// Check if sink is closed
+    /// Checks if the sink is closed.
     pub fn closed(&self) -> bool {
         self.inner.0.borrow().flags.contains(Flags::CLOSED)
     }
 
-    /// Set write buffer capacity
+    /// Sets the write buffer capacity.
     pub fn set_buffer_capacity(&mut self, low: usize, high: usize) {
         let mut inner = self.inner.0.borrow_mut();
         inner.low = low;
         inner.high = high;
     }
 
-    /// Write item
+    /// Writes an item to the sink.
     pub fn write(&mut self, item: U::Item) {
         let mut inner = self.inner.0.borrow_mut();
         let _ = self.enc.encode(item, &mut inner.buffer).map_err(|e| {
@@ -381,7 +381,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
         }
     }
 
-    /// `SpawnHandle` for this writer
+    /// Returns the `SpawnHandle` for this writer.
     pub fn handle(&self) -> SpawnHandle {
         self.inner.0.borrow().handle
     }

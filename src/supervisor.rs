@@ -108,7 +108,7 @@ where
         let fut = ctx.into_future(act);
 
         // create supervisor
-        Arbiter::spawn(Supervisor::<A> { fut });
+        Arbiter::spawn(Self { fut });
 
         addr
     }
@@ -126,7 +126,7 @@ where
             let act = f(&mut ctx);
             let fut = ctx.into_future(act);
 
-            Arbiter::spawn(Supervisor::<A> { fut });
+            Arbiter::spawn(Self { fut });
             Ok(())
         }));
 

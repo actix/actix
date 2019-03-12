@@ -7,7 +7,7 @@ use std::fmt;
 use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
 use mailbox::Mailbox;
 
-/// Actor execution context
+/// An actor execution context.
 pub struct Context<A>
 where
     A: Actor<Context = Context<A>>,
@@ -84,18 +84,18 @@ where
     A: Actor<Context = Self>,
 {
     #[inline]
-    pub(crate) fn new() -> Context<A> {
+    pub(crate) fn new() -> Self {
         let mb = Mailbox::default();
-        Context {
+        Self {
             parts: ContextParts::new(mb.sender_producer()),
             mb: Some(mb),
         }
     }
 
     #[inline]
-    pub fn with_receiver(rx: AddressReceiver<A>) -> Context<A> {
+    pub fn with_receiver(rx: AddressReceiver<A>) -> Self {
         let mb = Mailbox::new(rx);
-        Context {
+        Self {
             parts: ContextParts::new(mb.sender_producer()),
             mb: Some(mb),
         }
@@ -114,16 +114,35 @@ where
         ContextFut::new(self, act, mb)
     }
 
-    /// Handle of the running future
+    /// Returns a handle to the running future.
     ///
-    /// SpawnHandle is the handle returned by `AsyncContext::spawn()` method.
+    /// This is the handle returned by the `AsyncContext::spawn()`
+    /// method.
     pub fn handle(&self) -> SpawnHandle {
         self.parts.curr_handle()
     }
 
-    /// Set mailbox capacity
+    /// Sets the mailbox capacity.
     ///
-    /// By default mailbox capacity is 16 messages.
+    /// The default mailbox capacity is 16 messages.
+    /// #Examples
+    /// ```
+    /// # extern crate actix;
+    /// # use actix::prelude::*;
+    /// struct MyActor;
+    /// impl Actor for MyActor {
+    ///     type Context = Context<Self>;
+    ///
+    ///     fn started(&mut self, ctx: &mut Self::Context) {
+    ///         ctx.set_mailbox_capacity(1);
+    ///     }
+    /// }
+    ///
+    /// # fn main() {
+    /// # System::new("test");
+    /// let addr = MyActor.start();
+    /// # }
+    /// ```
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
         self.parts.set_mailbox_capacity(cap)
     }
@@ -138,17 +157,20 @@ where
     }
 }
 
-/// Helper trait which can spawn future into actor's context
+/// Helper trait which can spawn a future into the actor's context.
 pub trait ContextFutureSpawner<A>
 where
     A: Actor,
     A::Context: AsyncContext<A>,
 {
-    /// spawn future into `Context<A>`
+    /// Spawns the future into the given context.
     fn spawn(self, ctx: &mut A::Context);
 
-    /// Spawn future into the context. Stop processing any of incoming events
-    /// until this future resolves.
+    /// Spawns the future into the given context, waiting for it to
+    /// resolve.
+    ///
+    /// This stops processing any incoming events until this future
+    /// resolves.
     fn wait(self, ctx: &mut A::Context);
 }
 

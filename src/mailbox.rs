@@ -5,8 +5,9 @@ use actor::{Actor, AsyncContext};
 use address::EnvelopeProxy;
 use address::{channel, Addr, AddressReceiver, AddressSenderProducer};
 
+#[cfg(feature = "mailbox_assert")]
 /// Maximum number of consecutive polls in a loop
-const MAX_SYNC_POLLS: u32 = 256;
+const MAX_SYNC_POLLS: u16 = 256;
 
 /// Default address channel capacity
 pub const DEFAULT_CAPACITY: usize = 16;
@@ -42,15 +43,6 @@ where
     }
 }
 
-struct NumPolls(u32);
-
-impl NumPolls {
-    fn inc(&mut self) -> u32 {
-        self.0 += 1;
-        self.0
-    }
-}
-
 impl<A> Mailbox<A>
 where
     A: Actor,
@@ -58,7 +50,7 @@ where
 {
     #[inline]
     pub fn new(msgs: AddressReceiver<A>) -> Self {
-        Mailbox { msgs }
+        Self { msgs }
     }
 
     pub fn capacity(&self) -> usize {
@@ -83,7 +75,9 @@ where
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
-        let mut n_polls = NumPolls(0);
+        #[cfg(feature = "mailbox_assert")]
+        let mut n_polls = 0u16;
+
         loop {
             let mut not_ready = true;
 
@@ -100,10 +94,12 @@ where
                     }
                     Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
                 }
-                debug_assert!(
-                    n_polls.inc() < MAX_SYNC_POLLS,
-                    "Use Self::Context::notify() instead of direct use of address"
-                );
+
+                #[cfg(feature = "mailbox_assert")]
+                {
+                    n_polls += 1;
+                    assert!(n_polls < MAX_SYNC_POLLS, "Too many messages are being processed. Use Self::Context::notify() instead of direct use of address");
+                }
             }
 
             if not_ready {

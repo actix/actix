@@ -1,4 +1,5 @@
-//! Mocking utility actor
+//! Mocking utility actor.
+//!
 //! This actor wraps any actor, and replaces instances of that actor with
 //! mocker actor, which is able to accept all messages which the actor can
 //! receive.
@@ -10,16 +11,17 @@
 //! #[cfg(test)]
 //! type DBClientAct = Mocker<DBClientActor>;
 //! ```
-//! Then, the actor should be used as a System Service (or Arbiter Service, but
-//! take care that all the places which will use the mocked actor is on the
+//! Then, the actor should be used as a system service (or arbiter service, but
+//! take care that all the places which will use the mocked actor are on the
 //! same arbiter). Thus, in a test, it will retrieve the mocker from the
 //! registry instead of the actual actor.
 //!
-//! To set the mock function in the actor, the init_actor function is used,
-//! which allows the state of an actor to be set when it is started as a
-//! arbiter or system service. A closure which takes Box<Any> is evaluated for
-//! every message, and must return Box<Any>, specifically the return type
-//! for the message type send.
+//! To set the mock function in the actor, the `init_actor` function
+//! is used, which allows the state of an actor to be set when it is
+//! started as an arbiter or system service. A closure which takes
+//! `Box<Any>` is evaluated for every message, and must return
+//! `Box<Any>`, specifically the return type for the message type
+//! send.
 //!
 //! See the mock example to see how it can be used.
 
@@ -32,7 +34,7 @@ use prelude::*;
 
 /// This actor is able to wrap another actor and accept all the messages the
 /// wrapped actor can, passing it to a closure which can mock the response of
-/// the actors
+/// the actor.
 pub struct Mocker<T: Sized + 'static> {
     phantom: PhantomData<T>,
     mock: Box<FnMut(Box<Any>, &mut Context<Mocker<T>>) -> Box<Any>>,

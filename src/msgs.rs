@@ -5,7 +5,7 @@ use address::Addr;
 use context::Context;
 use handler::Message;
 
-/// Stop arbiter execution
+/// Message to stop arbiter execution
 pub struct StopArbiter(pub i32);
 
 impl Message for StopArbiter {
@@ -24,7 +24,7 @@ impl<A: Actor<Context = Context<A>>> StartActor<A> {
     where
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
-        StartActor(Box::new(|| {
+        Self(Box::new(|| {
             let mut ctx = Context::new();
             let act = f(&mut ctx);
             ctx.run(act)
@@ -47,9 +47,9 @@ impl<A: Actor, F: FnOnce() -> Addr<A> + Send + 'static> FnBox<A> for F {
     }
 }
 
-/// Execute function in arbiter's thread
+/// Message to execute a function in an arbiter's thread.
 ///
-/// Arbiter` actor handles Execute message.
+/// The arbiter actor handles `Execute` messages.
 ///
 /// # Example
 ///
@@ -91,7 +91,7 @@ where
     where
         F: FnOnce() -> Result<I, E> + Send + 'static,
     {
-        Execute(Box::new(f))
+        Self(Box::new(f))
     }
 
     /// Execute enclosed function

@@ -113,7 +113,7 @@ pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default 
 
 impl Registry {
     pub(crate) fn new() -> Self {
-        Registry {
+        Self {
             registry: Rc::new(RefCell::new(HashMap::default())),
         }
     }
@@ -248,7 +248,7 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
 
 impl SystemRegistry {
     pub(crate) fn new(system: Addr<Arbiter>) -> Self {
-        SystemRegistry {
+        Self {
             system,
             registry: Arc::new(ReentrantMutex::new(RefCell::new(HashMap::default()))),
         }
@@ -300,7 +300,7 @@ impl SystemRegistry {
 
 impl Clone for SystemRegistry {
     fn clone(&self) -> Self {
-        SystemRegistry {
+        Self {
             system: self.system.clone(),
             registry: Arc::clone(&self.registry),
         }

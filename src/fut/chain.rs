@@ -19,7 +19,7 @@ where
     A: ActorFuture,
     B: ActorFuture<Actor = A::Actor>,
 {
-    pub fn new(a: A, c: C) -> Chain<A, B, C> {
+    pub fn new(a: A, c: C) -> Self {
         Chain::First(a, c)
     }
 
