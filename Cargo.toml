@@ -29,7 +29,7 @@ members = ["examples/chat"]
 default = ["resolver"]
 
 # dns resolver
-resolver = ["trust-dns-resolver"]
+resolver = ["trust-dns-resolver", "tokio-tcp"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
@@ -50,7 +50,7 @@ parking_lot = "0.7"
 tokio-io = "0.1"
 tokio-codec = "0.1"
 tokio-executor = "0.1"
-tokio-tcp = "0.1"
+tokio-tcp = { version = "0.1", optional = true }
 tokio-timer = "0.2.8"
 
 # dns resolver
