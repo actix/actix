@@ -1,10 +1,4 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-
-use std::time::Duration;
-
-use actix::actors::{resolver, signal};
+use actix::actors::resolver;
 use actix::prelude::*;
 use futures::Future;
 
@@ -27,50 +21,5 @@ fn test_resolver() {
                 .send(resolver::Connect::host("localhost:5000"))
                 .then(|_| Ok::<_, ()>(()))
         });
-    });
-}
-
-#[test]
-#[cfg(unix)]
-fn test_signal() {
-    System::run(|| {
-        let _addr = signal::DefaultSignalsHandler::start_default();
-        let sig = System::current().registry().get::<signal::ProcessSignals>();
-
-        // send SIGTERM
-        std::thread::spawn(move || {
-            // we need this because DefaultSignalsHandler starts a bit later
-            std::thread::sleep(Duration::from_millis(100));
-
-            // emulate SIGNTERM
-            sig.do_send(signal::SignalType::Quit);
-        });
-    });
-}
-
-#[test]
-#[cfg(unix)]
-fn test_signal_term() {
-    System::run(|| {
-        let _addr = signal::DefaultSignalsHandler::start_default();
-        Arbiter::spawn(futures::lazy(move || {
-            let sig = System::current().registry().get::<signal::ProcessSignals>();
-            sig.do_send(signal::SignalType::Term);
-            Ok(())
-        }));
-    });
-}
-
-#[test]
-#[cfg(unix)]
-fn test_signal_int() {
-    System::run(|| {
-        let _addr = signal::DefaultSignalsHandler::start_default();
-        Arbiter::spawn(futures::lazy(move || {
-            let sig = System::current().registry().get::<signal::ProcessSignals>();
-            sig.do_send(signal::SignalType::Hup);
-            sig.do_send(signal::SignalType::Int);
-            Ok(())
-        }));
     });
 }

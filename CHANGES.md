@@ -1,5 +1,16 @@
 # CHANGES
 
+## [0.8.0] (2019-03-xx)
+
+### Changes
+
+* Edition 2018
+
+### Deleted
+
+* Deleted signals actor
+
+
 ## [0.7.10] (2019-01-16)
 
 ### Changed
