@@ -71,15 +71,17 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
             ChatRequest::List => {
                 // Send ListRooms message to chat server and wait for response
                 println!("List rooms");
-                self.addr.send(server::ListRooms)
-                    .into_actor(self)     // <- create actor compatible future
+                self.addr
+                    .send(server::ListRooms)
+                    .into_actor(self) // <- create actor compatible future
                     .then(|res, act, _| {
                         match res {
                             Ok(rooms) => act.framed.write(ChatResponse::Rooms(rooms)),
                             _ => println!("Something is wrong"),
                         }
                         actix::fut::ok(())
-                    }).wait(ctx)
+                    })
+                    .wait(ctx)
                 // .wait(ctx) pauses all events in context,
                 // so actor wont receive any new messages until it get list of rooms back
             }

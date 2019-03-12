@@ -6,14 +6,14 @@ use futures::sync::oneshot::{channel, Receiver, Sender};
 use futures::{future, Future};
 use tokio::runtime::current_thread::{Builder as RuntimeBuilder, Runtime};
 
-use actor::Actor;
-use address::{channel as addr_channel, Addr};
-use arbiter::Arbiter;
-use clock::Clock;
-use context::Context;
-use handler::{Handler, Message};
-use msgs::{Execute, StopArbiter};
-use registry::SystemRegistry;
+use crate::actor::Actor;
+use crate::address::{channel as addr_channel, Addr};
+use crate::arbiter::Arbiter;
+use crate::clock::Clock;
+use crate::context::Context;
+use crate::handler::{Handler, Message};
+use crate::msgs::{Execute, StopArbiter};
+use crate::registry::SystemRegistry;
 
 /// System is an actor which manages runtime.
 ///
@@ -65,7 +65,9 @@ pub struct System {
     registry: SystemRegistry,
 }
 
-thread_local!(static CURRENT: RefCell<Option<System>> = RefCell::new(None););
+thread_local!(
+    static CURRENT: RefCell<Option<System>> = RefCell::new(None);
+);
 
 impl System {
     /// Build a new system with a customized tokio runtime.

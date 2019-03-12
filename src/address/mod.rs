@@ -7,8 +7,8 @@ mod envelope;
 mod message;
 mod queue;
 
-use actor::Actor;
-use handler::{Handler, Message};
+use crate::actor::Actor;
+use crate::handler::{Handler, Message};
 
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 pub use self::message::{RecipientRequest, Request};
@@ -310,8 +310,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use futures::Future;
-    use prelude::*;
 
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;

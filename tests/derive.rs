@@ -54,7 +54,9 @@ impl Handler<SumResult> for SumResultActor {
     type Result = Result<usize, ()>;
 
     fn handle(
-        &mut self, message: SumResult, _context: &mut Context<Self>,
+        &mut self,
+        message: SumResult,
+        _context: &mut Context<Self>,
     ) -> Self::Result {
         Ok(message.0 + message.1)
     }

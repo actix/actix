@@ -74,13 +74,13 @@ use crossbeam_channel as cb_channel;
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::{Async, Future, Poll, Stream};
 
-use actor::{Actor, ActorContext, ActorState, Running};
-use address::channel;
-use address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
-use arbiter::Arbiter;
-use context::Context;
-use handler::{Handler, Message, MessageResponse};
-use system::System;
+use crate::actor::{Actor, ActorContext, ActorState, Running};
+use crate::address::channel;
+use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
+use crate::arbiter::Arbiter;
+use crate::context::Context;
+use crate::handler::{Handler, Message, MessageResponse};
+use crate::system::System;
 
 /// Sync arbiter
 pub struct SyncArbiter<A>
@@ -280,7 +280,8 @@ unsafe impl<A, M> Send for SyncContextEnvelope<A, M>
 where
     A: Actor<Context = SyncContext<A>> + Handler<M>,
     M: Message + Send,
-{}
+{
+}
 
 impl<A, M> SyncContextEnvelope<A, M>
 where

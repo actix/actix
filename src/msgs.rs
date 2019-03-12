@@ -1,9 +1,9 @@
 //! Actix system messages
 
-use actor::Actor;
-use address::Addr;
-use context::Context;
-use handler::Message;
+use crate::actor::Actor;
+use crate::address::Addr;
+use crate::context::Context;
+use crate::handler::Message;
 
 /// Message to stop arbiter execution
 pub struct StopArbiter(pub i32);

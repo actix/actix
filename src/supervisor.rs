@@ -1,12 +1,12 @@
 use futures::{Async, Future, Poll};
 
-use actor::{Actor, AsyncContext, Supervised};
-use address::{channel, Addr};
-use arbiter::Arbiter;
-use context::Context;
-use contextimpl::ContextFut;
-use mailbox::DEFAULT_CAPACITY;
-use msgs::Execute;
+use crate::actor::{Actor, AsyncContext, Supervised};
+use crate::address::{channel, Addr};
+use crate::arbiter::Arbiter;
+use crate::context::Context;
+use crate::contextimpl::ContextFut;
+use crate::mailbox::DEFAULT_CAPACITY;
+use crate::msgs::Execute;
 
 /// Actor supervisor
 ///

@@ -11,8 +11,8 @@ extern crate futures;
 
 use actix::*;
 
-use std::time::SystemTime;
 use std::env;
+use std::time::SystemTime;
 
 /// A payload with a counter
 struct Payload(usize);
@@ -39,7 +39,9 @@ impl Handler<Payload> for Node {
             System::current().stop();
             return;
         }
-        self.next.do_send(Payload(msg.0 + 1)).expect("Unable to send payload");
+        self.next
+            .do_send(Payload(msg.0 + 1))
+            .expect("Unable to send payload");
     }
 }
 
@@ -50,7 +52,7 @@ fn print_usage_and_exit() -> ! {
 
 fn main() {
     let args = env::args().collect::<Vec<_>>();
-    if  args.len() < 3 {
+    if args.len() < 3 {
         print_usage_and_exit();
     }
     let n_nodes = if let Ok(arg_num_nodes) = args[1].parse::<usize>() {
@@ -72,22 +74,37 @@ fn main() {
     let system = System::new("test");
 
     println!("Setting up nodes");
-    let _ = Node::create(move|ctx| {
+    let _ = Node::create(move |ctx| {
         let first_addr = ctx.address();
-        let mut prev_addr = Node{limit: n_nodes * n_times, next: first_addr.recipient()}.start();
+        let mut prev_addr = Node {
+            limit: n_nodes * n_times,
+            next: first_addr.recipient(),
+        }
+        .start();
         prev_addr.do_send(Payload(0));
 
         for _ in 2..n_nodes {
-            prev_addr = Node{limit: n_nodes * n_times, next: prev_addr.recipient()}.start();
+            prev_addr = Node {
+                limit: n_nodes * n_times,
+                next: prev_addr.recipient(),
+            }
+            .start();
         }
 
-        Node{limit: n_nodes * n_times, next: prev_addr.recipient()}
+        Node {
+            limit: n_nodes * n_times,
+            next: prev_addr.recipient(),
+        }
     });
 
     let now = SystemTime::now();
     system.run();
     match now.elapsed() {
-        Ok(elapsed) => println!("Time taken: {}.{:06} seconds", elapsed.as_secs(), elapsed.subsec_micros()),
-        Err(e) => println!("An error occured: {:?}", e)
+        Ok(elapsed) => println!(
+            "Time taken: {}.{:06} seconds",
+            elapsed.as_secs(),
+            elapsed.subsec_micros()
+        ),
+        Err(e) => println!("An error occured: {:?}", e),
     }
 }

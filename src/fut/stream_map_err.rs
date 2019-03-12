@@ -1,7 +1,7 @@
 use futures::Poll;
 
-use actor::Actor;
-use fut::ActorStream;
+use crate::actor::Actor;
+use crate::fut::ActorStream;
 
 /// A stream combinator which will change the error type of a stream from one
 /// type to another.
@@ -32,7 +32,9 @@ where
     type Actor = S::Actor;
 
     fn poll(
-        &mut self, act: &mut Self::Actor, ctx: &mut <S::Actor as Actor>::Context,
+        &mut self,
+        act: &mut Self::Actor,
+        ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<Option<S::Item>, U> {
         match self.stream.poll(act, ctx) {
             Ok(ok) => Ok(ok),

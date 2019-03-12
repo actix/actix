@@ -48,7 +48,8 @@ fn main() {
 
                 // stop system and exit
                 System::current().stop();
-            }).map_err(|_| ()),
+            })
+            .map_err(|_| ()),
         );
     });
 }

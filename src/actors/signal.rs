@@ -69,7 +69,7 @@ use futures::{Future, Stream};
 use libc;
 use std;
 
-use prelude::*;
+use crate::prelude::*;
 
 /// Represents the different types of signals a process can receive.
 #[derive(PartialEq, Clone, Copy, Debug)]

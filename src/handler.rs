@@ -2,11 +2,11 @@ use futures::sync::oneshot::Sender as SyncSender;
 use futures::Future;
 use std::fmt;
 
-use actor::{Actor, AsyncContext};
-use address::Addr;
-use arbiter::Arbiter;
-use context::Context;
-use fut::{self, ActorFuture};
+use crate::actor::{Actor, AsyncContext};
+use crate::address::Addr;
+use crate::arbiter::Arbiter;
+use crate::context::Context;
+use crate::fut::{self, ActorFuture};
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -171,15 +171,16 @@ impl<I, E> fmt::Debug for Response<I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut fmt = fmt.debug_struct("Response");
         match self.item {
-                ResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-                ResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
-        }.finish()
+            ResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
+            ResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }
+        .finish()
     }
 }
 
 impl<I, E> Response<I, E> {
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn r#async<T>(fut: T) -> Self
     where
         T: Future<Item = I, Error = E> + 'static,
     {
@@ -235,9 +236,12 @@ impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut fmt = fmt.debug_struct("ActorResponse");
         match self.item {
-                ActorResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-                ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
-        }.finish()
+            ActorResponseTypeItem::Result(_) => {
+                fmt.field("item", &"Result(_)".to_string())
+            }
+            ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }
+        .finish()
     }
 }
 
@@ -250,7 +254,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     }
 
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn r#async<T>(fut: T) -> Self
     where
         T: ActorFuture<Item = I, Error = E, Actor = A> + 'static,
     {

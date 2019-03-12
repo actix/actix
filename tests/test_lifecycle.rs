@@ -95,7 +95,8 @@ fn test_active_address() {
                 stopped: stopped1,
                 temp: None,
                 restore_after_stop: false,
-            }.start(),
+            }
+            .start(),
         );
 
         tokio::spawn(
@@ -127,7 +128,8 @@ fn test_stop_after_drop_address() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: false,
-        }.start();
+        }
+        .start();
 
         tokio::spawn(futures::lazy(move || {
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
@@ -161,7 +163,8 @@ fn test_stop_after_drop_sync_address() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: false,
-        }.start();
+        }
+        .start();
 
         tokio::spawn(futures::lazy(move || {
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
@@ -235,7 +238,8 @@ fn test_stop() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: false,
-        }.start();
+        }
+        .start();
 
         tokio::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
@@ -266,7 +270,8 @@ fn test_stop_restore_after_stopping() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: true,
-        }.start();
+        }
+        .start();
 
         tokio::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {

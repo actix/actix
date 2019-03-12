@@ -12,8 +12,8 @@ use futures::{Async, Poll, Stream};
 
 use parking_lot::Mutex;
 
-use actor::Actor;
-use handler::{Handler, Message};
+use crate::actor::Actor;
+use crate::handler::{Handler, Message};
 
 use super::envelope::{Envelope, ToEnvelope};
 use super::queue::{PopResult, Queue};
@@ -906,7 +906,7 @@ fn encode_state(state: &State) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prelude::*;
+    use crate::prelude::*;
     use std::{thread, time};
 
     struct Act;
