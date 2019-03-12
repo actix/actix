@@ -2,15 +2,13 @@ use std;
 use std::cell::{Cell, RefCell};
 use std::thread;
 
+use actix_rt::{spawn, Builder as RuntimeBuilder, System as ActixSystem};
 use futures::sync::oneshot::{channel, Sender};
 use futures::{future, Future, IntoFuture};
-use tokio::executor::current_thread::spawn;
-use tokio::runtime::current_thread::Builder as RuntimeBuilder;
 use uuid::Uuid;
 
 use crate::actor::Actor;
 use crate::address::{channel, Addr, AddressReceiver};
-use crate::clock::Clock;
 use crate::context::Context;
 use crate::handler::Handler;
 use crate::mailbox::DEFAULT_CAPACITY;
@@ -84,7 +82,8 @@ impl Arbiter {
         let sys = System::current();
 
         let _ = thread::Builder::new().name(name.clone()).spawn(move || {
-            let mut rt = builder.runtime.build().unwrap();
+            let mut rt = builder.runtime.build();
+            let stop_system_on_panic = builder.stop_system_on_panic;
 
             let (stop, stop_rx) = channel();
             NAME.with(|cell| *cell.borrow_mut() = Some(name));
@@ -98,7 +97,7 @@ impl Arbiter {
                 .block_on(future::lazy(move || {
                     let addr = Actor::start(Self {
                         stop: Some(stop),
-                        stop_system_on_panic: builder.stop_system_on_panic,
+                        stop_system_on_panic,
                     });
                     Ok::<_, ()>(addr)
                 }))
@@ -291,7 +290,7 @@ impl ArbiterBuilder {
         Self {
             name: None,
             stop_system_on_panic: false,
-            runtime: RuntimeBuilder::new(),
+            runtime: ActixSystem::builder(),
         }
     }
 
@@ -308,15 +307,6 @@ impl ArbiterBuilder {
     /// Defaults to `false`.
     pub fn stop_system_on_panic(mut self, stop_system_on_panic: bool) -> Self {
         self.stop_system_on_panic = stop_system_on_panic;
-        self
-    }
-
-    /// Sets the clock instance that will be used by this arbiter.
-    ///
-    /// Defaults to the clock used by the actix `System`, which
-    /// defaults to the system clock.
-    pub fn clock(mut self, clock: Clock) -> Self {
-        self.runtime.clock(clock);
         self
     }
 

@@ -1,7 +1,5 @@
-extern crate futures;
 #[macro_use]
 extern crate actix;
-extern crate tokio;
 
 use actix::{Actor, Context, Handler, System};
 use futures::{future, Future};
@@ -28,7 +26,7 @@ fn response_derive_empty() {
         let addr = EmptyActor.start();
         let res = addr.send(Empty);
 
-        tokio::spawn(res.then(|res| {
+        actix_rt::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == ()),
                 _ => panic!("Something went wrong"),
@@ -68,7 +66,7 @@ pub fn derive_result() {
         let addr = SumResultActor.start();
         let res = addr.send(SumResult(10, 5));
 
-        tokio::spawn(res.then(|res| {
+        actix_rt::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == Ok(10 + 5)),
                 _ => panic!("Something went wrong"),
@@ -104,7 +102,7 @@ pub fn response_derive_one() {
         let addr = SumOneActor.start();
         let res = addr.send(SumOne(10, 5));
 
-        tokio::spawn(res.then(|res| {
+        actix_rt::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == 10 + 5),
                 _ => panic!("Something went wrong"),

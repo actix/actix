@@ -1,7 +1,3 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-
 use actix::prelude::*;
 use futures::Future;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -89,7 +85,7 @@ fn test_start_actor_message() {
     System::run(move || {
         let arbiter = Arbiter::new("test2");
 
-        tokio::spawn(
+        actix_rt::spawn(
             arbiter
                 .send(actix::msgs::StartActor::new(move |_| MyActor(act_count)))
                 .then(|res| {

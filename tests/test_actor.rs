@@ -1,8 +1,3 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
 use std::sync;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -179,7 +174,7 @@ fn test_restart_sync_actor() {
         });
         addr.do_send(Num(2));
 
-        tokio::spawn(addr.send(Num(4)).then(move |_| {
+        actix_rt::spawn(addr.send(Num(4)).then(move |_| {
             Delay::new(Instant::now() + Duration::new(0, 1_000_000)).then(move |_| {
                 System::current().stop();
                 future::result(Ok(()))

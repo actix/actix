@@ -4,9 +4,6 @@
 //!
 //! ```rust
 //! #![recursion_limit="128"]
-//! # extern crate actix;
-//! # extern crate futures;
-//! # extern crate tokio;
 //! # use futures::{future, Future};
 //! use actix::prelude::*;
 //! use actix::actors::resolver;
@@ -14,7 +11,7 @@
 //! fn main() {
 //!     System::run(|| {
 //!
-//!         tokio::spawn({
+//!         actix_rt::spawn({
 //!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(
@@ -27,7 +24,7 @@
 //!                     })
 //!         });
 //!
-//!         tokio::spawn({
+//!         actix_rt::spawn({
 //!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(

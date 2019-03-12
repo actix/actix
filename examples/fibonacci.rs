@@ -3,11 +3,8 @@
 //! time. Sync arbiter can start multiple threads with separate instance of
 //! actor in each.
 
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-
 use actix::prelude::*;
+use actix_rt::spawn;
 
 struct Fibonacci(pub u32);
 
@@ -55,7 +52,7 @@ fn main() {
             addr.do_send(Fibonacci(n));
         }
 
-        tokio::spawn(futures::lazy(|| {
+        spawn(futures::lazy(|| {
             System::current().stop();
             futures::future::result(Ok(()))
         }));

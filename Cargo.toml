@@ -35,6 +35,7 @@ resolver = ["trust-dns-resolver"]
 mailbox_assert = []
 
 [dependencies]
+actix-rt = "0.2"
 actix_derive = "0.3"
 
 bytes = "0.4"
@@ -47,13 +48,12 @@ failure = "0.1.1"
 bitflags = "1.0"
 smallvec = "0.6"
 parking_lot = "0.7"
-tokio = "0.1.7"
 tokio-io = "0.1"
 tokio-codec = "0.1"
 tokio-executor = "0.1"
 tokio-reactor = "0.1"
 tokio-tcp = "0.1"
-tokio-timer = "0.2"
+tokio-timer = "0.2.8"
 uuid = { version = "0.7", features = ["v4"] }
 
 # dns resolver

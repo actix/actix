@@ -1,8 +1,5 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-
 use actix::prelude::*;
+use actix_rt::spawn;
 use futures::Future;
 
 /// Define `Ping` message
@@ -42,7 +39,7 @@ fn main() {
         let res = addr.send(Ping(10));
 
         // handle() returns tokio handle
-        tokio::spawn(
+        spawn(
             res.map(|res| {
                 println!("RESULT: {}", res == 20);
 

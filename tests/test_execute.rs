@@ -1,6 +1,3 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
 use futures::{future, Future};
 
 use actix::msgs::Execute;
@@ -11,7 +8,7 @@ fn test_execute() {
     System::run(move || {
         let addr = Arbiter::new("exec-test");
 
-        tokio::spawn(addr.send(Execute::new(|| Ok(Arbiter::name()))).then(
+        actix_rt::spawn(addr.send(Execute::new(|| Ok(Arbiter::name()))).then(
             |res: Result<Result<_, ()>, _>| {
                 System::current().stop();
 
@@ -31,7 +28,7 @@ fn test_system_execute() {
         let addr = Arbiter::new("exec-test");
 
         addr.do_send(Execute::new(|| -> Result<(), ()> {
-            tokio::spawn(futures::lazy(|| {
+            actix_rt::spawn(futures::lazy(|| {
                 System::current().arbiter().do_send(Execute::new(
                     || -> Result<(), ()> {
                         System::current().stop();

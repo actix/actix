@@ -1,8 +1,3 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};

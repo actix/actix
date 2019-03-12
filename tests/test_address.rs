@@ -1,8 +1,3 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
 use std::collections::HashSet;
 use std::mem::drop;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -126,7 +121,7 @@ fn test_sync_recipient_call() {
         let addr2 = addr.clone().recipient();
         addr.do_send(Ping(0));
 
-        tokio::spawn(addr2.send(Ping(1)).then(move |_| {
+        actix_rt::spawn(addr2.send(Ping(1)).then(move |_| {
             addr2.send(Ping(2)).then(|_| {
                 System::current().stop();
                 Ok(())
@@ -142,7 +137,7 @@ fn test_error_result() {
     System::run(|| {
         let addr = MyActor3.start();
 
-        tokio::spawn(addr.send(Ping(0)).then(|res| {
+        actix_rt::spawn(addr.send(Ping(0)).then(|res| {
             match res {
                 Ok(_) => (),
                 _ => panic!("Should not happen"),
@@ -178,7 +173,7 @@ fn test_message_timeout() {
         let addr = TimeoutActor.start();
 
         addr.do_send(Ping(0));
-        tokio::spawn(addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).then(
+        actix_rt::spawn(addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).then(
             move |res| {
                 match res {
                     Ok(_) => panic!("Should not happen"),

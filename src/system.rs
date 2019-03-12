@@ -2,14 +2,15 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use actix_rt::{
+    Builder as RuntimeBuilder, System as ActixSystem, SystemRunner as ActixSystemRunner,
+};
 use futures::sync::oneshot::{channel, Receiver, Sender};
 use futures::{future, Future};
-use tokio::runtime::current_thread::{Builder as RuntimeBuilder, Runtime};
 
 use crate::actor::Actor;
 use crate::address::{channel as addr_channel, Addr};
 use crate::arbiter::Arbiter;
-use crate::clock::Clock;
 use crate::context::Context;
 use crate::handler::{Handler, Message};
 use crate::msgs::{Execute, StopArbiter};
@@ -158,7 +159,7 @@ impl System {
 #[must_use = "SystemRunner must be run"]
 #[derive(Debug)]
 pub struct SystemRunner {
-    rt: Runtime,
+    rt: ActixSystemRunner,
     stop: Receiver<i32>,
 }
 
@@ -283,10 +284,7 @@ impl<I: Send, E: Send> Handler<Execute<I, E>> for SystemArbiter {
 /// # Examples
 ///
 /// ```rust
-/// extern crate actix;
-///
 /// use actix::prelude::*;
-/// use actix::clock::Clock;
 /// use std::time::Duration;
 ///
 /// struct Timer {
@@ -306,19 +304,14 @@ impl<I: Send, E: Send> Handler<Execute<I, E>> for SystemArbiter {
 /// }
 ///
 /// fn main() {
-///     // create a custom clock instance
-///     let clock = Clock::new();
-///
 ///     // initialize system and run it
 ///     // This function blocks current thread
-///     let code = System::builder().clock(clock).run(|| {
+///     System::builder().run(|| {
 ///         // Start `Timer` actor. It will use the provided clock instance.
 ///         Timer {
 ///             dur: Duration::new(0, 1),
 ///         }.start();
 ///     });
-///
-///     std::process::exit(code);
 /// }
 /// ```
 pub struct Builder {
@@ -333,21 +326,13 @@ impl Builder {
     fn new() -> Self {
         Builder {
             name: Cow::Borrowed("actix"),
-            runtime: RuntimeBuilder::new(),
+            runtime: ActixSystem::builder(),
         }
     }
 
     /// Sets the name of the System.
     pub fn name<T: Into<String>>(mut self, name: T) -> Self {
         self.name = Cow::Owned(name.into());
-        self
-    }
-
-    /// Set the Clock instance that will be used by this System.
-    ///
-    /// Defaults to the system clock.
-    pub fn clock(mut self, clock: Clock) -> Self {
-        self.runtime.clock(clock);
         self
     }
 
@@ -368,7 +353,7 @@ impl Builder {
         self.create_runtime(f).run()
     }
 
-    fn create_runtime<F>(mut self, f: F) -> SystemRunner
+    fn create_runtime<F>(self, f: F) -> SystemRunner
     where
         F: FnOnce() + 'static,
     {
@@ -390,11 +375,12 @@ impl Builder {
             stop: Some(stop_tx),
         };
 
-        let mut rt = self.runtime.build().unwrap();
+        let name = self.name;
+        let mut rt = self.runtime.build();
 
         // init system arbiter and run configuration method
         let _ = rt.block_on(future::lazy(move || {
-            Arbiter::new_system(arb_receiver, self.name.into_owned());
+            Arbiter::new_system(arb_receiver, name.into_owned());
             let ctx = Context::with_receiver(addr_receiver);
             ctx.run(arb);
 
