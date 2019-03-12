@@ -38,19 +38,18 @@
 //!    });
 //! }
 //! ```
-extern crate trust_dns_resolver;
-
 use std::collections::VecDeque;
 use std::io;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use self::trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
-use self::trust_dns_resolver::AsyncResolver;
-use self::trust_dns_resolver::BackgroundLookupIp;
+use derive_more::Display;
 use futures::{Async, Future, Poll};
 use tokio_tcp::{ConnectFuture, TcpStream};
 use tokio_timer::Delay;
+use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
+use trust_dns_resolver::AsyncResolver;
+use trust_dns_resolver::BackgroundLookupIp;
 
 use crate::clock;
 use crate::fut::wrap_future;
@@ -132,22 +131,22 @@ impl Message for ConnectAddr {
     type Result = Result<TcpStream, ResolverError>;
 }
 
-#[derive(Fail, Debug)]
+#[derive(Debug, Display)]
 pub enum ResolverError {
     /// Failed to resolve the hostname
-    #[fail(display = "Failed resolving hostname: {}", _0)]
+    #[display(fmt = "Failed resolving hostname: {}", _0)]
     Resolver(String),
 
     /// Address is invalid
-    #[fail(display = "Invalid input: {}", _0)]
+    #[display(fmt = "Invalid input: {}", _0)]
     InvalidInput(&'static str),
 
     /// Connecting took too long
-    #[fail(display = "Timeout out while establishing connection")]
+    #[display(fmt = "Timeout out while establishing connection")]
     Timeout,
 
     /// Connection io error
-    #[fail(display = "{}", _0)]
+    #[display(fmt = "{}", _0)]
     IoError(io::Error),
 }
 

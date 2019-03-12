@@ -1,4 +1,4 @@
-use failure;
+use derive_more::Display;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -21,12 +21,12 @@ pub enum SendError<T> {
     Closed(T),
 }
 
-#[derive(Fail)]
+#[derive(Display)]
 /// The errors that can occur during the message delivery process.
 pub enum MailboxError {
-    #[fail(display = "Mailbox has closed")]
+    #[display(fmt = "Mailbox has closed")]
     Closed,
-    #[fail(display = "Message delivery timed out")]
+    #[display(fmt = "Message delivery timed out")]
     Timeout,
 }
 
@@ -55,8 +55,6 @@ impl<T> fmt::Display for SendError<T> {
         }
     }
 }
-
-impl<T> failure::Fail for SendError<T> where T: Send + Sync + 'static {}
 
 impl fmt::Debug for MailboxError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {

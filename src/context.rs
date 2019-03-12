@@ -1,6 +1,5 @@
 use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use crate::address::{Addr, AddressReceiver};
-use crate::arbiter::Arbiter;
 use crate::fut::ActorFuture;
 use std::fmt;
 
@@ -105,7 +104,7 @@ where
     pub fn run(self, act: A) -> Addr<A> {
         let fut = self.into_future(act);
         let addr = fut.address();
-        Arbiter::spawn(fut);
+        actix_rt::spawn(fut);
         addr
     }
 

@@ -4,7 +4,6 @@ use std::fmt;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
-use crate::arbiter::Arbiter;
 use crate::context::Context;
 use crate::fut::{self, ActorFuture};
 
@@ -148,7 +147,7 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        Arbiter::spawn(self.then(move |res| {
+        actix_rt::spawn(self.then(move |res| {
             if let Some(tx) = tx {
                 tx.send(res)
             }
@@ -206,7 +205,7 @@ where
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         match self.item {
             ResponseTypeItem::Fut(fut) => {
-                Arbiter::spawn(fut.then(move |res| {
+                actix_rt::spawn(fut.then(move |res| {
                     if let Some(tx) = tx {
                         tx.send(res);
                     }

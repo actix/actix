@@ -29,7 +29,7 @@ impl Handler<Ping> for MyActor {
     }
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     // start system, this is required step
     System::run(|| {
         // start new actor
@@ -48,5 +48,5 @@ fn main() {
             })
             .map_err(|_| ()),
         );
-    });
+    })
 }

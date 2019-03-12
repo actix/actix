@@ -77,7 +77,8 @@ impl Handler<TimeoutMessage> for MyActor {
 fn test_add_timeout() {
     System::run(|| {
         let _addr = MyActor { op: Op::Timeout }.start();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -91,7 +92,8 @@ fn test_add_timeout_cancel() {
                 future::result(Ok(()))
             },
         ));
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -102,14 +104,16 @@ fn test_add_timeout_stop() {
             op: Op::TimeoutStop,
         }
         .start();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
 fn test_run_after() {
     System::run(|| {
         let _addr = MyActor { op: Op::RunAfter }.start();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -119,7 +123,8 @@ fn test_run_after_stop() {
             op: Op::RunAfterStop,
         }
         .start();
-    });
+    })
+    .unwrap();
 }
 
 struct ContextWait {
@@ -157,7 +162,8 @@ fn test_wait_context() {
         addr.do_send(Ping);
         addr.do_send(Ping);
         addr.do_send(Ping);
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
@@ -177,7 +183,8 @@ fn test_message_stream_wait_context() {
             ctx.add_message_stream(rx);
             actor
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
@@ -197,7 +204,8 @@ fn test_stream_wait_context() {
             ctx.add_message_stream(rx);
             actor
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
@@ -235,7 +243,8 @@ fn test_nowait_context() {
                 .map_err(|_| ())
                 .map(|_| System::current().stop()),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -260,7 +269,8 @@ fn test_message_stream_nowait_context() {
                 .map_err(|_| ())
                 .map(|_| System::current().stop()),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -286,7 +296,8 @@ fn test_stream_nowait_context() {
                 .map_err(|_| ())
                 .map(|_| System::current().stop()),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -313,7 +324,8 @@ fn test_notify() {
                     System::current().stop();
                 }),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m2.load(Ordering::Relaxed), 3);
 }
@@ -348,7 +360,8 @@ fn test_current_context_handle() {
 
             ContextHandle { h: m2 }
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
 }
@@ -368,7 +381,8 @@ fn test_start_from_context() {
             );
             ContextHandle { h: m2 }
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
 }
@@ -400,7 +414,8 @@ fn test_cancel_handler() {
                     .map(|_| CancelPacket),
             ),
         });
-    });
+    })
+    .unwrap();
 }
 
 struct CancelLater {
@@ -447,5 +462,6 @@ fn test_cancel_completed_with_no_context_item() {
                 .map_err(|_| ())
                 .map(|_| System::current().stop()),
         );
-    });
+    })
+    .unwrap();
 }

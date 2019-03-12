@@ -34,66 +34,19 @@ impl Handler<Panic> for MyActor {
 }
 
 #[test]
-fn test_start_actor() {
-    let count = Arc::new(AtomicUsize::new(0));
-    let act_count = Arc::clone(&count);
-
-    System::run(move || {
-        let addr = Arbiter::start(move |_| MyActor(act_count));
-
-        addr.do_send(Ping(1));
-    });
-
-    assert_eq!(count.load(Ordering::Relaxed), 1);
-}
-
-#[test]
-fn test_start_actor_builder() {
-    let count = Arc::new(AtomicUsize::new(0));
-    let act_count = Arc::clone(&count);
-
-    System::run(move || {
-        let addr = Arbiter::builder().start(move |_| MyActor(act_count));
-
-        addr.do_send(Ping(1));
-    });
-
-    assert_eq!(count.load(Ordering::Relaxed), 1);
-}
-
-#[test]
-fn test_panic_stops_system() {
-    let count = Arc::new(AtomicUsize::new(0));
-    let act_count = Arc::clone(&count);
-
-    let return_code = System::run(move || {
-        let addr = Arbiter::builder()
-            .stop_system_on_panic(true)
-            .start(move |_| MyActor(act_count));
-
-        addr.do_send(Panic());
-    });
-
-    assert_eq!(return_code, 1);
-}
-
-#[test]
 fn test_start_actor_message() {
     let count = Arc::new(AtomicUsize::new(0));
     let act_count = Arc::clone(&count);
 
     System::run(move || {
-        let arbiter = Arbiter::new("test2");
+        let arbiter = Arbiter::new();
 
-        actix_rt::spawn(
-            arbiter
-                .send(actix::msgs::StartActor::new(move |_| MyActor(act_count)))
-                .then(|res| {
-                    res.unwrap().do_send(Ping(1));
-                    Ok(())
-                }),
-        );
-    });
+        actix_rt::spawn(arbiter.execute(|| MyActor(act_count).start()).then(|res| {
+            res.unwrap().do_send(Ping(1));
+            Ok(())
+        }));
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }

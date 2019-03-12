@@ -5,23 +5,19 @@
 //! is unique per system.
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::default::Default;
-use std::hash::BuildHasherDefault;
 use std::rc::Rc;
-use std::sync::Arc;
 
-use fnv::FnvHasher;
+use actix_rt::{Arbiter, System};
+use hashbrown::HashMap;
 use parking_lot::ReentrantMutex;
 
 use crate::actor::{Actor, Supervised};
 use crate::address::Addr;
-use crate::arbiter::Arbiter;
 use crate::context::Context;
 use crate::supervisor::Supervisor;
-use crate::system::System;
 
-type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
+type AnyMap = HashMap<TypeId, Box<Any>>;
 
 /// Actors registry
 ///
@@ -70,7 +66,7 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 ///
 ///    fn started(&mut self, _: &mut Context<Self>) {
 ///       // get MyActor1 address from the registry
-///       let act = Arbiter::registry().get::<MyActor1>();
+///       let act = MyActor1::from_registry();
 ///       act.do_send(Ping);
 ///    }
 /// }
@@ -79,8 +75,8 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 ///     // initialize system
 ///     let code = System::run(|| {
 ///         // Start MyActor2 in new Arbiter
-///         Arbiter::start(|_| {
-///             MyActor2
+///         Arbiter::new().send_fn(|| {
+///             MyActor2.start()
 ///         });
 ///     });
 /// }
@@ -88,6 +84,14 @@ type AnyMap = HashMap<TypeId, Box<Any>, BuildHasherDefault<FnvHasher>>;
 #[derive(Clone)]
 pub struct Registry {
     registry: Rc<RefCell<AnyMap>>,
+}
+
+thread_local! {
+    static AREG: Registry = {
+        Registry {
+            registry: Rc::new(RefCell::new(AnyMap::new()))
+        }
+    };
 }
 
 /// Trait defines arbiter's service.
@@ -107,17 +111,11 @@ pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default 
 
     /// Get actor's address from arbiter registry
     fn from_registry() -> Addr<Self> {
-        Arbiter::registry().get::<Self>()
+        AREG.with(|reg| reg.get())
     }
 }
 
 impl Registry {
-    pub(crate) fn new() -> Self {
-        Self {
-            registry: Rc::new(RefCell::new(HashMap::default())),
-        }
-    }
-
     /// Query registry for specific actor. Returns address of the actor.
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
@@ -150,15 +148,17 @@ impl Registry {
     }
 
     /// Add new actor to the registry by address, panic if actor is already running
-    pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
-        let id = TypeId::of::<A>();
-        if let Some(addr) = self.registry.borrow().get(&id) {
-            if addr.downcast_ref::<Addr<A>>().is_some() {
-                panic!("Actor already started");
+    pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(addr: Addr<A>) {
+        AREG.with(|reg| {
+            let id = TypeId::of::<A>();
+            if let Some(addr) = reg.registry.borrow().get(&id) {
+                if addr.downcast_ref::<Addr<A>>().is_some() {
+                    panic!("Actor already started");
+                }
             }
-        }
 
-        self.registry.borrow_mut().insert(id, Box::new(addr));
+            reg.registry.borrow_mut().insert(id, Box::new(addr));
+        })
     }
 }
 
@@ -205,7 +205,7 @@ impl Registry {
 ///     type Context = Context<Self>;
 ///
 ///     fn started(&mut self, _: &mut Context<Self>) {
-///         let act = System::current().registry().get::<MyActor1>();
+///         let act = MyActor1::from_registry();
 ///         act.do_send(Ping);
 ///     }
 /// }
@@ -220,18 +220,21 @@ impl Registry {
 /// ```
 #[derive(Debug)]
 pub struct SystemRegistry {
-    system: Addr<Arbiter>,
-    registry: InnerRegistry,
+    system: Arbiter,
+    registry: HashMap<TypeId, Box<Any + Send>>,
 }
 
-type AnyMapSend = HashMap<TypeId, Box<Any + Send>, BuildHasherDefault<FnvHasher>>;
-type InnerRegistry = Arc<ReentrantMutex<RefCell<AnyMapSend>>>;
+lazy_static::lazy_static! {
+    static ref SREG: ReentrantMutex<RefCell<HashMap<usize, SystemRegistry>>> = {
+        ReentrantMutex::new(RefCell::new(HashMap::new()))
+    };
+}
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
 pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     /// Construct and start system service
-    fn start_service(sys: &Addr<Arbiter>) -> Addr<Self> {
+    fn start_service(sys: &Arbiter) -> Addr<Self> {
         Supervisor::start_in_arbiter(sys, |ctx| {
             let mut act = Self::default();
             act.service_started(ctx);
@@ -244,23 +247,28 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
 
     /// Get actor's address from system registry
     fn from_registry() -> Addr<Self> {
-        System::with_current(|sys| sys.registry().get::<Self>())
+        System::with_current(|sys| {
+            SREG.lock()
+                .borrow_mut()
+                .entry(sys.id())
+                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()))
+                .get::<Self>()
+        })
     }
 }
 
 impl SystemRegistry {
-    pub(crate) fn new(system: Addr<Arbiter>) -> Self {
+    pub(crate) fn new(system: Arbiter) -> Self {
         Self {
             system,
-            registry: Arc::new(ReentrantMutex::new(RefCell::new(HashMap::default()))),
+            registry: HashMap::default(),
         }
     }
 
     /// Return address of the service. If service actor is not running
     /// it get started in the system.
-    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&self) -> Addr<A> {
-        let hm = self.registry.lock();
-        if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
+    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&mut self) -> Addr<A> {
+        if let Some(addr) = self.registry.get(&TypeId::of::<A>()) {
             match addr.downcast_ref::<Addr<A>>() {
                 Some(addr) => return addr.clone(),
                 None => panic!("Got unknown value: {:?}", addr),
@@ -268,7 +276,7 @@ impl SystemRegistry {
         }
 
         let addr = A::start_service(&self.system);
-        hm.borrow_mut()
+        self.registry
             .insert(TypeId::of::<A>(), Box::new(addr.clone()));
         addr
     }
@@ -277,8 +285,7 @@ impl SystemRegistry {
     pub fn query<A: SystemService + Actor<Context = Context<A>>>(
         &self,
     ) -> Option<Addr<A>> {
-        let hm = self.registry.lock();
-        if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
+        if let Some(addr) = self.registry.get(&TypeId::of::<A>()) {
             match addr.downcast_ref::<Addr<A>>() {
                 Some(addr) => return Some(addr.clone()),
                 None => return None,
@@ -289,23 +296,21 @@ impl SystemRegistry {
     }
 
     /// Add new actor to the registry by address, panic if actor is already running
-    pub fn set<A: SystemService + Actor<Context = Context<A>>>(&self, addr: Addr<A>) {
-        let hm = self.registry.lock();
-        if let Some(addr) = hm.borrow().get(&TypeId::of::<A>()) {
-            if addr.downcast_ref::<Addr<A>>().is_some() {
-                panic!("Actor already started");
+    pub fn set<A: SystemService + Actor<Context = Context<A>>>(addr: Addr<A>) {
+        System::with_current(|sys| {
+            let sreg = SREG.lock();
+            let mut breg = sreg.borrow_mut();
+            let reg = breg
+                .entry(sys.id())
+                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
+
+            if let Some(addr) = reg.registry.get(&TypeId::of::<A>()) {
+                if addr.downcast_ref::<Addr<A>>().is_some() {
+                    panic!("Actor already started");
+                }
             }
-        }
 
-        hm.borrow_mut().insert(TypeId::of::<A>(), Box::new(addr));
-    }
-}
-
-impl Clone for SystemRegistry {
-    fn clone(&self) -> Self {
-        Self {
-            system: self.system.clone(),
-            registry: Arc::clone(&self.registry),
-        }
+            reg.registry.insert(TypeId::of::<A>(), Box::new(addr));
+        })
     }
 }

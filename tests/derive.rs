@@ -35,7 +35,8 @@ fn response_derive_empty() {
             System::current().stop();
             future::result(Ok(()))
         }));
-    });
+    })
+    .unwrap();
 }
 
 #[derive(Message)]
@@ -75,7 +76,8 @@ pub fn derive_result() {
             System::current().stop();
             future::result(Ok(()))
         }));
-    });
+    })
+    .unwrap();
 }
 
 #[derive(Message)]
@@ -111,5 +113,6 @@ pub fn response_derive_one() {
             System::current().stop();
             future::result(Ok(()))
         }));
-    });
+    })
+    .unwrap();
 }

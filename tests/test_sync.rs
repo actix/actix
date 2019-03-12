@@ -90,7 +90,8 @@ fn test_sync() {
         for n in 5..10 {
             addr.do_send(Fibonacci(n));
         }
-    });
+    })
+    .unwrap();
 
     assert_eq!(counter.load(Ordering::Relaxed), 2, "Not started");
     assert_eq!(

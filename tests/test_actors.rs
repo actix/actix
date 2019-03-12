@@ -6,7 +6,7 @@ use futures::Future;
 fn test_resolver() {
     System::run(|| {
         Arbiter::spawn({
-            let resolver = System::current().registry().get::<resolver::Resolver>();
+            let resolver = resolver::Resolver::from_registry();
             resolver
                 .send(resolver::Resolve::host("localhost"))
                 .then(|_| {
@@ -16,10 +16,11 @@ fn test_resolver() {
         });
 
         Arbiter::spawn({
-            let resolver = System::current().registry().get::<resolver::Resolver>();
+            let resolver = resolver::Resolver::from_registry();
             resolver
                 .send(resolver::Connect::host("localhost:5000"))
                 .then(|_| Ok::<_, ()>(()))
         });
-    });
+    })
+    .unwrap();
 }

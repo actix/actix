@@ -55,7 +55,8 @@ fn test_stream() {
             MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
             MyActor(act_count, act_err, Running::Stop)
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 7);
     assert!(err.load(Ordering::Relaxed));
@@ -84,7 +85,8 @@ fn test_stream_with_error() {
             MyActor::add_stream(futures::stream::iter_result(items), ctx);
             MyActor(act_count, act_error, Running::Stop)
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 3);
     assert!(error.load(Ordering::Relaxed));
@@ -113,7 +115,8 @@ fn test_stream_with_error_no_stop() {
             MyActor::add_stream(futures::stream::iter_result(items), ctx);
             MyActor(act_count, act_error, Running::Continue)
         });
-    });
+    })
+    .unwrap();
     assert_eq!(count.load(Ordering::Relaxed), 8);
     assert!(error.load(Ordering::Relaxed));
 }
@@ -180,7 +183,8 @@ fn test_restart_sync_actor() {
                 future::result(Ok(()))
             })
         }));
-    });
+    })
+    .unwrap();
     assert_eq!(started.load(Ordering::Relaxed), 2);
     assert_eq!(stopping.load(Ordering::Relaxed), 2);
     assert_eq!(stopped.load(Ordering::Relaxed), 2);
@@ -232,7 +236,8 @@ fn test_run_interval() {
     thread::spawn(move || {
         System::run(move || {
             let _addr = IntervalActor::new(10, sender).start();
-        });
+        })
+        .unwrap();
     });
     let result = receiver
         .recv_timeout(MAX_WAIT)

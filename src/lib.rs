@@ -28,7 +28,6 @@
 //! ## Package feature
 //!
 //! * `resolver` - enables dns resolver actor, `actix::actors::resolver`
-//! * `signal` - enables signals handling actor
 //!
 //! ## Tokio runtime
 //!
@@ -47,8 +46,6 @@ extern crate bitflags;
 extern crate log;
 #[macro_use]
 extern crate futures;
-#[macro_use]
-extern crate failure;
 
 #[cfg_attr(feature = "cargo-clippy", allow(useless_attribute))]
 #[allow(unused_imports)]
@@ -59,14 +56,12 @@ extern crate actix_derive;
 pub use actix_derive::*;
 
 mod actor;
-mod arbiter;
 mod context;
 mod contextimpl;
 mod contextitems;
 mod handler;
 mod stream;
 mod supervisor;
-mod system;
 
 mod address;
 mod mailbox;
@@ -75,16 +70,17 @@ pub mod actors;
 pub mod clock;
 pub mod fut;
 pub mod io;
-pub mod msgs;
 pub mod registry;
 pub mod sync;
 pub mod utils;
+
+pub use actix_rt::{Arbiter, System, SystemRunner};
 
 pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
 pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr};
-pub use crate::arbiter::{Arbiter, ArbiterBuilder};
+// pub use crate::arbiter::{Arbiter, ArbiterBuilder};
 pub use crate::context::Context;
 pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
 pub use crate::handler::{
@@ -95,7 +91,6 @@ pub use crate::registry::{ArbiterService, Registry, SystemRegistry, SystemServic
 pub use crate::stream::StreamHandler;
 pub use crate::supervisor::Supervisor;
 pub use crate::sync::{SyncArbiter, SyncContext};
-pub use crate::system::{System, SystemRunner};
 
 #[doc(hidden)]
 pub use crate::context::ContextFutureSpawner;
@@ -113,6 +108,7 @@ pub mod prelude {
 
     #[doc(hidden)]
     pub use actix_derive::*;
+    pub use actix_rt::{Arbiter, System, SystemRunner};
 
     pub use crate::actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
@@ -120,7 +116,6 @@ pub mod prelude {
     pub use crate::address::{
         Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
     };
-    pub use crate::arbiter::Arbiter;
     pub use crate::context::{Context, ContextFutureSpawner};
     pub use crate::fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use crate::handler::{
@@ -131,13 +126,11 @@ pub mod prelude {
     pub use crate::stream::StreamHandler;
     pub use crate::supervisor::Supervisor;
     pub use crate::sync::{SyncArbiter, SyncContext};
-    pub use crate::system::System;
 
     pub use crate::actors;
     pub use crate::dev;
     pub use crate::fut;
     pub use crate::io;
-    pub use crate::msgs;
     pub use crate::utils::{Condition, IntervalFunc, TimerFunc};
 }
 
@@ -199,18 +192,14 @@ pub mod dev {
 /// # Panics
 ///
 /// This function panics if the actix system is already running.
-pub fn run<F, R>(f: F)
+pub fn run<F, R>(f: F) -> std::io::Result<()>
 where
     F: FnOnce() -> R,
     R: futures::Future<Item = (), Error = ()> + 'static,
 {
-    if System::is_set() {
-        panic!("System is already running");
-    }
-
-    let sys = System::new("Default");
-    Arbiter::spawn(f());
-    sys.run();
+    let sys = actix_rt::System::new("Default");
+    actix_rt::spawn(f());
+    sys.run()
 }
 
 /// Spawns a future on the current arbiter.
@@ -222,9 +211,5 @@ pub fn spawn<F>(f: F)
 where
     F: futures::Future<Item = (), Error = ()> + 'static,
 {
-    if !System::is_set() {
-        panic!("System is not running");
-    }
-
-    Arbiter::spawn(f);
+    actix_rt::spawn(f);
 }

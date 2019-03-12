@@ -70,6 +70,7 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::thread;
 
+use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::{Async, Future, Poll, Stream};
@@ -77,10 +78,8 @@ use futures::{Async, Future, Poll, Stream};
 use crate::actor::{Actor, ActorContext, ActorState, Running};
 use crate::address::channel;
 use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
-use crate::arbiter::Arbiter;
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};
-use crate::system::System;
 
 /// Sync arbiter
 pub struct SyncArbiter<A>
@@ -116,7 +115,7 @@ where
         }
 
         let (tx, rx) = channel::channel(0);
-        Arbiter::spawn(Self {
+        actix_rt::spawn(Self {
             queue: Some(sender),
             msgs: rx,
         });

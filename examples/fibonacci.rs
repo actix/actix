@@ -42,7 +42,7 @@ impl Handler<Fibonacci> for SyncActor {
     }
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     System::run(|| {
         // start sync arbiter with 3 threads
         let addr = SyncArbiter::start(3, || SyncActor);
@@ -56,5 +56,5 @@ fn main() {
             System::current().stop();
             futures::future::result(Ok(()))
         }));
-    });
+    })
 }

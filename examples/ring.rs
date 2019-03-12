@@ -98,7 +98,7 @@ fn main() {
     });
 
     let now = SystemTime::now();
-    system.run();
+    let _ = system.run();
     match now.elapsed() {
         Ok(elapsed) => println!(
             "Time taken: {}.{:06} seconds",

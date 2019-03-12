@@ -100,7 +100,8 @@ fn test_active_address() {
                 future::result(Ok(()))
             }),
         );
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(!stopping.load(Ordering::Relaxed), "Stopping");
@@ -135,7 +136,8 @@ fn test_stop_after_drop_address() {
                 })
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -168,7 +170,8 @@ fn test_stop_after_drop_sync_address() {
                 future::result(Ok(()))
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -210,7 +213,8 @@ fn test_stop_after_drop_sync_actor() {
                 })
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -242,7 +246,8 @@ fn test_stop() {
                 future::result(Ok(()))
             }),
         );
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -274,7 +279,8 @@ fn test_stop_restore_after_stopping() {
                 future::result(Ok(()))
             }),
         );
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");

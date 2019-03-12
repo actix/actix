@@ -45,14 +45,14 @@ fn test_address() {
     let count2 = Arc::clone(&count);
 
     System::run(move || {
-        let arbiter = Arbiter::new("sync-test");
+        let arbiter = Arbiter::new();
 
         let addr = MyActor(count2).start();
         let addr2 = addr.clone();
         let addr3 = addr.clone();
         addr.do_send(Ping(1));
 
-        arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+        arbiter.send_fn(move || {
             addr3.do_send(Ping(2));
 
             let send_ping = addr2
@@ -68,10 +68,9 @@ fn test_address() {
                     Ok(())
                 });
             Arbiter::spawn(send_ping);
-
-            Ok(())
-        }));
-    });
+        });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }
@@ -108,7 +107,8 @@ impl Actor for WeakRunner {
 fn test_weak_address() {
     System::run(move || {
         WeakRunner.start();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -127,7 +127,8 @@ fn test_sync_recipient_call() {
                 Ok(())
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 3);
 }
@@ -144,7 +145,8 @@ fn test_error_result() {
             }
             Ok(())
         }));
-    });
+    })
+    .unwrap();
 }
 
 struct TimeoutActor;
@@ -186,7 +188,8 @@ fn test_message_timeout() {
                 futures::future::result(Ok(()))
             },
         ));
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
@@ -225,7 +228,8 @@ fn test_call_message_timeout() {
     System::run(move || {
         let addr = TimeoutActor.start();
         let _addr2 = TimeoutActor3(addr, count2).start();
-    });
+    })
+    .unwrap();
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
@@ -247,7 +251,8 @@ fn test_address_eq() {
         assert!(addr0 != addr1);
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -280,7 +285,8 @@ fn test_address_hash() {
         assert!(addresses.contains(&addr1));
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -304,7 +310,8 @@ fn test_recipient_eq() {
         assert!(recipient01 != recipient11);
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -339,5 +346,6 @@ fn test_recipient_hash() {
         assert!(recipients.contains(&recipient11));
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }
