@@ -27,7 +27,7 @@ fn response_derive_empty() {
         let addr = EmptyActor.start();
         let res = addr.send(Empty);
 
-        actix_rt::spawn(res.then(|res| {
+        actix::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == ()),
                 _ => panic!("Something went wrong"),
@@ -68,7 +68,7 @@ pub fn derive_result() {
         let addr = SumResultActor.start();
         let res = addr.send(SumResult(10, 5));
 
-        actix_rt::spawn(res.then(|res| {
+        actix::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == Ok(10 + 5)),
                 _ => panic!("Something went wrong"),
@@ -105,7 +105,7 @@ pub fn response_derive_one() {
         let addr = SumOneActor.start();
         let res = addr.send(SumOne(10, 5));
 
-        actix_rt::spawn(res.then(|res| {
+        actix::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == 10 + 5),
                 _ => panic!("Something went wrong"),
@@ -145,7 +145,7 @@ pub fn derive_response_one() {
         let addr = MulOneActor.start();
         let res = addr.send(MulOne(10, 5));
 
-        tokio::spawn(res.then(|res| {
+        actix::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == MulRes(10 * 5)),
                 _ => panic!("Something went wrong"),
@@ -154,7 +154,8 @@ pub fn derive_response_one() {
             System::current().stop();
             future::result(Ok(()))
         }));
-    });
+    })
+    .unwrap();
 }
 
 #[derive(MessageResponse, PartialEq)]
@@ -173,7 +174,11 @@ impl Actor for MulAnyOneActor {
 impl Handler<MulAnyOne> for MulAnyOneActor {
     type Result = MulAny<usize>;
 
-    fn handle(&mut self, message: MulAnyOne, _context: &mut Context<Self>) -> Self::Result {
+    fn handle(
+        &mut self,
+        message: MulAnyOne,
+        _context: &mut Context<Self>,
+    ) -> Self::Result {
         MulAny(message.0 * message.1)
     }
 }
@@ -184,7 +189,7 @@ pub fn derive_response_two() {
         let addr = MulAnyOneActor.start();
         let res = addr.send(MulAnyOne(10, 5));
 
-        tokio::spawn(res.then(|res| {
+        actix::spawn(res.then(|res| {
             match res {
                 Ok(result) => assert!(result == MulAny(10 * 5)),
                 _ => panic!("Something went wrong"),
@@ -193,5 +198,6 @@ pub fn derive_response_two() {
             System::current().stop();
             future::result(Ok(()))
         }));
-    });
+    })
+    .unwrap();
 }
