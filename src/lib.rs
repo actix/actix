@@ -74,7 +74,7 @@ pub mod registry;
 pub mod sync;
 pub mod utils;
 
-pub use actix_rt::{Arbiter, System, SystemRunner};
+pub use actix_rt::{spawn, Arbiter, System, SystemRunner};
 
 pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
