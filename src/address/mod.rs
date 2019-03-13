@@ -368,7 +368,8 @@ mod tests {
                     panic!("Message over limit should be delivered, but it is not!");
                 });
             Arbiter::spawn(send);
-        });
+        })
+        .unwrap();
 
         assert_eq!(count.load(Ordering::Relaxed), 3);
     }
