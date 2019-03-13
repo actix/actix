@@ -1,11 +1,10 @@
-use actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
-use address::{Addr, AddressReceiver};
-use arbiter::Arbiter;
-use fut::ActorFuture;
+use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
+use crate::address::{Addr, AddressReceiver};
+use crate::fut::ActorFuture;
 use std::fmt;
 
-use contextimpl::{AsyncContextParts, ContextFut, ContextParts};
-use mailbox::Mailbox;
+use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
+use crate::mailbox::Mailbox;
 
 /// An actor execution context.
 pub struct Context<A>
@@ -105,7 +104,7 @@ where
     pub fn run(self, act: A) -> Addr<A> {
         let fut = self.into_future(act);
         let addr = fut.address();
-        Arbiter::spawn(fut);
+        actix_rt::spawn(fut);
         addr
     }
 

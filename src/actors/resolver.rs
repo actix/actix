@@ -4,9 +4,6 @@
 //!
 //! ```rust
 //! #![recursion_limit="128"]
-//! # extern crate actix;
-//! # extern crate futures;
-//! # extern crate tokio;
 //! # use futures::{future, Future};
 //! use actix::prelude::*;
 //! use actix::actors::resolver;
@@ -14,7 +11,7 @@
 //! fn main() {
 //!     System::run(|| {
 //!
-//!         tokio::spawn({
+//!         actix_rt::spawn({
 //!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(
@@ -27,7 +24,7 @@
 //!                     })
 //!         });
 //!
-//!         tokio::spawn({
+//!         actix_rt::spawn({
 //!             let resolver = resolver::Resolver::from_registry();
 //!
 //!             resolver.send(
@@ -41,23 +38,22 @@
 //!    });
 //! }
 //! ```
-extern crate trust_dns_resolver;
-
 use std::collections::VecDeque;
 use std::io;
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use self::trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
-use self::trust_dns_resolver::AsyncResolver;
-use self::trust_dns_resolver::BackgroundLookupIp;
+use derive_more::Display;
 use futures::{Async, Future, Poll};
 use tokio_tcp::{ConnectFuture, TcpStream};
 use tokio_timer::Delay;
+use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
+use trust_dns_resolver::AsyncResolver;
+use trust_dns_resolver::BackgroundLookupIp;
 
-use clock;
-use fut::wrap_future;
-use prelude::*;
+use crate::clock;
+use crate::fut::wrap_future;
+use crate::prelude::*;
 
 #[deprecated(since = "0.7.0", note = "please use `Resolver` instead")]
 pub type Connector = Resolver;
@@ -135,22 +131,22 @@ impl Message for ConnectAddr {
     type Result = Result<TcpStream, ResolverError>;
 }
 
-#[derive(Fail, Debug)]
+#[derive(Debug, Display)]
 pub enum ResolverError {
     /// Failed to resolve the hostname
-    #[fail(display = "Failed resolving hostname: {}", _0)]
+    #[display(fmt = "Failed resolving hostname: {}", _0)]
     Resolver(String),
 
     /// Address is invalid
-    #[fail(display = "Invalid input: {}", _0)]
+    #[display(fmt = "Invalid input: {}", _0)]
     InvalidInput(&'static str),
 
     /// Connecting took too long
-    #[fail(display = "Timeout out while establishing connection")]
+    #[display(fmt = "Timeout out while establishing connection")]
     Timeout,
 
     /// Connection io error
-    #[fail(display = "{}", _0)]
+    #[display(fmt = "{}", _0)]
     IoError(io::Error),
 }
 
@@ -170,7 +166,9 @@ impl Resolver {
     }
 
     fn start_resolver<F>(
-        &self, ctx: &mut <Self as Actor>::Context, parts: (AsyncResolver, F),
+        &self,
+        ctx: &mut <Self as Actor>::Context,
+        parts: (AsyncResolver, F),
     ) -> AsyncResolver
     where
         F: 'static + Future<Item = (), Error = ()>,
@@ -252,7 +250,8 @@ impl Handler<Connect> for Resolver {
                 msg.name,
                 msg.port.unwrap_or(0),
                 self.resolver.as_ref().unwrap(),
-            ).and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
+            )
+            .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
         )
     }
 }
@@ -278,7 +277,9 @@ struct ResolveFut {
 
 impl ResolveFut {
     pub fn new<S: AsRef<str>>(
-        addr: S, port: u16, resolver: &AsyncResolver,
+        addr: S,
+        port: u16,
+        resolver: &AsyncResolver,
     ) -> ResolveFut {
         // try to parse as a regular SocketAddr first
         if let Ok(addr) = addr.as_ref().parse() {
@@ -349,7 +350,9 @@ impl ActorFuture for ResolveFut {
     type Actor = Resolver;
 
     fn poll(
-        &mut self, _: &mut Resolver, _: &mut Context<Resolver>,
+        &mut self,
+        _: &mut Resolver,
+        _: &mut Context<Resolver>,
     ) -> Poll<Self::Item, Self::Error> {
         if let Some(err) = self.error.take() {
             Err(err)
@@ -406,7 +409,9 @@ impl ActorFuture for TcpConnector {
     type Actor = Resolver;
 
     fn poll(
-        &mut self, _: &mut Resolver, _: &mut Context<Resolver>,
+        &mut self,
+        _: &mut Resolver,
+        _: &mut Context<Resolver>,
     ) -> Poll<Self::Item, Self::Error> {
         // timeout
         if let Ok(Async::Ready(_)) = self.timeout.poll() {

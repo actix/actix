@@ -2,13 +2,13 @@ use futures::{Async, Future, Poll};
 use smallvec::SmallVec;
 use std::fmt;
 
-use actor::{
+use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-use address::{Addr, AddressSenderProducer};
-use contextitems::ActorWaitItem;
-use fut::ActorFuture;
-use mailbox::Mailbox;
+use crate::address::{Addr, AddressSenderProducer};
+use crate::contextitems::ActorWaitItem;
+use crate::fut::ActorFuture;
+use crate::mailbox::Mailbox;
 
 bitflags! {
     /// internal context state
@@ -306,7 +306,6 @@ where
                 }
             }
         }
-
     }
 }
 

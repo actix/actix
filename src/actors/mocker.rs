@@ -29,8 +29,8 @@ use std::any::Any;
 use std::marker::PhantomData;
 use std::mem;
 
-use handler::MessageResponse;
-use prelude::*;
+use crate::handler::MessageResponse;
+use crate::prelude::*;
 
 /// This actor is able to wrap another actor and accept all the messages the
 /// wrapped actor can, passing it to a closure which can mock the response of

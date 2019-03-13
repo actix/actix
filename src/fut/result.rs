@@ -3,8 +3,8 @@
 use futures::{Async, Poll};
 use std::marker::PhantomData;
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 /// A future representing a value that is immediately ready.
 ///
@@ -96,7 +96,9 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, _: &mut Self::Actor, _: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        _: &mut Self::Actor,
+        _: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<T, E> {
         self.inner
             .take()

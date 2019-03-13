@@ -1,13 +1,8 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 use std::thread;
+use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::{future, Future};
@@ -60,7 +55,8 @@ fn test_stream() {
             MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
             MyActor(act_count, act_err, Running::Stop)
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 7);
     assert!(err.load(Ordering::Relaxed));
@@ -89,7 +85,8 @@ fn test_stream_with_error() {
             MyActor::add_stream(futures::stream::iter_result(items), ctx);
             MyActor(act_count, act_error, Running::Stop)
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 3);
     assert!(error.load(Ordering::Relaxed));
@@ -118,7 +115,8 @@ fn test_stream_with_error_no_stop() {
             MyActor::add_stream(futures::stream::iter_result(items), ctx);
             MyActor(act_count, act_error, Running::Continue)
         });
-    });
+    })
+    .unwrap();
     assert_eq!(count.load(Ordering::Relaxed), 8);
     assert!(error.load(Ordering::Relaxed));
 }
@@ -179,13 +177,14 @@ fn test_restart_sync_actor() {
         });
         addr.do_send(Num(2));
 
-        tokio::spawn(addr.send(Num(4)).then(move |_| {
+        actix_rt::spawn(addr.send(Num(4)).then(move |_| {
             Delay::new(Instant::now() + Duration::new(0, 1_000_000)).then(move |_| {
                 System::current().stop();
                 future::result(Ok(()))
             })
         }));
-    });
+    })
+    .unwrap();
     assert_eq!(started.load(Ordering::Relaxed), 2);
     assert_eq!(stopping.load(Ordering::Relaxed), 2);
     assert_eq!(stopped.load(Ordering::Relaxed), 2);
@@ -195,7 +194,7 @@ fn test_restart_sync_actor() {
 struct IntervalActor {
     elapses_left: usize,
     sender: sync::mpsc::Sender<Instant>,
-    instant: Option<Instant>
+    instant: Option<Instant>,
 }
 
 impl IntervalActor {
@@ -204,7 +203,7 @@ impl IntervalActor {
             //We stop at 0, so add 1 to make number of intervals equal to elapses_left
             elapses_left: elapses_left + 1,
             sender,
-            instant: None
+            instant: None,
         }
     }
 }
@@ -219,7 +218,9 @@ impl Actor for IntervalActor {
             act.elapses_left -= 1;
 
             if act.elapses_left == 0 {
-                act.sender.send(act.instant.take().expect("To have Instant")).expect("To send result");
+                act.sender
+                    .send(act.instant.take().expect("To have Instant"))
+                    .expect("To send result");
                 ctx.stop();
                 System::current().stop();
             }
@@ -235,9 +236,12 @@ fn test_run_interval() {
     thread::spawn(move || {
         System::run(move || {
             let _addr = IntervalActor::new(10, sender).start();
-        });
+        })
+        .unwrap();
     });
-    let result = receiver.recv_timeout(MAX_WAIT).expect("To receive response in time");
+    let result = receiver
+        .recv_timeout(MAX_WAIT)
+        .expect("To receive response in time");
     //We wait 10 intervals by ~100ms
     assert_eq!(result.elapsed().as_secs(), 1);
 }

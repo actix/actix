@@ -1,8 +1,5 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-
 use actix::prelude::*;
+use actix_rt::spawn;
 use futures::Future;
 
 /// Define `Ping` message
@@ -32,7 +29,7 @@ impl Handler<Ping> for MyActor {
     }
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     // start system, this is required step
     System::run(|| {
         // start new actor
@@ -42,13 +39,14 @@ fn main() {
         let res = addr.send(Ping(10));
 
         // handle() returns tokio handle
-        tokio::spawn(
+        spawn(
             res.map(|res| {
                 println!("RESULT: {}", res == 20);
 
                 // stop system and exit
                 System::current().stop();
-            }).map_err(|_| ()),
+            })
+            .map_err(|_| ()),
         );
-    });
+    })
 }

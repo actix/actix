@@ -1,7 +1,7 @@
 use futures::Poll;
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 /// Combines two different futures yielding the same item and error
 /// types into a single type.
@@ -36,7 +36,9 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
+        &mut self,
+        act: &mut A::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, B::Error> {
         match *self {
             Either::A(ref mut a) => a.poll(act, ctx),

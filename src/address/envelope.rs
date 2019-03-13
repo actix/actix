@@ -2,9 +2,9 @@ use futures::sync::oneshot::Sender;
 use std::marker::PhantomData;
 
 // use super::{MessageDestination, MessageDestinationTransport, Syn};
-use actor::{Actor, AsyncContext};
-use context::Context;
-use handler::{Handler, Message, MessageResponse};
+use crate::actor::{Actor, AsyncContext};
+use crate::context::Context;
+use crate::handler::{Handler, Message, MessageResponse};
 
 /// Converter trait, packs message into a suitable envelope.
 pub trait ToEnvelope<A, M: Message>
@@ -21,7 +21,9 @@ pub trait EnvelopeProxy {
 
     /// handle message within new actor and context
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        act: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
     );
 }
 
@@ -62,7 +64,9 @@ impl<A: Actor> EnvelopeProxy for Envelope<A> {
     type Actor = A;
 
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        act: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
     ) {
         self.0.handle(act, ctx)
     }
@@ -95,7 +99,9 @@ where
     type Actor = A;
 
     fn handle(
-        &mut self, act: &mut Self::Actor, ctx: &mut <Self::Actor as Actor>::Context,
+        &mut self,
+        act: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
     ) {
         let tx = self.tx.take();
         if tx.is_some() && tx.as_ref().unwrap().is_canceled() {

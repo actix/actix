@@ -1,8 +1,8 @@
 use futures::{Async, Poll};
 use std::mem;
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 #[derive(Debug)]
 pub enum Chain<A, B, C>
@@ -24,7 +24,10 @@ where
     }
 
     pub fn poll<F>(
-        &mut self, srv: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context, f: F,
+        &mut self,
+        srv: &mut A::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
+        f: F,
     ) -> Poll<B::Item, B::Error>
     where
         F: FnOnce(

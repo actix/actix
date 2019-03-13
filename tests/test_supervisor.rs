@@ -1,8 +1,3 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -66,7 +61,8 @@ fn test_supervisor_restart() {
                 future::result(Ok(()))
             },
         ));
-    });
+    })
+    .unwrap();
 
     assert_eq!(starts.load(Ordering::Relaxed), 3);
     assert_eq!(restarts.load(Ordering::Relaxed), 2);
