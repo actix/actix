@@ -36,7 +36,7 @@ mailbox_assert = []
 
 [dependencies]
 actix-rt = "0.2.1"
-actix_derive = "0.3"
+actix_derive = "0.4"
 bytes = "0.4"
 crossbeam-channel = "0.3"
 derive_more = "0.14.0"
@@ -50,7 +50,6 @@ parking_lot = "0.7"
 tokio-io = "0.1"
 tokio-codec = "0.1"
 tokio-executor = "0.1"
-tokio-reactor = "0.1"
 tokio-tcp = "0.1"
 tokio-timer = "0.2.8"
 
