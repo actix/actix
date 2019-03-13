@@ -37,7 +37,7 @@ signal = ["tokio-signal"]
 mailbox_assert = []
 
 [dependencies]
-actix_derive = "0.3"
+actix_derive = "0.4"
 
 # io
 bytes = "0.4"
