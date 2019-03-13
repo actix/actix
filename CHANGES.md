@@ -6,6 +6,8 @@
 
 * Edition 2018
 
+* Replace System/Arbiter with actix_rt::System and actix_rt::Arbiter
+
 ### Deleted
 
 * Deleted signals actor
