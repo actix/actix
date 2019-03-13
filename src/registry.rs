@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use actix_rt::{Arbiter, System};
 use hashbrown::HashMap;
-use parking_lot::ReentrantMutex;
+use parking_lot::Mutex;
 
 use crate::actor::{Actor, Supervised};
 use crate::address::Addr;
@@ -225,8 +225,8 @@ pub struct SystemRegistry {
 }
 
 lazy_static::lazy_static! {
-    static ref SREG: ReentrantMutex<RefCell<HashMap<usize, SystemRegistry>>> = {
-        ReentrantMutex::new(RefCell::new(HashMap::new()))
+    static ref SREG: Mutex<HashMap<usize, SystemRegistry>> = {
+        Mutex::new(HashMap::new())
     };
 }
 
@@ -248,11 +248,20 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     /// Get actor's address from system registry
     fn from_registry() -> Addr<Self> {
         System::with_current(|sys| {
-            SREG.lock()
-                .borrow_mut()
-                .entry(sys.id())
-                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()))
-                .get::<Self>()
+            let addr = {
+                SREG.lock()
+                    .entry(sys.id())
+                    .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()))
+                    .query::<Self>()
+            };
+
+            if let Some(addr) = addr {
+                addr
+            } else {
+                let addr = Self::start_service(System::current().arbiter());
+                SystemRegistry::set(addr.clone());
+                addr
+            }
         })
     }
 }
@@ -298,9 +307,8 @@ impl SystemRegistry {
     /// Add new actor to the registry by address, panic if actor is already running
     pub fn set<A: SystemService + Actor<Context = Context<A>>>(addr: Addr<A>) {
         System::with_current(|sys| {
-            let sreg = SREG.lock();
-            let mut breg = sreg.borrow_mut();
-            let reg = breg
+            let mut sreg = SREG.lock();
+            let reg = sreg
                 .entry(sys.id())
                 .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
 
