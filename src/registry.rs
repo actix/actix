@@ -75,8 +75,8 @@ type AnyMap = HashMap<TypeId, Box<Any>>;
 ///     // initialize system
 ///     let code = System::run(|| {
 ///         // Start MyActor2 in new Arbiter
-///         Arbiter::new().send_fn(|| {
-///             MyActor2.start()
+///         Arbiter::new().exec_fn(|| {
+///             MyActor2.start();
 ///         });
 ///     });
 /// }

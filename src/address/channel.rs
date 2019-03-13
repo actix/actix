@@ -931,12 +931,12 @@ mod tests {
             let s2 = recv.sender();
 
             let arb = Arbiter::new();
-            arb.send_fn(move || {
+            arb.exec_fn(move || {
                 let _ = s1.send(Ping);
             });
             thread::sleep(time::Duration::from_millis(100));
             let arb2 = Arbiter::new();
-            arb2.send_fn(move || {
+            arb2.exec_fn(move || {
                 let _ = s2.send(Ping);
                 let _ = s2.send(Ping);
             });

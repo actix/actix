@@ -52,7 +52,7 @@ fn test_address() {
         let addr3 = addr.clone();
         addr.do_send(Ping(1));
 
-        arbiter.send_fn(move || {
+        arbiter.exec_fn(move || {
             addr3.do_send(Ping(2));
 
             let send_ping = addr2
