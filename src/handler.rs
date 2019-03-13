@@ -1,6 +1,7 @@
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::Future;
 use std::fmt;
+use std::sync::Arc;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
@@ -90,6 +91,18 @@ impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for Result<I, E>
 where
     A: Actor,
     M: Message<Result = Self>,
+{
+    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
+        if let Some(tx) = tx {
+            tx.send(self);
+        }
+    }
+}
+
+impl<A, M, I: 'static> MessageResponse<A, M> for Arc<I>
+where
+    A: Actor,
+    M: Message<Result = Arc<I>>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
