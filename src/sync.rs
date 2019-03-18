@@ -99,8 +99,10 @@ impl<A> SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
-    /// Start new `SyncArbiter` with specified number of worker threads.
-    /// Returns the address of the started actor pool.
+    /// Start a new `SyncArbiter` with specified number of worker threads.
+    /// Returns a single address of the started actor. A single address is
+    /// used to communicate to the actor(s), and messages are handled by
+    /// the next available Actor in the `SyncArbiter`.
     ///
     /// ## Example
     ///
@@ -123,7 +125,7 @@ where
     ///
     /// fn main() {
     ///     System::run(|| {
-    ///         // Start the SyncArbiter with 2 threads, and receive the address of the Actor pool.
+    ///         // Start the SyncArbiter with 2 threads, and receive the address of the Actor(s).
     ///         let addr = SyncArbiter::start(2, || SyncActor);
     ///
     /// #       System::current().stop();
