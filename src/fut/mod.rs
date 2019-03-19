@@ -57,21 +57,28 @@ use crate::actor::Actor;
 /// }
 ///
 /// impl Handler<DeferredWork> for OriginalActor {
+///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
 ///     type Result = ResponseActFuture<Self, (), Error>;
 ///
 ///     fn handle(&mut self, _msg: Refresh, ctx: &mut Context<Self>) -> Self::Result {
+///         // this creates a `Future` representing the `.send` and subsequent `Result` from
+///         // `other_actor`
 ///         let send_to_other = self.other_actor_addr
 ///             .send(OtherMessage::new())
 ///             .map_err(Error::from);
 ///
-///         let update_self =
-///             wrap_future::<_, Self>(send_to_other).map(|result, actor, _ctx| {
-///                 // Actor's state updated here
-///                 actor.inner_state.update_from(result);
-///             });
+///         // Wrap that `Future` so subsequent chained handlers can access
+///         // the `actor` (`self` in the  synchronous code) as well as the context.
+///         let send_to_other = actix::fut::wrap_future::<_, Self>(send_to_other);
 ///
-///         // return the wrapping future
-///         Box::new(update_self);
+///         // once the wrapped future resolves, update this actor's state
+///         let update_self = send_to_other.map(|result, actor, _ctx| {
+///             // Actor's state updated here
+///             actor.inner_state.update_from(result);
+///         });
+///
+///         // return the wrapped future
+///         Box::new(update_self)
 ///     }
 /// }
 /// ```
