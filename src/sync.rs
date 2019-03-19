@@ -27,6 +27,9 @@ use crate::handler::{Handler, Message, MessageResponse};
 /// of hosted Sync Actors. Any message sent to this Address, will be operated on by
 /// a single Sync Actor from the pool.
 ///
+/// Sync Actors have a different lifecycle compared to Actors on the System
+/// Arbiter. For more, see `SyncContext`.
+///
 /// ## Example
 ///
 /// ```rust
@@ -103,35 +106,6 @@ where
     /// Returns a single address of the started actor. A single address is
     /// used to communicate to the actor(s), and messages are handled by
     /// the next available Actor in the `SyncArbiter`.
-    ///
-    /// ## Example
-    ///
-    /// ```rust
-    /// # extern crate actix;
-    /// # extern crate futures;
-    /// use actix::prelude::*;
-    ///
-    /// # struct Fibonacci(pub u32);
-    ///
-    /// # impl Message for Fibonacci {
-    /// #     type Result = Result<u64, ()>;
-    /// # }
-    ///
-    /// struct SyncActor;
-    ///
-    /// impl Actor for SyncActor {
-    ///     type Context = SyncContext<Self>;
-    /// }
-    ///
-    /// fn main() {
-    ///     System::run(|| {
-    ///         // Start the SyncArbiter with 2 threads, and receive the address of the Actor(s).
-    ///         let addr = SyncArbiter::start(2, || SyncActor);
-    ///
-    /// #       System::current().stop();
-    ///     });
-    /// }
-    /// ```
     pub fn start<F>(threads: usize, factory: F) -> Addr<A>
     where
         F: Fn() -> A + Send + Sync + 'static,
@@ -210,7 +184,37 @@ where
     }
 }
 
-/// Sync actor execution context
+/// Sync actor execution context. This is used insted of impl Actor for your Actor
+/// instead of Context, if you intend this actor to run in a SyncArbiter.
+///
+/// Unlike Context, an Actor that uses a SyncContext can not be stopped
+/// by calling `stop` or `terminate`: Instead, these trigger a restart of
+/// the Actor. Similar, returning `false` from `fn stopping` can not prevent
+/// the restart or termination of the Actor.
+///
+/// ## Example
+///
+/// ```rust
+/// # extern crate actix;
+/// # extern crate futures;
+/// use actix::prelude::*;
+///
+/// # struct Fibonacci(pub u32);
+///
+/// # impl Message for Fibonacci {
+/// #     type Result = Result<u64, ()>;
+/// # }
+///
+/// struct SyncActor;
+///
+/// impl Actor for SyncActor {
+///     // It's important to note that you use "SyncContext" here instead of "Context".
+///     type Context = SyncContext<Self>;
+/// }
+///
+/// # fn main() {
+/// # }
+/// ```
 pub struct SyncContext<A>
 where
     A: Actor<Context = Self>,
@@ -226,32 +230,6 @@ impl<A> SyncContext<A>
 where
     A: Actor<Context = Self>,
 {
-    /// Create new SyncContext. This is used insted of impl Actor for your Actor
-    /// instead of Context, if you intend this actor to run in a SyncArbiter.
-    ///
-    /// ## Example
-    ///
-    /// ```rust
-    /// # extern crate actix;
-    /// # extern crate futures;
-    /// use actix::prelude::*;
-    ///
-    /// # struct Fibonacci(pub u32);
-    ///
-    /// # impl Message for Fibonacci {
-    /// #     type Result = Result<u64, ()>;
-    /// # }
-    ///
-    /// struct SyncActor;
-    ///
-    /// impl Actor for SyncActor {
-    ///     // It's important to note that you use "SyncContext" here instead of "Context".
-    ///     type Context = SyncContext<Self>;
-    /// }
-    ///
-    /// # fn main() {
-    /// # }
-    /// ```
     fn new(factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<Envelope<A>>) -> Self {
         let act = factory();
         Self {
