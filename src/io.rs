@@ -391,4 +391,15 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
     pub fn handle(&self) -> SpawnHandle {
         self.inner.0.borrow().handle
     }
+
+    /// Attempts to write any remaining bytes to the stream and flush it
+    pub fn flush(&self) -> Result<(), std::io::Error> {
+        let mut async_writer = self.inner.1.borrow_mut();
+        let inner = self.inner.0.borrow_mut();
+        if !inner.buffer.is_empty() {
+            async_writer.write(&inner.buffer)?;
+            async_writer.flush()?;
+        }
+        Ok(())
+    }
 }
