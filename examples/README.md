@@ -1,6 +1,6 @@
 # Actix Examples
 
-The following examples complete the documentation and can help you understand how to use Actix:
+The following examples complement the documentation and can help you understand how to use Actix:
 
 1. [Ping](https://github.com/actix/actix/blob/master/examples/ping.rs) - Basic example showing 2 actors playing ping/pong.
 2. [Fibonnaci](https://github.com/actix/actix/blob/master/examples/fibonacci.rs) - Demonstrates how to integrate a synchronous actor on a threadpool for cpu bound tasks.
