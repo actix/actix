@@ -3,11 +3,10 @@ use futures::Future;
 use std::fmt;
 use std::sync::Arc;
 
-use actor::{Actor, AsyncContext};
-use address::Addr;
-use arbiter::Arbiter;
-use context::Context;
-use fut::{self, ActorFuture};
+use crate::actor::{Actor, AsyncContext};
+use crate::address::Addr;
+use crate::context::Context;
+use crate::fut::{self, ActorFuture};
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -161,7 +160,7 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        Arbiter::spawn(self.then(move |res| {
+        actix_rt::spawn(self.then(move |res| {
             if let Some(tx) = tx {
                 tx.send(res)
             }
@@ -184,15 +183,16 @@ impl<I, E> fmt::Debug for Response<I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut fmt = fmt.debug_struct("Response");
         match self.item {
-                ResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-                ResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
-        }.finish()
+            ResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
+            ResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }
+        .finish()
     }
 }
 
 impl<I, E> Response<I, E> {
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn fut<T>(fut: T) -> Self
     where
         T: Future<Item = I, Error = E> + 'static,
     {
@@ -218,7 +218,7 @@ where
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         match self.item {
             ResponseTypeItem::Fut(fut) => {
-                Arbiter::spawn(fut.then(move |res| {
+                actix_rt::spawn(fut.then(move |res| {
                     if let Some(tx) = tx {
                         tx.send(res);
                     }
@@ -248,9 +248,12 @@ impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         let mut fmt = fmt.debug_struct("ActorResponse");
         match self.item {
-                ActorResponseTypeItem::Result(_) => fmt.field("item", &"Result(_)".to_string()),
-                ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
-        }.finish()
+            ActorResponseTypeItem::Result(_) => {
+                fmt.field("item", &"Result(_)".to_string())
+            }
+            ActorResponseTypeItem::Fut(_) => fmt.field("item", &"Fut(_)".to_string()),
+        }
+        .finish()
     }
 }
 
@@ -263,7 +266,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     }
 
     /// Creates an asynchronous response.
-    pub fn async<T>(fut: T) -> Self
+    pub fn r#async<T>(fut: T) -> Self
     where
         T: ActorFuture<Item = I, Error = E, Actor = A> + 'static,
     {

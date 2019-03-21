@@ -1,8 +1,3 @@
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
 use std::collections::HashSet;
 use std::mem::drop;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -50,14 +45,14 @@ fn test_address() {
     let count2 = Arc::clone(&count);
 
     System::run(move || {
-        let arbiter = Arbiter::new("sync-test");
+        let arbiter = Arbiter::new();
 
         let addr = MyActor(count2).start();
         let addr2 = addr.clone();
         let addr3 = addr.clone();
         addr.do_send(Ping(1));
 
-        arbiter.do_send(actix::msgs::Execute::new(move || -> Result<(), ()> {
+        arbiter.exec_fn(move || {
             addr3.do_send(Ping(2));
 
             let send_ping = addr2
@@ -73,10 +68,9 @@ fn test_address() {
                     Ok(())
                 });
             Arbiter::spawn(send_ping);
-
-            Ok(())
-        }));
-    });
+        });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }
@@ -113,7 +107,8 @@ impl Actor for WeakRunner {
 fn test_weak_address() {
     System::run(move || {
         WeakRunner.start();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -126,13 +121,14 @@ fn test_sync_recipient_call() {
         let addr2 = addr.clone().recipient();
         addr.do_send(Ping(0));
 
-        tokio::spawn(addr2.send(Ping(1)).then(move |_| {
+        actix_rt::spawn(addr2.send(Ping(1)).then(move |_| {
             addr2.send(Ping(2)).then(|_| {
                 System::current().stop();
                 Ok(())
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 3);
 }
@@ -142,14 +138,15 @@ fn test_error_result() {
     System::run(|| {
         let addr = MyActor3.start();
 
-        tokio::spawn(addr.send(Ping(0)).then(|res| {
+        actix_rt::spawn(addr.send(Ping(0)).then(|res| {
             match res {
                 Ok(_) => (),
                 _ => panic!("Should not happen"),
             }
             Ok(())
         }));
-    });
+    })
+    .unwrap();
 }
 
 struct TimeoutActor;
@@ -178,7 +175,7 @@ fn test_message_timeout() {
         let addr = TimeoutActor.start();
 
         addr.do_send(Ping(0));
-        tokio::spawn(addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).then(
+        actix_rt::spawn(addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).then(
             move |res| {
                 match res {
                     Ok(_) => panic!("Should not happen"),
@@ -191,7 +188,8 @@ fn test_message_timeout() {
                 futures::future::result(Ok(()))
             },
         ));
-    });
+    })
+    .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
@@ -230,7 +228,8 @@ fn test_call_message_timeout() {
     System::run(move || {
         let addr = TimeoutActor.start();
         let _addr2 = TimeoutActor3(addr, count2).start();
-    });
+    })
+    .unwrap();
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
@@ -252,7 +251,8 @@ fn test_address_eq() {
         assert!(addr0 != addr1);
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -285,7 +285,8 @@ fn test_address_hash() {
         assert!(addresses.contains(&addr1));
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -309,7 +310,8 @@ fn test_recipient_eq() {
         assert!(recipient01 != recipient11);
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -344,5 +346,6 @@ fn test_recipient_hash() {
         assert!(recipients.contains(&recipient11));
 
         System::current().stop();
-    });
+    })
+    .unwrap();
 }

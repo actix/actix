@@ -2,7 +2,7 @@ use futures::Poll;
 
 use super::chain::Chain;
 use super::{ActorFuture, IntoActorFuture};
-use actor::Actor;
+use crate::actor::Actor;
 
 /// Future for the `and_then` combinator, chaining a computation onto the end of
 /// another future which completes successfully.
@@ -39,7 +39,9 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
+        &mut self,
+        act: &mut A::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<B::Item, B::Error> {
         self.state.poll(act, ctx, |result, f, act, ctx| {
             result.map(|e| Err(f(e, act, ctx).into_future()))

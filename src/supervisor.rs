@@ -1,12 +1,11 @@
+use actix_rt::Arbiter;
 use futures::{Async, Future, Poll};
 
-use actor::{Actor, AsyncContext, Supervised};
-use address::{channel, Addr};
-use arbiter::Arbiter;
-use context::Context;
-use contextimpl::ContextFut;
-use mailbox::DEFAULT_CAPACITY;
-use msgs::Execute;
+use crate::actor::{Actor, AsyncContext, Supervised};
+use crate::address::{channel, Addr};
+use crate::context::Context;
+use crate::contextimpl::ContextFut;
+use crate::mailbox::DEFAULT_CAPACITY;
 
 /// Actor supervisor
 ///
@@ -108,27 +107,26 @@ where
         let fut = ctx.into_future(act);
 
         // create supervisor
-        Arbiter::spawn(Self { fut });
+        actix_rt::spawn(Self { fut });
 
         addr
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in_arbiter<F>(sys: &Addr<Arbiter>, f: F) -> Addr<A>
+    pub fn start_in_arbiter<F>(sys: &Arbiter, f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
-        sys.do_send(Execute::new(move || -> Result<(), ()> {
+        sys.exec_fn(move || {
             let mut ctx = Context::with_receiver(rx);
             let act = f(&mut ctx);
             let fut = ctx.into_future(act);
 
-            Arbiter::spawn(Self { fut });
-            Ok(())
-        }));
+            actix_rt::spawn(Self { fut });
+        });
 
         Addr::new(tx)
     }

@@ -65,7 +65,9 @@ impl Encoder for ChatCodec {
     type Error = io::Error;
 
     fn encode(
-        &mut self, msg: ChatResponse, dst: &mut BytesMut,
+        &mut self,
+        msg: ChatResponse,
+        dst: &mut BytesMut,
     ) -> Result<(), Self::Error> {
         let msg = json::to_string(&msg).unwrap();
         let msg_ref: &[u8] = msg.as_ref();
@@ -108,7 +110,9 @@ impl Encoder for ClientChatCodec {
     type Error = io::Error;
 
     fn encode(
-        &mut self, msg: ChatRequest, dst: &mut BytesMut,
+        &mut self,
+        msg: ChatRequest,
+        dst: &mut BytesMut,
     ) -> Result<(), Self::Error> {
         let msg = json::to_string(&msg).unwrap();
         let msg_ref: &[u8] = msg.as_ref();

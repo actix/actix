@@ -1,10 +1,5 @@
 #![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
 
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -95,16 +90,18 @@ fn test_active_address() {
                 stopped: stopped1,
                 temp: None,
                 restore_after_stop: false,
-            }.start(),
+            }
+            .start(),
         );
 
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
                 System::current().stop();
                 future::result(Ok(()))
             }),
         );
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(!stopping.load(Ordering::Relaxed), "Stopping");
@@ -127,9 +124,10 @@ fn test_stop_after_drop_address() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: false,
-        }.start();
+        }
+        .start();
 
-        tokio::spawn(futures::lazy(move || {
+        actix_rt::spawn(futures::lazy(move || {
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
                 drop(addr);
                 Delay::new(Instant::now() + Duration::new(0, 10_000)).then(|_| {
@@ -138,7 +136,8 @@ fn test_stop_after_drop_address() {
                 })
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -161,16 +160,18 @@ fn test_stop_after_drop_sync_address() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: false,
-        }.start();
+        }
+        .start();
 
-        tokio::spawn(futures::lazy(move || {
+        actix_rt::spawn(futures::lazy(move || {
             Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
                 drop(addr);
                 System::current().stop();
                 future::result(Ok(()))
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -199,7 +200,7 @@ fn test_stop_after_drop_sync_actor() {
             restore_after_stop: false,
         });
 
-        tokio::spawn(futures::lazy(move || {
+        actix_rt::spawn(futures::lazy(move || {
             Delay::new(Instant::now() + Duration::from_secs(2)).then(move |_| {
                 assert!(started2.load(Ordering::Relaxed), "Not started");
                 assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
@@ -212,7 +213,8 @@ fn test_stop_after_drop_sync_actor() {
                 })
             })
         }));
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -235,15 +237,17 @@ fn test_stop() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: false,
-        }.start();
+        }
+        .start();
 
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
                 System::current().stop();
                 future::result(Ok(()))
             }),
         );
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -266,15 +270,17 @@ fn test_stop_restore_after_stopping() {
             stopped: stopped1,
             temp: None,
             restore_after_stop: true,
-        }.start();
+        }
+        .start();
 
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
                 System::current().stop();
                 future::result(Ok(()))
             }),
         );
-    });
+    })
+    .unwrap();
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");

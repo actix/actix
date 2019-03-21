@@ -1,9 +1,4 @@
 #![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
-extern crate actix;
-extern crate futures;
-extern crate tokio;
-extern crate tokio_timer;
-
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -82,7 +77,8 @@ impl Handler<TimeoutMessage> for MyActor {
 fn test_add_timeout() {
     System::run(|| {
         let _addr = MyActor { op: Op::Timeout }.start();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -90,13 +86,14 @@ fn test_add_timeout_cancel() {
     System::run(|| {
         let _addr = MyActor { op: Op::Cancel }.start();
 
-        tokio::spawn(
-            Delay::new(Instant::now() + Duration::new(0, 1000)).then(|_| {
+        actix_rt::spawn(Delay::new(Instant::now() + Duration::new(0, 1000)).then(
+            |_| {
                 System::current().stop();
                 future::result(Ok(()))
-            }),
-        );
-    });
+            },
+        ));
+    })
+    .unwrap();
 }
 
 #[test]
@@ -105,15 +102,18 @@ fn test_add_timeout_stop() {
     System::run(|| {
         let _addr = MyActor {
             op: Op::TimeoutStop,
-        }.start();
-    });
+        }
+        .start();
+    })
+    .unwrap();
 }
 
 #[test]
 fn test_run_after() {
     System::run(|| {
         let _addr = MyActor { op: Op::RunAfter }.start();
-    });
+    })
+    .unwrap();
 }
 
 #[test]
@@ -121,8 +121,10 @@ fn test_run_after_stop() {
     System::run(|| {
         let _addr = MyActor {
             op: Op::RunAfterStop,
-        }.start();
-    });
+        }
+        .start();
+    })
+    .unwrap();
 }
 
 struct ContextWait {
@@ -160,7 +162,8 @@ fn test_wait_context() {
         addr.do_send(Ping);
         addr.do_send(Ping);
         addr.do_send(Ping);
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
@@ -180,7 +183,8 @@ fn test_message_stream_wait_context() {
             ctx.add_message_stream(rx);
             actor
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
@@ -200,7 +204,8 @@ fn test_stream_wait_context() {
             ctx.add_message_stream(rx);
             actor
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
 }
@@ -233,12 +238,13 @@ fn test_nowait_context() {
         addr.do_send(Ping);
         addr.do_send(Ping);
 
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
                 .map(|_| System::current().stop()),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -258,12 +264,13 @@ fn test_message_stream_nowait_context() {
             ctx.add_message_stream(rx);
             actor
         });
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
                 .map(|_| System::current().stop()),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -284,12 +291,13 @@ fn test_stream_nowait_context() {
             actor
         });
 
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
                 .map(|_| System::current().stop()),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -309,14 +317,15 @@ fn test_notify() {
         });
         addr.do_send(Ping);
 
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
                 .map(|_| {
                     System::current().stop();
                 }),
         );
-    });
+    })
+    .unwrap();
 
     assert_eq!(m2.load(Ordering::Relaxed), 3);
 }
@@ -351,7 +360,8 @@ fn test_current_context_handle() {
 
             ContextHandle { h: m2 }
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
 }
@@ -371,7 +381,8 @@ fn test_start_from_context() {
             );
             ContextHandle { h: m2 }
         });
-    });
+    })
+    .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
 }
@@ -403,7 +414,8 @@ fn test_cancel_handler() {
                     .map(|_| CancelPacket),
             ),
         });
-    });
+    })
+    .unwrap();
 }
 
 struct CancelLater {
@@ -437,18 +449,19 @@ fn test_cancel_completed_with_no_context_item() {
         let addr = CancelLater { handle: None }.start();
 
         // then, cancel the future which would already be completed
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::from_millis(100))
                 .map_err(|_| ())
-                .map(move |_| addr.do_send(CancelMessage))
+                .map(move |_| addr.do_send(CancelMessage)),
         );
 
         // finally, terminate the actor, which shouldn't be blocked unless
         // the actor context ate up CPU time
-        tokio::spawn(
+        actix_rt::spawn(
             Delay::new(Instant::now() + Duration::from_millis(200))
                 .map_err(|_| ())
-                .map(|_| System::current().stop())
+                .map(|_| System::current().stop()),
         );
-   });
+    })
+    .unwrap();
 }

@@ -50,7 +50,8 @@ fn test_fut_timeout() {
 
     System::run(move || {
         let _addr = MyActor { timeout: timeout2 }.start();
-    });
+    })
+    .unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }
@@ -89,7 +90,8 @@ fn test_stream_timeout() {
 
     System::run(|| {
         let _addr = MyStreamActor { timeout: timeout2 }.start();
-    });
+    })
+    .unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }

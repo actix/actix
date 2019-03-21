@@ -8,8 +8,8 @@ use futures::{task, Async, Poll};
 use tokio_codec::Encoder;
 use tokio_io::AsyncWrite;
 
-use actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
-use fut::ActorFuture;
+use crate::actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
+use crate::fut::ActorFuture;
 
 /// A helper trait for write handling.
 ///
@@ -157,7 +157,9 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self, act: &mut A, ctx: &mut A::Context,
+        &mut self,
+        act: &mut A,
+        ctx: &mut A::Context,
     ) -> Poll<Self::Item, Self::Error> {
         let mut inner = self.inner.0.borrow_mut();
         if let Some(err) = inner.error.take() {
@@ -177,7 +179,8 @@ where
                             io::Error::new(
                                 io::ErrorKind::WriteZero,
                                 "failed to write frame to transport",
-                            ).into(),
+                            )
+                            .into(),
                             ctx,
                         ) == Running::Stop
                     {
@@ -195,10 +198,12 @@ where
                     }
                     return Ok(Async::NotReady);
                 }
-                Err(e) => if act.error(e.into(), ctx) == Running::Stop {
-                    act.finished(ctx);
-                    return Ok(Async::Ready(()));
-                },
+                Err(e) => {
+                    if act.error(e.into(), ctx) == Running::Stop {
+                        act.finished(ctx);
+                        return Ok(Async::Ready(()));
+                    }
+                }
             }
         }
 
@@ -206,12 +211,14 @@ where
         match io.flush() {
             Ok(_) => (),
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                return Ok(Async::NotReady)
+                return Ok(Async::NotReady);
             }
-            Err(e) => if act.error(e.into(), ctx) == Running::Stop {
-                act.finished(ctx);
-                return Ok(Async::Ready(()));
-            },
+            Err(e) => {
+                if act.error(e.into(), ctx) == Running::Stop {
+                    act.finished(ctx);
+                    return Ok(Async::Ready(()));
+                }
+            }
         }
 
         // close if closing and we don't need to flush any data
@@ -261,7 +268,8 @@ where
                             io::Error::new(
                                 io::ErrorKind::WriteZero,
                                 "failed to write frame to transport",
-                            ).into(),
+                            )
+                            .into(),
                         );
                         return Err(());
                     }
@@ -320,9 +328,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
         writer
     }
 
-    pub fn from_buffer<A, C>(
-        io: T, enc: U, buffer: BytesMut, ctx: &mut C,
-    ) -> Self
+    pub fn from_buffer<A, C>(io: T, enc: U, buffer: BytesMut, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
         C: AsyncContext<A>,

@@ -39,7 +39,7 @@ pub use self::stream_timeout::StreamTimeout;
 pub use self::then::Then;
 pub use self::timeout::Timeout;
 
-use actor::Actor;
+use crate::actor::Actor;
 
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.
@@ -99,8 +99,11 @@ pub trait ActorFuture {
     /// the resulting type.
     fn map<F, U>(self, f: F) -> Map<Self, F>
     where
-        F: FnOnce(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context)
-            -> U,
+        F: FnOnce(
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> U,
         Self: Sized,
     {
         map::new(self, f)
@@ -109,8 +112,11 @@ pub trait ActorFuture {
     /// Map this future's error to a different error, returning a new future.
     fn map_err<F, E>(self, f: F) -> MapErr<Self, F>
     where
-        F: FnOnce(Self::Error, &mut Self::Actor, &mut <Self::Actor as Actor>::Context)
-            -> E,
+        F: FnOnce(
+            Self::Error,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> E,
         Self: Sized,
     {
         map_err::new(self, f)
@@ -151,8 +157,11 @@ pub trait ActorFuture {
     /// Execute another future after this one has resolved successfully.
     fn and_then<F, B>(self, f: F) -> AndThen<Self, B, F>
     where
-        F: FnOnce(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context)
-            -> B,
+        F: FnOnce(
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> B,
         B: IntoActorFuture<Error = Self::Error, Actor = Self::Actor>,
         Self: Sized,
     {
@@ -192,8 +201,11 @@ pub trait ActorStream {
     /// Converts a stream of type `T` to a stream of type `U`.
     fn map<U, F>(self, f: F) -> StreamMap<Self, F>
     where
-        F: FnMut(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context)
-            -> U,
+        F: FnMut(
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> U,
         Self: Sized,
     {
         stream_map::new(self, f)
@@ -202,8 +214,11 @@ pub trait ActorStream {
     /// Converts a stream of error type `T` to a stream of error type `E`.
     fn map_err<E, F>(self, f: F) -> StreamMapErr<Self, F>
     where
-        F: FnMut(Self::Error, &mut Self::Actor, &mut <Self::Actor as Actor>::Context)
-            -> E,
+        F: FnMut(
+            Self::Error,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> E,
         Self: Sized,
     {
         stream_map_err::new(self, f)
@@ -228,8 +243,11 @@ pub trait ActorStream {
     /// results to the provided closure `f`.
     fn and_then<F, U>(self, f: F) -> StreamAndThen<Self, F, U>
     where
-        F: FnMut(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context)
-            -> U,
+        F: FnMut(
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> U,
         U: IntoActorFuture<Error = Self::Error, Actor = Self::Actor>,
         Self: Sized,
     {
@@ -240,8 +258,12 @@ pub trait ActorStream {
     /// values into one final result.
     fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut, T>
     where
-        F: FnMut(T, Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context)
-            -> Fut,
+        F: FnMut(
+            T,
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> Fut,
         Fut: IntoActorFuture<Actor = Self::Actor, Item = T>,
         Self::Error: From<Fut::Error>,
         Self: Sized,

@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 
-use actor::Actor;
-use fut::{ActorFuture, ActorStream};
+use crate::actor::Actor;
+use crate::fut::{ActorFuture, ActorStream};
 
 /// A combinator used to convert stream into a future, future resolves
 /// when stream completes.
@@ -27,7 +27,9 @@ where
     type Actor = S::Actor;
 
     fn poll(
-        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context,
+        &mut self,
+        act: &mut S::Actor,
+        ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<(), S::Error> {
         loop {
             match self.0.poll(act, ctx) {

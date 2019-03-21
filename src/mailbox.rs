@@ -1,9 +1,9 @@
 use futures::{Async, Stream};
 use std::fmt;
 
-use actor::{Actor, AsyncContext};
-use address::EnvelopeProxy;
-use address::{channel, Addr, AddressReceiver, AddressSenderProducer};
+use crate::actor::{Actor, AsyncContext};
+use crate::address::EnvelopeProxy;
+use crate::address::{channel, Addr, AddressReceiver, AddressSenderProducer};
 
 #[cfg(feature = "mailbox_assert")]
 /// Maximum number of consecutive polls in a loop
@@ -20,7 +20,8 @@ where
     msgs: AddressReceiver<A>,
 }
 
-impl<A> fmt::Debug for Mailbox<A> where
+impl<A> fmt::Debug for Mailbox<A>
+where
     A: Actor,
     A::Context: AsyncContext<A>,
 {

@@ -2,22 +2,22 @@ use futures::{Async, Future, Poll};
 use smallvec::SmallVec;
 use std::fmt;
 
-use actor::{
+use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-use address::{Addr, AddressSenderProducer};
-use contextitems::ActorWaitItem;
-use fut::ActorFuture;
-use mailbox::Mailbox;
+use crate::address::{Addr, AddressSenderProducer};
+use crate::contextitems::ActorWaitItem;
+use crate::fut::ActorFuture;
+use crate::mailbox::Mailbox;
 
-/// internal context state
 bitflags! {
-    pub struct ContextFlags: u8 {
-        const STARTED =  0b0000_0001;
-        const RUNNING =  0b0000_0010;
-        const STOPPING = 0b0000_0100;
-        const STOPPED =  0b0001_0000;
-        const MB_CAP_CHANGED = 0b0010_0000;
+    /// internal context state
+    struct ContextFlags: u8 {
+    const STARTED =  0b0000_0001;
+    const RUNNING =  0b0000_0010;
+    const STOPPING = 0b0000_0100;
+    const STOPPED =  0b0001_0000;
+    const MB_CAP_CHANGED = 0b0010_0000;
     }
 }
 
@@ -306,7 +306,6 @@ where
                 }
             }
         }
-
     }
 }
 

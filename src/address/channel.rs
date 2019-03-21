@@ -12,8 +12,8 @@ use futures::{Async, Poll, Stream};
 
 use parking_lot::Mutex;
 
-use actor::Actor;
-use handler::{Handler, Message};
+use crate::actor::Actor;
+use crate::handler::{Handler, Message};
 
 use super::envelope::{Envelope, ToEnvelope};
 use super::queue::{PopResult, Queue};
@@ -906,7 +906,7 @@ fn encode_state(state: &State) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use prelude::*;
+    use crate::prelude::*;
     use std::{thread, time};
 
     struct Act;
@@ -930,18 +930,16 @@ mod tests {
             let (s1, mut recv) = channel::<Act>(1);
             let s2 = recv.sender();
 
-            let arb = Arbiter::new("s1");
-            arb.do_send(msgs::Execute::new(move || -> Result<(), ()> {
+            let arb = Arbiter::new();
+            arb.exec_fn(move || {
                 let _ = s1.send(Ping);
-                Ok(())
-            }));
+            });
             thread::sleep(time::Duration::from_millis(100));
-            let arb2 = Arbiter::new("s1");
-            arb2.do_send(msgs::Execute::new(move || -> Result<(), ()> {
+            let arb2 = Arbiter::new();
+            arb2.exec_fn(move || {
                 let _ = s2.send(Ping);
                 let _ = s2.send(Ping);
-                Ok(())
-            }));
+            });
 
             thread::sleep(time::Duration::from_millis(100));
             let state = decode_state(recv.inner.state.load(SeqCst));
@@ -974,6 +972,7 @@ mod tests {
             assert!(p.is_none());
 
             System::current().stop();
-        });
+        })
+        .unwrap();
     }
 }

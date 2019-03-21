@@ -3,9 +3,9 @@ use std::time::Duration;
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
-use actor::Actor;
-use clock;
-use fut::ActorStream;
+use crate::actor::Actor;
+use crate::clock;
+use crate::fut::ActorStream;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
 /// more than `timeout`.
@@ -46,7 +46,9 @@ where
     type Actor = S::Actor;
 
     fn poll(
-        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context,
+        &mut self,
+        act: &mut S::Actor,
+        ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<Option<S::Item>, S::Error> {
         match self.stream.poll(act, ctx) {
             Ok(Async::Ready(res)) => {

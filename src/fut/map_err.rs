@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 
-use actor::Actor;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
 
 /// Future for the `map_err` combinator, changing the error type of a future.
 ///
@@ -33,7 +33,9 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
+        &mut self,
+        act: &mut A::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, U> {
         let e = match self.future.poll(act, ctx) {
             Ok(Async::NotReady) => return Ok(Async::NotReady),
@@ -73,7 +75,9 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self, act: &mut A::Actor, ctx: &mut <A::Actor as Actor>::Context,
+        &mut self,
+        act: &mut A::Actor,
+        ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, ()> {
         match self.future.poll(act, ctx) {
             Ok(Async::Ready(item)) => Ok(Async::Ready(item)),

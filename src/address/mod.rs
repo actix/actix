@@ -1,4 +1,4 @@
-use failure;
+use derive_more::Display;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
@@ -7,8 +7,8 @@ mod envelope;
 mod message;
 mod queue;
 
-use actor::Actor;
-use handler::{Handler, Message};
+use crate::actor::Actor;
+use crate::handler::{Handler, Message};
 
 pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 pub use self::message::{RecipientRequest, Request};
@@ -21,12 +21,12 @@ pub enum SendError<T> {
     Closed(T),
 }
 
-#[derive(Fail)]
+#[derive(Display)]
 /// The errors that can occur during the message delivery process.
 pub enum MailboxError {
-    #[fail(display = "Mailbox has closed")]
+    #[display(fmt = "Mailbox has closed")]
     Closed,
-    #[fail(display = "Message delivery timed out")]
+    #[display(fmt = "Message delivery timed out")]
     Timeout,
 }
 
@@ -55,8 +55,6 @@ impl<T> fmt::Display for SendError<T> {
         }
     }
 }
-
-impl<T> failure::Fail for SendError<T> where T: Send + Sync + 'static {}
 
 impl fmt::Debug for MailboxError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -310,8 +308,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use futures::Future;
-    use prelude::*;
 
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
@@ -370,7 +368,8 @@ mod tests {
                     panic!("Message over limit should be delivered, but it is not!");
                 });
             Arbiter::spawn(send);
-        });
+        })
+        .unwrap();
 
         assert_eq!(count.load(Ordering::Relaxed), 3);
     }

@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 
-use actor::Actor;
-use fut::{ActorFuture, ActorStream, IntoActorFuture};
+use crate::actor::Actor;
+use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 
 /// A stream combinator which chains a computation onto values produced by a
 /// stream.
@@ -42,7 +42,9 @@ where
     type Actor = S::Actor;
 
     fn poll(
-        &mut self, act: &mut S::Actor, ctx: &mut <S::Actor as Actor>::Context,
+        &mut self,
+        act: &mut S::Actor,
+        ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<Option<U::Item>, S::Error> {
         if self.future.is_none() {
             let item = match try_ready!(self.stream.poll(act, ctx)) {

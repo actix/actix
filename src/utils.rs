@@ -4,9 +4,9 @@ use futures::unsync::oneshot;
 use futures::{Async, Future, Poll, Stream};
 use tokio_timer::{Delay, Interval};
 
-use actor::Actor;
-use clock;
-use fut::{ActorFuture, ActorStream};
+use crate::actor::Actor;
+use crate::clock;
+use crate::fut::{ActorFuture, ActorStream};
 
 pub struct Condition<T>
 where
@@ -106,7 +106,7 @@ where
 }
 
 trait TimerFuncBox<A: Actor>: 'static {
-    fn call(self: Box<Self>, &mut A, &mut A::Context);
+    fn call(self: Box<Self>, _: &mut A, _: &mut A::Context);
 }
 
 impl<A: Actor, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A> for F {
@@ -201,7 +201,7 @@ impl<A: Actor> IntervalFunc<A> {
 }
 
 trait IntervalFuncBox<A: Actor>: 'static {
-    fn call(&mut self, &mut A, &mut A::Context);
+    fn call(&mut self, _: &mut A, _: &mut A::Context);
 }
 
 impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {

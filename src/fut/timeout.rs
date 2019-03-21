@@ -3,9 +3,9 @@ use std::time::Duration;
 use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
-use actor::Actor;
-use clock;
-use fut::ActorFuture;
+use crate::actor::Actor;
+use crate::clock;
+use crate::fut::ActorFuture;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
 /// more than `timeout`.
@@ -42,7 +42,9 @@ where
     type Actor = F::Actor;
 
     fn poll(
-        &mut self, act: &mut F::Actor, ctx: &mut <F::Actor as Actor>::Context,
+        &mut self,
+        act: &mut F::Actor,
+        ctx: &mut <F::Actor as Actor>::Context,
     ) -> Poll<F::Item, F::Error> {
         // check timeout
         match self.timeout.poll() {
