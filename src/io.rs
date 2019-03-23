@@ -292,7 +292,8 @@ where
     }
 }
 
-/// A wrapper for the `AsyncWrite` and `Encoder` types.
+/// A wrapper for the `AsyncWrite` and `Encoder` types. The AsyncWrite will be flushed when this
+/// struct is dropped.
 pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
     enc: U,
     inner: UnsafeWriter<T, U::Error>,
@@ -390,5 +391,18 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
     /// Returns the `SpawnHandle` for this writer.
     pub fn handle(&self) -> SpawnHandle {
         self.inner.0.borrow().handle
+    }
+}
+
+impl<T: AsyncWrite, U: Encoder> Drop for FramedWrite<T, U> {
+    fn drop(&mut self) {
+        // Attempts to write any remaining bytes to the stream and flush it
+        let mut async_writer = self.inner.1.borrow_mut();
+        let inner = self.inner.0.borrow_mut();
+        if !inner.buffer.is_empty() {
+            // Results must be ignored during drop, as the errors cannot be handled meaningfully
+            let _ = async_writer.write(&inner.buffer);
+            let _ = async_writer.flush();
+        }
     }
 }
