@@ -6,7 +6,9 @@
 
 * Edition 2018
 
-* Replace System/Arbiter with actix_rt::System and actix_rt::Arbiter
+* Replace System/Arbiter with `actix_rt::System` and `actix_rt::Arbiter`
+
+* Add implementations for `Message` for `Arc` and `Box`
 
 ### Deleted
 
