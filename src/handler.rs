@@ -34,6 +34,22 @@ pub trait Message {
     type Result: 'static;
 }
 
+/// Allow users to use `Arc<M>` as a message without having to re-impl `Message`
+impl<M, R: 'static> Message for Arc<M>
+where
+    M: Message<Result = R>,
+{
+    type Result = R;
+}
+
+/// Allow users to use `Box<M>` as a message without having to re-impl `Message`
+impl<M, R: 'static> Message for Box<M>
+where
+    M: Message<Result = R>,
+{
+    type Result = R;
+}
+
 /// A helper type that implements the `MessageResponse` trait.
 pub struct MessageResult<M: Message>(pub M::Result);
 
