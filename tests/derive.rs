@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate actix;
 
-use actix::{Actor, Context, Handler, System};
-use futures::{future, Future};
+use actix::prelude::*;
+use futures::future;
 use std::ops::Mul;
 
 #[derive(Message)]
