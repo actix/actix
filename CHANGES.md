@@ -1,6 +1,6 @@
 # CHANGES
 
-## [0.8.0] (2019-03-xx)
+## [0.8.0-alpha.1] (2019-03-28)
 
 ### Changes
 
@@ -9,6 +9,8 @@
 * Replace System/Arbiter with `actix_rt::System` and `actix_rt::Arbiter`
 
 * Add implementations for `Message` for `Arc` and `Box`
+
+* System and arbiter registries available via `from_registry()` method.
 
 ### Deleted
 
