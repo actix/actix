@@ -132,6 +132,8 @@ pub mod prelude {
     pub use crate::fut;
     pub use crate::io;
     pub use crate::utils::{Condition, IntervalFunc, TimerFunc};
+
+    pub use futures::{Future, Stream};
 }
 
 pub mod dev {

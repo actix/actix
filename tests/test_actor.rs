@@ -5,7 +5,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::{future, Future};
+use futures::future;
 use tokio_timer::Delay;
 
 #[derive(Debug)]

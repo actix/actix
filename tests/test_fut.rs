@@ -8,7 +8,6 @@ use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::stream::futures_ordered;
-use futures::{Future, Stream};
 use tokio_timer::Delay;
 
 struct MyActor {
