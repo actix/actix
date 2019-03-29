@@ -1,5 +1,12 @@
 # CHANGES
 
+## [0.8.0-alpha.2] (2019-03-29)
+
+### Added
+
+* Add `actix-http` error support for MailboxError
+
+
 ## [0.8.0-alpha.1] (2019-03-28)
 
 ### Changes
