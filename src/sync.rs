@@ -217,7 +217,7 @@ where
 /// ```
 pub struct SyncContext<A>
 where
-    A: Actor<Context = Self>,
+    A: Actor<Context = SyncContext<A>>,
 {
     act: Option<A>,
     queue: cb_channel::Receiver<Envelope<A>>,

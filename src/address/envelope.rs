@@ -48,7 +48,7 @@ impl<A: Actor> Envelope<A> {
         M: Message + Send + 'static,
         M::Result: Send,
     {
-        Self(Box::new(SyncEnvelopeProxy {
+        Envelope(Box::new(SyncEnvelopeProxy {
             tx,
             msg: Some(msg),
             act: PhantomData,

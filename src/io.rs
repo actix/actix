@@ -59,7 +59,7 @@ struct UnsafeWriter<T: AsyncWrite, E: From<io::Error>>(
 
 impl<T: AsyncWrite, E: From<io::Error>> Clone for UnsafeWriter<T, E> {
     fn clone(&self) -> Self {
-        Self(self.0.clone(), self.1.clone())
+        UnsafeWriter(self.0.clone(), self.1.clone())
     }
 }
 

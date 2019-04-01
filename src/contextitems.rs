@@ -22,7 +22,7 @@ where
     where
         F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
     {
-        Self(Box::new(fut))
+        ActorWaitItem(Box::new(fut))
     }
 
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Async<()> {
