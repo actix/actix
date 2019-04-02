@@ -1,14 +1,16 @@
 use std::time::Duration;
 
+use actix_rt::Arbiter;
 use futures::Stream;
 
-use crate::address::Addr;
+use crate::address::{channel, Addr};
 use crate::context::Context;
 use crate::contextitems::{
     ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem,
 };
 use crate::fut::{ActorFuture, ActorStream};
 use crate::handler::{Handler, Message};
+use crate::mailbox::DEFAULT_CAPACITY;
 use crate::stream::StreamHandler;
 use crate::utils::{IntervalFunc, TimerFunc};
 
@@ -135,6 +137,26 @@ pub trait Actor: Sized + 'static {
         Self: Actor<Context = Context<Self>> + Default,
     {
         Self::default().start()
+    }
+
+    /// Start new actor in arbiter's thread.
+    fn start_in_arbiter<F>(arb: &Arbiter, f: F) -> Addr<Self>
+    where
+        Self: Actor<Context = Context<Self>>,
+        F: FnOnce(&mut Context<Self>) -> Self + Send + 'static,
+    {
+        let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
+
+        // create actor
+        arb.exec_fn(move || {
+            let mut ctx = Context::with_receiver(rx);
+            let act = f(&mut ctx);
+            let fut = ctx.into_future(act);
+
+            actix_rt::spawn(fut);
+        });
+
+        Addr::new(tx)
     }
 
     /// Start a new asynchronous actor given a `Context`.
