@@ -1,10 +1,12 @@
 # CHANGES
 
-## Added
+## [0.8.0-alpha.3] (2019-04-xx)
+
+### Added
 
 * Add `Actor::start_in_arbiter` with semantics of `Supervisor::start_in_arbiter`.
 
-## [0.8.0-alpha.3] (2019-04-xx)
+* Add `ResponseError` for `ResolverError`
 
 ### Fixed
 
