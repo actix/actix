@@ -1,6 +1,6 @@
 # CHANGES
 
-## [0.8.0-alpha.3] (2019-04-xx)
+## [0.8.0.alpha.3] (2019-04-12)
 
 ### Added
 
@@ -8,9 +8,7 @@
 
 * Add `ResponseError` for `ResolverError`
 
-### Fixed
-
-* Rust 1.31.0 compatibility.
+* Add `io::SinkWrite`
 
 
 ## [0.8.0-alpha.2] (2019-03-29)
