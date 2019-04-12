@@ -4,7 +4,8 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use bytes::BytesMut;
-use futures::{task, Async, Poll};
+use futures::sink::Sink;
+use futures::{task, Async, AsyncSink, Poll, StartSend};
 use tokio_codec::Encoder;
 use tokio_io::AsyncWrite;
 
@@ -404,5 +405,132 @@ impl<T: AsyncWrite, U: Encoder> Drop for FramedWrite<T, U> {
             let _ = async_writer.write(&inner.buffer);
             let _ = async_writer.flush();
         }
+    }
+}
+
+/// A wrapper for the `Sink` type.
+pub struct SinkWrite<S: Sink> {
+    inner: Rc<RefCell<InnerSinkWrite<S>>>,
+}
+
+impl<S: Sink + 'static> SinkWrite<S> {
+    pub fn new<A, C>(sink: S, ctxt: &mut C) -> Self
+    where
+        A: Actor<Context = C> + WriteHandler<S::SinkError>,
+        C: AsyncContext<A>,
+    {
+        let inner = Rc::new(RefCell::new(InnerSinkWrite {
+            closing_flag: Flags::empty(),
+            sink,
+            task: None,
+            handle: SpawnHandle::default(),
+        }));
+
+        let handle = ctxt.spawn(SinkWriteFuture {
+            inner: inner.clone(),
+            _actor: PhantomData,
+        });
+
+        inner.borrow_mut().handle = handle;
+        SinkWrite { inner }
+    }
+
+    /// Sends an item to the sink.
+    pub fn write(&mut self, item: S::SinkItem) -> StartSend<S::SinkItem, S::SinkError> {
+        let res = self.inner.borrow_mut().sink.start_send(item);
+        match res {
+            Err(_) => {} // TODO close or send to inner future ?
+            Ok(AsyncSink::Ready) => self.notify_task(),
+            Ok(AsyncSink::NotReady(_)) => {}
+        }
+        res
+    }
+
+    /// Gracefully closes the sink.
+    ///
+    /// The closing happens asynchronously.
+    pub fn close(&mut self) {
+        self.inner.borrow_mut().closing_flag.insert(Flags::CLOSING);
+        self.notify_task();
+    }
+
+    /// Checks if the sink is closed.
+    pub fn closed(&self) -> bool {
+        self.inner.borrow_mut().closing_flag.contains(Flags::CLOSED)
+    }
+
+    fn notify_task(&self) {
+        if let Some(task) = &self.inner.borrow().task {
+            task.notify()
+        }
+    }
+
+    /// Returns the `SpawnHandle` for this writer.
+    pub fn handle(&self) -> SpawnHandle {
+        self.inner.borrow().handle
+    }
+}
+
+struct InnerSinkWrite<S: Sink> {
+    closing_flag: Flags,
+    sink: S,
+    task: Option<task::Task>,
+    handle: SpawnHandle,
+}
+
+struct SinkWriteFuture<S: Sink, A> {
+    inner: Rc<RefCell<InnerSinkWrite<S>>>,
+    _actor: PhantomData<A>,
+}
+
+impl<S, A> ActorFuture for SinkWriteFuture<S, A>
+where
+    S: Sink,
+    A: Actor + WriteHandler<S::SinkError>,
+    A::Context: AsyncContext<A>,
+{
+    type Item = ();
+    type Error = ();
+    type Actor = A;
+
+    fn poll(
+        &mut self,
+        act: &mut A,
+        ctxt: &mut A::Context,
+    ) -> Poll<Self::Item, Self::Error> {
+        let inner = &mut self.inner.borrow_mut();
+        inner.task = None;
+
+        if !inner.closing_flag.contains(Flags::CLOSING) {
+            match inner.sink.poll_complete() {
+                Err(e) => {
+                    if act.error(e, ctxt) == Running::Stop {
+                        act.finished(ctxt);
+                        return Ok(Async::Ready(()));
+                    }
+                }
+                Ok(Async::Ready(())) => {}
+                Ok(Async::NotReady) => {}
+            }
+        } else {
+            assert!(!inner.closing_flag.contains(Flags::CLOSED));
+            match inner.sink.close() {
+                Err(e) => {
+                    if act.error(e, ctxt) == Running::Stop {
+                        act.finished(ctxt);
+                        return Ok(Async::Ready(()));
+                    }
+                }
+                Ok(Async::Ready(())) => {
+                    inner.closing_flag |= Flags::CLOSED;
+                    act.finished(ctxt);
+                    return Ok(Async::Ready(()));
+                }
+                Ok(Async::NotReady) => {}
+            }
+        }
+
+        inner.task = Some(futures::task::current());
+        Ok(Async::NotReady)
     }
 }
