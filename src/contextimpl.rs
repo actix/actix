@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use futures::{Async, Future, Poll};
 use smallvec::SmallVec;
 use std::fmt;

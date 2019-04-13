@@ -14,6 +14,7 @@ use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures::sync::oneshot::Sender as SyncSender;
 use futures::{Async, Future, Poll, Stream};
+use log::warn;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
 use crate::address::channel;
@@ -33,8 +34,6 @@ use crate::handler::{Handler, Message, MessageResponse};
 /// ## Example
 ///
 /// ```rust
-/// # extern crate actix;
-/// # extern crate futures;
 /// use actix::prelude::*;
 ///
 /// struct Fibonacci(pub u32);
@@ -195,8 +194,6 @@ where
 /// ## Example
 ///
 /// ```rust
-/// # extern crate actix;
-/// # extern crate futures;
 /// use actix::prelude::*;
 ///
 /// # struct Fibonacci(pub u32);

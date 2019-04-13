@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate actix;
-
 use actix::prelude::*;
 use futures::future;
 use std::ops::Mul;

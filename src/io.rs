@@ -3,6 +3,7 @@ use std::io;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
+use bitflags::bitflags;
 use bytes::BytesMut;
 use futures::sink::Sink;
 use futures::{task, Async, AsyncSink, Poll, StartSend};

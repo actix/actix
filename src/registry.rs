@@ -30,7 +30,6 @@ type AnyMap = HashMap<TypeId, Box<Any>>;
 /// # Example
 ///
 /// ```rust
-/// # #[macro_use] extern crate actix;
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
@@ -170,7 +169,6 @@ impl Registry {
 /// # Example
 ///
 /// ```rust
-/// # #[macro_use] extern crate actix;
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]

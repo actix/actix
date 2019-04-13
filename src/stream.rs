@@ -1,4 +1,5 @@
 use futures::{Async, Poll, Stream};
+use log::error;
 use std::marker::PhantomData;
 
 use crate::actor::{
@@ -47,8 +48,6 @@ where
     /// allows to handle `Stream` in similar way as normal actor messages.
     ///
     /// ```rust
-    /// # #[macro_use] extern crate actix;
-    /// # extern crate futures;
     /// # use std::io;
     /// use actix::prelude::*;
     /// use futures::stream::once;
