@@ -11,7 +11,7 @@ use tokio_tcp::TcpStream;
 
 mod codec;
 
-fn main() {
+fn main() -> std::io::Result<()> {
     println!("Running chat client");
 
     actix::System::run(|| {
@@ -50,7 +50,7 @@ fn main() {
                     process::exit(1)
                 }),
         );
-    });
+    })
 }
 
 struct ChatClient {

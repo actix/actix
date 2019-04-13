@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use actix::prelude::*;
 use futures::Stream;
-use tokio_io::codec::FramedRead;
+use tokio_codec::FramedRead;
 use tokio_io::AsyncRead;
 use tokio_tcp::{TcpListener, TcpStream};
 
@@ -49,7 +49,7 @@ impl Handler<TcpConnect> for Server {
     }
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     actix::System::run(|| {
         // Start chat server actor
         let server = ChatServer::default().start();
@@ -72,5 +72,5 @@ fn main() {
         });
 
         println!("Running chat server on 127.0.0.1:12345");
-    });
+    })
 }
