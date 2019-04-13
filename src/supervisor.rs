@@ -25,7 +25,6 @@ use crate::mailbox::DEFAULT_CAPACITY;
 /// ## Example
 ///
 /// ```rust
-/// # #[macro_use] extern crate actix;
 /// # use actix::prelude::*;
 /// #[derive(Message)]
 /// struct Die;
@@ -79,7 +78,6 @@ where
     /// _>` type as type of a variable.
     ///
     /// ```rust
-    /// # #[macro_use] extern crate actix;
     /// # use actix::prelude::*;
     /// struct MyActor;
     ///

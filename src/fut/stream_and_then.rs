@@ -1,4 +1,4 @@
-use futures::{Async, Poll};
+use futures::{try_ready, Async, Poll};
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};

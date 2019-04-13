@@ -45,6 +45,7 @@ use std::time::Duration;
 
 use derive_more::Display;
 use futures::{Async, Future, Poll};
+use log::warn;
 use tokio_tcp::{ConnectFuture, TcpStream};
 use tokio_timer::Delay;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};

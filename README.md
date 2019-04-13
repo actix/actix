@@ -34,8 +34,6 @@ actix = "0.7"
 In order to use actix you first need to create a `System`.
 
 ```rust,ignore
-extern crate actix;
-
 fn main() {
     let system = actix::System::new("test");
 
@@ -57,7 +55,6 @@ the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
 
 
 ```rust
-extern crate actix;
 use actix::{msgs, Actor, Addr, Arbiter, Context, System};
 
 struct MyActor;
@@ -95,8 +92,6 @@ are typed. Let's define a simple `Sum` message with two `usize` parameters,
 and an actor which will accept this message and return the sum of those two numbers.
 
 ```rust
-extern crate actix;
-extern crate futures;
 use futures::{future, Future};
 use actix::*;
 
@@ -158,7 +153,6 @@ an actor that can handle the message, we can use the `Recipient` interface. Let'
 a new actor that uses `Recipient`.
 
 ```rust
-#[macro_use] extern crate actix;
 use std::time::Duration;
 use actix::prelude::*;
 
