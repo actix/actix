@@ -1,18 +1,4 @@
 #![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
-extern crate byteorder;
-extern crate bytes;
-extern crate futures;
-extern crate rand;
-extern crate serde;
-extern crate serde_json;
-extern crate tokio_io;
-extern crate tokio_tcp;
-#[macro_use]
-extern crate serde_derive;
-
-#[macro_use]
-extern crate actix;
-
 use std::net;
 use std::str::FromStr;
 
