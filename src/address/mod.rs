@@ -1,5 +1,5 @@
 use derive_more::Display;
-use std::fmt;
+use std::{error, fmt};
 use std::hash::{Hash, Hasher};
 
 pub(crate) mod channel;
@@ -29,6 +29,8 @@ pub enum MailboxError {
     #[display(fmt = "Message delivery timed out")]
     Timeout,
 }
+
+impl error::Error for MailboxError {}
 
 impl<T> SendError<T> {
     pub fn into_inner(self) -> T {
