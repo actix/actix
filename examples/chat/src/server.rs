@@ -6,7 +6,7 @@ use actix::prelude::*;
 use rand::{self, Rng};
 use std::collections::{HashMap, HashSet};
 
-use session;
+use crate::session;
 
 /// Message for chat server communications
 

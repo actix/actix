@@ -6,8 +6,8 @@ use std::time::{Duration, Instant};
 use tokio_io::io::WriteHalf;
 use tokio_tcp::TcpStream;
 
-use codec::{ChatCodec, ChatRequest, ChatResponse};
-use server::{self, ChatServer};
+use crate::codec::{ChatCodec, ChatRequest, ChatResponse};
+use crate::server::{self, ChatServer};
 
 /// Chat server sends this messages to session
 #[derive(Message)]

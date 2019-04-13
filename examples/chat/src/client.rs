@@ -1,16 +1,3 @@
-#[macro_use]
-extern crate actix;
-extern crate byteorder;
-extern crate bytes;
-extern crate futures;
-extern crate serde;
-extern crate serde_json;
-extern crate tokio_codec;
-extern crate tokio_io;
-extern crate tokio_tcp;
-#[macro_use]
-extern crate serde_derive;
-
 use std::str::FromStr;
 use std::time::Duration;
 use std::{io, net, process, thread};
