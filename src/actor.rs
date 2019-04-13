@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use actix_rt::Arbiter;
 use futures::Stream;
+use log::error;
 
 use crate::address::{channel, Addr};
 use crate::context::Context;
@@ -308,8 +309,6 @@ where
     /// actor messages.
     ///
     /// ```rust
-    /// # #[macro_use] extern crate actix;
-    /// # extern crate futures;
     /// # use std::io;
     /// use actix::prelude::*;
     /// use futures::stream::once;
@@ -359,8 +358,6 @@ where
     /// errors.
     ///
     /// ```rust
-    /// # #[macro_use] extern crate actix;
-    /// # extern crate futures;
     /// use actix::prelude::*;
     /// use futures::stream::once;
     ///

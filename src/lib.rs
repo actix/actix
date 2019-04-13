@@ -40,18 +40,6 @@
 //! in `current_thread`
 //! - `Stdin`, `Stderr` and `Stdout` from `tokio::io` are the same as file I/O in that regard and
 //! cannot be used in asynchronous manner in actix.
-#[macro_use]
-extern crate bitflags;
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate futures;
-
-#[cfg_attr(feature = "cargo-clippy", allow(useless_attribute))]
-#[allow(unused_imports)]
-#[macro_use]
-extern crate actix_derive;
-
 #[doc(hidden)]
 pub use actix_derive::*;
 
@@ -175,9 +163,6 @@ pub mod dev {
 /// # Examples
 ///
 /// ```
-/// # extern crate actix;
-/// # extern crate tokio_timer;
-/// # extern crate futures;
 /// # use futures::Future;
 /// use std::time::{Duration, Instant};
 /// use tokio_timer::Delay;

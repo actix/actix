@@ -6,9 +6,6 @@
  * message round the ring M times so that a total of N * M messages
  * get sent. Time how long this takes for different values of N and M."
  */
-extern crate actix;
-extern crate futures;
-
 use actix::*;
 
 use std::env;

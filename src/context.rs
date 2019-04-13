@@ -126,7 +126,6 @@ where
     /// The default mailbox capacity is 16 messages.
     /// #Examples
     /// ```
-    /// # extern crate actix;
     /// # use actix::prelude::*;
     /// struct MyActor;
     /// impl Actor for MyActor {

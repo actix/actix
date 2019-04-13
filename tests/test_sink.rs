@@ -1,7 +1,3 @@
-extern crate actix;
-extern crate bytes;
-extern crate futures;
-
 use actix::io::SinkWrite;
 use actix::prelude::*;
 use bytes::Bytes;
