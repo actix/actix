@@ -21,6 +21,7 @@ futures = "0.1"
 tokio-codec = "0.1"
 tokio-io = "0.1"
 tokio-tcp = "0.1"
+tokio-signal = "0.2"
 
 serde = "1.0"
 serde_json = "1.0"

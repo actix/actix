@@ -32,8 +32,11 @@
 
 ### Deleted
 
-* Deleted signals actor
+* Deleted signals actor. The functionality formerly provided by the
+  signals actor can be achieved using the `tokio-signal` crate. See
+  the [chat example] for how this can work.
 
+  [chat example]: ./examples/chat/src/main.rs
 
 ## [0.7.10] (2019-01-16)
 
