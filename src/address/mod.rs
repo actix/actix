@@ -40,6 +40,8 @@ impl<T> SendError<T> {
     }
 }
 
+impl<T> error::Error for SendError<T> {}
+
 impl<T> fmt::Debug for SendError<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
