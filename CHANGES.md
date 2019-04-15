@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.8.1] (2019-04-15)
+
+### Added
+
+* Added `std::error::Error` impl for `SendError`
+
 ## [0.8.0] (2019-04-14)
 
 ### Added
