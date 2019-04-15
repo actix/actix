@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.8.0-alpha.3"
+version = "0.8.0"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -44,7 +44,7 @@ bytes = "0.4"
 crossbeam-channel = "0.3"
 derive_more = "0.14.0"
 futures = "0.1.25"
-hashbrown = "0.1.8"
+hashbrown = "0.2.1"
 log = "0.4"
 lazy_static = "1.2"
 bitflags = "1.0"
@@ -60,7 +60,7 @@ tokio-timer = "0.2.8"
 actix-http = { version = "0.1.0-alpha.5", optional = true }
 
 # dns resolver
-trust-dns-resolver = { version = "0.11.0-alpha.3", optional = true, default-features = false }
+trust-dns-resolver = { version = "0.11.0", optional = true, default-features = false }
 
 [profile.release]
 lto = true

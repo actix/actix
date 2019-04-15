@@ -1,5 +1,16 @@
 # CHANGES
 
+## [0.8.0] (2019-04-14)
+
+### Added
+
+* Added `std::error::Error` impl for `MailboxError`
+
+### Changed
+
+* Use trust-dns-resolver 0.11.0
+
+
 ## [0.8.0.alpha.3] (2019-04-12)
 
 ### Added
