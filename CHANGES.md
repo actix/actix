@@ -1,10 +1,15 @@
 # CHANGES
 
-## [0.8.1] (2019-04-15)
+## [0.8.1] (2019-04-16)
 
 ### Added
 
 * Added `std::error::Error` impl for `SendError`
+
+### Fixed
+
+* Fixed concurrent system registry insert #248
+
 
 ## [0.8.0] (2019-04-14)
 

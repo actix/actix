@@ -246,20 +246,21 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     /// Get actor's address from system registry
     fn from_registry() -> Addr<Self> {
         System::with_current(|sys| {
-            let addr = {
-                SREG.lock()
-                    .entry(sys.id())
-                    .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()))
-                    .query::<Self>()
-            };
+            let mut sreg = SREG.lock();
+            let reg = sreg
+                .entry(sys.id())
+                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
 
-            if let Some(addr) = addr {
-                addr
-            } else {
-                let addr = Self::start_service(System::current().arbiter());
-                SystemRegistry::set(addr.clone());
-                addr
+            if let Some(addr) = reg.registry.get(&TypeId::of::<Self>()) {
+                if let Some(addr) = addr.downcast_ref::<Addr<Self>>() {
+                    return addr.clone();
+                }
             }
+
+            let addr = Self::start_service(System::current().arbiter());
+            reg.registry
+                .insert(TypeId::of::<Self>(), Box::new(addr.clone()));
+            addr
         })
     }
 }
