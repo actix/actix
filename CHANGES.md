@@ -1,5 +1,12 @@
 # CHANGES
 
+## [0.8.2] (2019-05-12)
+
+### Changed
+
+* Enable `http` feature by default
+
+
 ## [0.8.1] (2019-04-16)
 
 ### Added
