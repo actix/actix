@@ -43,6 +43,9 @@
 #[doc(hidden)]
 pub use actix_derive::*;
 
+#[cfg(test)]
+doc_comment::doctest!("../README.md");
+
 mod actor;
 mod context;
 mod contextimpl;

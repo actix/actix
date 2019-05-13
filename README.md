@@ -55,7 +55,7 @@ the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
 
 
 ```rust
-use actix::{msgs, Actor, Addr, Arbiter, Context, System};
+use actix::{Actor, Addr, Arbiter, Context, System};
 
 struct MyActor;
 
