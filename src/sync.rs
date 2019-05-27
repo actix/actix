@@ -243,7 +243,7 @@ where
         }
     }
 
-    fn address(&self)-> Addr<A> {
+    pub fn address(&self)-> Addr<A> {
         self.address.clone()
     }
 
