@@ -112,24 +112,27 @@ where
         let factory = Arc::new(factory);
         let (sender, receiver) = cb_channel::unbounded();
 
+        let (tx, rx) = channel::channel(0);
+        let addr = Addr::new(tx);
         for _ in 0..threads {
             let f = Arc::clone(&factory);
             let sys = System::current();
             let actor_queue = receiver.clone();
+            let inner_a = addr.clone();
 
             thread::spawn(move || {
                 System::set_current(sys);
-                SyncContext::new(f, actor_queue).run();
+                SyncContext::new(f, actor_queue, inner_a.clone()).run();
             });
         }
 
-        let (tx, rx) = channel::channel(0);
+        
         actix_rt::spawn(Self {
             queue: Some(sender),
             msgs: rx,
         });
 
-        Addr::new(tx)
+        addr
     }
 }
 
@@ -221,13 +224,14 @@ where
     stopping: bool,
     state: ActorState,
     factory: Arc<Fn() -> A>,
+    address: Addr<A>
 }
 
 impl<A> SyncContext<A>
 where
     A: Actor<Context = Self>,
 {
-    fn new(factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<Envelope<A>>) -> Self {
+    fn new(factory: Arc<Fn() -> A>, queue: cb_channel::Receiver<Envelope<A>>, address: Addr<A>) -> Self {
         let act = factory();
         Self {
             queue,
@@ -235,7 +239,12 @@ where
             act: Some(act),
             stopping: false,
             state: ActorState::Started,
+            address
         }
+    }
+
+    fn address(self)-> Addr<A> {
+        self.address.clone()
     }
 
     fn run(&mut self) {
