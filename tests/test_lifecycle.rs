@@ -82,26 +82,21 @@ fn test_active_address() {
     let addr = Arc::new(Mutex::new(None));
     let addr2 = Arc::clone(&addr);
 
-    System::run(move || {
-        *addr2.lock().unwrap() = Some(
-            MyActor {
-                started: started1,
-                stopping: stopping1,
-                stopped: stopped1,
-                temp: None,
-                restore_after_stop: false,
-            }
-            .start(),
-        );
-
-        actix_rt::spawn(
-            Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
-                System::current().stop();
-                future::result(Ok(()))
-            }),
-        );
-    })
-    .unwrap();
+    let _ = std::thread::spawn(move || {
+        let _ = System::run(move || {
+            *addr2.lock().unwrap() = Some(
+                MyActor {
+                    started: started1,
+                    stopping: stopping1,
+                    stopped: stopped1,
+                    temp: None,
+                    restore_after_stop: false,
+                }
+                .start(),
+            );
+        });
+    });
+    std::thread::sleep(Duration::from_millis(100));
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(!stopping.load(Ordering::Relaxed), "Stopping");

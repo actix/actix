@@ -2,7 +2,7 @@
 use actix::Message;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, BytesMut};
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 use serde_json as json;
 use std::io;
 use tokio_io::codec::{Decoder, Encoder};

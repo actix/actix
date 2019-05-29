@@ -72,11 +72,13 @@ fn main() -> std::io::Result<()> {
         });
 
         let ctrl_c = tokio_signal::ctrl_c().flatten_stream();
-        let handle_shutdown = ctrl_c.for_each(|()| {
-            println!("Ctrl-C received, shutting down");
-            System::current().stop();
-            Ok(())
-        }).map_err(|_| ());
+        let handle_shutdown = ctrl_c
+            .for_each(|()| {
+                println!("Ctrl-C received, shutting down");
+                System::current().stop();
+                Ok(())
+            })
+            .map_err(|_| ());
         actix::spawn(handle_shutdown);
 
         println!("Running chat server on 127.0.0.1:12345");
