@@ -1,5 +1,12 @@
 # CHANGES
 
+## [0.8.3] (2019-05-29)
+
+### Fixed
+
+* Stop actor on async context drop
+
+
 ## [0.8.2] (2019-05-12)
 
 ### Changed

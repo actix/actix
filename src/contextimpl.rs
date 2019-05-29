@@ -209,6 +209,19 @@ where
     }
 }
 
+impl<A, C> Drop for ContextFut<A, C>
+where
+    C: AsyncContextParts<A>,
+    A: Actor<Context = C>,
+{
+    fn drop(&mut self) {
+        if self.alive() {
+            self.ctx.parts().stop();
+            let _ = self.poll();
+        }
+    }
+}
+
 impl<A, C> ContextFut<A, C>
 where
     C: AsyncContextParts<A>,
