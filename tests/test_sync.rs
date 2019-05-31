@@ -2,10 +2,17 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 
 use actix::prelude::*;
+use futures::future;
 
 struct Fibonacci(pub u32);
 
+struct Fibonacci2(pub u32);
+
 impl Message for Fibonacci {
+    type Result = Result<u64, ()>;
+}
+
+impl Message for Fibonacci2 {
     type Result = Result<u64, ()>;
 }
 
@@ -57,6 +64,24 @@ impl Handler<Fibonacci> for SyncActor {
     }
 }
 
+struct SyncActor2;
+
+impl Actor for SyncActor2 {
+    type Context = SyncContext<Self>;
+}
+
+impl Handler<Fibonacci2> for SyncActor2 {
+    type Result = Result<u64, ()>;
+
+    fn handle(&mut self, msg: Fibonacci2, ctx : &mut Self::Context) -> Self::Result {
+        if msg.0 == 0 || msg.0 == 1 {
+            Ok(1)
+        } else {
+            Ok( ctx.address().send(Fibonacci2(msg.0 -1)).wait().map_err(|_|())?? + ctx.address().send(Fibonacci2(msg.0 -2)).wait().map_err(|_|())??)
+        }
+    }    
+}
+
 #[test]
 #[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
 fn test_sync() {
@@ -95,4 +120,17 @@ fn test_sync() {
         5,
         "Wrong number of messages"
     );
+}
+
+#[test]
+fn test_recursive_call() {
+        System::run(move || {
+            let addr = SyncArbiter::start(10, move || SyncActor2 {});
+            let res_fut = addr.send(Fibonacci2(4));
+            Arbiter::spawn(res_fut.then(|res| {
+                assert_eq!(res.unwrap().unwrap(), 5u64);                
+                System::current().stop();
+                future::result(Ok(()))
+            }));
+        }).unwrap();    
 }
