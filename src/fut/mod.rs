@@ -84,6 +84,7 @@ use crate::actor::Actor;
 /// ```
 ///
 /// See also [into_actor](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
+#[must_use = "actor futures do nothing unless polled"]
 pub trait ActorFuture {
     /// The type of value that this future will resolved with if it is
     /// successful.
@@ -189,6 +190,7 @@ pub trait ActorFuture {
 /// A stream of values, not all of which may have been produced yet.
 ///
 /// This is similar to `futures::Stream` trait, except it works with `Actor`
+#[must_use = "actor streams do nothing unless polled"]
 pub trait ActorStream {
     /// The type of item this stream will yield on success.
     type Item;
