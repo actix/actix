@@ -1,5 +1,10 @@
 # CHANGES
 
+### Changed
+
+* Update `hashbrown` to 0.5
+* Update `derive_more` to 0.15
+
 ## [0.8.3] (2019-05-29)
 
 ### Fixed
