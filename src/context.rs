@@ -144,6 +144,10 @@ where
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
         self.parts.set_mailbox_capacity(cap)
     }
+
+    pub fn connected(&self) -> bool {
+        self.parts.connected()
+    }
 }
 
 impl<A> AsyncContextParts<A> for Context<A>

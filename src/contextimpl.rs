@@ -185,6 +185,12 @@ where
     pub fn started(&mut self) -> bool {
         self.flags.contains(ContextFlags::STARTED)
     }
+
+    /// Are any senders connected
+    #[inline]
+    pub fn connected(&self) -> bool {
+        self.addr.connected()
+    }
 }
 
 pub struct ContextFut<A, C>
