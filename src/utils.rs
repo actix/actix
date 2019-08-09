@@ -108,7 +108,7 @@ trait TimerFuncBox<A: Actor>: 'static {
 }
 
 impl<A: Actor, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A> for F {
-    #[cfg_attr(feature = "cargo-clippy", allow(boxed_local))]
+    #[allow(clippy::boxed_local)]
     fn call(self: Box<Self>, act: &mut A, ctx: &mut A::Context) {
         (*self)(act, ctx)
     }
@@ -201,7 +201,7 @@ trait IntervalFuncBox<A: Actor>: 'static {
 }
 
 impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {
-    #[cfg_attr(feature = "cargo-clippy", allow(boxed_local))]
+    #[allow(clippy::boxed_local)]
     fn call(&mut self, act: &mut A, ctx: &mut A::Context) {
         self(act, ctx)
     }
