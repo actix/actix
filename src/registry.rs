@@ -9,7 +9,7 @@ use std::default::Default;
 use std::rc::Rc;
 
 use actix_rt::{Arbiter, System};
-use hashbrown::HashMap;
+use std::collections::HashMap;
 use parking_lot::Mutex;
 
 use crate::actor::{Actor, Supervised};
