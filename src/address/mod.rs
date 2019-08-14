@@ -310,6 +310,16 @@ where
     }
 }
 
+impl<M> fmt::Debug for Recipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "Recipient {{ /* omitted */ }}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
