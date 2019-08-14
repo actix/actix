@@ -9,8 +9,8 @@ use std::default::Default;
 use std::rc::Rc;
 
 use actix_rt::{Arbiter, System};
-use std::collections::HashMap;
 use parking_lot::Mutex;
+use std::collections::HashMap;
 
 use crate::actor::{Actor, Supervised};
 use crate::address::Addr;
