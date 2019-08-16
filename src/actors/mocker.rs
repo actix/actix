@@ -37,12 +37,12 @@ use crate::prelude::*;
 /// the actor.
 pub struct Mocker<T: Sized + 'static> {
     phantom: PhantomData<T>,
-    mock: Box<FnMut(Box<Any>, &mut Context<Mocker<T>>) -> Box<Any>>,
+    mock: Box<dyn FnMut(Box<dyn Any>, &mut Context<Mocker<T>>) -> Box<dyn Any>>,
 }
 
 impl<T> Mocker<T> {
     pub fn mock(
-        mock: Box<FnMut(Box<Any>, &mut Context<Mocker<T>>) -> Box<Any>>,
+        mock: Box<dyn FnMut(Box<dyn Any>, &mut Context<Mocker<T>>) -> Box<dyn Any>>,
     ) -> Mocker<T> {
         Mocker::<T> {
             phantom: PhantomData,
