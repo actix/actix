@@ -83,7 +83,7 @@ pub struct TimerFunc<A>
 where
     A: Actor,
 {
-    f: Option<Box<TimerFuncBox<A>>>,
+    f: Option<Box<dyn TimerFuncBox<A>>>,
     timeout: Delay,
 }
 
@@ -179,7 +179,7 @@ where
 /// ```
 #[must_use = "future do nothing unless polled"]
 pub struct IntervalFunc<A: Actor> {
-    f: Box<IntervalFuncBox<A>>,
+    f: Box<dyn IntervalFuncBox<A>>,
     interval: Interval,
 }
 
