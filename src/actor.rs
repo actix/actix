@@ -188,7 +188,7 @@ pub trait Actor: Sized + 'static {
     fn create<F>(f: F) -> Addr<Self>
     where
         Self: Actor<Context = Context<Self>>,
-        F: FnOnce(&mut Context<Self>) -> Self + 'static,
+        F: FnOnce(&mut Context<Self>) -> Self,
     {
         let mut ctx = Context::new();
         let act = f(&mut ctx);
