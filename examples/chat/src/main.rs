@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
+#![allow(clippy::let_unit_value)]
 use std::net;
 use std::str::FromStr;
 

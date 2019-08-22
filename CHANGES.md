@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.8.4] (unreleased)
+
+### Changed
+
+* Remove `hashbrown` crate from dependencies
+
 ## [0.8.3] (2019-05-29)
 
 ### Fixed
