@@ -2,6 +2,10 @@
 
 ## [0.8.4] (unreleased)
 
+### Added
+
+* Added `Context::connected()` to check any addresses are alive
+
 ### Changed
 
 * Remove `hashbrown` crate from dependencies

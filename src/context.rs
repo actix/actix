@@ -145,6 +145,7 @@ where
         self.parts.set_mailbox_capacity(cap)
     }
 
+    /// Returns whether any addresses are still connected.
     pub fn connected(&self) -> bool {
         self.parts.connected()
     }
