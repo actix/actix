@@ -9,15 +9,15 @@ use std::default::Default;
 use std::rc::Rc;
 
 use actix_rt::{Arbiter, System};
-use hashbrown::HashMap;
 use parking_lot::Mutex;
+use std::collections::HashMap;
 
 use crate::actor::{Actor, Supervised};
 use crate::address::Addr;
 use crate::context::Context;
 use crate::supervisor::Supervisor;
 
-type AnyMap = HashMap<TypeId, Box<Any>>;
+type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 
 /// Actors registry
 ///
@@ -219,7 +219,7 @@ impl Registry {
 #[derive(Debug)]
 pub struct SystemRegistry {
     system: Arbiter,
-    registry: HashMap<TypeId, Box<Any + Send>>,
+    registry: HashMap<TypeId, Box<dyn Any + Send>>,
 }
 
 lazy_static::lazy_static! {
