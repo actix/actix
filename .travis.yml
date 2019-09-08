@@ -26,7 +26,7 @@ addons:
 before_script:
   - |
     if [[ "$TRAVIS_RUST_VERSION" == "nightly" ]]; then
-    ( ( cargo install clippy && export CLIPPY=true ) || export CLIPPY=false );
+      ( ( rustup component add clippy-preview && export CLIPPY=true ) || export CLIPPY=false );
     fi
   - export PATH=$PATH:~/.cargo/bin
 

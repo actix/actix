@@ -19,7 +19,6 @@ Actix is a Rust actors framework.
   * Actor supervision.
   * Typed messages (No `Any` type).
 
-
 ## Usage
 
 To use `actix`, add this to your `Cargo.toml`:
@@ -52,7 +51,6 @@ Let's create a simple Actor.
 
 In order to define an actor you need to define a struct and have it implement
 the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
-
 
 ```rust
 use actix::{Actor, Addr, Arbiter, Context, System};
@@ -210,16 +208,11 @@ fn main() {
 }
 ```
 
-More information on signal handling is in the
-[signal](https://actix.github.io/actix/actix/actors/signal/index.html) module.
-
-
 ### chat example
 
 There is a
 [chat example](https://github.com/actix/actix/tree/master/examples/chat)
 which provides a basic example of networking client/server service.
-
 
 ### fectl
 

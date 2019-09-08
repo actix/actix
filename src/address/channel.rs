@@ -30,7 +30,7 @@ where
 
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
 
-    fn boxed(&self) -> Box<Sender<M>>;
+    fn boxed(&self) -> Box<dyn Sender<M>>;
 
     fn hash(&self) -> usize;
 
@@ -456,7 +456,7 @@ where
     fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
         self.send(msg)
     }
-    fn boxed(&self) -> Box<Sender<M>> {
+    fn boxed(&self) -> Box<dyn Sender<M>> {
         Box::new(self.clone())
     }
 

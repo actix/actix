@@ -24,7 +24,7 @@ bitflags! {
 
 type Item<A> = (
     SpawnHandle,
-    Box<ActorFuture<Item = (), Error = (), Actor = A>>,
+    Box<dyn ActorFuture<Item = (), Error = (), Actor = A>>,
 );
 
 pub trait AsyncContextParts<A>: ActorContext + AsyncContext<A>
@@ -133,7 +133,7 @@ where
     {
         let handle = self.handles[0].next();
         self.handles[0] = handle;
-        let fut: Box<ActorFuture<Item = (), Error = (), Actor = A>> = Box::new(fut);
+        let fut: Box<dyn ActorFuture<Item = (), Error = (), Actor = A>> = Box::new(fut);
         self.items.push((handle, fut));
         handle
     }
@@ -184,6 +184,12 @@ where
     #[inline]
     pub fn started(&mut self) -> bool {
         self.flags.contains(ContextFlags::STARTED)
+    }
+
+    /// Are any senders connected
+    #[inline]
+    pub fn connected(&self) -> bool {
+        self.addr.connected()
     }
 }
 

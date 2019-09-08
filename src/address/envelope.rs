@@ -38,7 +38,7 @@ where
     }
 }
 
-pub struct Envelope<A: Actor>(Box<EnvelopeProxy<Actor = A> + Send>);
+pub struct Envelope<A: Actor>(Box<dyn EnvelopeProxy<Actor = A> + Send>);
 
 impl<A: Actor> Envelope<A> {
     pub fn new<M>(msg: M, tx: Option<Sender<M::Result>>) -> Self
@@ -55,7 +55,7 @@ impl<A: Actor> Envelope<A> {
         }))
     }
 
-    pub fn with_proxy(proxy: Box<EnvelopeProxy<Actor = A> + Send>) -> Self {
+    pub fn with_proxy(proxy: Box<dyn EnvelopeProxy<Actor = A> + Send>) -> Self {
         Envelope(proxy)
     }
 }

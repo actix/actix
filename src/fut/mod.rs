@@ -52,20 +52,61 @@ use crate::actor::Actor;
 /// then updating the initiating actor's state:
 ///
 /// ```rust,ignore
-/// impl Message for SomeMessage {
-///     type Result = ();
+/// // The response type returned by the actor future
+/// type OriginalActorResponse = ();
+/// // The error type returned by the actor future
+/// type MessageError = ();
+/// // This is the needed result for the DeferredWork message
+/// // It's a result that combine both Response and Error from the future response.
+/// type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
+///
+/// # struct ActorState {}
+///
+/// # impl ActorState {
+/// #    fn update_from(&mut self, _result: ()) {}
+/// # }
+///
+/// # struct OtherActor {}
+///
+/// # impl Actor for OtherActor {
+/// #    type Context = Context<Self>;
+/// # }
+///
+/// # impl Handler<OtherMessage> for OtherActor {
+/// #    type Result = ();
+/// #
+/// #    fn handle(&mut self, _msg: OtherMessage, _ctx: &mut Context<Self>) -> Self::Result {
+/// #    }
+/// # }
+///
+/// # struct OriginalActor{
+/// #     other_actor: Addr<OtherActor>,
+/// #     inner_state: ActorState
+/// # }
+///
+/// # impl Actor for OriginalActor{
+/// #     type Context = Context<Self>;
+/// # }
+///
+/// # struct DeferredWork{}
+///
+/// impl Message for DeferredWork {
+///     type Result = DeferredWorkResult;
 /// }
+///
+/// # #[derive(Message)]
+/// # struct OtherMessage{}
 ///
 /// impl Handler<DeferredWork> for OriginalActor {
 ///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
-///     type Result = ResponseActFuture<Self, (), Error>;
+///     type Result = ResponseActFuture<Self, OriginalActorResponse, MessageError>;
 ///
-///     fn handle(&mut self, _msg: Refresh, ctx: &mut Context<Self>) -> Self::Result {
+///     fn handle(&mut self, _msg: DeferredWork, _ctx: &mut Context<Self>) -> Self::Result {
 ///         // this creates a `Future` representing the `.send` and subsequent `Result` from
 ///         // `other_actor`
-///         let send_to_other = self.other_actor_addr
-///             .send(OtherMessage::new())
-///             .map_err(Error::from);
+///         let send_to_other = self.other_actor
+///             .send(OtherMessage {})
+///             .map_err(|_error| ());
 ///
 ///         // Wrap that `Future` so subsequent chained handlers can access
 ///         // the `actor` (`self` in the  synchronous code) as well as the context.
@@ -81,6 +122,7 @@ use crate::actor::Actor;
 ///         Box::new(update_self)
 ///     }
 /// }
+///
 /// ```
 ///
 /// See also [into_actor](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
@@ -306,7 +348,7 @@ pub trait ActorStream {
 /// used in a very similar fashion.
 pub trait IntoActorFuture {
     /// The future that this type can be converted into.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     type Future: ActorFuture<Item=Self::Item, Error=Self::Error, Actor=Self::Actor>;
 
     /// The item that the future may resolve with.

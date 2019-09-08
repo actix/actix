@@ -110,7 +110,7 @@ where
     M::Result: Send,
 {
     rx: Option<oneshot::Receiver<M::Result>>,
-    info: Option<(Box<Sender<M>>, M)>,
+    info: Option<(Box<dyn Sender<M>>, M)>,
     timeout: Option<Delay>,
 }
 
@@ -121,7 +121,7 @@ where
 {
     pub fn new(
         rx: Option<oneshot::Receiver<M::Result>>,
-        info: Option<(Box<Sender<M>>, M)>,
+        info: Option<(Box<dyn Sender<M>>, M)>,
     ) -> RecipientRequest<M> {
         RecipientRequest {
             rx,
