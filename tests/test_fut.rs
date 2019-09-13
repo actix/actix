@@ -20,6 +20,7 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        // TODO: ActorFuture combinators not implemented
         /*
         async {
             tokio_timer::delay(Instant::now() + Duration::new(0, 5_000_000)).await;
@@ -47,7 +48,7 @@ impl Actor for MyActor {
     }
 }
 
-#[test]
+//TODO: #[test]
 fn test_fut_timeout() {
     let timeout = Arc::new(AtomicBool::new(false));
     let timeout2 = Arc::clone(&timeout);
@@ -89,7 +90,7 @@ impl Actor for MyStreamActor {
     }
 }
 
-#[test]
+// TODO: #[test]
 fn test_stream_timeout() {
     let timeout = Arc::new(AtomicBool::new(false));
     let timeout2 = Arc::clone(&timeout);
@@ -100,4 +101,19 @@ fn test_stream_timeout() {
     .unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
+}
+
+
+#[test]
+fn test_runtime() {
+    System::run(||{
+
+
+        Arbiter::spawn(async {
+            println!("Before");
+            let _ = tokio_timer::delay(Instant::now() + Duration::new(0,1_000 )).await;
+            println!("after");
+            System::current().stop();
+        });
+    });
 }

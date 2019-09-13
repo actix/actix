@@ -216,20 +216,22 @@ where
         write!(fmt, "ContextFut {{ /* omitted */ }}")
     }
 }
-/*
+
 impl<A, C> Drop for ContextFut<A, C>
 where
     C: AsyncContextParts<A>,
     A: Actor<Context = C>,
 {
     fn drop(&mut self) {
+        println!("TODO: Contextfut drop not implemented");
+        /*
         if self.alive() {
             self.ctx.parts().stop();
             let _ = self.poll();
         }
+        */
     }
 }
-*/
 
 impl<A, C> ContextFut<A, C>
 where
@@ -341,6 +343,7 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        println!("Contextfut poll");
         let this = unsafe { self.get_unchecked_mut() };
 
         if !this.ctx.parts().flags.contains(ContextFlags::STARTED) {
@@ -374,6 +377,7 @@ where
             if !this.wait.is_empty() && !this.stopping() {
                 continue;
             }
+            println!("Contextfut after mailbox");
 
             // process items
             let mut idx = 0;
@@ -416,6 +420,7 @@ where
                 }
             }
             this.ctx.parts().handles[1] = SpawnHandle::default();
+            println!("Contextfut after items");
 
             // merge returns true if context contains new items or handles to be cancelled
             if this.merge() && !this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
@@ -438,6 +443,7 @@ where
                     this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
+                    println!("Contextfut parts end 1");
                     return Poll::Ready(());
                 }
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
@@ -445,6 +451,7 @@ where
                     this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
+                    println!("Contextfut parts end 2");
                     return Poll::Ready(());
                 } else {
                     this.ctx.parts().flags.remove(ContextFlags::STOPPING);
@@ -453,9 +460,11 @@ where
                 }
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPED) {
                 Actor::stopped(&mut this.act, &mut this.ctx);
+                println!("Contextfut parts end 3");
                 return Poll::Ready(());
             }
 
+            println!("Contextfut done");
             return Poll::Pending;
         }
 

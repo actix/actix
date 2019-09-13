@@ -57,6 +57,7 @@ impl Handler<Fibonacci> for SyncActor {
     }
 }
 
+
 #[test]
 #[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
 fn test_sync() {

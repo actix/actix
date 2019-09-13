@@ -344,7 +344,6 @@ where
     /// #    sys.run();
     /// # }
     /// ```
-
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
     where
         S: Stream + 'static,
@@ -352,7 +351,6 @@ where
     {
         <A as StreamHandler<S::Item>>::add_stream(fut, self)
     }
-
 
     /// Registers a stream with the context, ignoring errors.
     ///
@@ -451,7 +449,6 @@ where
         self.spawn(TimerFunc::new(dur, f))
     }
 
-
     /// Spawns a job to execute the given closure periodically, at a
     /// specified fixed interval.
     fn run_interval<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
@@ -460,7 +457,6 @@ where
     {
         self.spawn(IntervalFunc::new(dur, f).finish())
     }
-
 }
 
 /// A handle to a spawned future.

@@ -170,7 +170,7 @@ impl SenderTask {
         self.is_parked = false;
 
         if let Some(task) = self.task.take() {
-            task.wake_by_ref();
+            task.wake();
             true
         } else {
             false
@@ -263,7 +263,7 @@ impl<A: Actor> AddressSender<A> {
         // If the channel has reached capacity, then the sender task needs to
         // be parked. This will send the task handle on the parked task queue.
         if park_self {
-            self.park(true);
+            self.park();
         }
         let (tx, rx) = sync_channel();
         let env = <A::Context as ToEnvelope<A, M>>::pack(msg, Some(tx));
@@ -290,7 +290,7 @@ impl<A: Actor> AddressSender<A> {
         };
 
         if park_self && park {
-            self.park(true);
+            self.park();
         }
         let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
         self.queue_push_and_signal(env);
@@ -389,22 +389,14 @@ impl<A: Actor> AddressSender<A> {
         };
 
         if let Some(task) = task {
-            task.wake_by_ref();
+            task.wake();
         }
     }
-
-    fn park(&self, can_park: bool) {
-        // TODO: clean up internal state if the task::current will fail
-        let task = if can_park {
-            //Some(task::current())
-            unimplemented!()
-        } else {
-            None
-        };
-
+    // TODO: Not sure about this one, I modified code to match the futures one, might still be buggy
+    fn park(&self) {
         {
             let mut sender = self.sender_task.lock();
-            sender.task = task;
+            sender.task = None;
             sender.is_parked = true;
         }
 
@@ -434,9 +426,8 @@ impl<A: Actor> AddressSender<A> {
             //
             // Update the task in case the `Sender` has been moved to another
             // task
-
-            // TODO: Fix this
-            task.task = cx.map(|cx| cx.waker().clone());
+            task.task = if do_park { cx.map(|cx| cx.waker().clone()) } else { None };
+            println!("POLL UNPARKED CALLED");
 
             Poll::Pending
         } else {
@@ -762,8 +753,7 @@ impl<A: Actor> AddressReceiver<A> {
             return TryPark::NotEmpty;
         }
 
-        // TODO: Fix this
-        self.inner.recv_task.lock().task = Some(cx.waker().clone());
+        recv_task.task = Some(cx.waker().clone());
         TryPark::Parked
     }
 
@@ -804,6 +794,7 @@ impl<A: Actor> Stream for AddressReceiver<A> {
                     // still empty after the park operation has completed.
                     match this.try_park(cx) {
                         TryPark::Parked => {
+                            println!("returning AddressReceiver pennding");
                             // The task was parked, and the channel is still
                             // empty, return NotReady.
                             return Poll::Pending;

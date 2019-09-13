@@ -364,7 +364,7 @@ mod tests {
                 ActorWithSmallMailBox(count2)
             });
 
-            let fut = async  {
+            let fut = async move {
                 let send = addr.clone().send(SetCounter(1));
                 assert!(send.rx_is_some());
                 let addr2 = addr.clone();
@@ -374,16 +374,17 @@ mod tests {
                 assert!(!send3.rx_is_some());
 
                 let _ = send.await;
+                eprintln!("After1");
                 let _ = send2.await;
+                eprintln!("After2");
                 let _ = send3.await;
+                eprintln!("After3");
 
                 System::current().stop();
-
-                Ok::<(),()>(())
             };
 
 
-            //Arbiter::spawn(fut);
+            Arbiter::spawn(fut);
             //Use clone to make sure that regardless of how many messages
             //are cloned capacity will be taken into account.
 
