@@ -374,32 +374,12 @@ mod tests {
                 assert!(!send3.rx_is_some());
 
                 let _ = send.await;
-                eprintln!("After1");
                 let _ = send2.await;
-                eprintln!("After2");
                 let _ = send3.await;
-                eprintln!("After3");
 
                 System::current().stop();
             };
-
-
             Arbiter::spawn(fut);
-            //Use clone to make sure that regardless of how many messages
-            //are cloned capacity will be taken into account.
-
-            /*
-            let send = send
-                .join(send2)
-                .join(send3)
-                .map(|_| {
-                    System::current().stop();
-                })
-                .map_err(|_| {
-                    panic!("Message over limit should be delivered, but it is not!");
-                });
-            Arbiter::spawn(send);
-            */
         })
         .unwrap();
 

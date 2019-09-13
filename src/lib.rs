@@ -169,13 +169,14 @@ pub mod dev {
 /// ```
 /// # use futures::Future;
 /// use std::time::{Duration, Instant};
-/// use tokio_timer::Delay;
+/// use tokio_timer::delay;
 ///
 /// fn main() {
 ///   actix::run(
-///       || Delay::new(Instant::now() + Duration::from_millis(100))
-///            .map(|_| actix::System::current().stop())
-///            .map_err(|_| ())
+///       || async {
+///         delay(Instant::now() + Duration::from_millis(100)).await;
+///         actix::System::current().stop()
+///      }
 ///   );
 /// }
 /// ```
@@ -186,7 +187,7 @@ pub mod dev {
 pub fn run<F, R>(f: F) -> std::io::Result<()>
 where
     F: FnOnce() -> R,
-    R: Future<Output = ()>  + Unpin + 'static,
+    R: Future<Output = ()>  + 'static,
 {
     let sys = actix_rt::System::new("Default");
     actix_rt::spawn(f());

@@ -343,7 +343,6 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        println!("Contextfut poll");
         let this = unsafe { self.get_unchecked_mut() };
 
         if !this.ctx.parts().flags.contains(ContextFlags::STARTED) {
@@ -377,7 +376,6 @@ where
             if !this.wait.is_empty() && !this.stopping() {
                 continue;
             }
-            println!("Contextfut after mailbox");
 
             // process items
             let mut idx = 0;
@@ -420,7 +418,6 @@ where
                 }
             }
             this.ctx.parts().handles[1] = SpawnHandle::default();
-            println!("Contextfut after items");
 
             // merge returns true if context contains new items or handles to be cancelled
             if this.merge() && !this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
@@ -443,7 +440,6 @@ where
                     this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
-                    println!("Contextfut parts end 1");
                     return Poll::Ready(());
                 }
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
@@ -451,7 +447,6 @@ where
                     this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
-                    println!("Contextfut parts end 2");
                     return Poll::Ready(());
                 } else {
                     this.ctx.parts().flags.remove(ContextFlags::STOPPING);
@@ -460,134 +455,11 @@ where
                 }
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPED) {
                 Actor::stopped(&mut this.act, &mut this.ctx);
-                println!("Contextfut parts end 3");
                 return Poll::Ready(());
             }
 
-            println!("Contextfut done");
             return Poll::Pending;
         }
-
     }
 
-    /*
-    #[inline]
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        if !self.ctx.parts().flags.contains(ContextFlags::STARTED) {
-            self.ctx.parts().flags.insert(ContextFlags::STARTED);
-            Actor::started(&mut self.act, &mut self.ctx);
-
-            // check cancelled handles, just in case
-            if self.merge() {
-                self.clean_cancled_handle();
-            }
-        }
-
-        'outer: loop {
-            // check wait futures. order does matter
-            // ctx.wait() always add to the back of the list
-            // and we always have to check most recent future
-            while !self.wait.is_empty() && !self.stopping() {
-                let idx = self.wait.len() - 1;
-                if let Some(item) = self.wait.last_mut() {
-                    match item.poll(&mut self.act, &mut self.ctx) {
-                        Poll::Ready(_) => (),
-                        Poll::Pending => return Ok(Poll::Pending),
-                    }
-                }
-                self.wait.remove(idx);
-                self.merge();
-            }
-
-            // process mailbox
-            self.mailbox.poll(&mut self.act, &mut self.ctx);
-            if !self.wait.is_empty() && !self.stopping() {
-                continue;
-            }
-
-            // process items
-            let mut idx = 0;
-            while idx < self.items.len() && !self.stopping() {
-                self.ctx.parts().handles[1] = self.items[idx].0;
-                match self.items[idx].1.poll(&mut self.act, &mut self.ctx) {
-                    Ok(Poll::Pending) => {
-                        // check cancelled handles
-                        if self.ctx.parts().handles.len() > 2 {
-                            // this code is not very efficient, relaying on fact that
-                            // cancellation should be rear also number of futures
-                            // in actor context should be small
-                            self.clean_cancled_handle();
-
-                            continue 'outer;
-                        }
-
-                        // item scheduled wait future
-                        if !self.wait.is_empty() && !self.stopping() {
-                            // move current item to end of poll queue
-                            // otherwise it is possible that same item generate wait
-                            // future and prevents polling
-                            // of other items
-                            let next = self.items.len() - 1;
-                            if idx != next {
-                                self.items.swap(idx, next);
-                            }
-                            continue 'outer;
-                        } else {
-                            idx += 1;
-                        }
-                    }
-                    Ok(Poll::Ready(())) | Err(_) => {
-                        self.items.swap_remove(idx);
-                        // one of the items scheduled wait future
-                        if !self.wait.is_empty() && !self.stopping() {
-                            continue 'outer;
-                        }
-                    }
-                }
-            }
-            self.ctx.parts().handles[1] = SpawnHandle::default();
-
-            // merge returns true if context contains new items or handles to be cancelled
-            if self.merge() && !self.ctx.parts().flags.contains(ContextFlags::STOPPING) {
-                // if we have no item to process, cancelled handles wouldn't be
-                // reaped in the above loop. this means self.merge() will never
-                // be false and the poll() never ends. so, discard the handles
-                // as we're sure there are no more items to be cancelled.
-                if self.items.is_empty() {
-                    self.ctx.parts().handles.truncate(2);
-                }
-                continue;
-            }
-
-            // check state
-            if self.ctx.parts().flags.contains(ContextFlags::RUNNING) {
-                // possible stop condition
-                if !self.alive()
-                    && Actor::stopping(&mut self.act, &mut self.ctx) == Running::Stop
-                {
-                    self.ctx.parts().flags =
-                        ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(&mut self.act, &mut self.ctx);
-                    return Ok(Poll::Ready(()));
-                }
-            } else if self.ctx.parts().flags.contains(ContextFlags::STOPPING) {
-                if Actor::stopping(&mut self.act, &mut self.ctx) == Running::Stop {
-                    self.ctx.parts().flags =
-                        ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(&mut self.act, &mut self.ctx);
-                    return Ok(Poll::Ready(()));
-                } else {
-                    self.ctx.parts().flags.remove(ContextFlags::STOPPING);
-                    self.ctx.parts().flags.insert(ContextFlags::RUNNING);
-                    continue;
-                }
-            } else if self.ctx.parts().flags.contains(ContextFlags::STOPPED) {
-                Actor::stopped(&mut self.act, &mut self.ctx);
-                return Ok(Poll::Ready(()));
-            }
-
-            return Ok(Poll::Pending);
-        }
-    }
-    */
 }

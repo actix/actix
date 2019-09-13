@@ -427,7 +427,6 @@ impl<A: Actor> AddressSender<A> {
             // Update the task in case the `Sender` has been moved to another
             // task
             task.task = if do_park { cx.map(|cx| cx.waker().clone()) } else { None };
-            println!("POLL UNPARKED CALLED");
 
             Poll::Pending
         } else {
@@ -794,7 +793,6 @@ impl<A: Actor> Stream for AddressReceiver<A> {
                     // still empty after the park operation has completed.
                     match this.try_park(cx) {
                         TryPark::Parked => {
-                            println!("returning AddressReceiver pennding");
                             // The task was parked, and the channel is still
                             // empty, return NotReady.
                             return Poll::Pending;

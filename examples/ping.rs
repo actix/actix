@@ -35,21 +35,19 @@ fn main() -> std::io::Result<()> {
         // start new actor
         let addr = MyActor { count: 10 }.start();
 
-        // send message and get future for result
-        let res = addr.send(Ping(10));
 
-        // TODO: implement using async await
-        // handle() returns tokio handle
-        /*
-        spawn(
-            res.map(|res| {
-                println!("RESULT: {}", res == 20);
+        spawn(async move {
+            // send message and get future for result, then await it
+            match addr.send(Ping(10)).await {
+                Ok(res) => {
+                    println!("RESULT: {}", res == 20);
+                }
+                Err(e) => {
+                    println!("FAILURE: {}",e);
+                }
+            }
+            System::current().stop();
 
-                // stop system and exit
-                System::current().stop();
-            })
-            .map_err(|_| ()),
-        );
-        */
+        });
     })
 }

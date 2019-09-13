@@ -180,7 +180,7 @@ fn test_restart_sync_actor() {
         addr.do_send(Num(2));
 
         actix_rt::spawn(async move {
-            addr.send(Num(4)).await;
+            addr.send(Num(4)).await.unwrap();
             tokio_timer::delay(Instant::now() + Duration::new(0, 1_000_000)).await;
             System::current().stop();
         });
