@@ -1,4 +1,5 @@
-use futures::{Async, Poll};
+use std::future::Future;
+use std::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
@@ -15,7 +16,7 @@ where
     future: A,
     f: Option<F>,
 }
-
+/*
 pub fn new<A, F>(future: A, f: F) -> Map<A, F>
 where
     A: ActorFuture,
@@ -29,24 +30,24 @@ where
     F: FnOnce(A::Item, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> U,
 {
     type Item = U;
-    type Error = A::Error;
     type Actor = A::Actor;
 
     fn poll(
         &mut self,
         act: &mut Self::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
-    ) -> Poll<U, A::Error> {
+    ) -> Poll<Self::Item> {
         let e = match self.future.poll(act, ctx) {
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Ok(Async::Ready(e)) => Ok(e),
+            Ok(Poll::Pending) => return Ok(Poll::Pending),
+            Ok(Poll::Ready(e)) => Ok(e),
             Err(e) => Err(e),
         };
         match e {
-            Ok(item) => Ok(Async::Ready(self.f.take().expect("cannot poll Map twice")(
+            Ok(item) => Ok(Poll::Ready(self.f.take().expect("cannot poll Map twice")(
                 item, act, ctx,
             ))),
             Err(err) => Err(err),
         }
     }
 }
+*/

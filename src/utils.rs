@@ -1,7 +1,8 @@
 use std::time::Duration;
+use std::future::Future;
+use std::task::Poll;
 
-use futures::unsync::oneshot;
-use futures::{Async, Future, Poll, Stream};
+use futures::channel::oneshot;
 use tokio_timer::{Delay, Interval};
 
 use crate::actor::Actor;
@@ -98,7 +99,7 @@ where
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: Delay::new(clock::now() + timeout),
+            timeout: tokio_timer::delay(clock::now() + timeout),
         }
     }
 }
@@ -113,13 +114,12 @@ impl<A: Actor, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A> for
         (*self)(act, ctx)
     }
 }
-
+/*
 impl<A> ActorFuture for TimerFunc<A>
 where
     A: Actor,
 {
     type Item = ();
-    type Error = ();
     type Actor = A;
 
     fn poll(
@@ -128,17 +128,18 @@ where
         ctx: &mut <Self::Actor as Actor>::Context,
     ) -> Poll<Self::Item, Self::Error> {
         match self.timeout.poll() {
-            Ok(Async::Ready(_)) => {
+            Ok(Poll::Ready(_)) => {
                 if let Some(f) = self.f.take() {
                     f.call(act, ctx);
                 }
-                Ok(Async::Ready(()))
+                Ok(Poll::Ready(()))
             }
-            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Ok(Poll::Pending) => Ok(Poll::Pending),
             Err(_) => unreachable!(),
         }
     }
 }
+*/
 
 /// An `ActorStream` that periodically runs a function in the actor's context.
 ///
@@ -195,17 +196,16 @@ impl<A: Actor> IntervalFunc<A> {
         }
     }
 }
-
 trait IntervalFuncBox<A: Actor>: 'static {
     fn call(&mut self, _: &mut A, _: &mut A::Context);
 }
-
 impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {
     #[allow(clippy::boxed_local)]
     fn call(&mut self, act: &mut A, ctx: &mut A::Context) {
         self(act, ctx)
     }
 }
+/*
 
 impl<A: Actor> ActorStream for IntervalFunc<A> {
     type Item = ();
@@ -219,13 +219,14 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
     ) -> Poll<Option<Self::Item>, Self::Error> {
         loop {
             match self.interval.poll() {
-                Ok(Async::Ready(_)) => {
+                Ok(Poll::Ready(_)) => {
                     //Interval Stream cannot return None
                     self.f.call(act, ctx);
                 }
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
+                Ok(Poll::Pending) => return Ok(Poll::Pending),
                 Err(_) => unreachable!(),
             }
         }
     }
 }
+*/

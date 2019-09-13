@@ -17,7 +17,7 @@ where
 {
     state: Chain<A, B::Future, F>,
 }
-
+/*
 pub fn new<A, B, F>(future: A, f: F) -> Then<A, B, F>
 where
     A: ActorFuture,
@@ -39,7 +39,6 @@ where
     ) -> B,
 {
     type Item = B::Item;
-    type Error = B::Error;
     type Actor = A::Actor;
 
     fn poll(
@@ -52,3 +51,4 @@ where
         })
     }
 }
+*/

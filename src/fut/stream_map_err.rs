@@ -13,7 +13,7 @@ pub struct StreamMapErr<S, F> {
     stream: S,
     f: F,
 }
-
+/*
 pub fn new<S, F, U>(stream: S, f: F) -> StreamMapErr<S, F>
 where
     S: ActorStream,
@@ -28,7 +28,6 @@ where
     F: FnMut(S::Error, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
 {
     type Item = S::Item;
-    type Error = U;
     type Actor = S::Actor;
 
     fn poll(
@@ -42,3 +41,4 @@ where
         }
     }
 }
+*/

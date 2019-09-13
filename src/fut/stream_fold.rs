@@ -1,4 +1,5 @@
-use futures::{Async, Poll};
+use std::future::Future;
+use std::task::Poll;
 use std::mem;
 
 use crate::actor::Actor; //{Future, Poll, IntoFuture, Async};
@@ -32,7 +33,7 @@ where
     /// Working on a future the process the previous stream item
     Processing(F),
 }
-
+/*
 pub fn new<S, F, Fut, T>(stream: S, f: F, t: T) -> StreamFold<S, F, Fut, T>
 where
     S: ActorStream,
@@ -55,7 +56,6 @@ where
     S::Error: From<Fut::Error>,
 {
     type Item = T;
-    type Error = S::Error;
     type Actor = S::Actor;
 
     fn poll(
@@ -67,25 +67,26 @@ where
             match mem::replace(&mut self.state, State::Empty) {
                 State::Empty => panic!("cannot poll Fold twice"),
                 State::Ready(state) => match self.stream.poll(act, ctx)? {
-                    Async::Ready(Some(e)) => {
+                    Poll::Ready(Some(e)) => {
                         let future = (self.f)(state, e, act, ctx);
                         let future = future.into_future();
                         self.state = State::Processing(future);
                     }
-                    Async::Ready(None) => return Ok(Async::Ready(state)),
-                    Async::NotReady => {
+                    Poll::Ready(None) => return Ok(Poll::Ready(state)),
+                    Poll::Pending => {
                         self.state = State::Ready(state);
-                        return Ok(Async::NotReady);
+                        return Ok(Poll::Pending);
                     }
                 },
                 State::Processing(mut fut) => match fut.poll(act, ctx)? {
-                    Async::Ready(state) => self.state = State::Ready(state),
-                    Async::NotReady => {
+                    Poll::Ready(state) => self.state = State::Ready(state),
+                    Poll::Pending => {
                         self.state = State::Processing(fut);
-                        return Ok(Async::NotReady);
+                        return Ok(Poll::Pending);
                     }
                 },
             }
         }
     }
 }
+*/

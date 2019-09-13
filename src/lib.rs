@@ -60,7 +60,7 @@ mod mailbox;
 pub mod actors;
 pub mod clock;
 pub mod fut;
-pub mod io;
+//pub mod io;
 pub mod registry;
 pub mod sync;
 pub mod utils;
@@ -85,6 +85,7 @@ pub use crate::sync::{SyncArbiter, SyncContext};
 
 #[doc(hidden)]
 pub use crate::context::ContextFutureSpawner;
+use std::future::Future;
 
 pub mod prelude {
     //! The `actix` prelude.
@@ -121,7 +122,7 @@ pub mod prelude {
     pub use crate::actors;
     pub use crate::dev;
     pub use crate::fut;
-    pub use crate::io;
+    //pub use crate::io;
     pub use crate::utils::{Condition, IntervalFunc, TimerFunc};
 
     pub use futures::{Future, Stream};
@@ -185,7 +186,7 @@ pub mod dev {
 pub fn run<F, R>(f: F) -> std::io::Result<()>
 where
     F: FnOnce() -> R,
-    R: futures::Future<Item = (), Error = ()> + 'static,
+    R: Future<Output = ()>  + Unpin + 'static,
 {
     let sys = actix_rt::System::new("Default");
     actix_rt::spawn(f());
@@ -199,7 +200,7 @@ where
 /// This function panics if the actix system is not running.
 pub fn spawn<F>(f: F)
 where
-    F: futures::Future<Item = (), Error = ()> + 'static,
+    F: Future<Output = ()> + Unpin + 'static,
 {
     actix_rt::spawn(f);
 }

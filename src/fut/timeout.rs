@@ -1,6 +1,7 @@
 use std::time::Duration;
+use std::future::Future;
+use std::task::Poll;
 
-use futures::{Async, Future, Poll};
 use tokio_timer::Delay;
 
 use crate::actor::Actor;
@@ -13,15 +14,15 @@ use crate::fut::ActorFuture;
 /// This is created by the `ActorFuture::timeout()` method.
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
-pub struct Timeout<F>
+pub struct Timeout<I,E,F>
 where
-    F: ActorFuture,
+    F: ActorFuture<Item=Result<I,E>>,
 {
     fut: F,
-    err: Option<F::Error>,
+    err: Option<E>,
     timeout: Delay,
 }
-
+/*
 pub fn new<F>(future: F, timeout: Duration, err: F::Error) -> Timeout<F>
 where
     F: ActorFuture,
@@ -38,7 +39,6 @@ where
     F: ActorFuture,
 {
     type Item = F::Item;
-    type Error = F::Error;
     type Actor = F::Actor;
 
     fn poll(
@@ -48,11 +48,12 @@ where
     ) -> Poll<F::Item, F::Error> {
         // check timeout
         match self.timeout.poll() {
-            Ok(Async::Ready(())) => return Err(self.err.take().unwrap()),
-            Ok(Async::NotReady) => (),
+            Ok(Poll::Ready(())) => return Err(self.err.take().unwrap()),
+            Ok(Poll::Pending) => (),
             Err(_) => unreachable!(),
         }
 
         self.fut.poll(act, ctx)
     }
 }
+*/

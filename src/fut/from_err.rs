@@ -1,4 +1,6 @@
-use futures::{Async, Poll};
+use std::future::Future;
+use std::task::Poll;
+
 use std::marker::PhantomData;
 
 use crate::actor::Actor;
@@ -17,6 +19,7 @@ where
     f: PhantomData<E>,
 }
 
+/*
 pub fn new<A, E>(future: A) -> FromErr<A, E>
 where
     A: ActorFuture,
@@ -29,7 +32,6 @@ where
 
 impl<A: ActorFuture, E: From<A::Error>> ActorFuture for FromErr<A, E> {
     type Item = A::Item;
-    type Error = E;
     type Actor = A::Actor;
 
     fn poll(
@@ -38,9 +40,11 @@ impl<A: ActorFuture, E: From<A::Error>> ActorFuture for FromErr<A, E> {
         ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, E> {
         let e = match self.future.poll(act, ctx) {
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Poll::Pending) => return Ok(Poll::Pending),
             other => other,
         };
         e.map_err(From::from)
     }
 }
+
+*/

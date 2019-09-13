@@ -1,14 +1,14 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
-use std::fmt;
+use std::{fmt, task};
 use std::hash::{Hash, Hasher};
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Weak};
 use std::{thread, usize};
+use std::future::Future;
+use std::task::Poll;
 
-use futures::sync::oneshot::{channel as sync_channel, Receiver};
-use futures::task::{self, Task};
-use futures::{Async, Poll, Stream};
+use futures::channel::oneshot::{channel as sync_channel, Receiver};
 
 use parking_lot::Mutex;
 
@@ -18,6 +18,8 @@ use crate::handler::{Handler, Message};
 use super::envelope::{Envelope, ToEnvelope};
 use super::queue::{PopResult, Queue};
 use super::SendError;
+use futures::Stream;
+use std::pin::Pin;
 
 pub trait Sender<M>: Send
 where
@@ -126,7 +128,7 @@ struct State {
 #[derive(Debug)]
 struct ReceiverTask {
     unparked: bool,
-    task: Option<Task>,
+    task: Option<task::Waker>,
 }
 
 // Returned from Receiver::try_park()
@@ -152,7 +154,7 @@ const MAX_BUFFER: usize = MAX_CAPACITY >> 1;
 // Sent to the consumer to wake up blocked producers
 #[derive(Debug)]
 struct SenderTask {
-    task: Option<Task>,
+    task: Option<task::Waker>,
     is_parked: bool,
 }
 
@@ -168,7 +170,7 @@ impl SenderTask {
         self.is_parked = false;
 
         if let Some(task) = self.task.take() {
-            task.notify();
+            task.wake_by_ref();
             true
         } else {
             false
@@ -242,7 +244,7 @@ impl<A: Actor> AddressSender<A> {
         M: Message + Send,
     {
         // If the sender is currently blocked, reject the message
-        if !self.poll_unparked(false).is_ready() {
+        if !self.poll_unparked(false, None).is_ready() {
             return Err(SendError::Full(msg));
         }
 
@@ -278,7 +280,7 @@ impl<A: Actor> AddressSender<A> {
         M: Message + Send + 'static,
     {
         // If the sender is currently blocked, reject the message
-        if !self.poll_unparked(false).is_ready() {
+        if !self.poll_unparked(false, None).is_ready() {
             return Err(SendError::Full(msg));
         }
 
@@ -387,14 +389,15 @@ impl<A: Actor> AddressSender<A> {
         };
 
         if let Some(task) = task {
-            task.notify();
+            task.wake_by_ref();
         }
     }
 
     fn park(&self, can_park: bool) {
         // TODO: clean up internal state if the task::current will fail
         let task = if can_park {
-            Some(task::current())
+            //Some(task::current())
+            unimplemented!()
         } else {
             None
         };
@@ -413,7 +416,7 @@ impl<A: Actor> AddressSender<A> {
         self.maybe_parked.store(state.is_open, Relaxed);
     }
 
-    fn poll_unparked(&self, do_park: bool) -> Async<()> {
+    fn poll_unparked(&self, do_park: bool, cx: Option<&mut task::Context<'_>>) -> Poll<()> {
         // First check the `maybe_parked` variable. This avoids acquiring the
         // lock in most cases
         if self.maybe_parked.load(Relaxed) {
@@ -422,7 +425,7 @@ impl<A: Actor> AddressSender<A> {
 
             if !task.is_parked {
                 self.maybe_parked.store(false, Relaxed);
-                return Async::Ready(());
+                return Poll::Ready(());
             }
 
             // At this point, an unpark request is pending, so there will be an
@@ -431,11 +434,13 @@ impl<A: Actor> AddressSender<A> {
             //
             // Update the task in case the `Sender` has been moved to another
             // task
-            task.task = if do_park { Some(task::current()) } else { None };
 
-            Async::NotReady
+            // TODO: Fix this
+            task.task = cx.map(|cx| cx.waker().clone());
+
+            Poll::Pending
         } else {
-            Async::Ready(())
+            Poll::Ready(())
         }
     }
 }
@@ -696,16 +701,16 @@ impl<A: Actor> AddressReceiver<A> {
         }
     }
 
-    fn next_message(&mut self) -> Async<Option<Envelope<A>>> {
+    fn next_message(&mut self) -> Poll<Option<Envelope<A>>> {
         // Pop off a message
         loop {
             match unsafe { self.inner.message_queue.pop() } {
                 PopResult::Data(msg) => {
-                    return Async::Ready(Some(msg));
+                    return Poll::Ready(Some(msg));
                 }
                 PopResult::Empty => {
                     // The queue is empty, return NotReady
-                    return Async::NotReady;
+                    return Poll::Pending;
                 }
                 PopResult::Inconsistent => {
                     // Inconsistent means that there will be a message to pop
@@ -747,7 +752,7 @@ impl<A: Actor> AddressReceiver<A> {
     }
 
     // Try to park the receiver task
-    fn try_park(&self) -> TryPark {
+    fn try_park(&self, cx : &mut task::Context<'_>) -> TryPark {
         // First, track the task in the `recv_task` slot
         let mut recv_task = self.inner.recv_task.lock();
 
@@ -757,7 +762,8 @@ impl<A: Actor> AddressReceiver<A> {
             return TryPark::NotEmpty;
         }
 
-        recv_task.task = Some(task::current());
+        // TODO: Fix this
+        self.inner.recv_task.lock().task = Some(cx.waker().clone());
         TryPark::Parked
     }
 
@@ -782,24 +788,25 @@ impl<A: Actor> AddressReceiver<A> {
     }
 }
 
+
 impl<A: Actor> Stream for AddressReceiver<A> {
     type Item = Envelope<A>;
-    type Error = ();
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Option<Self::Item>> {
+        let mut this = unsafe { self.get_unchecked_mut() };
         loop {
             // Try to read a message off of the message queue.
-            let msg = match self.next_message() {
-                Async::Ready(msg) => msg,
-                Async::NotReady => {
+            let msg = match this.next_message() {
+                Poll::Ready(msg) => msg,
+                Poll::Pending => {
                     // There are no messages to read, in this case, attempt to
                     // park. The act of parking will verify that the channel is
                     // still empty after the park operation has completed.
-                    match self.try_park() {
+                    match this.try_park(cx) {
                         TryPark::Parked => {
                             // The task was parked, and the channel is still
                             // empty, return NotReady.
-                            return Ok(Async::NotReady);
+                            return Poll::Pending;
                         }
                         TryPark::NotEmpty => {
                             // A message has been sent while attempting to
@@ -813,16 +820,17 @@ impl<A: Actor> Stream for AddressReceiver<A> {
 
             // If there are any parked task handles in the parked queue, pop
             // one and unpark it.
-            self.unpark_one();
+            this.unpark_one();
 
             // Decrement number of messages
-            self.dec_num_messages();
+            this.dec_num_messages();
 
             // Return the message
-            return Ok(Async::Ready(msg));
+            return Poll::Ready(msg);
         }
     }
 }
+
 
 impl<A: Actor> Drop for AddressReceiver<A> {
     fn drop(&mut self) {

@@ -8,12 +8,13 @@
 //! For more information and examples, see `SyncArbiter`
 use std::marker::PhantomData;
 use std::sync::Arc;
-use std::thread;
+use std::{thread, task};
+use std::future::Future;
+use std::task::Poll;
 
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
-use futures::sync::oneshot::Sender as SyncSender;
-use futures::{Async, Future, Poll, Stream};
+use futures::channel::oneshot::Sender as SyncSender;
 use log::warn;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
@@ -21,6 +22,8 @@ use crate::address::channel;
 use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};
+use std::pin::Pin;
+use futures::StreamExt;
 
 /// SyncArbiter provides the resources for a single Sync Actor to run on a dedicated
 /// thread or threads. This is generally used for CPU bound concurrent workloads. It's
@@ -145,31 +148,57 @@ impl<A> Future for SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
-    type Item = ();
-    type Error = ();
+    type Output = ();
 
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        let mut this = unsafe { self.get_unchecked_mut() };
+        loop {
+            match this.msgs.poll_next_unpin(cx) {
+                Poll::Ready(Some(msg)) => {
+                    if let Some(ref queue) = this.queue {
+                        queue.send(msg).is_ok();
+                    }
+                }
+                Poll::Pending => break,
+                Poll::Ready(None) => unreachable!(),
+            }
+        }
+
+        // stop condition
+        if this.msgs.connected() {
+            Poll::Pending
+        } else {
+            // stop sync arbiters
+            this.queue = None;
+            Poll::Ready(())
+        }
+    }
+
+
+    /*
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         loop {
             match self.msgs.poll() {
-                Ok(Async::Ready(Some(msg))) => {
+                Ok(Poll::Ready(Some(msg))) => {
                     if let Some(ref queue) = self.queue {
                         queue.send(msg).is_ok();
                     }
                 }
-                Ok(Async::NotReady) => break,
-                Ok(Async::Ready(None)) | Err(_) => unreachable!(),
+                Ok(Poll::Pending) => break,
+                Ok(Poll::Ready(None)) | Err(_) => unreachable!(),
             }
         }
 
         // stop condition
         if self.msgs.connected() {
-            Ok(Async::NotReady)
+            Ok(Poll::Pending)
         } else {
             // stop sync arbiters
             self.queue = None;
-            Ok(Async::Ready(()))
+            Ok(Poll::Ready(()))
         }
     }
+    */
 }
 
 impl<A, M> ToEnvelope<A, M> for SyncContext<A>

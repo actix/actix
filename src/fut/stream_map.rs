@@ -1,4 +1,5 @@
-use futures::{Async, Poll};
+use std::future::Future;
+use std::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::ActorStream;
@@ -13,7 +14,7 @@ pub struct StreamMap<S, F> {
     stream: S,
     f: F,
 }
-
+/*
 pub fn new<S, F, U>(stream: S, f: F) -> StreamMap<S, F>
 where
     F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
@@ -28,7 +29,6 @@ where
     F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
 {
     type Item = U;
-    type Error = S::Error;
     type Actor = S::Actor;
 
     fn poll(
@@ -37,15 +37,16 @@ where
         ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<Option<U>, S::Error> {
         match self.stream.poll(act, ctx) {
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Ok(Async::Ready(option)) => {
+            Ok(Poll::Pending) => Ok(Poll::Pending),
+            Ok(Poll::Ready(option)) => {
                 if let Some(item) = option {
-                    Ok(Async::Ready(Some((self.f)(item, act, ctx))))
+                    Ok(Poll::Ready(Some((self.f)(item, act, ctx))))
                 } else {
-                    Ok(Async::Ready(None))
+                    Ok(Poll::Ready(None))
                 }
             }
             Err(e) => Err(e),
         }
     }
 }
+*/

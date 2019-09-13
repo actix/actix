@@ -1,7 +1,9 @@
-use futures::sync::oneshot::Sender as SyncSender;
-use futures::Future;
 use std::fmt;
 use std::sync::Arc;
+use std::future::Future;
+use std::task::Poll;
+
+use futures::channel::oneshot::Sender as SyncSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
@@ -54,11 +56,11 @@ where
 pub struct MessageResult<M: Message>(pub M::Result);
 
 /// A specialized actor future for asynchronous message handling.
-pub type ResponseActFuture<A, I, E> =
-    Box<dyn ActorFuture<Item = I, Error = E, Actor = A>>;
+pub type ResponseActFuture<A, I> =
+    Box<dyn ActorFuture<Item = I, Actor = A>>;
 
 /// A specialized future for asynchronous message handling.
-pub type ResponseFuture<I, E> = Box<dyn Future<Item = I, Error = E>>;
+pub type ResponseFuture<I> = Box<dyn Future<Output = I>>;
 
 /// A trait that defines a message response channel.
 pub trait ResponseChannel<M: Message>: 'static {
@@ -153,23 +155,26 @@ where
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseActFuture<A, I, E>
+impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseActFuture<A, Result<I, E>>
 where
     A: Actor,
     M: Message<Result = Result<I, E>>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.spawn(self.then(move |res, _, _| {
+
+        // TODO: Implement using async await
+        /*ctx.spawn(self.then(move |res, _, _| {
             if let Some(tx) = tx {
                 tx.send(res);
             }
             fut::ok(())
         }));
+        */
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<I, E>
+impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<Result<I, E>>
 where
     A: Actor,
     M::Result: Send,
@@ -177,18 +182,21 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
+        // TODO: Implement using async await
+        /*
         actix_rt::spawn(self.then(move |res| {
             if let Some(tx) = tx {
                 tx.send(res)
             }
             Ok(())
         }));
+        */
     }
 }
 
 enum ResponseTypeItem<I, E> {
     Result(Result<I, E>),
-    Fut(Box<dyn Future<Item = I, Error = E>>),
+    Fut(Box<dyn Future<Output=Result<I, E>>>),
 }
 
 /// Helper type for representing different type of message responses
@@ -211,7 +219,7 @@ impl<I, E> Response<I, E> {
     /// Creates an asynchronous response.
     pub fn fut<T>(fut: T) -> Self
     where
-        T: Future<Item = I, Error = E> + 'static,
+        T: Future<Output=Result<I,E>> + 'static,
     {
         Self {
             item: ResponseTypeItem::Fut(Box::new(fut)),
@@ -233,6 +241,8 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
+        // TODO: Implement using async await
+        /*
         match self.item {
             ResponseTypeItem::Fut(fut) => {
                 actix_rt::spawn(fut.then(move |res| {
@@ -248,12 +258,13 @@ where
                 }
             }
         }
+        */
     }
 }
 
 enum ActorResponseTypeItem<A, I, E> {
     Result(Result<I, E>),
-    Fut(Box<dyn ActorFuture<Item = I, Error = E, Actor = A>>),
+    Fut(Box<dyn ActorFuture<Item = Result<I,E>, Actor = A>>),
 }
 
 /// A helper type for representing different types of message responses.
@@ -285,7 +296,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     /// Creates an asynchronous response.
     pub fn r#async<T>(fut: T) -> Self
     where
-        T: ActorFuture<Item = I, Error = E, Actor = A> + 'static,
+        T: ActorFuture<Item = Result<I,E>, Actor = A> + 'static,
     {
         Self {
             item: ActorResponseTypeItem::Fut(Box::new(fut)),
@@ -300,6 +311,8 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+        // TODO: Implement using async await
+        /*
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
                 ctx.spawn(fut.then(move |res, _, _| {
@@ -315,6 +328,7 @@ where
                 }
             }
         }
+        */
     }
 }
 

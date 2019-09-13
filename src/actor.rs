@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use actix_rt::Arbiter;
-use futures::Stream;
+use futures::{Stream, FutureExt};
 use log::error;
 
 use crate::address::{channel, Addr};
@@ -73,7 +73,7 @@ use crate::utils::{IntervalFunc, TimerFunc};
 /// state, the actor state changes to `Stopped`. This state is
 /// considered final and at this point the actor gets dropped.
 ///
-pub trait Actor: Sized + 'static {
+pub trait Actor: Sized + Unpin + 'static {
     /// Actor execution context type
     type Context: ActorContext;
 
@@ -285,7 +285,7 @@ where
     /// during the actor's stopping stage.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
+        F: ActorFuture<Item = (), Actor = A> + 'static;
 
     /// Spawns a future into the context, waiting for it to resolve.
     ///
@@ -293,7 +293,7 @@ where
     /// resolves.
     fn wait<F>(&mut self, fut: F)
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static;
+        F: ActorFuture<Item = (), Actor = A> + 'static;
 
     /// Checks if the context is paused (waiting for future completion or stopping).
     fn waiting(&self) -> bool;
@@ -344,14 +344,17 @@ where
     /// #    sys.run();
     /// # }
     /// ```
+    /*
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
     where
         S: Stream + 'static,
-        A: StreamHandler<S::Item, S::Error>,
+        A: StreamHandler<S::Item>,
     {
         <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
     }
+    */
 
+    /*
     /// Registers a stream with the context, ignoring errors.
     ///
     /// This method is similar to `add_stream` but it skips stream
@@ -391,7 +394,7 @@ where
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
     where
-        S: Stream<Error = ()> + 'static,
+        S: Stream<Item = ()> + 'static,
         S::Item: Message,
         A: Handler<S::Item>,
     {
@@ -401,6 +404,7 @@ where
             self.spawn(ActorMessageStreamItem::new(fut));
         }
     }
+    */
 
     /// Sends the message `msg` to self. This bypasses the mailbox capacity, and
     /// will always queue the message. If the actor is in the `stopped` state, an
@@ -416,7 +420,7 @@ where
             self.spawn(ActorMessageItem::new(msg));
         }
     }
-
+    /*
     /// Sends the message `msg` to self after a specified period of time.
     ///
     /// Returns a spawn handle which can be used for cancellation. The
@@ -457,6 +461,7 @@ where
     {
         self.spawn(IntervalFunc::new(dur, f).finish())
     }
+    */
 }
 
 /// A handle to a spawned future.

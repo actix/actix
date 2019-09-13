@@ -26,10 +26,10 @@ path = "src/lib.rs"
 members = ["examples/chat"]
 
 [features]
-default = ["resolver", "http"]
+default = []
 
 # dns resolver
-resolver = ["trust-dns-resolver", "tokio-tcp"]
+resolver = ["trust-dns-resolver", "tokio-net"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
@@ -38,28 +38,29 @@ mailbox_assert = []
 http = ["actix-http"]
 
 [dependencies]
-actix-rt = "0.2.2"
+actix-rt = "0.2.5"
 actix_derive = "0.4"
 bytes = "0.4"
 crossbeam-channel = "0.3"
 derive_more = "0.14.0"
-futures = "0.1.25"
+futures =  { package = "futures-preview", version  = "0.3.0-alpha.18" }
 log = "0.4"
 lazy_static = "1.2"
 bitflags = "1.0"
 smallvec = "0.6"
 parking_lot = "0.9"
-tokio-io = "0.1"
-tokio-codec = "0.1"
-tokio-executor = "0.1"
-tokio-tcp = { version = "0.1", optional = true }
-tokio-timer = "0.2.8"
+
+tokio-io = "0.2.0-alpha.4"
+tokio-codec = "0.2.0-alpha.4"
+tokio-executor = "0.2.0-alpha.4"
+tokio-net = { version = "0.2.0-alpha.4", optional = true }
+tokio-timer = "0.3.0-alpha.4"
 
 # actix-http support
 actix-http = { version = "0.2.0", optional = true }
 
 # dns resolver
-trust-dns-resolver = { version = "0.11.0", optional = true, default-features = false }
+trust-dns-resolver = { version = "", optional = true, default-features = false }
 
 [dev-dependencies]
 doc-comment = "0.3"
@@ -68,3 +69,11 @@ doc-comment = "0.3"
 lto = true
 opt-level = 3
 codegen-units = 1
+
+
+[patch.crates-io]
+actix-codec = { path = "../actix-net/actix-codec" }
+actix-connect = { path = "../actix-net/actix-connect" }
+actix-rt = { path = "../actix-net/actix-rt" }
+actix-service = { path = "../actix-net/actix-service" }
+actix-threadpool = { path = "../actix-net/actix-threadpool" }

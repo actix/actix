@@ -1,4 +1,8 @@
-use futures::{Async, Future, Poll, Stream};
+use std::future::Future;
+use std::task::Poll;
+use futures::Stream;
+use std::pin::Pin;
+use std::task;
 
 /// Helper trait that adds the helper method `finish()` to stream objects.
 #[doc(hidden)]
@@ -27,22 +31,28 @@ impl<S> Finish<S> {
         Finish(s)
     }
 }
-
+/*
 impl<S> Future for Finish<S>
 where
     S: Stream,
 {
-    type Item = ();
-    type Error = S::Error;
+    type Output = Result<(),S::Error>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        unimplemented!()
+    }
+
+
 
     fn poll(&mut self) -> Poll<(), S::Error> {
         loop {
             match self.0.poll() {
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Ok(Async::Ready(None)) => return Ok(Async::Ready(())),
-                Ok(Async::Ready(Some(_))) => (),
+                Ok(Poll::Pending) => return Ok(Poll::Pending),
+                Ok(Poll::Ready(None)) => return Ok(Poll::Ready(())),
+                Ok(Poll::Ready(Some(_))) => (),
                 Err(err) => return Err(err),
             };
         }
     }
 }
+*/

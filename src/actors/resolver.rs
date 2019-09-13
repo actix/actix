@@ -42,11 +42,13 @@ use std::collections::VecDeque;
 use std::io;
 use std::net::SocketAddr;
 use std::time::Duration;
+use std::future::Future;
+use std::task::Poll;
 
 use derive_more::Display;
-use futures::{Async, Future, Poll};
 use log::warn;
-use tokio_tcp::{ConnectFuture, TcpStream};
+use tokio_net::tcp::TcpStream;
+
 use tokio_timer::Delay;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::AsyncResolver;
@@ -176,7 +178,7 @@ impl Resolver {
         parts: (AsyncResolver, F),
     ) -> AsyncResolver
     where
-        F: 'static + Future<Item = (), Error = ()>,
+        F: 'static + Future<Output = ()>,
     {
         ctx.spawn(wrap_future::<_, Self>(parts.1));
         parts.0
@@ -230,7 +232,7 @@ impl Default for Resolver {
 }
 
 impl Handler<Resolve> for Resolver {
-    type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ResolverError>;
+    type Result = ResponseActFuture<Self, Result<VecDeque<SocketAddr>, ResolverError>>;
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
         if let Some(ref err) = self.err {
@@ -246,10 +248,12 @@ impl Handler<Resolve> for Resolver {
 }
 
 impl Handler<Connect> for Resolver {
-    type Result = ResponseActFuture<Self, TcpStream, ResolverError>;
+    type Result = ResponseActFuture<Self, Result<TcpStream, ResolverError>>;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         let timeout = msg.timeout;
+        unimplemented!()
+        /*
         Box::new(
             ResolveFut::new(
                 msg.name,
@@ -258,11 +262,12 @@ impl Handler<Connect> for Resolver {
             )
             .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
         )
+        */
     }
 }
 
 impl Handler<ConnectAddr> for Resolver {
-    type Result = ResponseActFuture<Self, TcpStream, ResolverError>;
+    type Result = ResponseActFuture<Self, Result<TcpStream, ResolverError>>;
 
     fn handle(&mut self, msg: ConnectAddr, _: &mut Self::Context) -> Self::Result {
         let mut v = VecDeque::new();
@@ -348,27 +353,26 @@ impl ResolveFut {
         Ok((host, port))
     }
 }
-
+/*
 impl ActorFuture for ResolveFut {
-    type Item = VecDeque<SocketAddr>;
-    type Error = ResolverError;
+    type Item = Result<VecDeque<SocketAddr>,ResolverError>;
     type Actor = Resolver;
 
     fn poll(
         &mut self,
         _: &mut Resolver,
         _: &mut Context<Resolver>,
-    ) -> Poll<Self::Item, Self::Error> {
+    ) -> Poll<Self::Item> {
         if let Some(err) = self.error.take() {
             Err(err)
         } else if let Some(err) = self.error2.take() {
             Err(ResolverError::Resolver(err))
         } else if let Some(addrs) = self.addrs.take() {
-            Ok(Async::Ready(addrs))
+            Ok(Poll::Ready(addrs))
         } else {
             match self.lookup.as_mut().unwrap().poll() {
-                Ok(Async::NotReady) => Ok(Async::NotReady),
-                Ok(Async::Ready(ips)) => {
+                Ok(Poll::Pending) => Ok(Poll::Pending),
+                Ok(Poll::Ready(ips)) => {
                     let addrs: VecDeque<_> = ips
                         .iter()
                         .map(|ip| SocketAddr::new(ip, self.port))
@@ -378,7 +382,7 @@ impl ActorFuture for ResolveFut {
                             "Expect at least one A dns record".to_owned(),
                         ))
                     } else {
-                        Ok(Async::Ready(addrs))
+                        Ok(Poll::Ready(addrs))
                     }
                 }
                 Err(err) => Err(ResolverError::Resolver(format!("{}", err))),
@@ -386,12 +390,13 @@ impl ActorFuture for ResolveFut {
         }
     }
 }
+*/
 
 /// A TCP stream connector.
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
     timeout: Delay,
-    stream: Option<ConnectFuture>,
+    stream: Option<Box<dyn Future<Output=Result<TcpStream,io::Error>>>>,
 }
 
 impl TcpConnector {
@@ -403,23 +408,22 @@ impl TcpConnector {
         TcpConnector {
             addrs,
             stream: None,
-            timeout: Delay::new(clock::now() + timeout),
+            timeout: tokio_timer::delay(clock::now() + timeout),
         }
     }
 }
-
+/*
 impl ActorFuture for TcpConnector {
-    type Item = TcpStream;
-    type Error = ResolverError;
+    type Item = Result<TcpStream, ResolverError>;
     type Actor = Resolver;
 
     fn poll(
         &mut self,
         _: &mut Resolver,
         _: &mut Context<Resolver>,
-    ) -> Poll<Self::Item, Self::Error> {
+    ) -> Poll<Self::Item> {
         // timeout
-        if let Ok(Async::Ready(_)) = self.timeout.poll() {
+        if let Ok(Poll::Ready(_)) = self.timeout.poll() {
             return Err(ResolverError::Timeout);
         }
 
@@ -427,8 +431,8 @@ impl ActorFuture for TcpConnector {
         loop {
             if let Some(new) = self.stream.as_mut() {
                 match new.poll() {
-                    Ok(Async::Ready(sock)) => return Ok(Async::Ready(sock)),
-                    Ok(Async::NotReady) => return Ok(Async::NotReady),
+                    Ok(Poll::Ready(sock)) => return Ok(Poll::Ready(sock)),
+                    Ok(Poll::Pending) => return Ok(Poll::Pending),
                     Err(err) => {
                         if self.addrs.is_empty() {
                             return Err(ResolverError::IoError(err));
@@ -443,3 +447,4 @@ impl ActorFuture for TcpConnector {
         }
     }
 }
+*/

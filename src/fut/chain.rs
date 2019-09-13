@@ -1,4 +1,6 @@
-use futures::{Async, Poll};
+use std::future::Future;
+use std::task::Poll;
+
 use std::mem;
 
 use crate::actor::Actor;
@@ -13,7 +15,7 @@ where
     Second(B),
     Done,
 }
-
+/*
 impl<A, B, C> Chain<A, B, C>
 where
     A: ActorFuture,
@@ -39,8 +41,8 @@ where
     {
         let a_result = match *self {
             Chain::First(ref mut a, _) => match a.poll(srv, ctx) {
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Ok(Async::Ready(t)) => Ok(t),
+                Ok(Poll::Pending) => return Ok(Poll::Pending),
+                Ok(Poll::Ready(t)) => Ok(t),
                 Err(e) => Err(e),
             },
             Chain::Second(ref mut b) => return b.poll(srv, ctx),
@@ -51,7 +53,7 @@ where
             _ => panic!(),
         };
         match f(a_result, data, srv, ctx)? {
-            Ok(e) => Ok(Async::Ready(e)),
+            Ok(e) => Ok(Poll::Ready(e)),
             Err(mut b) => {
                 let ret = b.poll(srv, ctx);
                 *self = Chain::Second(b);
@@ -60,3 +62,4 @@ where
         }
     }
 }
+*/

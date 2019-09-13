@@ -22,6 +22,7 @@ mod stream_timeout;
 mod then;
 mod timeout;
 
+
 pub use self::and_then::AndThen;
 pub use self::either::Either;
 pub use self::from_err::FromErr;
@@ -40,6 +41,8 @@ pub use self::then::Then;
 pub use self::timeout::Timeout;
 
 use crate::actor::Actor;
+use std::task;
+use std::pin::Pin;
 
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.
@@ -131,10 +134,6 @@ pub trait ActorFuture {
     /// successful.
     type Item;
 
-    /// The type of error that this future will resolve with if it fails in a
-    /// normal fashion.
-    type Error;
-
     /// The actor within which this future runs
     type Actor: Actor;
 
@@ -142,8 +141,10 @@ pub trait ActorFuture {
         &mut self,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Self::Item, Self::Error>;
+        task : &mut task::Context<'_>
+    ) -> Poll<Self::Item>;
 
+    /*
     /// Map this future's result to a different type, returning a new future of
     /// the resulting type.
     fn map<F, U>(self, f: F) -> Map<Self, F>
@@ -226,6 +227,7 @@ pub trait ActorFuture {
     {
         timeout::new(self, timeout, err)
     }
+    */
 }
 
 /// A stream of values, not all of which may have been produced yet.
@@ -235,9 +237,6 @@ pub trait ActorStream {
     /// The type of item this stream will yield on success.
     type Item;
 
-    /// The type of error this stream may generate.
-    type Error;
-
     /// The actor within which this stream runs.
     type Actor: Actor;
 
@@ -245,8 +244,8 @@ pub trait ActorStream {
         &mut self,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Option<Self::Item>, Self::Error>;
-
+    ) -> Poll<Option<Self::Item>>;
+    /*
     /// Converts a stream of type `T` to a stream of type `U`.
     fn map<U, F>(self, f: F) -> StreamMap<Self, F>
     where
@@ -338,6 +337,7 @@ pub trait ActorStream {
     {
         stream_finish::new(self)
     }
+    */
 }
 
 /// Class of types which can be converted into an actor future.
@@ -347,12 +347,10 @@ pub trait ActorStream {
 pub trait IntoActorFuture {
     /// The future that this type can be converted into.
     #[rustfmt::skip]
-    type Future: ActorFuture<Item=Self::Item, Error=Self::Error, Actor=Self::Actor>;
+    type Future: ActorFuture<Item=Self::Item, Actor=Self::Actor>;
 
     /// The item that the future may resolve with.
     type Item;
-    /// The error that the future may resolve with.
-    type Error;
     /// The actor within which this future runs
     type Actor: Actor;
 
@@ -363,7 +361,6 @@ pub trait IntoActorFuture {
 impl<F: ActorFuture> IntoActorFuture for F {
     type Future = F;
     type Item = F::Item;
-    type Error = F::Error;
     type Actor = F::Actor;
 
     fn into_future(self) -> F {
@@ -373,15 +370,15 @@ impl<F: ActorFuture> IntoActorFuture for F {
 
 impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
     type Item = F::Item;
-    type Error = F::Error;
     type Actor = F::Actor;
 
     fn poll(
         &mut self,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Self::Item, Self::Error> {
-        (**self).poll(srv, ctx)
+        task : &mut task::Context<'_>,
+    ) -> Poll<Self::Item> {
+        (**self).poll(srv, ctx, task)
     }
 }
 
@@ -391,12 +388,10 @@ where
     A: Actor,
 {
     /// The future that this type can be converted into.
-    type Future: ActorFuture<Item = Self::Item, Error = Self::Error, Actor = A>;
+    type Future: ActorFuture<Item = Self::Item, Actor = A>;
 
     /// The item that the future may resolve with.
     type Item;
-    /// The error that the future may resolve with.
-    type Error;
 
     #[doc(hidden)]
     fn actfuture(self) -> Self::Future;
@@ -407,8 +402,7 @@ where
 
 impl<F: Future, A: Actor> WrapFuture<A> for F {
     type Future = FutureWrap<F, A>;
-    type Item = F::Item;
-    type Error = F::Error;
+    type Item = F::Output;
 
     #[doc(hidden)]
     fn actfuture(self) -> Self::Future {
@@ -448,16 +442,16 @@ where
     F: Future,
     A: Actor,
 {
-    type Item = F::Item;
-    type Error = F::Error;
+    type Item = F::Output;
     type Actor = A;
 
     fn poll(
         &mut self,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Self::Item, Self::Error> {
-        self.fut.poll()
+        task : &mut task::Context<'_>
+    ) -> Poll<Self::Item> {
+        unsafe {Pin::new_unchecked(&mut self.fut) }.poll(task)
     }
 }
 
@@ -467,12 +461,10 @@ where
     A: Actor,
 {
     /// The stream that this type can be converted into.
-    type Stream: ActorStream<Item = Self::Item, Error = Self::Error, Actor = A>;
+    type Stream: ActorStream<Item = Self::Item, Actor = A>;
 
     /// The item that the future may resolve with.
     type Item;
-    /// The error that the future may resolve with.
-    type Error;
 
     #[doc(hidden)]
     fn actstream(self) -> Self::Stream;
@@ -481,6 +473,7 @@ where
     fn into_actor(self, a: &A) -> Self::Stream;
 }
 
+/*
 impl<S: Stream, A: Actor> WrapStream<A> for S {
     type Stream = StreamWrap<S, A>;
     type Item = S::Item;
@@ -503,7 +496,6 @@ where
     st: S,
     act: PhantomData<A>,
 }
-
 /// Converts normal stream into `ActorStream`
 pub fn wrap_stream<S, A>(s: S) -> StreamWrap<S, A>
 where
@@ -532,3 +524,4 @@ where
         self.st.poll()
     }
 }
+*/

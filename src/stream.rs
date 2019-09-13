@@ -1,6 +1,8 @@
-use futures::{Async, Poll, Stream};
 use log::error;
 use std::marker::PhantomData;
+use std::future::Future;
+use std::task::Poll;
+use futures::Stream;
 
 use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle,
@@ -18,7 +20,7 @@ use crate::fut::ActorFuture;
 /// When stream completes, `finished()` method get called. By default
 /// `finished()` method stops actor execution.
 #[allow(unused_variables)]
-pub trait StreamHandler<I, E>
+pub trait StreamHandler<I>
 where
     Self: Actor,
 {
@@ -28,15 +30,6 @@ where
     /// Method is called when stream get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
 
-    /// Method is called when stream emits error.
-    ///
-    /// If this method returns `ErrorAction::Continue` stream processing
-    /// continues otherwise stream processing stops. Default method
-    /// implementation returns `ErrorAction::Stop`
-    fn error(&mut self, err: E, ctx: &mut Self::Context) -> Running {
-        Running::Stop
-    }
-
     /// Method is called when stream finishes.
     ///
     /// By default this method stops actor execution.
@@ -44,6 +37,7 @@ where
         ctx.stop()
     }
 
+    /*
     /// This method register stream to an actor context and
     /// allows to handle `Stream` in similar way as normal actor messages.
     ///
@@ -83,12 +77,12 @@ where
     /// #    sys.run();
     /// # }
     /// ```
+
     fn add_stream<S>(fut: S, ctx: &mut Self::Context) -> SpawnHandle
     where
         Self::Context: AsyncContext<Self>,
-        S: Stream<Item = I, Error = E> + 'static,
+        S: Stream<Item = I> + 'static,
         I: 'static,
-        E: 'static,
     {
         if ctx.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
@@ -97,6 +91,7 @@ where
             ctx.spawn(ActorStream::new(fut))
         }
     }
+    */
 }
 
 pub(crate) struct ActorStream<A, M, E, S> {
@@ -118,15 +113,14 @@ impl<A, M, E, S> ActorStream<A, M, E, S> {
         }
     }
 }
-
+/*
 impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
 where
-    S: Stream<Item = M, Error = E>,
+    S: Stream<Item = Result<M,E>>,
     A: Actor + StreamHandler<M, E>,
     A::Context: AsyncContext<A>,
 {
     type Item = ();
-    type Error = ();
     type Actor = A;
 
     fn poll(
@@ -141,24 +135,25 @@ where
 
         loop {
             match self.stream.poll() {
-                Ok(Async::Ready(Some(msg))) => {
+                Ok(Poll::Ready(Some(msg))) => {
                     A::handle(act, msg, ctx);
                     if ctx.waiting() {
-                        return Ok(Async::NotReady);
+                        return Ok(Poll::Pending);
                     }
                 }
                 Err(err) => {
                     if A::error(act, err, ctx) == Running::Stop {
                         A::finished(act, ctx);
-                        return Ok(Async::Ready(()));
+                        return Ok(Poll::Ready(()));
                     }
                 }
-                Ok(Async::Ready(None)) => {
+                Ok(Poll::Ready(None)) => {
                     A::finished(act, ctx);
-                    return Ok(Async::Ready(()));
+                    return Ok(Poll::Ready(()));
                 }
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
+                Ok(Poll::Pending) => return Ok(Poll::Pending),
             }
         }
     }
 }
+*/

@@ -13,6 +13,7 @@ pub enum Either<A, B> {
     B(B),
 }
 
+/*
 impl<T, A, B> Either<(T, A), (T, B)> {
     /// Splits out the homogeneous type from an either of tuples.
     ///
@@ -32,7 +33,6 @@ where
     B: ActorFuture<Item = A::Item, Error = A::Error, Actor = A::Actor>,
 {
     type Item = A::Item;
-    type Error = A::Error;
     type Actor = A::Actor;
 
     fn poll(
@@ -46,3 +46,4 @@ where
         }
     }
 }
+*/

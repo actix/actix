@@ -1,4 +1,5 @@
-use futures::{Async, Poll};
+use std::future::Future;
+use std::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream};
@@ -10,7 +11,7 @@ use crate::fut::{ActorFuture, ActorStream};
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
 pub struct StreamFinish<S>(S);
-
+/*
 pub fn new<S>(s: S) -> StreamFinish<S>
 where
     S: ActorStream,
@@ -23,7 +24,6 @@ where
     S: ActorStream,
 {
     type Item = ();
-    type Error = S::Error;
     type Actor = S::Actor;
 
     fn poll(
@@ -33,11 +33,12 @@ where
     ) -> Poll<(), S::Error> {
         loop {
             match self.0.poll(act, ctx) {
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Ok(Async::Ready(None)) => return Ok(Async::Ready(())),
-                Ok(Async::Ready(Some(_))) => (),
+                Ok(Poll::Pending) => return Ok(Poll::Pending),
+                Ok(Poll::Ready(None)) => return Ok(Poll::Ready(())),
+                Ok(Poll::Ready(Some(_))) => (),
                 Err(err) => return Err(err),
             };
         }
     }
 }
+*/
