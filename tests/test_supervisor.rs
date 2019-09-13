@@ -55,12 +55,11 @@ fn test_supervisor_restart() {
         addr.do_send(Die);
         *addr2.lock().unwrap() = Some(addr);
 
-        actix::spawn(Delay::new(Instant::now() + Duration::new(0, 100_000)).then(
-            |_| {
-                System::current().stop();
-                future::result(Ok(()))
-            },
-        ));
+
+        actix_rt::spawn(async {
+            tokio_timer::delay(Instant::now() + Duration::new(0, 100_000)).await;
+            System::current().stop()
+        });
     })
     .unwrap();
 

@@ -341,8 +341,7 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        unimplemented!()
-      /*  let mut this = unsafe { self.get_unchecked_mut() };
+        let this = unsafe { self.get_unchecked_mut() };
 
         if !this.ctx.parts().flags.contains(ContextFlags::STARTED) {
             this.ctx.parts().flags.insert(ContextFlags::STARTED);
@@ -361,7 +360,7 @@ where
             while !this.wait.is_empty() && !this.stopping() {
                 let idx = this.wait.len() - 1;
                 if let Some(item) = this.wait.last_mut() {
-                    match item.poll(&mut this.act, &mut this.ctx) {
+                    match item.poll(&mut this.act, &mut this.ctx, cx) {
                         Poll::Ready(_) => (),
                         Poll::Pending => return Poll::Pending,
                     }
@@ -371,7 +370,7 @@ where
             }
 
             // process mailbox
-            this.mailbox.poll(&mut this.act, &mut this.ctx);
+            this.mailbox.poll(&mut this.act, &mut this.ctx, cx);
             if !this.wait.is_empty() && !this.stopping() {
                 continue;
             }
@@ -380,8 +379,8 @@ where
             let mut idx = 0;
             while idx < this.items.len() && !this.stopping() {
                 this.ctx.parts().handles[1] = this.items[idx].0;
-                match this.items[idx].1.poll(&mut this.act, &mut this.ctx) {
-                    Ok(Poll::Pending) => {
+                match this.items[idx].1.poll(&mut this.act, &mut this.ctx, cx) {
+                    Poll::Pending => {
                         // check cancelled handles
                         if this.ctx.parts().handles.len() > 2 {
                             // this code is not very efficient, relaying on fact that
@@ -407,7 +406,7 @@ where
                             idx += 1;
                         }
                     }
-                    Ok(Poll::Ready(())) | Err(_) => {
+                    Poll::Ready(()) => {
                         this.items.swap_remove(idx);
                         // one of the items scheduled wait future
                         if !this.wait.is_empty() && !this.stopping() {
@@ -439,14 +438,14 @@ where
                     this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
-                    return Ok(Poll::Ready(()));
+                    return Poll::Ready(());
                 }
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
                 if Actor::stopping(&mut this.act, &mut this.ctx) == Running::Stop {
                     this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
-                    return Ok(Poll::Ready(()));
+                    return Poll::Ready(());
                 } else {
                     this.ctx.parts().flags.remove(ContextFlags::STOPPING);
                     this.ctx.parts().flags.insert(ContextFlags::RUNNING);
@@ -454,12 +453,12 @@ where
                 }
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPED) {
                 Actor::stopped(&mut this.act, &mut this.ctx);
-                return Ok(Poll::Ready(()));
+                return Poll::Ready(());
             }
 
-            return Ok(Poll::Pending);
+            return Poll::Pending;
         }
-        */
+
     }
 
     /*

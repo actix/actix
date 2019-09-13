@@ -244,6 +244,7 @@ pub trait ActorStream {
         &mut self,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
+        task: &mut task::Context<'_>
     ) -> Poll<Option<Self::Item>>;
     /*
     /// Converts a stream of type `T` to a stream of type `U`.
@@ -329,6 +330,7 @@ pub trait ActorStream {
     {
         stream_timeout::new(self, timeout, err)
     }
+    */
 
     /// Converts a stream to a future that resolves when stream finishes.
     fn finish(self) -> StreamFinish<Self>
@@ -337,7 +339,6 @@ pub trait ActorStream {
     {
         stream_finish::new(self)
     }
-    */
 }
 
 /// Class of types which can be converted into an actor future.
@@ -473,11 +474,10 @@ where
     fn into_actor(self, a: &A) -> Self::Stream;
 }
 
-/*
+
 impl<S: Stream, A: Actor> WrapStream<A> for S {
     type Stream = StreamWrap<S, A>;
     type Item = S::Item;
-    type Error = S::Error;
 
     #[doc(hidden)]
     fn actstream(self) -> Self::Stream {
@@ -513,15 +513,15 @@ where
     A: Actor,
 {
     type Item = S::Item;
-    type Error = S::Error;
     type Actor = A;
+
 
     fn poll(
         &mut self,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Option<Self::Item>, Self::Error> {
-        self.st.poll()
+        task : &mut task::Context<'_>
+    ) -> Poll<Option<Self::Item>> {
+       unsafe { Pin::new_unchecked(&mut self.st) }.poll_next(task)
     }
 }
-*/

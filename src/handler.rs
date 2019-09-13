@@ -264,7 +264,7 @@ where
 
 enum ActorResponseTypeItem<A, I, E> {
     Result(Result<I, E>),
-    Fut(Box<dyn ActorFuture<Item = Result<I,E>, Actor = A>>),
+    Fut(Box<dyn ActorFuture<Item = Result<I, E>, Actor = A>>),
 }
 
 /// A helper type for representing different types of message responses.

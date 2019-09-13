@@ -176,7 +176,7 @@ where
         if this.rx.is_some() {
             match unsafe { Pin::new_unchecked(&mut this.rx.as_mut().unwrap()) }.poll(cx) {
                 Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
-                Poll::Ready(Err(e)) => Poll::Ready(Err(MailboxError::Closed)),
+                Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
                 Poll::Pending => this.poll_timeout(cx),
             }
         } else {

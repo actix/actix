@@ -52,9 +52,8 @@ fn main() -> std::io::Result<()> {
             addr.do_send(Fibonacci(n));
         }
 
-        spawn(futures::lazy(|| {
+        spawn(async {
             System::current().stop();
-            futures::future::result(Ok(()))
-        }));
+        });
     })
 }

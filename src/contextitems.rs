@@ -11,6 +11,7 @@ use crate::clock;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
 use std::task;
+use std::pin::Pin;
 
 pub(crate) struct ActorWaitItem<A: Actor>(
     Box<dyn ActorFuture<Item = (), Actor = A>>,
@@ -29,20 +30,20 @@ where
     {
         ActorWaitItem(Box::new(fut))
     }
-    /*
-    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) -> Poll<()> {
-        match self.0.poll(act, ctx) {
-            Ok(Poll::Pending) => {
+
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context, task : &mut task::Context<'_>) -> Poll<()> {
+        match self.0.poll(act, ctx, task) {
+            Poll::Pending => {
                 if ctx.state().alive() {
                     Poll::Pending
                 } else {
                     Poll::Ready(())
                 }
             }
-            Ok(Poll::Ready(_)) | Err(_) => Poll::Ready(()),
+            Poll::Ready(_) => Poll::Ready(()),
         }
     }
-    */
+
 }
 
 pub(crate) struct ActorDelayedMessageItem<A, M>
@@ -70,7 +71,7 @@ where
         }
     }
 }
-/*
+
 impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
 where
     A: Actor + Handler<M>,
@@ -84,18 +85,18 @@ where
         &mut self,
         act: &mut A,
         ctx: &mut A::Context,
+        task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
-        match self.timeout.poll() {
-            Ok(Poll::Pending) => Ok(Poll::Pending),
-            Ok(Poll::Ready(_)) => {
+        match unsafe { Pin::new_unchecked(&mut self.timeout) }.poll(task) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(_) => {
                 let fut = A::handle(act, self.msg.take().unwrap(), ctx);
                 fut.handle::<()>(ctx, None);
-                Ok(Poll::Ready(()))
+                Poll::Ready(())
             }
-            Err(_) => unreachable!(),
         }
     }
-}*/
+}
 
 pub(crate) struct ActorMessageItem<A, M>
 where
@@ -163,7 +164,7 @@ where
         }
     }
 }
-/*
+
 impl<A, M: 'static, S> ActorFuture for ActorMessageStreamItem<A, M, S>
 where
     S: Stream<Item = M>,
@@ -178,21 +179,20 @@ where
         &mut self,
         act: &mut A,
         ctx: &mut A::Context,
+        task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
         loop {
-            match self.stream.poll() {
-                Ok(Poll::Ready(Some(msg))) => {
+            match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(task) {
+                Poll::Ready(Some(msg)) => {
                     let fut = Handler::handle(act, msg, ctx);
                     fut.handle::<()>(ctx, None);
                     if ctx.waiting() {
-                        return Ok(Poll::Pending);
+                        return Poll::Pending;
                     }
                 }
-                Ok(Poll::Ready(None)) => return Ok(Poll::Ready(())),
-                Ok(Poll::Pending) => return Ok(Poll::Pending),
-                Err(_) => (),
+                Poll::Ready(None) => return Poll::Ready(()),
+                Poll::Pending => return Poll::Pending,
             }
         }
     }
 }
-*/

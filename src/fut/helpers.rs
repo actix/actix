@@ -31,28 +31,24 @@ impl<S> Finish<S> {
         Finish(s)
     }
 }
-/*
+
 impl<S> Future for Finish<S>
 where
     S: Stream,
 {
-    type Output = Result<(),S::Error>;
+    type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        unimplemented!()
-    }
-
-
-
-    fn poll(&mut self) -> Poll<(), S::Error> {
+        let mut this = unsafe { self.get_unchecked_mut() };
         loop {
-            match self.0.poll() {
-                Ok(Poll::Pending) => return Ok(Poll::Pending),
-                Ok(Poll::Ready(None)) => return Ok(Poll::Ready(())),
-                Ok(Poll::Ready(Some(_))) => (),
-                Err(err) => return Err(err),
+            match unsafe { Pin::new_unchecked(&mut this.0) }.poll_next(cx) {
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(None) => return Poll::Ready(()),
+                Poll::Ready(Some(_)) => (),
             };
         }
     }
+
+
+
 }
-*/

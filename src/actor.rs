@@ -344,17 +344,16 @@ where
     /// #    sys.run();
     /// # }
     /// ```
-    /*
+
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
     where
         S: Stream + 'static,
         A: StreamHandler<S::Item>,
     {
-        <A as StreamHandler<S::Item, S::Error>>::add_stream(fut, self)
+        <A as StreamHandler<S::Item>>::add_stream(fut, self)
     }
-    */
 
-    /*
+
     /// Registers a stream with the context, ignoring errors.
     ///
     /// This method is similar to `add_stream` but it skips stream
@@ -394,7 +393,7 @@ where
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
     where
-        S: Stream<Item = ()> + 'static,
+        S: Stream + 'static,
         S::Item: Message,
         A: Handler<S::Item>,
     {
@@ -404,7 +403,6 @@ where
             self.spawn(ActorMessageStreamItem::new(fut));
         }
     }
-    */
 
     /// Sends the message `msg` to self. This bypasses the mailbox capacity, and
     /// will always queue the message. If the actor is in the `stopped` state, an
@@ -420,7 +418,7 @@ where
             self.spawn(ActorMessageItem::new(msg));
         }
     }
-    /*
+
     /// Sends the message `msg` to self after a specified period of time.
     ///
     /// Returns a spawn handle which can be used for cancellation. The
@@ -453,6 +451,7 @@ where
         self.spawn(TimerFunc::new(dur, f))
     }
 
+
     /// Spawns a job to execute the given closure periodically, at a
     /// specified fixed interval.
     fn run_interval<F>(&mut self, dur: Duration, f: F) -> SpawnHandle
@@ -461,7 +460,7 @@ where
     {
         self.spawn(IntervalFunc::new(dur, f).finish())
     }
-    */
+
 }
 
 /// A handle to a spawned future.

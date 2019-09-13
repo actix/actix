@@ -200,7 +200,7 @@ where
 /// This function panics if the actix system is not running.
 pub fn spawn<F>(f: F)
 where
-    F: Future<Output = ()> + Unpin + 'static,
+    F: Future<Output = ()>  + 'static,
 {
     actix_rt::spawn(f);
 }

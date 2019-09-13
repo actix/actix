@@ -25,11 +25,10 @@ fn test_connected() {
     System::run(move || {
         Arbiter::spawn_fn(move || {
             let addr = MyActor::start(MyActor);
-            sleep(Duration::from_millis(350))
-                .map(move |()| {
-                    drop(addr);
-                })
-                .map_err(|_| ())
+            async {
+                sleep(Duration::from_millis(350)).await;
+                drop(addr);
+            }
         });
     })
     .unwrap();

@@ -8,6 +8,8 @@ use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle,
 };
 use crate::fut::ActorFuture;
+use std::task;
+use std::pin::Pin;
 
 /// Stream handler
 ///
@@ -37,7 +39,6 @@ where
         ctx.stop()
     }
 
-    /*
     /// This method register stream to an actor context and
     /// allows to handle `Stream` in similar way as normal actor messages.
     ///
@@ -91,33 +92,30 @@ where
             ctx.spawn(ActorStream::new(fut))
         }
     }
-    */
 }
 
-pub(crate) struct ActorStream<A, M, E, S> {
+pub(crate) struct ActorStream<A, M, S> {
     stream: S,
     started: bool,
     act: PhantomData<A>,
     msg: PhantomData<M>,
-    error: PhantomData<E>,
 }
 
-impl<A, M, E, S> ActorStream<A, M, E, S> {
+impl<A, M, S> ActorStream<A, M, S> {
     pub fn new(fut: S) -> Self {
         Self {
             stream: fut,
             started: false,
             act: PhantomData,
             msg: PhantomData,
-            error: PhantomData,
         }
     }
 }
-/*
-impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
+
+impl<A, M, S> ActorFuture for ActorStream<A, M, S>
 where
-    S: Stream<Item = Result<M,E>>,
-    A: Actor + StreamHandler<M, E>,
+    S: Stream<Item = M>,
+    A: Actor + StreamHandler<M,>,
     A::Context: AsyncContext<A>,
 {
     type Item = ();
@@ -127,33 +125,34 @@ where
         &mut self,
         act: &mut A,
         ctx: &mut A::Context,
-    ) -> Poll<Self::Item, Self::Error> {
+        task : &mut task::Context<'_>
+    ) -> Poll<Self::Item> {
         if !self.started {
             self.started = true;
-            <A as StreamHandler<M, E>>::started(act, ctx);
+            <A as StreamHandler<M>>::started(act, ctx);
         }
 
         loop {
-            match self.stream.poll() {
-                Ok(Poll::Ready(Some(msg))) => {
+            match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(task) {
+                Poll::Ready(Some(msg)) => {
                     A::handle(act, msg, ctx);
                     if ctx.waiting() {
-                        return Ok(Poll::Pending);
+                        return Poll::Pending;
                     }
                 }
-                Err(err) => {
+                Poll::Ready(None) => {
+                    A::finished(act, ctx);
+                    return Poll::Ready(());
+                }
+                /*Err(err) => {
                     if A::error(act, err, ctx) == Running::Stop {
                         A::finished(act, ctx);
                         return Ok(Poll::Ready(()));
                     }
-                }
-                Ok(Poll::Ready(None)) => {
-                    A::finished(act, ctx);
-                    return Ok(Poll::Ready(()));
-                }
-                Ok(Poll::Pending) => return Ok(Poll::Pending),
+                }*/
+
+                Poll::Pending => return Poll::Pending,
             }
         }
     }
 }
-*/

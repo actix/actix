@@ -156,7 +156,7 @@ where
             match this.msgs.poll_next_unpin(cx) {
                 Poll::Ready(Some(msg)) => {
                     if let Some(ref queue) = this.queue {
-                        queue.send(msg).is_ok();
+                        assert!(queue.send(msg).is_ok());
                     }
                 }
                 Poll::Pending => break,
@@ -173,32 +173,6 @@ where
             Poll::Ready(())
         }
     }
-
-
-    /*
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        loop {
-            match self.msgs.poll() {
-                Ok(Poll::Ready(Some(msg))) => {
-                    if let Some(ref queue) = self.queue {
-                        queue.send(msg).is_ok();
-                    }
-                }
-                Ok(Poll::Pending) => break,
-                Ok(Poll::Ready(None)) | Err(_) => unreachable!(),
-            }
-        }
-
-        // stop condition
-        if self.msgs.connected() {
-            Ok(Poll::Pending)
-        } else {
-            // stop sync arbiters
-            self.queue = None;
-            Ok(Poll::Ready(()))
-        }
-    }
-    */
 }
 
 impl<A, M> ToEnvelope<A, M> for SyncContext<A>

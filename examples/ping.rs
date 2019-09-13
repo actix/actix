@@ -38,7 +38,9 @@ fn main() -> std::io::Result<()> {
         // send message and get future for result
         let res = addr.send(Ping(10));
 
+        // TODO: implement using async await
         // handle() returns tokio handle
+        /*
         spawn(
             res.map(|res| {
                 println!("RESULT: {}", res == 20);
@@ -48,5 +50,6 @@ fn main() -> std::io::Result<()> {
             })
             .map_err(|_| ()),
         );
+        */
     })
 }

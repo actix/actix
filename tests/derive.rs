@@ -24,15 +24,13 @@ fn response_derive_empty() {
         let addr = EmptyActor.start();
         let res = addr.send(Empty);
 
-        actix::spawn(res.then(|res| {
-            match res {
+        actix::spawn(async {
+            match res.await {
                 Ok(result) => assert!(result == ()),
                 _ => panic!("Something went wrong"),
             }
-
             System::current().stop();
-            future::result(Ok(()))
-        }));
+        });
     })
     .unwrap();
 }
@@ -65,15 +63,14 @@ pub fn derive_result() {
         let addr = SumResultActor.start();
         let res = addr.send(SumResult(10, 5));
 
-        actix::spawn(res.then(|res| {
-            match res {
+        actix::spawn(async {
+            match res.await {
                 Ok(result) => assert!(result == Ok(10 + 5)),
                 _ => panic!("Something went wrong"),
             }
 
             System::current().stop();
-            future::result(Ok(()))
-        }));
+        });
     })
     .unwrap();
 }
@@ -102,15 +99,14 @@ pub fn response_derive_one() {
         let addr = SumOneActor.start();
         let res = addr.send(SumOne(10, 5));
 
-        actix::spawn(res.then(|res| {
-            match res {
+        actix::spawn(async {
+            match res.await {
                 Ok(result) => assert!(result == 10 + 5),
                 _ => panic!("Something went wrong"),
             }
 
             System::current().stop();
-            future::result(Ok(()))
-        }));
+        });
     })
     .unwrap();
 }
@@ -142,15 +138,14 @@ pub fn derive_response_one() {
         let addr = MulOneActor.start();
         let res = addr.send(MulOne(10, 5));
 
-        actix::spawn(res.then(|res| {
-            match res {
+        actix::spawn(async {
+            match res.await {
                 Ok(result) => assert!(result == MulRes(10 * 5)),
                 _ => panic!("Something went wrong"),
             }
 
             System::current().stop();
-            future::result(Ok(()))
-        }));
+        });
     })
     .unwrap();
 }
@@ -186,15 +181,14 @@ pub fn derive_response_two() {
         let addr = MulAnyOneActor.start();
         let res = addr.send(MulAnyOne(10, 5));
 
-        actix::spawn(res.then(|res| {
-            match res {
+        actix::spawn(async {
+            match res.await {
                 Ok(result) => assert!(result == MulAny(10 * 5)),
                 _ => panic!("Something went wrong"),
             }
 
             System::current().stop();
-            future::result(Ok(()))
-        }));
+        });
     })
     .unwrap();
 }

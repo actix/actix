@@ -26,15 +26,16 @@ impl Actor for MyActor {
     }
 }
 
-impl StreamHandler<Num, ()> for MyActor {
+impl StreamHandler<Num> for MyActor {
     fn handle(&mut self, msg: Num, _: &mut Context<MyActor>) {
         self.0.fetch_add(msg.0, Ordering::Relaxed);
     }
-
+    /*
     fn error(&mut self, _: (), _: &mut Context<MyActor>) -> Running {
         self.0.fetch_add(1, Ordering::Relaxed);
         self.2
     }
+    */
 
     fn finished(&mut self, _: &mut Context<MyActor>) {
         self.1.store(true, Ordering::Relaxed);
@@ -52,7 +53,7 @@ fn test_stream() {
 
     System::run(move || {
         MyActor::create(move |ctx| {
-            MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
+            //MyActor::add_stream(futures::stream::iter_ok::<_, ()>(items), ctx);
             MyActor(act_count, act_err, Running::Stop)
         });
     })
@@ -82,7 +83,7 @@ fn test_stream_with_error() {
 
     System::run(move || {
         MyActor::create(move |ctx| {
-            MyActor::add_stream(futures::stream::iter_result(items), ctx);
+            //MyActor::add_stream(futures::stream::iter_result(items), ctx);
             MyActor(act_count, act_error, Running::Stop)
         });
     })
@@ -112,7 +113,7 @@ fn test_stream_with_error_no_stop() {
 
     System::run(move || {
         MyActor::create(move |ctx| {
-            MyActor::add_stream(futures::stream::iter_result(items), ctx);
+            //MyActor::add_stream(futures::stream::iter_result(items), ctx);
             MyActor(act_count, act_error, Running::Continue)
         });
     })
@@ -177,12 +178,11 @@ fn test_restart_sync_actor() {
         });
         addr.do_send(Num(2));
 
-        actix_rt::spawn(addr.send(Num(4)).then(move |_| {
-            Delay::new(Instant::now() + Duration::new(0, 1_000_000)).then(move |_| {
-                System::current().stop();
-                future::result(Ok(()))
-            })
-        }));
+        actix_rt::spawn(async move {
+            addr.send(Num(4)).await;
+            tokio_timer::delay(Instant::now() + Duration::new(0, 1_000_000)).await;
+            System::current().stop();
+        });
     })
     .unwrap();
     assert_eq!(started.load(Ordering::Relaxed), 2);

@@ -363,15 +363,31 @@ mod tests {
                 ctx.set_mailbox_capacity(1);
                 ActorWithSmallMailBox(count2)
             });
+
+            let fut = async  {
+                let send = addr.clone().send(SetCounter(1));
+                assert!(send.rx_is_some());
+                let addr2 = addr.clone();
+                let send2 = addr2.send(SetCounter(2));
+                assert!(send2.rx_is_some());
+                let send3 = addr2.send(SetCounter(3));
+                assert!(!send3.rx_is_some());
+
+                let _ = send.await;
+                let _ = send2.await;
+                let _ = send3.await;
+
+                System::current().stop();
+
+                Ok::<(),()>(())
+            };
+
+
+            //Arbiter::spawn(fut);
             //Use clone to make sure that regardless of how many messages
             //are cloned capacity will be taken into account.
-            let send = addr.clone().send(SetCounter(1));
-            assert!(send.rx_is_some());
-            let addr2 = addr.clone();
-            let send2 = addr2.send(SetCounter(2));
-            assert!(send2.rx_is_some());
-            let send3 = addr2.send(SetCounter(3));
-            assert!(!send3.rx_is_some());
+
+            /*
             let send = send
                 .join(send2)
                 .join(send3)
@@ -382,6 +398,7 @@ mod tests {
                     panic!("Message over limit should be delivered, but it is not!");
                 });
             Arbiter::spawn(send);
+            */
         })
         .unwrap();
 

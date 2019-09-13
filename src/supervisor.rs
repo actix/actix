@@ -142,7 +142,7 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        let mut this = unsafe { self.get_unchecked_mut() };
+        let this = unsafe { self.get_unchecked_mut() };
         loop {
             match unsafe { Pin::new_unchecked(&mut this.fut) }.poll(cx) {
                 Poll::Pending => return Poll::Pending,
@@ -154,21 +154,5 @@ where
                 }
             }
         }
-        unimplemented!()
     }
-
-    /*
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        loop {
-            match self.fut.poll() {
-                Ok(Poll::Pending) => return Ok(Poll::Pending),
-                Ok(Poll::Ready(_)) | Err(_) => {
-                    // stop if context's address is not connected
-                    if !self.fut.restart() {
-                        return Ok(Poll::Ready(()));
-                    }
-                }
-            }
-        }
-    }*/
 }

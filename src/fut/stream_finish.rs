@@ -3,6 +3,7 @@ use std::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream};
+use std::task;
 
 /// A combinator used to convert stream into a future, future resolves
 /// when stream completes.
@@ -11,7 +12,8 @@ use crate::fut::{ActorFuture, ActorStream};
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
 pub struct StreamFinish<S>(S);
-/*
+
+
 pub fn new<S>(s: S) -> StreamFinish<S>
 where
     S: ActorStream,
@@ -30,15 +32,14 @@ where
         &mut self,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
-    ) -> Poll<(), S::Error> {
+        task : &mut task::Context<'_>
+    ) -> Poll<()> {
         loop {
-            match self.0.poll(act, ctx) {
-                Ok(Poll::Pending) => return Ok(Poll::Pending),
-                Ok(Poll::Ready(None)) => return Ok(Poll::Ready(())),
-                Ok(Poll::Ready(Some(_))) => (),
-                Err(err) => return Err(err),
+            match self.0.poll(act, ctx, task) {
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(None) => return Poll::Ready(()),
+                Poll::Ready(Some(_)) => (),
             };
         }
     }
 }
-*/

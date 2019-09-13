@@ -99,7 +99,7 @@ where
         &mut self,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
-        task : &mut task::Context<'_>
+        _ : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
 
         Poll::Ready(self.inner

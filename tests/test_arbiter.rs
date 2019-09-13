@@ -41,10 +41,10 @@ fn test_start_actor_message() {
     System::run(move || {
         let arbiter = Arbiter::new();
 
-        actix_rt::spawn(arbiter.exec(|| MyActor(act_count).start()).then(|res| {
+        actix_rt::spawn(async move {
+            let res = arbiter.exec(|| MyActor(act_count).start()).await;
             res.unwrap().do_send(Ping(1));
-            Ok(())
-        }));
+        });
     })
     .unwrap();
 

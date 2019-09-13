@@ -8,6 +8,8 @@ use tokio_timer::{Delay, Interval};
 use crate::actor::Actor;
 use crate::clock;
 use crate::fut::{ActorFuture, ActorStream};
+use std::task;
+use std::pin::Pin;
 
 pub struct Condition<T>
 where
@@ -114,7 +116,7 @@ impl<A: Actor, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A> for
         (*self)(act, ctx)
     }
 }
-/*
+
 impl<A> ActorFuture for TimerFunc<A>
 where
     A: Actor,
@@ -126,20 +128,20 @@ where
         &mut self,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Self::Item, Self::Error> {
-        match self.timeout.poll() {
-            Ok(Poll::Ready(_)) => {
+        task: &mut task::Context<'_>
+    ) -> Poll<Self::Item> {
+
+        match unsafe { Pin::new_unchecked(&mut self.timeout) }.poll(task) {
+            Poll::Ready(_) => {
                 if let Some(f) = self.f.take() {
                     f.call(act, ctx);
                 }
-                Ok(Poll::Ready(()))
+                Poll::Ready(())
             }
-            Ok(Poll::Pending) => Ok(Poll::Pending),
-            Err(_) => unreachable!(),
+            Poll::Pending => Poll::Pending,
         }
     }
 }
-*/
 
 /// An `ActorStream` that periodically runs a function in the actor's context.
 ///
@@ -205,28 +207,25 @@ impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> f
         self(act, ctx)
     }
 }
-/*
 
 impl<A: Actor> ActorStream for IntervalFunc<A> {
     type Item = ();
-    type Error = ();
     type Actor = A;
 
     fn poll(
         &mut self,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Option<Self::Item>, Self::Error> {
+        task : &mut task::Context<'_>
+    ) -> Poll<Option<Self::Item>> {
         loop {
-            match self.interval.poll() {
-                Ok(Poll::Ready(_)) => {
+            match unsafe { Pin::new_unchecked(&mut self.interval) }.poll_next(task) {
+                Poll::Ready(_) => {
                     //Interval Stream cannot return None
                     self.f.call(act, ctx);
                 }
-                Ok(Poll::Pending) => return Ok(Poll::Pending),
-                Err(_) => unreachable!(),
+                Poll::Pending => return Poll::Pending,
             }
         }
     }
 }
-*/

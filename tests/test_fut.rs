@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::stream::futures_ordered;
+//use futures::stream::futures_ordered;
 use tokio_timer::Delay;
 
 struct MyActor {
@@ -20,11 +20,19 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        Delay::new(Instant::now() + Duration::new(0, 5_000_000))
+        /*
+        async {
+            tokio_timer::delay(Instant::now() + Duration::new(0, 5_000_000)).await;
+            System::current().stop();
+
+        }.into_actor(self).timeout(Duration::new(0, 100)).wait(ctx)
+        */
+
+            /*
             .then(|_| {
-                System::current().stop();
                 Ok::<_, Error>(())
             })
+
             .into_actor(self)
             .timeout(Duration::new(0, 100), Error::Timeout)
             .map_err(|e, act, _| {
@@ -35,6 +43,7 @@ impl Actor for MyActor {
                 }
             })
             .wait(ctx)
+            */
     }
 }
 
@@ -59,9 +68,10 @@ impl Actor for MyStreamActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        /*
         let s = futures_ordered(vec![
-            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
-            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
+            tokio_timer::delay(Instant::now() + Duration::new(0, 5_000_000)),
+            tokio_timer::delay(Instant::now() + Duration::new(0, 5_000_000)),
         ]);
 
         s.map_err(|_| Error::Generic)
@@ -75,6 +85,7 @@ impl Actor for MyStreamActor {
             })
             .finish()
             .wait(ctx)
+            */
     }
 }
 

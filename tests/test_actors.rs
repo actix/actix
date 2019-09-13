@@ -1,3 +1,5 @@
+#[cfg(feature = "resolver")]
+mod tst {
 use actix::actors::resolver;
 use actix::prelude::*;
 use futures::Future;
@@ -23,4 +25,5 @@ fn test_resolver() {
         });
     })
     .unwrap();
+}
 }
