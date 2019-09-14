@@ -1,6 +1,6 @@
 use log::error;
 use std::marker::PhantomData;
-use std::future::Future;
+
 use std::task::Poll;
 use futures::Stream;
 
@@ -52,7 +52,7 @@ where
     ///
     /// struct MyActor;
     ///
-    /// impl StreamHandler<Ping, io::Error> for MyActor {
+    /// impl StreamHandler<Ping> for MyActor {
     ///
     ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
@@ -69,7 +69,7 @@ where
     ///
     ///    fn started(&mut self, ctx: &mut Context<Self>) {
     ///        // add stream
-    ///        Self::add_stream(once::<Ping, io::Error>(Ok(Ping)), ctx);
+    ///        Self::add_stream(once::<Ping>(Ok(Ping)), ctx);
     ///    }
     /// }
     /// # fn main() {
@@ -144,13 +144,6 @@ where
                     A::finished(act, ctx);
                     return Poll::Ready(());
                 }
-                /*Err(err) => {
-                    if A::error(act, err, ctx) == Running::Stop {
-                        A::finished(act, ctx);
-                        return Ok(Poll::Ready(()));
-                    }
-                }*/
-
                 Poll::Pending => return Poll::Pending,
             }
         }

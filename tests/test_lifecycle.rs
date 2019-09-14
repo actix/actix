@@ -25,21 +25,18 @@ impl Actor for MyActor {
     }
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         self.stopping.store(true, Ordering::Relaxed);
-        // TODO: Figure out context passing with wrapped future chaining
-        /*
+
         if self.restore_after_stop {
             let (tx, rx) = channel();
             self.temp = Some(tx);
             rx.actfuture()
-                .then(|_, _: &mut MyActor, _: &mut _| actix::fut::result(Ok(())))
+                .then(|_, this: &mut MyActor, _: &mut _| async {}.into_actor(this))
                 .spawn(ctx);
+
             Running::Continue
         } else {
             Running::Stop
         }
-        */
-
-        Running::Stop
     }
     fn stopped(&mut self, _: &mut Self::Context) {
         self.stopped.store(true, Ordering::Relaxed);
@@ -247,7 +244,7 @@ fn test_stop() {
     assert!(stopped.load(Ordering::Relaxed), "Not stopped");
 }
 
-//TODO: see actor #[test]
+#[test]
 fn test_stop_restore_after_stopping() {
     let started = Arc::new(AtomicBool::new(false));
     let stopping = Arc::new(AtomicBool::new(false));

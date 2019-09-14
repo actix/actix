@@ -1,10 +1,14 @@
+#![feature(async_closure)]
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use std::pin::Pin;
 
 use actix::prelude::*;
 //use futures::stream::futures_ordered;
 use tokio_timer::Delay;
+use actix::fut::wrap_future;
 
 struct MyActor {
     timeout: Arc<AtomicBool>,
@@ -20,35 +24,27 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        // TODO: ActorFuture combinators not implemented
-        /*
-        async {
+        let a = async {
             tokio_timer::delay(Instant::now() + Duration::new(0, 5_000_000)).await;
             System::current().stop();
+        }.actfuture();
 
-        }.into_actor(self).timeout(Duration::new(0, 100)).wait(ctx)
-        */
+        let b = a
+            .timeout(Duration::new(0, 100), ());
 
-            /*
-            .then(|_| {
-                Ok::<_, Error>(())
-            })
 
-            .into_actor(self)
-            .timeout(Duration::new(0, 100), Error::Timeout)
-            .map_err(|e, act, _| {
-                if e == Error::Timeout {
-                    act.timeout.store(true, Ordering::Relaxed);
-                    System::current().stop();
-                    ()
-                }
-            })
-            .wait(ctx)
-            */
+        let c = b.then(|r, this : &mut Self, ctx| async move  {
+            if let Err(e) = r {
+                this.timeout.store(true, Ordering::Relaxed);
+                System::current().stop();
+            }
+        }.actfuture());
+
+        ctx.wait(c);
     }
 }
 
-//TODO: #[test]
+#[test]
 fn test_fut_timeout() {
     let timeout = Arc::new(AtomicBool::new(false));
     let timeout2 = Arc::clone(&timeout);
@@ -107,13 +103,11 @@ fn test_stream_timeout() {
 #[test]
 fn test_runtime() {
     System::run(||{
-
-
         Arbiter::spawn(async {
             println!("Before");
             let _ = tokio_timer::delay(Instant::now() + Duration::new(0,1_000 )).await;
             println!("after");
             System::current().stop();
         });
-    });
+    }).unwrap();
 }

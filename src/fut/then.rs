@@ -3,6 +3,7 @@ use futures::Poll;
 use crate::actor::Actor;
 use crate::fut::chain::Chain;
 use crate::fut::{ActorFuture, IntoActorFuture};
+use std::task;
 
 /// Future for the `then` combinator, chaining computations on the end of
 /// another future regardless of its outcome.
@@ -17,7 +18,7 @@ where
 {
     state: Chain<A, B::Future, F>,
 }
-/*
+
 pub fn new<A, B, F>(future: A, f: F) -> Then<A, B, F>
 where
     A: ActorFuture,
@@ -33,7 +34,7 @@ where
     A: ActorFuture,
     B: IntoActorFuture<Actor = A::Actor>,
     F: FnOnce(
-        Result<A::Item, A::Error>,
+        A::Item,
         &mut A::Actor,
         &mut <A::Actor as Actor>::Context,
     ) -> B,
@@ -45,10 +46,11 @@ where
         &mut self,
         act: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
-    ) -> Poll<B::Item, B::Error> {
-        self.state.poll(act, ctx, |a, f, act, ctx| {
-            Ok(Err(f(a, act, ctx).into_future()))
+        task : &mut task::Context<'_>
+    ) -> Poll<B::Item> {
+        self.state.poll(act, ctx,task, |item, f, act, ctx| {
+            // This is not an error, just the second variant of the enum
+            Err(f(item, act, ctx).into_future())
         })
     }
 }
-*/

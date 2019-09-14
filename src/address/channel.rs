@@ -5,7 +5,6 @@ use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Weak};
 use std::{thread, usize};
-use std::future::Future;
 use std::task::Poll;
 
 use futures::channel::oneshot::{channel as sync_channel, Receiver};

@@ -188,13 +188,14 @@ pub trait ActorFuture {
     {
         from_err::new(self)
     }
+    */
 
     /// Chain on a computation for when a future finished, passing the result of
     /// the future to the provided closure `f`.
     fn then<F, B>(self, f: F) -> Then<Self, B, F>
     where
         F: FnOnce(
-            Result<Self::Item, Self::Error>,
+            Self::Item,
             &mut Self::Actor,
             &mut <Self::Actor as Actor>::Context,
         ) -> B,
@@ -204,6 +205,7 @@ pub trait ActorFuture {
         then::new(self, f)
     }
 
+    /*
     /// Execute another future after this one has resolved successfully.
     fn and_then<F, B>(self, f: F) -> AndThen<Self, B, F>
     where
@@ -217,17 +219,18 @@ pub trait ActorFuture {
     {
         and_then::new(self, f)
     }
+    */
 
     /// Add timeout to futures chain.
     ///
     /// `err` value get returned as a timeout error.
-    fn timeout(self, timeout: Duration, err: Self::Error) -> Timeout<Self>
+    fn timeout<E>(self, timeout: Duration, err: E) -> Timeout<Self, E>
     where
         Self: Sized,
     {
         timeout::new(self, timeout, err)
     }
-    */
+
 }
 
 /// A stream of values, not all of which may have been produced yet.
@@ -302,7 +305,7 @@ pub trait ActorStream {
     {
         stream_and_then::new(self, f)
     }
-
+ok
     /// Execute an accumulating computation over a stream, collecting all the
     /// values into one final result.
     fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut, T>

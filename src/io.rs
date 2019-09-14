@@ -4,15 +4,17 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::future::Future;
 use std::task::Poll;
+use std::pin::Pin;
 
 use bitflags::bitflags;
 use bytes::BytesMut;
 use futures::sink::Sink;
 use tokio_codec::Encoder;
-use tokio_io:: {AsyncWrite, AsyncWriteExt};
+use tokio_io:: {AsyncWrite};
 
 use crate::actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
 use crate::fut::ActorFuture;
+use std::ops::DerefMut;
 
 /// A helper trait for write handling.
 ///
@@ -83,7 +85,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
         C: AsyncContext<A>,
         T: 'static,
     {
-        let inner = UnsafeWriter(
+        let inner = UnsafeWriter (
             Rc::new(RefCell::new(InnerWriter {
                 flags: Flags::empty(),
                 buffer: BytesMut::new(),
@@ -147,7 +149,7 @@ where
     act: PhantomData<A>,
     inner: UnsafeWriter<T, E>,
 }
-/*
+
 impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
 where
     T: AsyncWrite,
@@ -162,6 +164,7 @@ where
         &mut self,
         act: &mut A,
         ctx: &mut A::Context,
+        task : &mut task::Context<'_>,
     ) -> Poll<Self::Item> {
         let mut inner = self.inner.0.borrow_mut();
         if let Some(err) = inner.error.take() {
@@ -174,7 +177,7 @@ where
         let mut io = self.inner.1.borrow_mut();
         inner.task = None;
         while !inner.buffer.is_empty() {
-            match io.write(&inner.buffer) {
+            match unsafe { Pin::new_unchecked(&mut io) }.poll_write(task,&inner.buffer) {
                 Ok(n) => {
                     if n == 0
                         && act.error(
@@ -210,15 +213,16 @@ where
         }
 
         // Try flushing the underlying IO
-        match io.flush() {
-            Ok(_) => (),
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+        match  unsafe { Pin::new_unchecked(io.deref_mut()) }.poll_flush(task) {
+            Poll::Ready(Ok(_)) => (),
+            Poll::Pending => return Poll::Pending,
+            Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
                 return Ok(Poll::Pending);
             }
-            Err(e) => {
+            Poll::Ready(Err(e)) => {
                 if act.error(e.into(), ctx) == Running::Stop {
                     act.finished(ctx);
-                    return Ok(Poll::Ready(()));
+                    return Poll::Ready(());
                 }
             }
         }
@@ -227,15 +231,15 @@ where
         if inner.flags.contains(Flags::CLOSING) {
             inner.flags |= Flags::CLOSED;
             act.finished(ctx);
-            Ok(Poll::Ready(()))
+            Poll::Ready(())
         } else {
-            // TODO
-            //inner.task = Some(task::current());
-            Ok(Poll::Pending)
+
+            inner.task = Some(task.waker().clone());
+            Poll::Pending
         }
     }
 }
-*/
+
 
 struct WriterDrain<T, E, A>
 where
@@ -404,8 +408,10 @@ impl<T: AsyncWrite, U: Encoder> Drop for FramedWrite<T, U> {
         let inner = self.inner.0.borrow_mut();
         if !inner.buffer.is_empty() {
             // Results must be ignored during drop, as the errors cannot be handled meaningfully
-            let _ = async_writer.write(&inner.buffer);
-            let _ = async_writer.flush();
+
+            // TODO: Removed because of unpin
+            //let _ = async_writer.write(&inner.buffer);
+            //let _ = async_writer.flush();
         }
     }
 }
@@ -490,6 +496,7 @@ struct SinkWriteFuture<I : 'static , S: Sink<I>, A> {
     inner: Rc<RefCell<InnerSinkWrite<I,S>>>,
     _actor: PhantomData<A>,
 }
+/*
 impl<I : 'static, S, A> ActorFuture for SinkWriteFuture<I, S, A>
 where
     S: Sink<I>,
@@ -541,3 +548,4 @@ where
         Ok(Poll::Pending)
     }
 }
+*/

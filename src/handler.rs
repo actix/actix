@@ -1,14 +1,14 @@
 use std::fmt;
 use std::sync::Arc;
 use std::future::Future;
-use std::task::Poll;
 
 use futures::channel::oneshot::Sender as SyncSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
 use crate::context::Context;
-use crate::fut::{self, ActorFuture};
+use crate::fut::{ActorFuture};
+use crate::WrapFuture;
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -60,7 +60,7 @@ pub type ResponseActFuture<A, I> =
     Box<dyn ActorFuture<Item = I, Actor = A>>;
 
 /// A specialized future for asynchronous message handling.
-pub type ResponseFuture<I> = Box<dyn Future<Output = I>>;
+pub type ResponseFuture<I> = Box<dyn Future<Output = I> + Unpin>;
 
 /// A trait that defines a message response channel.
 pub trait ResponseChannel<M: Message>: 'static {
@@ -162,15 +162,12 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-
-        // TODO: Implement using async await
-        /*ctx.spawn(self.then(move |res, _, _| {
+        ctx.spawn(self.then(move |res, this, _| {
             if let Some(tx) = tx {
                 tx.send(res);
             }
-            fut::ok(())
+            async {}.into_actor(this)
         }));
-        */
     }
 }
 
@@ -181,22 +178,18 @@ where
     M: Message<Result = Result<I, E>>,
     A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        // TODO: Implement using async await
-        /*
-        actix_rt::spawn(self.then(move |res| {
+    fn handle<R: ResponseChannel<M>>(mut self, _: &mut A::Context, tx: Option<R>) {
+        actix_rt::spawn(async move {
             if let Some(tx) = tx {
-                tx.send(res)
+                tx.send(self.await)
             }
-            Ok(())
-        }));
-        */
+        });
     }
 }
 
 enum ResponseTypeItem<I, E> {
     Result(Result<I, E>),
-    Fut(Box<dyn Future<Output=Result<I, E>>>),
+    Fut(Box<dyn Future<Output=Result<I, E>> + Unpin>),
 }
 
 /// Helper type for representing different type of message responses
@@ -219,7 +212,7 @@ impl<I, E> Response<I, E> {
     /// Creates an asynchronous response.
     pub fn fut<T>(fut: T) -> Self
     where
-        T: Future<Output=Result<I,E>> + 'static,
+        T: Future<Output=Result<I,E>> +  Unpin + 'static,
     {
         Self {
             item: ResponseTypeItem::Fut(Box::new(fut)),
@@ -241,16 +234,14 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        // TODO: Implement using async await
-        /*
+
         match self.item {
             ResponseTypeItem::Fut(fut) => {
-                actix_rt::spawn(fut.then(move |res| {
+                actix_rt::spawn(async move {
                     if let Some(tx) = tx {
-                        tx.send(res);
+                        tx.send(fut.await);
                     }
-                    Ok(())
-                }));
+                });
             }
             ResponseTypeItem::Result(res) => {
                 if let Some(tx) = tx {
@@ -258,7 +249,6 @@ where
                 }
             }
         }
-        */
     }
 }
 
@@ -311,24 +301,24 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        // TODO: Implement using async await
-        /*
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
-                ctx.spawn(fut.then(move |res, _, _| {
+                let fut = fut.then(move |res, this, _| {
                     if let Some(tx) = tx {
                         tx.send(res)
                     }
-                    fut::ok(())
-                }));
-            }
+                    // TODO: cleaner solution here
+                    async { }.into_actor(this)
+                });
+
+                ctx.spawn(fut);
+            },
             ActorResponseTypeItem::Result(res) => {
                 if let Some(tx) = tx {
                     tx.send(res);
                 }
             }
         }
-        */
     }
 }
 

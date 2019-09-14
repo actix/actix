@@ -1,4 +1,4 @@
-use futures::{Stream, StreamExt};
+use futures::{StreamExt};
 use std::{fmt, task};
 
 use crate::actor::{Actor, AsyncContext};

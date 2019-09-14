@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use actix_rt::Arbiter;
-use futures::{Stream, FutureExt};
+use futures::{Stream};
 use log::error;
 
 use crate::address::{channel, Addr};
@@ -318,7 +318,7 @@ where
     ///
     /// struct MyActor;
     ///
-    /// impl StreamHandler<Ping, io::Error> for MyActor {
+    /// impl StreamHandler<Ping> for MyActor {
     ///
     ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
