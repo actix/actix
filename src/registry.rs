@@ -273,26 +273,32 @@ impl SystemRegistry {
         }
     }
 
-    /// Return address of the service. If service actor is not running
-    /// it get started in the system.
-    pub fn get<A: SystemService + Actor<Context = Context<A>>>(&mut self) -> Addr<A> {
-        if let Some(addr) = self.registry.get(&TypeId::of::<A>()) {
-            match addr.downcast_ref::<Addr<A>>() {
-                Some(addr) => return addr.clone(),
-                None => panic!("Got unknown value: {:?}", addr),
-            }
-        }
+    // Insert an SystemService Actor into the registry, if it already exists then either ignore the
+    // call or panic depending on the flag
+    fn apply_set<A: SystemService + Actor<Context = Context<A>>>(
+        addr: Addr<A>,
+        should_panic: bool,
+    ) {
+        System::with_current(|sys| {
+            let mut sreg = SREG.lock();
+            let reg = sreg
+                .entry(sys.id())
+                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
 
-        let addr = A::start_service(&self.system);
-        self.registry
-            .insert(TypeId::of::<A>(), Box::new(addr.clone()));
-        addr
+            if reg.query::<A>().is_some() {
+                if should_panic {
+                    panic!("Actor already started");
+                }
+
+                return;
+            }
+
+            reg.registry.insert(TypeId::of::<A>(), Box::new(addr));
+        })
     }
 
-    /// Check if actor is in registry, if so, return its address
-    pub fn query<A: SystemService + Actor<Context = Context<A>>>(
-        &self,
-    ) -> Option<Addr<A>> {
+    // Check if actor is in registry, if so, return its address
+    fn query<A: SystemService + Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
         if let Some(addr) = self.registry.get(&TypeId::of::<A>()) {
             match addr.downcast_ref::<Addr<A>>() {
                 Some(addr) => return Some(addr.clone()),
@@ -305,19 +311,11 @@ impl SystemRegistry {
 
     /// Add new actor to the registry by address, panic if actor is already running
     pub fn set<A: SystemService + Actor<Context = Context<A>>>(addr: Addr<A>) {
-        System::with_current(|sys| {
-            let mut sreg = SREG.lock();
-            let reg = sreg
-                .entry(sys.id())
-                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
+        SystemRegistry::apply_set(addr, true);
+    }
 
-            if let Some(addr) = reg.registry.get(&TypeId::of::<A>()) {
-                if addr.downcast_ref::<Addr<A>>().is_some() {
-                    panic!("Actor already started");
-                }
-            }
-
-            reg.registry.insert(TypeId::of::<A>(), Box::new(addr));
-        })
+    /// Add a new actor to the registry by address only if it is not already present
+    pub fn set_checked<A: SystemService + Actor<Context = Context<A>>>(addr: Addr<A>) {
+        SystemRegistry::apply_set(addr, false);
     }
 }
