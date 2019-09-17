@@ -138,7 +138,7 @@ pub trait ActorFuture {
     type Actor: Actor;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task : &mut task::Context<'_>
@@ -244,7 +244,7 @@ pub trait ActorStream {
     type Actor: Actor;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut task::Context<'_>
@@ -377,12 +377,12 @@ impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
     type Actor = F::Actor;
 
     fn poll(
-        &mut self,
+        mut self : Pin<&mut Self>,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task : &mut task::Context<'_>,
     ) -> Poll<Self::Item> {
-        (**self).poll(srv, ctx, task)
+        unsafe { Pin::new_unchecked(&mut **self.as_mut())}.poll(srv, ctx, task)
     }
 }
 
@@ -418,10 +418,12 @@ impl<F: Future, A: Actor> WrapFuture<A> for F {
     }
 }
 
+#[pin_project]
 pub struct FutureWrap<F, A>
 where
     F: Future,
 {
+    #[pin]
     fut: F,
     act: PhantomData<A>,
 }
@@ -450,12 +452,12 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
-        unsafe {Pin::new_unchecked(&mut self.fut) }.poll(task)
+        self.project_into().fut.poll(task)
     }
 }
 
@@ -491,11 +493,12 @@ impl<S: Stream, A: Actor> WrapStream<A> for S {
         wrap_stream(self)
     }
 }
-
+#[pin_project]
 pub struct StreamWrap<S, A>
 where
     S: Stream,
 {
+    #[pin]
     st: S,
     act: PhantomData<A>,
 }
@@ -520,11 +523,11 @@ where
 
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Option<Self::Item>> {
-       unsafe { Pin::new_unchecked(&mut self.st) }.poll_next(task)
+       self.project_into().st.poll_next(task)
     }
 }

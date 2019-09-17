@@ -4,11 +4,13 @@ use crate::actor::Actor;
 use crate::fut::chain::Chain;
 use crate::fut::{ActorFuture, IntoActorFuture};
 use std::task;
+use std::pin::Pin;
 
 /// Future for the `then` combinator, chaining computations on the end of
 /// another future regardless of its outcome.
 ///
 /// This is created by the `Future::then` method.
+#[pin_project]
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 pub struct Then<A, B, F>
@@ -16,6 +18,7 @@ where
     A: ActorFuture,
     B: IntoActorFuture<Actor = A::Actor>,
 {
+    #[pin]
     state: Chain<A, B::Future, F>,
 }
 
@@ -43,12 +46,12 @@ where
     type Actor = A::Actor;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
         task : &mut task::Context<'_>
     ) -> Poll<B::Item> {
-        self.state.poll(act, ctx,task, |item, f, act, ctx| {
+        self.project_into().state.poll(act, ctx,task, |item, f, act, ctx| {
             // This is not an error, just the second variant of the enum
             Err(f(item, act, ctx).into_future())
         })

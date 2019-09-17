@@ -46,6 +46,9 @@ pub use actix_derive::*;
 #[cfg(test)]
 doc_comment::doctest!("../README.md");
 
+#[macro_use]
+extern crate pin_project;
+
 mod actor;
 mod context;
 mod contextimpl;

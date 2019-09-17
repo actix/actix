@@ -5,7 +5,7 @@ use std::task::Poll;
 use futures::Stream;
 
 use crate::actor::{
-    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle,
+    Actor, ActorContext, ActorState, AsyncContext, SpawnHandle,
 };
 use crate::fut::ActorFuture;
 use std::task;
@@ -69,7 +69,7 @@ where
     ///
     ///    fn started(&mut self, ctx: &mut Context<Self>) {
     ///        // add stream
-    ///        Self::add_stream(once::<Ping>(Ok(Ping)), ctx);
+    ///        Self::add_stream(once(async {Ping}), ctx);
     ///    }
     /// }
     /// # fn main() {
@@ -93,8 +93,9 @@ where
         }
     }
 }
-
+#[pin_project]
 pub(crate) struct ActorStream<A, M, S> {
+    #[pin]
     stream: S,
     started: bool,
     act: PhantomData<A>,
@@ -122,18 +123,21 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
-        if !self.started {
-            self.started = true;
+        let mut this = self.project_into();
+
+        if !*this.started {
+            *this.started = true;
             <A as StreamHandler<M>>::started(act, ctx);
         }
 
+
         loop {
-            match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(task) {
+            match this.stream.as_mut().poll_next(task) {
                 Poll::Ready(Some(msg)) => {
                     A::handle(act, msg, ctx);
                     if ctx.waiting() {

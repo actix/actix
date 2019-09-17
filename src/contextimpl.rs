@@ -362,7 +362,7 @@ where
             while !this.wait.is_empty() && !this.stopping() {
                 let idx = this.wait.len() - 1;
                 if let Some(item) = this.wait.last_mut() {
-                    match item.poll(&mut this.act, &mut this.ctx, cx) {
+                    match Pin::new(item).poll(&mut this.act, &mut this.ctx, cx) {
                         Poll::Ready(_) => (),
                         Poll::Pending => return Poll::Pending,
                     }
@@ -381,7 +381,7 @@ where
             let mut idx = 0;
             while idx < this.items.len() && !this.stopping() {
                 this.ctx.parts().handles[1] = this.items[idx].0;
-                match this.items[idx].1.poll(&mut this.act, &mut this.ctx, cx) {
+                match Pin::new(&mut this.items[idx].1).poll(&mut this.act, &mut this.ctx, cx) {
                     Poll::Pending => {
                         // check cancelled handles
                         if this.ctx.parts().handles.len() > 2 {

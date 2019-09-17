@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 use std::task;
+use std::pin::Pin;
 
 /// A future representing a value that is immediately ready.
 ///
@@ -96,13 +97,13 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
         _ : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
 
-        Poll::Ready(self.inner
+        Poll::Ready(unsafe {self.get_unchecked_mut()}.inner
             .take()
             .expect("cannot poll Result twice")
         )

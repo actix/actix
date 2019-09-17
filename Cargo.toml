@@ -50,6 +50,8 @@ bitflags = "1.0"
 smallvec = "0.6"
 parking_lot = "0.9"
 
+pin-project = { version = "0.4.0-alpha.11", features = ["project_attr"]}
+
 tokio-io = "0.2.0-alpha.4"
 tokio-codec = "0.2.0-alpha.4"
 tokio-executor = "0.2.0-alpha.4"

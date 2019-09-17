@@ -335,7 +335,7 @@ where
     ///
     ///    fn started(&mut self, ctx: &mut Context<Self>) {
     ///        // add stream
-    ///        ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
+    ///        ctx.add_stream(once(async { Ping }));
     ///    }
     /// }
     /// # fn main() {
@@ -380,7 +380,7 @@ where
     ///
     ///     fn started(&mut self, ctx: &mut Context<Self>) {
     ///         // add messages stream
-    ///         ctx.add_message_stream(once(Ok(Ping)));
+    ///         ctx.add_message_stream(once( async { Ping }));
     ///     }
     /// }
     /// # fn main() {

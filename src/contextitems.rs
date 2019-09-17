@@ -2,6 +2,8 @@ use std::marker::PhantomData;
 use std::time::Duration;
 use std::future::Future;
 use std::task::Poll;
+use std::task;
+use std::pin::Pin;
 
 use futures::Stream;
 use tokio_timer::Delay;
@@ -10,10 +12,12 @@ use crate::actor::{Actor, ActorContext, AsyncContext};
 use crate::clock;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
-use std::task;
-use std::pin::Pin;
 
+use futures::ready;
+
+#[pin_project]
 pub(crate) struct ActorWaitItem<A: Actor>(
+    #[pin]
     Box<dyn ActorFuture<Item = (), Actor = A>>,
 );
 
@@ -31,8 +35,8 @@ where
         ActorWaitItem(Box::new(fut))
     }
 
-    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context, task : &mut task::Context<'_>) -> Poll<()> {
-        match self.0.poll(act, ctx, task) {
+    pub fn poll(mut self : Pin<&mut Self>, act: &mut A, ctx: &mut A::Context, task : &mut task::Context<'_>) -> Poll<()> {
+        match self.project().0.poll(act, ctx, task) {
             Poll::Pending => {
                 if ctx.state().alive() {
                     Poll::Pending
@@ -55,6 +59,12 @@ where
     timeout: Delay,
     act: PhantomData<A>,
     m: PhantomData<M>,
+}
+impl<A,M> Unpin for ActorDelayedMessageItem <A,M>
+where
+    A: Actor,
+    M: Message {
+
 }
 
 impl<A, M> ActorDelayedMessageItem<A, M>
@@ -82,19 +92,16 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
-        match unsafe { Pin::new_unchecked(&mut self.timeout) }.poll(task) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(_) => {
-                let fut = A::handle(act, self.msg.take().unwrap(), ctx);
-                fut.handle::<()>(ctx, None);
-                Poll::Ready(())
-            }
-        }
+        let mut this = self.get_mut();
+        let _ = ready!(Pin::new(&mut this.timeout).poll(task));
+        let fut = A::handle(act, this.msg.take().unwrap(), ctx);
+        fut.handle::<()>(ctx,None);
+        Poll::Ready(())
     }
 }
 
@@ -106,6 +113,8 @@ where
     msg: Option<M>,
     act: PhantomData<A>,
 }
+
+impl<A : Actor, M : Message> Unpin for ActorMessageItem<A,M> {}
 
 impl<A, M> ActorMessageItem<A, M>
 where
@@ -130,22 +139,25 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
-        let fut = Handler::handle(act, self.msg.take().unwrap(), ctx);
+        let mut this = self.get_mut();
+        let fut = Handler::handle(act, this.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
         Poll::Ready(())
     }
 }
 
+#[pin_project]
 pub(crate) struct ActorMessageStreamItem<A, M, S>
 where
     A: Actor,
     M: Message,
 {
+    #[pin]
     stream: S,
     act: PhantomData<A>,
     msg: PhantomData<M>,
@@ -176,13 +188,15 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
+        let mut this = self.project_into();
         loop {
-            match unsafe { Pin::new_unchecked(&mut self.stream) }.poll_next(task) {
+
+            match this.stream.as_mut().poll_next(task) {
                 Poll::Ready(Some(msg)) => {
                     let fut = Handler::handle(act, msg, ctx);
                     fut.handle::<()>(ctx, None);

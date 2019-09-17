@@ -80,7 +80,7 @@ where
 /// #    let addr = MyActor.start();
 /// #    sys.run();
 /// # }
-/// ```
+
 #[must_use = "future do nothing unless polled"]
 pub struct TimerFunc<A>
 where
@@ -125,15 +125,15 @@ where
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut task::Context<'_>
     ) -> Poll<Self::Item> {
-
-        match unsafe { Pin::new_unchecked(&mut self.timeout) }.poll(task) {
+        let mut this = self.get_mut();
+        match Pin::new(&mut this.timeout).poll(task) {
             Poll::Ready(_) => {
-                if let Some(f) = self.f.take() {
+                if let Some(f) = this.f.take() {
                     f.call(act, ctx);
                 }
                 Poll::Ready(())
@@ -213,16 +213,17 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Option<Self::Item>> {
+        let mut this = self.get_mut();
         loop {
-            match unsafe { Pin::new_unchecked(&mut self.interval) }.poll_next(task) {
+            match Pin::new(&mut this.interval).poll_next(task) {
                 Poll::Ready(_) => {
                     //Interval Stream cannot return None
-                    self.f.call(act, ctx);
+                    this.f.call(act, ctx);
                 }
                 Poll::Pending => return Poll::Pending,
             }

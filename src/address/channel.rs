@@ -781,7 +781,7 @@ impl<A: Actor> Stream for AddressReceiver<A> {
     type Item = Envelope<A>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Option<Self::Item>> {
-        let mut this = unsafe { self.get_unchecked_mut() };
+        let mut this = self.get_mut();
         loop {
             // Try to read a message off of the message queue.
             let msg = match this.next_message() {

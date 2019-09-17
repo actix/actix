@@ -1,27 +1,31 @@
 use std::time::Duration;
 use std::future::Future;
-use std::task::Poll;
+use std::task::{self,Poll};
 use std::pin::Pin;
+
+use pin_project::pin_project;
 
 use tokio_timer::Delay;
 
 use crate::actor::Actor;
 use crate::clock;
 use crate::fut::ActorFuture;
-use std::task;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
 /// more than `timeout`.
 ///
 /// This is created by the `ActorFuture::timeout()` method.
+#[pin_project]
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 pub struct Timeout<F,E>
 where
     F: ActorFuture,
 {
+    #[pin]
     fut: F,
     err: Option<E>,
+    #[pin]
     timeout: Delay,
 }
 
@@ -44,17 +48,17 @@ where
     type Actor = F::Actor;
 
     fn poll(
-        &mut self,
+        self : Pin<&mut Self>,
         act: &mut F::Actor,
         ctx: &mut <F::Actor as Actor>::Context,
         task : &mut task::Context<'_>
     ) -> Poll<Self::Item> {
-        // check timeout
-        match unsafe { Pin::new_unchecked(&mut self.timeout) }.poll(task) {
-            Poll::Ready(()) => return Poll::Ready(Err(self.err.take().unwrap())),
-            Poll::Pending => (),
-        }
+        let this = self.project_into();
 
-        self.fut.poll(act, ctx, task).map(Ok)
+        match this.timeout.poll(task) {
+            Poll::Ready(_) => return Poll::Ready(Err(this.err.take().unwrap())),
+            _ => {}
+        }
+        this.fut.poll(act,ctx,task).map(Ok)
     }
 }
