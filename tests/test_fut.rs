@@ -33,10 +33,13 @@ impl Actor for MyActor {
             .timeout(Duration::new(0, 100), ());
 
 
-        let c = b.then(|r, this : &mut Self, ctx| async move  {
-            if let Err(e) = r {
-                this.timeout.store(true, Ordering::Relaxed);
-                System::current().stop();
+        let c = b.then(|r, this: &mut Self, ctx| {
+            this.timeout.store(true, Ordering::Relaxed);
+
+            async move {
+                if let Err(e) = r {
+                    System::current().stop();
+                }
             }
         }.actfuture());
 
@@ -52,7 +55,7 @@ fn test_fut_timeout() {
     System::run(move || {
         let _addr = MyActor { timeout: timeout2 }.start();
     })
-    .unwrap();
+        .unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }
@@ -94,7 +97,7 @@ fn test_stream_timeout() {
     System::run(|| {
         let _addr = MyStreamActor { timeout: timeout2 }.start();
     })
-    .unwrap();
+        .unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }
@@ -102,10 +105,10 @@ fn test_stream_timeout() {
 
 #[test]
 fn test_runtime() {
-    System::run(||{
+    System::run(|| {
         Arbiter::spawn(async {
             println!("Before");
-            let _ = tokio_timer::delay(Instant::now() + Duration::new(0,1_000 )).await;
+            let _ = tokio_timer::delay(Instant::now() + Duration::new(0, 1_000)).await;
             println!("after");
             System::current().stop();
         });
