@@ -10,6 +10,9 @@
 
 * Remove `hashbrown` crate from dependencies
 
+### Fixed
+* Added `#[must_use]` attribute to `ActorFuture` and `ActorStream`
+
 ## [0.8.3] (2019-05-29)
 
 ### Fixed
