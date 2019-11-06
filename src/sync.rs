@@ -183,7 +183,7 @@ where
     }
 }
 
-/// Sync actor execution context. This is used insted of impl Actor for your Actor
+/// Sync actor execution context. This is used in impl Actor for your Actor
 /// instead of Context, if you intend this actor to run in a SyncArbiter.
 ///
 /// Unlike Context, an Actor that uses a SyncContext can not be stopped
