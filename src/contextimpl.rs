@@ -296,11 +296,11 @@ where
         let parts = self.ctx.parts();
         if !parts.wait.is_empty() {
             modified = true;
-            self.wait.extend(parts.wait.drain());
+            self.wait.extend(parts.wait.drain(..));
         }
         if !parts.items.is_empty() {
             modified = true;
-            self.items.extend(parts.items.drain());
+            self.items.extend(parts.items.drain(..));
         }
         //
         if parts.flags.contains(ContextFlags::MB_CAP_CHANGED) {

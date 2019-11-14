@@ -10,6 +10,7 @@
 
 * Remove `hashbrown` crate from dependencies
 * Upgrade `derive_more` to 0.15.0
+* Upgrade `smallvec` to 1.0.0
 
 ### Fixed
 * Added `#[must_use]` attribute to `ActorFuture` and `ActorStream`
