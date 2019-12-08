@@ -47,7 +47,8 @@ fn print_usage_and_exit() -> ! {
     ::std::process::exit(1);
 }
 
-fn main() {
+#[actix_rt::main]
+async fn main() {
     let args = env::args().collect::<Vec<_>>();
     if args.len() < 3 {
         print_usage_and_exit();
@@ -67,8 +68,6 @@ fn main() {
     } else {
         print_usage_and_exit()
     };
-
-    let system = System::new("test");
 
     println!("Setting up nodes");
     let _ = Node::create(move |ctx| {
@@ -95,7 +94,6 @@ fn main() {
     });
 
     let now = SystemTime::now();
-    let _ = system.run();
     match now.elapsed() {
         Ok(elapsed) => println!(
             "Time taken: {}.{:06} seconds",

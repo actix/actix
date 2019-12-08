@@ -42,8 +42,8 @@ impl Handler<Fibonacci> for SyncActor {
     }
 }
 
-fn main() -> std::io::Result<()> {
-    System::run(|| {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
         // start sync arbiter with 3 threads
         let addr = SyncArbiter::start(3, || SyncActor);
 
@@ -52,9 +52,7 @@ fn main() -> std::io::Result<()> {
             addr.do_send(Fibonacci(n));
         }
 
-        spawn(futures::lazy(|| {
+        async move {
             System::current().stop();
-            futures::future::result(Ok(()))
-        }));
-    })
+        }.await;
 }
