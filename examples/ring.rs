@@ -69,15 +69,16 @@ async fn main() {
         print_usage_and_exit()
     };
 
+    let now = SystemTime::now();
+
     println!("Setting up nodes");
-    let _ = Node::create(move |ctx| {
+    let node = Node::create(move |ctx| {
         let first_addr = ctx.address();
         let mut prev_addr = Node {
             limit: n_nodes * n_times,
             next: first_addr.recipient(),
         }
         .start();
-        prev_addr.do_send(Payload(0));
 
         for _ in 2..n_nodes {
             prev_addr = Node {
@@ -92,8 +93,8 @@ async fn main() {
             next: prev_addr.recipient(),
         }
     });
+    node.send(Payload(0)).await.unwrap();
 
-    let now = SystemTime::now();
     match now.elapsed() {
         Ok(elapsed) => println!(
             "Time taken: {}.{:06} seconds",
