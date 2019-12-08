@@ -1,12 +1,15 @@
+use futures::Future;
+use std::task::Poll;
+
 use actix_rt::Arbiter;
-use futures::{Async, Future, Poll};
 
 use crate::actor::{Actor, AsyncContext, Supervised};
 use crate::address::{channel, Addr};
 use crate::context::Context;
 use crate::contextimpl::ContextFut;
 use crate::mailbox::DEFAULT_CAPACITY;
-
+use std::pin::Pin;
+use std::task;
 /// Actor supervisor
 ///
 /// Supervisor manages incoming message for actor. In case of actor failure,
@@ -135,17 +138,17 @@ impl<A> Future for Supervisor<A>
 where
     A: Supervised + Actor<Context = Context<A>>,
 {
-    type Item = ();
-    type Error = ();
+    type Output = ();
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        let this = unsafe { self.get_unchecked_mut() };
         loop {
-            match self.fut.poll() {
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Ok(Async::Ready(_)) | Err(_) => {
+            match unsafe { Pin::new_unchecked(&mut this.fut) }.poll(cx) {
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(_) => {
                     // stop if context's address is not connected
-                    if !self.fut.restart() {
-                        return Ok(Async::Ready(()));
+                    if !this.fut.restart() {
+                        return Poll::Ready(());
                     }
                 }
             }

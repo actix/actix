@@ -1,7 +1,8 @@
+use futures::Future;
+use std::task::Poll;
 use std::time::Duration;
 
-use futures::{Async, Future, Poll};
-use tokio_timer::Delay;
+use tokio::time::Delay;
 
 use crate::actor::Actor;
 use crate::clock;
@@ -18,11 +19,11 @@ where
     S: ActorStream,
 {
     stream: S,
-    err: S::Error,
+    //err: S::Error,
     dur: Duration,
     timeout: Option<Delay>,
 }
-
+/*
 pub fn new<S>(stream: S, timeout: Duration, err: S::Error) -> StreamTimeout<S>
 where
     S: ActorStream,
@@ -35,7 +36,6 @@ where
         timeout: None,
     }
 }
-
 impl<S> ActorStream for StreamTimeout<S>
 where
     S: ActorStream,
@@ -44,33 +44,30 @@ where
     type Item = S::Item;
     type Error = S::Error;
     type Actor = S::Actor;
-
     fn poll(
         &mut self,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<Option<S::Item>, S::Error> {
         match self.stream.poll(act, ctx) {
-            Ok(Async::Ready(res)) => {
+            Ok(Poll::Ready(res)) => {
                 self.timeout.take();
-                return Ok(Async::Ready(res));
+                return Ok(Poll::Ready(res));
             }
-            Ok(Async::NotReady) => (),
+            Ok(Poll::Pending) => (),
             Err(err) => return Err(err),
         }
-
         if self.timeout.is_none() {
             self.timeout = Some(Delay::new(clock::now() + self.dur));
         }
-
         // check timeout
         match self.timeout.as_mut().unwrap().poll() {
-            Ok(Async::Ready(())) => (),
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Poll::Ready(())) => (),
+            Ok(Poll::Pending) => return Ok(Poll::Pending),
             Err(_) => unreachable!(),
         }
         self.timeout.take();
-
         Err(self.err.clone())
     }
 }
+*/

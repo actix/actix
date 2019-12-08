@@ -1,4 +1,4 @@
-use futures::{Async, Poll};
+use futures::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
@@ -15,30 +15,27 @@ where
     future: A,
     f: Option<F>,
 }
-
+/*
 pub fn new<A, F>(future: A, f: F) -> MapErr<A, F>
 where
     A: ActorFuture,
 {
     MapErr { future, f: Some(f) }
 }
-
 impl<U, A, F> ActorFuture for MapErr<A, F>
 where
     A: ActorFuture,
     F: FnOnce(A::Error, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> U,
 {
     type Item = A::Item;
-    type Error = U;
     type Actor = A::Actor;
-
     fn poll(
         &mut self,
         act: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, U> {
         let e = match self.future.poll(act, ctx) {
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            Ok(Poll::Pending) => return Ok(Poll::Pending),
             other => other,
         };
         match e {
@@ -49,6 +46,7 @@ where
         }
     }
 }
+*/
 
 pub struct DropErr<A>
 where
@@ -57,6 +55,7 @@ where
     future: A,
 }
 
+/*
 impl<A> DropErr<A>
 where
     A: ActorFuture,
@@ -65,24 +64,22 @@ where
         DropErr { future }
     }
 }
-
 impl<A> ActorFuture for DropErr<A>
 where
     A: ActorFuture,
 {
     type Item = A::Item;
-    type Error = ();
     type Actor = A::Actor;
-
     fn poll(
         &mut self,
         act: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
     ) -> Poll<A::Item, ()> {
         match self.future.poll(act, ctx) {
-            Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
-            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Ok(Poll::Ready(item)) => Ok(Poll::Ready(item)),
+            Ok(Poll::Pending) => Ok(Poll::Pending),
             Err(_) => Err(()),
         }
     }
 }
+*/

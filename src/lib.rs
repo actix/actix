@@ -185,7 +185,7 @@ pub mod dev {
 pub fn run<F, R>(f: F) -> std::io::Result<()>
 where
     F: FnOnce() -> R,
-    R: futures::Future<Item = (), Error = ()> + 'static,
+    R: futures::Future<Output = ()> + 'static,
 {
     let sys = actix_rt::System::new("Default");
     actix_rt::spawn(f());
@@ -199,7 +199,7 @@ where
 /// This function panics if the actix system is not running.
 pub fn spawn<F>(f: F)
 where
-    F: futures::Future<Item = (), Error = ()> + 'static,
+    F: futures::Future<Output = ()> + 'static,
 {
     actix_rt::spawn(f);
 }

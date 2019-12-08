@@ -1,4 +1,4 @@
-use futures::Poll;
+use std::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::ActorStream;
@@ -13,7 +13,7 @@ pub struct StreamMapErr<S, F> {
     stream: S,
     f: F,
 }
-
+/*
 pub fn new<S, F, U>(stream: S, f: F) -> StreamMapErr<S, F>
 where
     S: ActorStream,
@@ -21,16 +21,13 @@ where
 {
     StreamMapErr { stream, f }
 }
-
 impl<S, F, U> ActorStream for StreamMapErr<S, F>
 where
     S: ActorStream,
     F: FnMut(S::Error, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
 {
     type Item = S::Item;
-    type Error = U;
     type Actor = S::Actor;
-
     fn poll(
         &mut self,
         act: &mut Self::Actor,
@@ -42,3 +39,4 @@ where
         }
     }
 }
+*/

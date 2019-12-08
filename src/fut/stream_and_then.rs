@@ -1,4 +1,7 @@
-use futures::{try_ready, Async, Poll};
+use futures::Future;
+use std::task::Poll;
+
+use futures::ready;
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
@@ -17,7 +20,7 @@ where
     future: Option<U::Future>,
     f: F,
 }
-
+/*
 pub fn new<S, F, U>(stream: S, f: F) -> StreamAndThen<S, F, U>
 where
     S: ActorStream,
@@ -30,7 +33,6 @@ where
         future: None,
     }
 }
-
 impl<S, F, U> ActorStream for StreamAndThen<S, F, U>
 where
     S: ActorStream,
@@ -38,32 +40,31 @@ where
     U: IntoActorFuture<Actor = S::Actor, Error = S::Error>,
 {
     type Item = U::Item;
-    type Error = S::Error;
     type Actor = S::Actor;
-
     fn poll(
         &mut self,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
     ) -> Poll<Option<U::Item>, S::Error> {
         if self.future.is_none() {
-            let item = match try_ready!(self.stream.poll(act, ctx)) {
-                None => return Ok(Async::Ready(None)),
+            let item = match ready!(self.stream.poll(act, ctx)) {
+                None => return Ok(Poll::Ready(None)),
                 Some(e) => e,
             };
             self.future = Some((self.f)(item, act, ctx).into_future());
         }
         assert!(self.future.is_some());
         match self.future.as_mut().unwrap().poll(act, ctx) {
-            Ok(Async::Ready(e)) => {
+            Ok(Poll::Ready(e)) => {
                 self.future = None;
-                Ok(Async::Ready(Some(e)))
+                Ok(Poll::Ready(Some(e)))
             }
             Err(e) => {
                 self.future = None;
                 Err(e)
             }
-            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Ok(Poll::Pending) => Ok(Poll::Pending),
         }
     }
 }
+*/

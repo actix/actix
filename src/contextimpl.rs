@@ -1,5 +1,4 @@
 use bitflags::bitflags;
-use futures::{Async, Future, Poll};
 use smallvec::SmallVec;
 use std::fmt;
 
@@ -10,6 +9,9 @@ use crate::address::{Addr, AddressSenderProducer};
 use crate::contextitems::ActorWaitItem;
 use crate::fut::ActorFuture;
 use crate::mailbox::Mailbox;
+use futures::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 bitflags! {
     /// internal context state
@@ -22,10 +24,7 @@ bitflags! {
     }
 }
 
-type Item<A> = (
-    SpawnHandle,
-    Box<dyn ActorFuture<Item = (), Error = (), Actor = A>>,
-);
+type Item<A> = (SpawnHandle, Box<dyn ActorFuture<Item = (), Actor = A>>);
 
 pub trait AsyncContextParts<A>: ActorContext + AsyncContext<A>
 where
@@ -129,11 +128,11 @@ where
     /// Spawn new future to this context.
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
+        F: ActorFuture<Item = (), Actor = A> + 'static,
     {
         let handle = self.handles[0].next();
         self.handles[0] = handle;
-        let fut: Box<dyn ActorFuture<Item = (), Error = (), Actor = A>> = Box::new(fut);
+        let fut: Box<dyn ActorFuture<Item = (), Actor = A>> = Box::new(fut);
         self.items.push((handle, fut));
         handle
     }
@@ -144,7 +143,7 @@ where
     /// During wait period actor does not receive any messages.
     pub fn wait<F>(&mut self, f: F)
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
+        F: ActorFuture<Item = (), Actor = A> + 'static,
     {
         self.wait.push(ActorWaitItem::new(f));
     }
@@ -221,10 +220,13 @@ where
     A: Actor<Context = C>,
 {
     fn drop(&mut self) {
+        println!("TODO: Contextfut drop not implemented");
+        /*
         if self.alive() {
             self.ctx.parts().stop();
             let _ = self.poll();
         }
+        */
     }
 }
 
@@ -296,11 +298,11 @@ where
         let parts = self.ctx.parts();
         if !parts.wait.is_empty() {
             modified = true;
-            self.wait.extend(parts.wait.drain(..));
+            self.wait.extend(parts.wait.drain(0..));
         }
         if !parts.items.is_empty() {
             modified = true;
-            self.items.extend(parts.items.drain(..));
+            self.items.extend(parts.items.drain(0..));
         }
         //
         if parts.flags.contains(ContextFlags::MB_CAP_CHANGED) {
@@ -335,18 +337,18 @@ where
     C: AsyncContextParts<A>,
     A: Actor<Context = C>,
 {
-    type Item = ();
-    type Error = ();
+    type Output = ();
 
-    #[inline]
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        if !self.ctx.parts().flags.contains(ContextFlags::STARTED) {
-            self.ctx.parts().flags.insert(ContextFlags::STARTED);
-            Actor::started(&mut self.act, &mut self.ctx);
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = unsafe { self.get_unchecked_mut() };
+
+        if !this.ctx.parts().flags.contains(ContextFlags::STARTED) {
+            this.ctx.parts().flags.insert(ContextFlags::STARTED);
+            Actor::started(&mut this.act, &mut this.ctx);
 
             // check cancelled handles, just in case
-            if self.merge() {
-                self.clean_cancled_handle();
+            if this.merge() {
+                this.clean_cancled_handle();
             }
         }
 
@@ -354,106 +356,110 @@ where
             // check wait futures. order does matter
             // ctx.wait() always add to the back of the list
             // and we always have to check most recent future
-            while !self.wait.is_empty() && !self.stopping() {
-                let idx = self.wait.len() - 1;
-                if let Some(item) = self.wait.last_mut() {
-                    match item.poll(&mut self.act, &mut self.ctx) {
-                        Async::Ready(_) => (),
-                        Async::NotReady => return Ok(Async::NotReady),
+            while !this.wait.is_empty() && !this.stopping() {
+                let idx = this.wait.len() - 1;
+                if let Some(item) = this.wait.last_mut() {
+                    match Pin::new(item).poll(&mut this.act, &mut this.ctx, cx) {
+                        Poll::Ready(_) => (),
+                        Poll::Pending => return Poll::Pending,
                     }
                 }
-                self.wait.remove(idx);
-                self.merge();
+                this.wait.remove(idx);
+                this.merge();
             }
 
             // process mailbox
-            self.mailbox.poll(&mut self.act, &mut self.ctx);
-            if !self.wait.is_empty() && !self.stopping() {
+            this.mailbox.poll(&mut this.act, &mut this.ctx, cx);
+            if !this.wait.is_empty() && !this.stopping() {
                 continue;
             }
 
             // process items
             let mut idx = 0;
-            while idx < self.items.len() && !self.stopping() {
-                self.ctx.parts().handles[1] = self.items[idx].0;
-                match self.items[idx].1.poll(&mut self.act, &mut self.ctx) {
-                    Ok(Async::NotReady) => {
+            while idx < this.items.len() && !this.stopping() {
+                this.ctx.parts().handles[1] = this.items[idx].0;
+                match Pin::new(&mut this.items[idx].1).poll(
+                    &mut this.act,
+                    &mut this.ctx,
+                    cx,
+                ) {
+                    Poll::Pending => {
                         // check cancelled handles
-                        if self.ctx.parts().handles.len() > 2 {
+                        if this.ctx.parts().handles.len() > 2 {
                             // this code is not very efficient, relaying on fact that
                             // cancellation should be rear also number of futures
                             // in actor context should be small
-                            self.clean_cancled_handle();
+                            this.clean_cancled_handle();
 
                             continue 'outer;
                         }
 
                         // item scheduled wait future
-                        if !self.wait.is_empty() && !self.stopping() {
+                        if !this.wait.is_empty() && !this.stopping() {
                             // move current item to end of poll queue
                             // otherwise it is possible that same item generate wait
                             // future and prevents polling
                             // of other items
-                            let next = self.items.len() - 1;
+                            let next = this.items.len() - 1;
                             if idx != next {
-                                self.items.swap(idx, next);
+                                this.items.swap(idx, next);
                             }
                             continue 'outer;
                         } else {
                             idx += 1;
                         }
                     }
-                    Ok(Async::Ready(())) | Err(_) => {
-                        self.items.swap_remove(idx);
+                    Poll::Ready(()) => {
+                        this.items.swap_remove(idx);
                         // one of the items scheduled wait future
-                        if !self.wait.is_empty() && !self.stopping() {
+                        if !this.wait.is_empty() && !this.stopping() {
                             continue 'outer;
                         }
                     }
                 }
             }
-            self.ctx.parts().handles[1] = SpawnHandle::default();
+            this.ctx.parts().handles[1] = SpawnHandle::default();
 
             // merge returns true if context contains new items or handles to be cancelled
-            if self.merge() && !self.ctx.parts().flags.contains(ContextFlags::STOPPING) {
+            if this.merge() && !this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
                 // if we have no item to process, cancelled handles wouldn't be
-                // reaped in the above loop. this means self.merge() will never
+                // reaped in the above loop. this means this.merge() will never
                 // be false and the poll() never ends. so, discard the handles
                 // as we're sure there are no more items to be cancelled.
-                if self.items.is_empty() {
-                    self.ctx.parts().handles.truncate(2);
+                if this.items.is_empty() {
+                    this.ctx.parts().handles.truncate(2);
                 }
                 continue;
             }
 
             // check state
-            if self.ctx.parts().flags.contains(ContextFlags::RUNNING) {
+            if this.ctx.parts().flags.contains(ContextFlags::RUNNING) {
                 // possible stop condition
-                if !self.alive()
-                    && Actor::stopping(&mut self.act, &mut self.ctx) == Running::Stop
+                if !this.alive()
+                    && Actor::stopping(&mut this.act, &mut this.ctx) == Running::Stop
                 {
-                    self.ctx.parts().flags =
+                    this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(&mut self.act, &mut self.ctx);
-                    return Ok(Async::Ready(()));
+                    Actor::stopped(&mut this.act, &mut this.ctx);
+                    return Poll::Ready(());
                 }
-            } else if self.ctx.parts().flags.contains(ContextFlags::STOPPING) {
-                if Actor::stopping(&mut self.act, &mut self.ctx) == Running::Stop {
-                    self.ctx.parts().flags =
+            } else if this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
+                if Actor::stopping(&mut this.act, &mut this.ctx) == Running::Stop {
+                    this.ctx.parts().flags =
                         ContextFlags::STOPPED | ContextFlags::STARTED;
-                    Actor::stopped(&mut self.act, &mut self.ctx);
-                    return Ok(Async::Ready(()));
+                    Actor::stopped(&mut this.act, &mut this.ctx);
+                    return Poll::Ready(());
                 } else {
-                    self.ctx.parts().flags.remove(ContextFlags::STOPPING);
-                    self.ctx.parts().flags.insert(ContextFlags::RUNNING);
+                    this.ctx.parts().flags.remove(ContextFlags::STOPPING);
+                    this.ctx.parts().flags.insert(ContextFlags::RUNNING);
                     continue;
                 }
-            } else if self.ctx.parts().flags.contains(ContextFlags::STOPPED) {
-                Actor::stopped(&mut self.act, &mut self.ctx);
-                return Ok(Async::Ready(()));
+            } else if this.ctx.parts().flags.contains(ContextFlags::STOPPED) {
+                Actor::stopped(&mut this.act, &mut this.ctx);
+                return Poll::Ready(());
             }
 
-            return Ok(Async::NotReady);
+            return Poll::Pending;
         }
     }
 }

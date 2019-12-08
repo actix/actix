@@ -6,14 +6,15 @@
 //! Actor type A and B, sharing the same thread pool. You need to create two
 //! SyncArbiters and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
+use futures::Future;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use std::thread;
+use std::task::Poll;
+use std::{task, thread};
 
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
-use futures::sync::oneshot::Sender as SyncSender;
-use futures::{Async, Future, Poll, Stream};
+use futures::channel::oneshot::Sender as SyncSender;
 use log::warn;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
@@ -21,6 +22,8 @@ use crate::address::channel;
 use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};
+use futures::StreamExt;
+use std::pin::Pin;
 
 /// SyncArbiter provides the resources for a single Sync Actor to run on a dedicated
 /// thread or threads. This is generally used for CPU bound concurrent workloads. It's
@@ -145,29 +148,29 @@ impl<A> Future for SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
-    type Item = ();
-    type Error = ();
+    type Output = ();
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        let mut this = unsafe { self.get_unchecked_mut() };
         loop {
-            match self.msgs.poll() {
-                Ok(Async::Ready(Some(msg))) => {
-                    if let Some(ref queue) = self.queue {
-                        queue.send(msg).is_ok();
+            match this.msgs.poll_next_unpin(cx) {
+                Poll::Ready(Some(msg)) => {
+                    if let Some(ref queue) = this.queue {
+                        assert!(queue.send(msg).is_ok());
                     }
                 }
-                Ok(Async::NotReady) => break,
-                Ok(Async::Ready(None)) | Err(_) => unreachable!(),
+                Poll::Pending => break,
+                Poll::Ready(None) => unreachable!(),
             }
         }
 
         // stop condition
-        if self.msgs.connected() {
-            Ok(Async::NotReady)
+        if this.msgs.connected() {
+            Poll::Pending
         } else {
             // stop sync arbiters
-            self.queue = None;
-            Ok(Async::Ready(()))
+            this.queue = None;
+            Poll::Ready(())
         }
     }
 }
@@ -183,7 +186,7 @@ where
     }
 }
 
-/// Sync actor execution context. This is used in impl Actor for your Actor
+/// Sync actor execution context. This is used insted of impl Actor for your Actor
 /// instead of Context, if you intend this actor to run in a SyncArbiter.
 ///
 /// Unlike Context, an Actor that uses a SyncContext can not be stopped

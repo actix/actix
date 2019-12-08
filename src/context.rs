@@ -49,7 +49,7 @@ where
     #[inline]
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
+        F: ActorFuture<Item = (), Actor = A> + 'static,
     {
         self.parts.spawn(fut)
     }
@@ -57,7 +57,7 @@ where
     #[inline]
     fn wait<F>(&mut self, fut: F)
     where
-        F: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
+        F: ActorFuture<Item = (), Actor = A> + 'static,
     {
         self.parts.wait(fut)
     }
@@ -181,7 +181,7 @@ impl<A, T> ContextFutureSpawner<A> for T
 where
     A: Actor,
     A::Context: AsyncContext<A>,
-    T: ActorFuture<Item = (), Error = (), Actor = A> + 'static,
+    T: ActorFuture<Item = (), Actor = A> + 'static,
 {
     #[inline]
     fn spawn(self, ctx: &mut A::Context) {

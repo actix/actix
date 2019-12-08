@@ -40,10 +40,10 @@ impl Sink for MySink {
             }
         }
         if self.queue.is_empty() {
-            Ok(Async::Ready(()))
+            Ok(Poll::Ready(()))
         } else {
             futures::task::current().notify();
-            Ok(Async::NotReady)
+            Ok(Poll::Pending)
         }
     }
 }

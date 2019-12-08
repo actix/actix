@@ -1,12 +1,16 @@
+use futures::Future;
+use std::task::Poll;
 use std::time::Duration;
 
-use futures::unsync::oneshot;
-use futures::{Async, Future, Poll, Stream};
-use tokio_timer::{Delay, Interval};
+use futures::channel::oneshot;
+use futures::Stream;
+use tokio::time::{interval_at, Delay, Instant, Interval};
 
 use crate::actor::Actor;
 use crate::clock;
 use crate::fut::{ActorFuture, ActorStream};
+use std::pin::Pin;
+use std::task;
 
 pub struct Condition<T>
 where
@@ -77,7 +81,7 @@ where
 /// #    let addr = MyActor.start();
 /// #    sys.run();
 /// # }
-/// ```
+
 #[must_use = "future do nothing unless polled"]
 pub struct TimerFunc<A>
 where
@@ -98,7 +102,7 @@ where
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: Delay::new(clock::now() + timeout),
+            timeout: tokio::time::delay_for(timeout),
         }
     }
 }
@@ -119,23 +123,23 @@ where
     A: Actor,
 {
     type Item = ();
-    type Error = ();
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Self::Item, Self::Error> {
-        match self.timeout.poll() {
-            Ok(Async::Ready(_)) => {
-                if let Some(f) = self.f.take() {
+        task: &mut task::Context<'_>,
+    ) -> Poll<Self::Item> {
+        let mut this = self.get_mut();
+        match Pin::new(&mut this.timeout).poll(task) {
+            Poll::Ready(_) => {
+                if let Some(f) = this.f.take() {
                     f.call(act, ctx);
                 }
-                Ok(Async::Ready(()))
+                Poll::Ready(())
             }
-            Ok(Async::NotReady) => Ok(Async::NotReady),
-            Err(_) => unreachable!(),
+            Poll::Pending => Poll::Pending,
         }
     }
 }
@@ -191,15 +195,13 @@ impl<A: Actor> IntervalFunc<A> {
     {
         Self {
             f: Box::new(f),
-            interval: Interval::new(clock::now() + timeout, timeout),
+            interval: interval_at(Instant::now() + timeout, timeout),
         }
     }
 }
-
 trait IntervalFuncBox<A: Actor>: 'static {
     fn call(&mut self, _: &mut A, _: &mut A::Context);
 }
-
 impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {
     #[allow(clippy::boxed_local)]
     fn call(&mut self, act: &mut A, ctx: &mut A::Context) {
@@ -209,22 +211,22 @@ impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> f
 
 impl<A: Actor> ActorStream for IntervalFunc<A> {
     type Item = ();
-    type Error = ();
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<Option<Self::Item>, Self::Error> {
+        task: &mut task::Context<'_>,
+    ) -> Poll<Option<Self::Item>> {
+        let mut this = self.get_mut();
         loop {
-            match self.interval.poll() {
-                Ok(Async::Ready(_)) => {
+            match Pin::new(&mut this.interval).poll_next(task) {
+                Poll::Ready(_) => {
                     //Interval Stream cannot return None
-                    self.f.call(act, ctx);
+                    this.f.call(act, ctx);
                 }
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Err(_) => unreachable!(),
+                Poll::Pending => return Poll::Pending,
             }
         }
     }

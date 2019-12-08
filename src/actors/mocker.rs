@@ -35,12 +35,12 @@ use crate::prelude::*;
 /// This actor is able to wrap another actor and accept all the messages the
 /// wrapped actor can, passing it to a closure which can mock the response of
 /// the actor.
-pub struct Mocker<T: Sized + 'static> {
+pub struct Mocker<T: Sized + Unpin + 'static> {
     phantom: PhantomData<T>,
     mock: Box<dyn FnMut(Box<dyn Any>, &mut Context<Mocker<T>>) -> Box<dyn Any>>,
 }
 
-impl<T> Mocker<T> {
+impl<T: Unpin> Mocker<T> {
     pub fn mock(
         mock: Box<dyn FnMut(Box<dyn Any>, &mut Context<Mocker<T>>) -> Box<dyn Any>>,
     ) -> Mocker<T> {
@@ -53,19 +53,19 @@ impl<T> Mocker<T> {
 
 impl<T: SystemService> SystemService for Mocker<T> {}
 impl<T: ArbiterService> ArbiterService for Mocker<T> {}
-impl<T> Supervised for Mocker<T> {}
+impl<T: Unpin> Supervised for Mocker<T> {}
 
-impl<T> Default for Mocker<T> {
+impl<T: Unpin> Default for Mocker<T> {
     fn default() -> Self {
         panic!("Mocker actor used before set")
     }
 }
 
-impl<T: Sized + 'static> Actor for Mocker<T> {
+impl<T: Sized + Unpin + 'static> Actor for Mocker<T> {
     type Context = Context<Self>;
 }
 
-impl<M: 'static, T: Sized + 'static> Handler<M> for Mocker<T>
+impl<M: 'static, T: Sized + Unpin + 'static> Handler<M> for Mocker<T>
 where
     M: Message,
     <M as Message>::Result: MessageResponse<Mocker<T>, M>,

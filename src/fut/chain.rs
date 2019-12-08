@@ -1,16 +1,22 @@
-use futures::{Async, Poll};
+use futures::ready;
+use futures::task::{Context, Poll};
 use std::mem;
+use std::pin::Pin;
+
+use pin_project::{pin_project, project};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
+// TODO: Check pinning guarantees,
+#[pin_project]
 #[derive(Debug)]
 pub enum Chain<A, B, C>
 where
     A: ActorFuture,
 {
-    First(A, C),
-    Second(B),
+    First(#[pin] A, Option<C>),
+    Second(#[pin] B),
     Done,
 }
 
@@ -20,43 +26,64 @@ where
     B: ActorFuture<Actor = A::Actor>,
 {
     pub fn new(a: A, c: C) -> Self {
-        Chain::First(a, c)
+        Chain::First(a, Some(c))
     }
 
+    #[project]
     pub fn poll<F>(
-        &mut self,
+        mut self: Pin<&mut Self>,
         srv: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
+        task: &mut Context<'_>,
         f: F,
-    ) -> Poll<B::Item, B::Error>
+    ) -> Poll<B::Item>
     where
         F: FnOnce(
-            Result<A::Item, A::Error>,
+            A::Item,
             C,
             &mut A::Actor,
             &mut <A::Actor as Actor>::Context,
-        ) -> Result<Result<B::Item, B>, B::Error>,
+        ) -> Result<B::Item, B>,
     {
+        let mut this = self.as_mut();
+        #[project]
+        match this.project() {
+            Chain::First(a, mut data) => {
+                let a_res = ready!(a.poll(srv, ctx, task));
+                return match f(a_res, data.take().unwrap(), srv, ctx) {
+                    Ok(e) => Poll::Ready(e),
+                    Err(mut b) => {
+                        let ret =
+                            unsafe { Pin::new_unchecked(&mut b) }.poll(srv, ctx, task);
+                        self.set(Chain::Second(b));
+                        ret
+                    }
+                };
+            }
+            Chain::Second(b) => return b.poll(srv, ctx, task),
+            Done => panic!("cannot poll a chained future twice"),
+        };
+
+        /*
         let a_result = match *self {
-            Chain::First(ref mut a, _) => match a.poll(srv, ctx) {
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Ok(Async::Ready(t)) => Ok(t),
-                Err(e) => Err(e),
+            Chain::First(ref mut a, _) => match a.poll(srv, ctx, task) {
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(t) => t,
             },
-            Chain::Second(ref mut b) => return b.poll(srv, ctx),
+            Chain::Second(ref mut b) => return b.poll(srv, ctx, task),
             Chain::Done => panic!("cannot poll a chained future twice"),
         };
         let data = match mem::replace(self, Chain::Done) {
             Chain::First(_, c) => c,
             _ => panic!(),
         };
-        match f(a_result, data, srv, ctx)? {
-            Ok(e) => Ok(Async::Ready(e)),
+        match f(a_result, data, srv, ctx) {
+            Ok(e) => Poll::Ready(e),
             Err(mut b) => {
-                let ret = b.poll(srv, ctx);
+                let ret = b.poll(srv, ctx, task);
                 *self = Chain::Second(b);
                 ret
             }
-        }
+        }*/
     }
 }

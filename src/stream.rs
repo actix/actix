@@ -1,6 +1,11 @@
-use futures::{Async, Poll, Stream};
+use futures::{
+    task::{Context, Poll},
+    Stream,
+};
 use log::error;
+use pin_project::pin_project;
 use std::marker::PhantomData;
+use std::pin::Pin;
 
 use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle,
@@ -18,7 +23,7 @@ use crate::fut::ActorFuture;
 /// When stream completes, `finished()` method get called. By default
 /// `finished()` method stops actor execution.
 #[allow(unused_variables)]
-pub trait StreamHandler<I, E>
+pub trait StreamHandler<I>
 where
     Self: Actor,
 {
@@ -27,15 +32,6 @@ where
 
     /// Method is called when stream get polled first time.
     fn started(&mut self, ctx: &mut Self::Context) {}
-
-    /// Method is called when stream emits error.
-    ///
-    /// If this method returns `ErrorAction::Continue` stream processing
-    /// continues otherwise stream processing stops. Default method
-    /// implementation returns `ErrorAction::Stop`
-    fn error(&mut self, err: E, ctx: &mut Self::Context) -> Running {
-        Running::Stop
-    }
 
     /// Method is called when stream finishes.
     ///
@@ -86,9 +82,8 @@ where
     fn add_stream<S>(fut: S, ctx: &mut Self::Context) -> SpawnHandle
     where
         Self::Context: AsyncContext<Self>,
-        S: Stream<Item = I, Error = E> + 'static,
+        S: Stream<Item = I> + 'static,
         I: 'static,
-        E: 'static,
     {
         if ctx.state() == ActorState::Stopped {
             error!("Context::add_stream called for stopped actor.");
@@ -99,65 +94,61 @@ where
     }
 }
 
-pub(crate) struct ActorStream<A, M, E, S> {
+#[pin_project]
+pub(crate) struct ActorStream<A, M, S> {
+    #[pin]
     stream: S,
     started: bool,
     act: PhantomData<A>,
     msg: PhantomData<M>,
-    error: PhantomData<E>,
 }
 
-impl<A, M, E, S> ActorStream<A, M, E, S> {
+impl<A, M, S> ActorStream<A, M, S> {
     pub fn new(fut: S) -> Self {
         Self {
             stream: fut,
             started: false,
             act: PhantomData,
             msg: PhantomData,
-            error: PhantomData,
         }
     }
 }
 
-impl<A, M, E, S> ActorFuture for ActorStream<A, M, E, S>
+impl<A, M, S> ActorFuture for ActorStream<A, M, S>
 where
-    S: Stream<Item = M, Error = E>,
-    A: Actor + StreamHandler<M, E>,
+    S: Stream<Item = M>,
+    A: Actor + StreamHandler<M>,
     A::Context: AsyncContext<A>,
 {
     type Item = ();
-    type Error = ();
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
-    ) -> Poll<Self::Item, Self::Error> {
-        if !self.started {
-            self.started = true;
-            <A as StreamHandler<M, E>>::started(act, ctx);
+        task: &mut Context<'_>,
+    ) -> Poll<Self::Item> {
+        let mut this = self.project();
+
+        if !*this.started {
+            *this.started = true;
+            <A as StreamHandler<M>>::started(act, ctx);
         }
 
         loop {
-            match self.stream.poll() {
-                Ok(Async::Ready(Some(msg))) => {
+            match this.stream.as_mut().poll_next(task) {
+                Poll::Ready(Some(msg)) => {
                     A::handle(act, msg, ctx);
                     if ctx.waiting() {
-                        return Ok(Async::NotReady);
+                        return Poll::Pending;
                     }
                 }
-                Err(err) => {
-                    if A::error(act, err, ctx) == Running::Stop {
-                        A::finished(act, ctx);
-                        return Ok(Async::Ready(()));
-                    }
-                }
-                Ok(Async::Ready(None)) => {
+                Poll::Ready(None) => {
                     A::finished(act, ctx);
-                    return Ok(Async::Ready(()));
+                    return Poll::Ready(());
                 }
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
+                Poll::Pending => return Poll::Pending,
             }
         }
     }
