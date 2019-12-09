@@ -1,11 +1,11 @@
 #![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
 
-use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use actix::prelude::*;
 use futures::channel::oneshot::{channel, Sender};
+use futures::FutureExt;
 use tokio::time::{delay_for, Duration};
 
 struct MyActor {
@@ -22,18 +22,20 @@ impl Actor for MyActor {
     fn started(&mut self, _: &mut Self::Context) {
         self.started.store(true, Ordering::Relaxed);
     }
+
     fn stopping(&mut self, ctx: &mut Self::Context) -> Running {
         self.stopping.store(true, Ordering::Relaxed);
 
         if self.restore_after_stop {
             let (tx, rx) = channel();
             self.temp = Some(tx);
-            rx.into_actor(self).spawn(ctx);
+            ctx.spawn(rx.map(|_| ()).into_actor(self));
             Running::Continue
         } else {
             Running::Stop
         }
     }
+
     fn stopped(&mut self, _: &mut Self::Context) {
         self.stopped.store(true, Ordering::Relaxed);
     }
