@@ -1,5 +1,6 @@
 #![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
 
+use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -27,7 +28,7 @@ impl Actor for MyActor {
         if self.restore_after_stop {
             let (tx, rx) = channel();
             self.temp = Some(tx);
-            rx.actfuture().spawn(ctx);
+            rx.into_actor(self).spawn(ctx);
             Running::Continue
         } else {
             Running::Stop

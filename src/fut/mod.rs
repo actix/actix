@@ -150,7 +150,7 @@ pub trait ActorFuture {
             &mut Self::Actor,
             &mut <Self::Actor as Actor>::Context,
         ) -> U,
-        Self: Sized + Unpin,
+        Self: Sized,
     {
         map::new(self, f)
     }
@@ -165,7 +165,7 @@ pub trait ActorFuture {
             &mut <Self::Actor as Actor>::Context,
         ) -> B,
         B: IntoActorFuture<Actor = Self::Actor>,
-        Self: Sized + Unpin,
+        Self: Sized,
     {
         then::new(self, f)
     }
@@ -175,7 +175,7 @@ pub trait ActorFuture {
     /// `err` value get returned as a timeout error.
     fn timeout<E>(self, timeout: Duration, err: E) -> Timeout<Self, E>
     where
-        Self: Sized + Unpin,
+        Self: Sized,
     {
         timeout::new(self, timeout, err)
     }
@@ -221,7 +221,7 @@ pub trait ActorStream {
             &mut <Self::Actor as Actor>::Context,
         ) -> U,
         U: IntoActorFuture<Actor = Self::Actor>,
-        Self: Sized + Unpin,
+        Self: Sized,
     {
         stream_then::new(self, f)
     }
@@ -245,13 +245,13 @@ pub trait ActorStream {
     /// Add timeout to stream.
     ///
     /// `err` value get returned as a timeout error.
-    // fn timeout(self, timeout: Duration, err: Self::Error) -> StreamTimeout<Self>
-    // where
-    //     Self: Sized,
-    //     Self::Error: Clone,
-    // {
-    //     stream_timeout::new(self, timeout, err)
-    // }
+    fn timeout<E>(self, timeout: Duration, err: E) -> StreamTimeout<Self, E>
+    where
+        Self: Sized,
+        E: Clone,
+    {
+        stream_timeout::new(self, timeout, err)
+    }
 
     /// Converts a stream to a future that resolves when stream finishes.
     fn finish(self) -> StreamFinish<Self>

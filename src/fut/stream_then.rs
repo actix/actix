@@ -16,7 +16,7 @@ use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 pub struct StreamThen<S, F, U>
 where
     U: IntoActorFuture,
-    S: ActorStream + Unpin,
+    S: ActorStream,
 {
     #[pin]
     stream: S,
@@ -26,7 +26,7 @@ where
 
 pub fn new<S, F, U>(stream: S, f: F) -> StreamThen<S, F, U>
 where
-    S: ActorStream + Unpin,
+    S: ActorStream,
     F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
     U: IntoActorFuture<Actor = S::Actor>,
 {

@@ -17,7 +17,7 @@ use crate::fut::ActorFuture;
 #[must_use = "futures do nothing unless polled"]
 pub struct Map<A, F>
 where
-    A: ActorFuture + Unpin,
+    A: ActorFuture,
 {
     #[pin]
     future: A,
@@ -26,14 +26,14 @@ where
 
 pub fn new<A, F>(future: A, f: F) -> Map<A, F>
 where
-    A: ActorFuture + Unpin,
+    A: ActorFuture,
 {
     Map { future, f: Some(f) }
 }
 
 impl<U, A, F> ActorFuture for Map<A, F>
 where
-    A: ActorFuture + Unpin,
+    A: ActorFuture,
     F: FnOnce(A::Output, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> U,
 {
     type Output = U;
@@ -44,8 +44,8 @@ where
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
-        let mut this = self.as_mut();
-        let e = match Pin::new(&mut this.future).poll(act, ctx, task) {
+        let mut this = self.project();
+        let e = match this.future.poll(act, ctx, task) {
             Poll::Pending => return Poll::Pending,
             Poll::Ready(e) => e,
         };
@@ -55,6 +55,6 @@ where
         //     )),
         //     Err(err) => Poll::Ready(Err(err)),
         // }
-        Poll::Ready(self.f.take().expect("cannot poll Map twice")(e, act, ctx))
+        Poll::Ready(this.f.take().expect("cannot poll Map twice")(e, act, ctx))
     }
 }
