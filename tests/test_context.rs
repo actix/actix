@@ -1,13 +1,12 @@
 #![cfg_attr(feature = "cargo-clippy", allow(let_unit_value))]
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::channel::mpsc::unbounded;
 use futures::stream::once;
-use futures::{future, Future, Stream};
-use tokio::time::{delay_for, Delay, Interval};
+use futures::StreamExt;
+use tokio::time::{delay_for, interval_at, Duration, Instant};
 
 #[derive(Debug, PartialEq)]
 enum Op {
@@ -335,48 +334,48 @@ impl StreamHandler<Ping> for ContextHandle {
     }
 }
 
-// #[test]
-// fn test_current_context_handle() {
-//     let h = Arc::new(AtomicUsize::new(0));
-//     let h2 = Arc::clone(&h);
-//     let m = Arc::new(AtomicUsize::new(0));
-//     let m2 = Arc::clone(&m);
+#[test]
+fn test_current_context_handle() {
+    let h = Arc::new(AtomicUsize::new(0));
+    let h2 = Arc::clone(&h);
+    let m = Arc::new(AtomicUsize::new(0));
+    let m2 = Arc::clone(&m);
 
-//     System::run(move || {
-//         let _addr = ContextHandle::create(move |ctx| {
-//             h2.store(
-//                 ContextHandle::add_stream(once::<Ping>(Ping), ctx).into_usize(),
-//                 Ordering::Relaxed,
-//             );
+    System::run(move || {
+        let _addr = ContextHandle::create(move |ctx| {
+            h2.store(
+                ContextHandle::add_stream(once(async { Ping }), ctx).into_usize(),
+                Ordering::Relaxed,
+            );
 
-//             ContextHandle { h: m2 }
-//         });
-//     })
-//     .unwrap();
+            ContextHandle { h: m2 }
+        });
+    })
+    .unwrap();
 
-//     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
-// }
+    assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
+}
 
-// #[test]
-// fn test_start_from_context() {
-//     let h = Arc::new(AtomicUsize::new(0));
-//     let h2 = Arc::clone(&h);
-//     let m = Arc::new(AtomicUsize::new(0));
-//     let m2 = Arc::clone(&m);
+#[test]
+fn test_start_from_context() {
+    let h = Arc::new(AtomicUsize::new(0));
+    let h2 = Arc::clone(&h);
+    let m = Arc::new(AtomicUsize::new(0));
+    let m2 = Arc::clone(&m);
 
-//     System::run(move || {
-//         let _addr = ContextHandle::create(move |ctx| {
-//             h2.store(
-//                 ctx.add_stream(once::<Ping>(Ping)).into_usize(),
-//                 Ordering::Relaxed,
-//             );
-//             ContextHandle { h: m2 }
-//         });
-//     })
-//     .unwrap();
+    System::run(move || {
+        let _addr = ContextHandle::create(move |ctx| {
+            h2.store(
+                ctx.add_stream(once(async { Ping })).into_usize(),
+                Ordering::Relaxed,
+            );
+            ContextHandle { h: m2 }
+        });
+    })
+    .unwrap();
 
-//     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
-// }
+    assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
+}
 
 struct CancelHandler {
     source: SpawnHandle,
@@ -398,18 +397,18 @@ impl StreamHandler<CancelPacket> for CancelHandler {
     }
 }
 
-// #[test]
-// fn test_cancel_handler() {
-//     actix::System::run(|| {
-//         CancelHandler::create(|ctx| CancelHandler {
-//             source: ctx.add_stream(
-//                 Interval::new(Instant::now(), Duration::from_millis(1))
-//                     .map(|_| CancelPacket),
-//             ),
-//         });
-//     })
-//     .unwrap();
-// }
+#[test]
+fn test_cancel_handler() {
+    actix::System::run(|| {
+        CancelHandler::create(|ctx| CancelHandler {
+            source: ctx.add_stream(
+                interval_at(Instant::now(), Duration::from_millis(1))
+                    .map(|_| CancelPacket),
+            ),
+        });
+    })
+    .unwrap();
+}
 
 struct CancelLater {
     handle: Option<SpawnHandle>,
@@ -438,26 +437,24 @@ impl Handler<CancelMessage> for CancelLater {
     }
 }
 
-// #[test]
-// fn test_cancel_completed_with_no_context_item() {
-//     actix::System::run(|| {
-//         // first, spawn future that will complete immediately
-//         let addr = CancelLater { handle: None }.start();
+#[test]
+fn test_cancel_completed_with_no_context_item() {
+    actix::System::run(|| {
+        // first, spawn future that will complete immediately
+        let addr = CancelLater { handle: None }.start();
 
-//         // then, cancel the future which would already be completed
-//         actix_rt::spawn(
-//             Delay::new(Instant::now() + Duration::from_millis(100))
-//                 .map_err(|_| ())
-//                 .map(move |_| addr.do_send(CancelMessage)),
-//         );
+        // then, cancel the future which would already be completed
+        actix_rt::spawn(async move {
+            delay_for(Duration::from_millis(100)).await;
+            addr.do_send(CancelMessage);
+        });
 
-//         // finally, terminate the actor, which shouldn't be blocked unless
-//         // the actor context ate up CPU time
-//         actix_rt::spawn(
-//             delay_for(Duration::from_millis(200))
-//                 .map_err(|_| ())
-//                 .map(|_| System::current().stop()),
-//         );
-//     })
-//     .unwrap();
-// }
+        // finally, terminate the actor, which shouldn't be blocked unless
+        // the actor context ate up CPU time
+        actix_rt::spawn(async {
+            delay_for(Duration::from_millis(200)).await;
+            System::current().stop();
+        });
+    })
+    .unwrap();
+}
