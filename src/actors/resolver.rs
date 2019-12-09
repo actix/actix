@@ -38,7 +38,7 @@
 //!    });
 //! }
 //! ```
-use futures::{task, task::Poll, Future};
+use futures::{task, task::Poll, Future, TryFutureExt, TryStreamExt};
 use std::collections::VecDeque;
 use std::io;
 use std::net::SocketAddr;
@@ -248,24 +248,21 @@ impl Handler<Resolve> for Resolver {
     }
 }
 
-impl Handler<Connect> for Resolver {
-    type Result = ResponseActFuture<Self, Result<TcpStream, ResolverError>>;
+// impl Handler<Connect> for Resolver {
+//     type Result = ResponseActFuture<Self, Result<TcpStream, ResolverError>>;
 
-    fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
-        let timeout = msg.timeout;
-        unimplemented!()
-        /*
-        Box::new(
-            ResolveFut::new(
-                msg.name,
-                msg.port.unwrap_or(0),
-                self.resolver.as_ref().unwrap(),
-            )
-            .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
-        )
-        */
-    }
-}
+//     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
+//         let timeout = msg.timeout;
+//         Box::new(
+//             ResolveFut::new(
+//                 msg.name,
+//                 msg.port.unwrap_or(0),
+//                 self.resolver.as_ref().unwrap(),
+//             )
+//             .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
+//         )
+//     }
+// }
 
 // impl Handler<ConnectAddr> for Resolver {
 //     type Result = ResponseActFuture<Self, Result<TcpStream, ResolverError>>;
@@ -428,14 +425,14 @@ impl TcpConnector {
 //         _: &mut Context<Resolver>,
 //         task: &mut task::Context<'_>,
 //     ) -> Poll<Self::Item> {
-//         let this = self.project();
+//         let mut this = self.get_mut();
 //         // timeout
 //         if let Poll::Ready(_) = this.timeout.poll(task) {
 //             return Poll::Ready(Err(ResolverError::Timeout));
 //         }
 //         // connect
 //         loop {
-//             match this.stream.take().unwrap().poll(task) {
+//             match Pin::new(this.stream.take().unwrap()).poll(task) {
 //                 Poll::Ready(Ok(sock)) => return Poll::Ready(Ok(sock)),
 //                 Poll::Pending => return Poll::Pending,
 //                 Poll::Ready(Err(err)) => {

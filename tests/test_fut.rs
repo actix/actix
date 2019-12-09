@@ -1,10 +1,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::stream::futures_ordered;
-use tokio_timer::Delay;
+use futures::{FutureExt, StreamExt};
+use tokio::time::{delay_for, Duration, Instant};
 
 struct MyActor {
     timeout: Arc<AtomicBool>,
@@ -20,10 +19,9 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        Delay::new(Instant::now() + Duration::new(0, 5_000_000))
+        delay_for(Duration::new(0, 5_000_000))
             .then(|_| {
                 System::current().stop();
-                Ok::<_, Error>(())
             })
             .into_actor(self)
             .timeout(Duration::new(0, 100), Error::Timeout)
@@ -59,13 +57,12 @@ impl Actor for MyStreamActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let s = futures_ordered(vec![
-            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
-            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
+        let s = futures::stream::iter(vec![
+            delay_for(Duration::new(0, 5_000_000)),
+            delay_for(Duration::new(0, 5_000_000)),
         ]);
 
-        s.map_err(|_| Error::Generic)
-            .into_actor(self)
+        s.into_actor(self)
             .timeout(Duration::new(0, 1000), Error::Timeout)
             .map_err(|e, act, _| {
                 if e == Error::Timeout {

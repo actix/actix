@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use std::time::Duration;
-use tokio_timer::sleep;
+use tokio::time::delay_for;
 
 struct MyActor;
 
@@ -23,13 +23,10 @@ impl Actor for MyActor {
 #[test]
 fn test_connected() {
     System::run(move || {
-        Arbiter::spawn_fn(move || {
+        Arbiter::spawn(async move {
             let addr = MyActor::start(MyActor);
-            sleep(Duration::from_millis(350))
-                .map(move |()| {
-                    drop(addr);
-                })
-                .map_err(|_| ())
+            delay_for(Duration::from_millis(350)).await;
+            drop(addr);
         });
     })
     .unwrap();

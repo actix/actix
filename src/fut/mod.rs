@@ -8,7 +8,6 @@ use pin_project::pin_project;
 use std::marker::PhantomData;
 use std::time::Duration;
 
-mod and_then;
 mod chain;
 mod either;
 mod from_err;
@@ -26,7 +25,6 @@ mod stream_timeout;
 mod then;
 mod timeout;
 
-pub use self::and_then::AndThen;
 pub use self::either::Either;
 pub use self::from_err::FromErr;
 pub use self::helpers::{Finish, FinishStream};

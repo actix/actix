@@ -63,27 +63,5 @@ where
             Chain::Second(b) => return b.poll(srv, ctx, task),
             Done => panic!("cannot poll a chained future twice"),
         };
-
-        /*
-        let a_result = match *self {
-            Chain::First(ref mut a, _) => match a.poll(srv, ctx, task) {
-                Poll::Pending => return Poll::Pending,
-                Poll::Ready(t) => t,
-            },
-            Chain::Second(ref mut b) => return b.poll(srv, ctx, task),
-            Chain::Done => panic!("cannot poll a chained future twice"),
-        };
-        let data = match mem::replace(self, Chain::Done) {
-            Chain::First(_, c) => c,
-            _ => panic!(),
-        };
-        match f(a_result, data, srv, ctx) {
-            Ok(e) => Poll::Ready(e),
-            Err(mut b) => {
-                let ret = b.poll(srv, ctx, task);
-                *self = Chain::Second(b);
-                ret
-            }
-        }*/
     }
 }
