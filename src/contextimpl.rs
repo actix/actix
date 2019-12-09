@@ -194,7 +194,7 @@ where
 
 pub struct ContextFut<A, C>
 where
-    C: AsyncContextParts<A>,
+    C: AsyncContextParts<A> + Unpin,
     A: Actor<Context = C>,
 {
     ctx: C,
@@ -206,7 +206,7 @@ where
 
 impl<A, C> fmt::Debug for ContextFut<A, C>
 where
-    C: AsyncContextParts<A>,
+    C: AsyncContextParts<A> + Unpin,
     A: Actor<Context = C>,
 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -216,27 +216,22 @@ where
 
 impl<A, C> Drop for ContextFut<A, C>
 where
-    C: AsyncContextParts<A>,
+    C: AsyncContextParts<A> + Unpin,
     A: Actor<Context = C>,
 {
     fn drop(&mut self) {
-        println!("TODO: Contextfut drop not implemented");
         if self.alive() {
             self.ctx.parts().stop();
-            loop {
-                if self.ctx.parts().waiting() {
-                    continue;
-                } else {
-                    break;
-                }
-            }
+            let waker = futures::task::noop_waker();
+            let mut cx = futures::task::Context::from_waker(&waker);
+            let _ = Pin::new(self).poll(&mut cx);
         }
     }
 }
 
 impl<A, C> ContextFut<A, C>
 where
-    C: AsyncContextParts<A>,
+    C: AsyncContextParts<A> + Unpin,
     A: Actor<Context = C>,
 {
     pub fn new(ctx: C, act: A, mailbox: Mailbox<A>) -> Self {
