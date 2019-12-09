@@ -76,15 +76,15 @@ impl Actor for MyStreamActor {
     }
 }
 
-#[test]
-fn test_stream_timeout() {
-    let timeout = Arc::new(AtomicBool::new(false));
-    let timeout2 = Arc::clone(&timeout);
+// #[test]
+// fn test_stream_timeout() {
+//     let timeout = Arc::new(AtomicBool::new(false));
+//     let timeout2 = Arc::clone(&timeout);
 
-    System::run(|| {
-        let _addr = MyStreamActor { timeout: timeout2 }.start();
-    })
-    .unwrap();
+//     System::run(|| {
+//         let _addr = MyStreamActor { timeout: timeout2 }.start();
+//     })
+//     .unwrap();
 
-    assert!(timeout.load(Ordering::Relaxed), "Not timeout");
-}
+//     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
+// }

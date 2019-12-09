@@ -1,12 +1,9 @@
-use std::collections::HashSet;
 use std::mem::drop;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::FutureExt;
-use tokio::time::{delay_for, Delay};
+use tokio::time::{delay_for, Duration};
 
 #[derive(Debug)]
 struct Ping(usize);

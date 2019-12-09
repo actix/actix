@@ -1,11 +1,9 @@
 use std::sync;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::thread;
 
 use actix::prelude::*;
-use futures::{FutureExt, Stream};
-use tokio::time::{delay_for, Duration, Instant};
+use tokio::time::{delay_for, Duration, Instant}; 
 
 #[derive(Debug)]
 struct Num(usize);
@@ -55,8 +53,8 @@ async fn test_stream() {
     assert!(err.load(Ordering::Relaxed));
 }
 
-// #[actix_rt::test]
-// async fn test_stream_with_error() {
+// #[test]
+// fn test_stream_with_error() {
 //     let count = Arc::new(AtomicUsize::new(0));
 //     let error = Arc::new(AtomicBool::new(false));
 //     let items = vec![
