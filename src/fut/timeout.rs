@@ -46,7 +46,7 @@ impl<F, E> ActorFuture for Timeout<F, E>
 where
     F: ActorFuture,
 {
-    type Item = Result<F::Item, E>;
+    type Output = Result<F::Output, E>;
     type Actor = F::Actor;
 
     fn poll(
@@ -54,7 +54,7 @@ where
         act: &mut F::Actor,
         ctx: &mut <F::Actor as Actor>::Context,
         task: &mut Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         let this = self.project();
 
         match this.timeout.poll(task) {

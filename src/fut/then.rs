@@ -37,9 +37,9 @@ impl<A, B, F> ActorFuture for Then<A, B, F>
 where
     A: ActorFuture,
     B: IntoActorFuture<Actor = A::Actor>,
-    F: FnOnce(A::Item, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> B,
+    F: FnOnce(A::Output, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> B,
 {
-    type Item = B::Item;
+    type Output = B::Output;
     type Actor = A::Actor;
 
     fn poll(
@@ -47,7 +47,7 @@ where
         act: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut task::Context<'_>,
-    ) -> Poll<B::Item> {
+    ) -> Poll<B::Output> {
         self.project()
             .state
             .poll(act, ctx, task, |item, f, act, ctx| {

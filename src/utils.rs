@@ -122,7 +122,7 @@ impl<A> ActorFuture for TimerFunc<A>
 where
     A: Actor,
 {
-    type Item = ();
+    type Output = ();
     type Actor = A;
 
     fn poll(
@@ -130,7 +130,7 @@ where
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut task::Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         let mut this = self.get_mut();
         match Pin::new(&mut this.timeout).poll(task) {
             Poll::Ready(_) => {
@@ -214,7 +214,7 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
     type Item = ();
     type Actor = A;
 
-    fn poll(
+    fn poll_next(
         self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,

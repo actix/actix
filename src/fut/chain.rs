@@ -36,14 +36,14 @@ where
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut Context<'_>,
         f: F,
-    ) -> Poll<B::Item>
+    ) -> Poll<B::Output>
     where
         F: FnOnce(
-            A::Item,
+            A::Output,
             C,
             &mut A::Actor,
             &mut <A::Actor as Actor>::Context,
-        ) -> Result<B::Item, B>,
+        ) -> Result<B::Output, B>,
     {
         let mut this = self.as_mut();
         #[project]

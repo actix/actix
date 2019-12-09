@@ -120,7 +120,7 @@ where
     A: Actor + StreamHandler<M>,
     A::Context: AsyncContext<A>,
 {
-    type Item = ();
+    type Output = ();
     type Actor = A;
 
     fn poll(
@@ -128,7 +128,7 @@ where
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         let mut this = self.project();
 
         if !*this.started {

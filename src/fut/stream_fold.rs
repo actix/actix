@@ -1,6 +1,10 @@
-use futures::Future;
+use futures::{
+    task::{Context, Poll},
+    Stream,
+};
+use pin_project::{pin_project, project};
 use std::mem;
-use std::task::Poll;
+use std::pin::Pin;
 
 use crate::actor::Actor; //{Future, Poll, IntoFuture, Async};
 use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
@@ -8,12 +12,14 @@ use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 /// A future used to collect all the results of a stream into one generic type.
 ///
 /// This future is returned by the `ActorStream::fold` method.
+#[pin_project]
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
 pub struct StreamFold<S, F, Fut, T>
 where
     Fut: IntoActorFuture,
 {
+    #[pin]
     stream: S,
     f: F,
     state: State<T, Fut::Future>,
@@ -33,13 +39,12 @@ where
     /// Working on a future the process the previous stream item
     Processing(F),
 }
-/*
+
 pub fn new<S, F, Fut, T>(stream: S, f: F, t: T) -> StreamFold<S, F, Fut, T>
 where
     S: ActorStream,
     F: FnMut(T, S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> Fut,
-    Fut: IntoActorFuture<Item = T, Actor = S::Actor>,
-    S::Error: From<Fut::Error>,
+    Fut: IntoActorFuture<Output = T, Actor = S::Actor>,
 {
     StreamFold {
         stream,
@@ -47,44 +52,51 @@ where
         state: State::Ready(t),
     }
 }
+
 impl<S, F, Fut, T> ActorFuture for StreamFold<S, F, Fut, T>
 where
-    S: ActorStream,
+    S: ActorStream + Unpin,
     F: FnMut(T, S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> Fut,
-    Fut: IntoActorFuture<Item = T, Actor = S::Actor>,
-    S::Error: From<Fut::Error>,
+    Fut: IntoActorFuture<Output = T, Actor = S::Actor>,
+    Fut::Future: ActorFuture + Unpin,
 {
-    type Item = T;
+    type Output = T;
     type Actor = S::Actor;
+    #[project]
     fn poll(
-        &mut self,
+        mut self: Pin<&mut Self>,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
-    ) -> Poll<T, S::Error> {
+        task: &mut Context<'_>,
+    ) -> Poll<T> {
+        let mut this = self.get_mut();
         loop {
-            match mem::replace(&mut self.state, State::Empty) {
+            match mem::replace(&mut this.state, State::Empty) {
                 State::Empty => panic!("cannot poll Fold twice"),
-                State::Ready(state) => match self.stream.poll(act, ctx)? {
-                    Poll::Ready(Some(e)) => {
-                        let future = (self.f)(state, e, act, ctx);
-                        let future = future.into_future();
-                        self.state = State::Processing(future);
+                State::Ready(state) => {
+                    match Pin::new(&mut this.stream).poll_next(act, ctx, task) {
+                        Poll::Ready(Some(e)) => {
+                            let future = (this.f)(state, e, act, ctx);
+                            let future = future.into_future();
+                            this.state = State::Processing(future);
+                        }
+                        Poll::Ready(None) => return Poll::Ready(state),
+                        Poll::Pending => {
+                            this.state = State::Ready(state);
+                            return Poll::Pending;
+                        }
                     }
-                    Poll::Ready(None) => return Ok(Poll::Ready(state)),
-                    Poll::Pending => {
-                        self.state = State::Ready(state);
-                        return Ok(Poll::Pending);
+                }
+                State::Processing(mut fut) => {
+                    match unsafe { Pin::new_unchecked(&mut fut) }.poll(act, ctx, task) {
+                        Poll::Ready(state) => this.state = State::Ready(state),
+                        Poll::Pending => {
+                            this.state = State::Processing(fut);
+                            return Poll::Pending;
+                        }
                     }
-                },
-                State::Processing(mut fut) => match fut.poll(act, ctx)? {
-                    Poll::Ready(state) => self.state = State::Ready(state),
-                    Poll::Pending => {
-                        self.state = State::Processing(fut);
-                        return Ok(Poll::Pending);
-                    }
-                },
+                }
             }
         }
     }
 }
-*/

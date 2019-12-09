@@ -2,12 +2,10 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::sync::oneshot::{channel, Sender};
-use futures::{future, Future};
-use tokio_timer::Delay;
+use futures::channel::oneshot::{channel, Sender};
+use tokio::time::{delay_for, Duration};
 
 struct MyActor {
     started: Arc<AtomicBool>,
@@ -29,9 +27,7 @@ impl Actor for MyActor {
         if self.restore_after_stop {
             let (tx, rx) = channel();
             self.temp = Some(tx);
-            rx.actfuture()
-                .then(|_, _: &mut MyActor, _: &mut _| actix::fut::result(Ok(())))
-                .spawn(ctx);
+            rx.actfuture().spawn(ctx);
             Running::Continue
         } else {
             Running::Stop
@@ -122,15 +118,12 @@ fn test_stop_after_drop_address() {
         }
         .start();
 
-        actix_rt::spawn(futures::lazy(move || {
-            Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
-                drop(addr);
-                Delay::new(Instant::now() + Duration::new(0, 10_000)).then(|_| {
-                    System::current().stop();
-                    future::result(Ok(()))
-                })
-            })
-        }));
+        actix_rt::spawn(async move {
+            delay_for(Duration::new(0, 100)).await;
+            drop(addr);
+            delay_for(Duration::new(0, 10_000)).await;
+            System::current().stop();
+        });
     })
     .unwrap();
 
@@ -158,13 +151,11 @@ fn test_stop_after_drop_sync_address() {
         }
         .start();
 
-        actix_rt::spawn(futures::lazy(move || {
-            Delay::new(Instant::now() + Duration::new(0, 100)).then(move |_| {
-                drop(addr);
-                System::current().stop();
-                future::result(Ok(()))
-            })
-        }));
+        actix_rt::spawn(async move {
+            delay_for(Duration::new(0, 100)).await;
+            drop(addr);
+            System::current().stop();
+        });
     })
     .unwrap();
 
@@ -195,19 +186,16 @@ fn test_stop_after_drop_sync_actor() {
             restore_after_stop: false,
         });
 
-        actix_rt::spawn(futures::lazy(move || {
-            Delay::new(Instant::now() + Duration::from_secs(2)).then(move |_| {
-                assert!(started2.load(Ordering::Relaxed), "Not started");
-                assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
-                assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
-                drop(addr);
+        actix_rt::spawn(async move {
+            delay_for(Duration::from_secs(2)).await;
+            assert!(started2.load(Ordering::Relaxed), "Not started");
+            assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
+            assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
+            drop(addr);
 
-                Delay::new(Instant::now() + Duration::from_secs(2)).then(move |_| {
-                    System::current().stop();
-                    future::result(Ok(()))
-                })
-            })
-        }));
+            delay_for(Duration::from_secs(2)).await;
+            System::current().stop();
+        });
     })
     .unwrap();
 
@@ -235,12 +223,10 @@ fn test_stop() {
         }
         .start();
 
-        actix_rt::spawn(
-            Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
-                System::current().stop();
-                future::result(Ok(()))
-            }),
-        );
+        actix_rt::spawn(async move {
+            delay_for(Duration::new(0, 100)).await;
+            System::current().stop();
+        });
     })
     .unwrap();
 
@@ -268,12 +254,10 @@ fn test_stop_restore_after_stopping() {
         }
         .start();
 
-        actix_rt::spawn(
-            Delay::new(Instant::now() + Duration::new(0, 100)).then(|_| {
-                System::current().stop();
-                future::result(Ok(()))
-            }),
-        );
+        actix_rt::spawn(async move {
+            delay_for(Duration::new(0, 100)).await;
+            System::current().stop();
+        });
     })
     .unwrap();
 

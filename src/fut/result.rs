@@ -93,7 +93,7 @@ impl<T, E, A> ActorFuture for FutureResult<T, E, A>
 where
     A: Actor,
 {
-    type Item = Result<T, E>;
+    type Output = Result<T, E>;
     type Actor = A;
 
     fn poll(
@@ -101,7 +101,7 @@ where
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
         _: &mut task::Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         Poll::Ready(
             unsafe { self.get_unchecked_mut() }
                 .inner

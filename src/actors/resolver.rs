@@ -353,14 +353,14 @@ impl ResolveFut {
 }
 
 impl ActorFuture for ResolveFut {
-    type Item = Result<VecDeque<SocketAddr>, ResolverError>;
+    type Output = Result<VecDeque<SocketAddr>, ResolverError>;
     type Actor = Resolver;
     fn poll(
         mut self: Pin<&mut Self>,
         _: &mut Resolver,
         _: &mut Context<Resolver>,
         task: &mut task::Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         if let Some(err) = self.error.take() {
             Poll::Ready(Err(err))
         } else if let Some(err) = self.error2.take() {

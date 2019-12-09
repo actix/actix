@@ -56,7 +56,7 @@ where
 pub struct MessageResult<M: Message>(pub M::Result);
 
 /// A specialized actor future for asynchronous message handling.
-pub type ResponseActFuture<A, I> = Box<dyn ActorFuture<Item = I, Actor = A>>;
+pub type ResponseActFuture<A, I> = Box<dyn ActorFuture<Output = I, Actor = A>>;
 
 /// A specialized future for asynchronous message handling.
 pub type ResponseFuture<I> = Box<dyn Future<Output = I> + Unpin>;
@@ -253,7 +253,7 @@ where
 
 enum ActorResponseTypeItem<A, I, E> {
     Result(Result<I, E>),
-    Fut(Box<dyn ActorFuture<Item = Result<I, E>, Actor = A>>),
+    Fut(Box<dyn ActorFuture<Output = Result<I, E>, Actor = A>>),
 }
 
 /// A helper type for representing different types of message responses.
@@ -285,7 +285,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     /// Creates an asynchronous response.
     pub fn r#async<T>(fut: T) -> Self
     where
-        T: ActorFuture<Item = Result<I, E>, Actor = A> + 'static,
+        T: ActorFuture<Output = Result<I, E>, Actor = A> + 'static,
     {
         Self {
             item: ActorResponseTypeItem::Fut(Box::new(fut)),

@@ -20,17 +20,18 @@ impl Actor for MyActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         delay_for(Duration::new(0, 5_000_000))
-            .then(|_| {
-                System::current().stop();
-            })
             .into_actor(self)
             .timeout(Duration::new(0, 100), Error::Timeout)
-            .map_err(|e, act, _| {
-                if e == Error::Timeout {
+            .map(|e, act, _| {
+                if e == Err(Error::Timeout) {
                     act.timeout.store(true, Ordering::Relaxed);
                     System::current().stop();
                     ()
                 }
+            })
+            .then(|_, _, _| {
+                System::current().stop();
+                async { () }
             })
             .wait(ctx)
     }

@@ -18,7 +18,7 @@ use futures::ready;
 
 #[pin_project]
 pub(crate) struct ActorWaitItem<A: Actor>(
-    #[pin] Box<dyn ActorFuture<Item = (), Actor = A>>,
+    #[pin] Box<dyn ActorFuture<Output = (), Actor = A>>,
 );
 
 impl<A> ActorWaitItem<A>
@@ -29,7 +29,7 @@ where
     #[inline]
     pub fn new<F>(fut: F) -> Self
     where
-        F: ActorFuture<Item = (), Actor = A> + 'static,
+        F: ActorFuture<Output = (), Actor = A> + 'static,
     {
         ActorWaitItem(Box::new(fut))
     }
@@ -91,7 +91,7 @@ where
     A::Context: AsyncContext<A>,
     M: Message + 'static,
 {
-    type Item = ();
+    type Output = ();
     type Actor = A;
 
     fn poll(
@@ -99,7 +99,7 @@ where
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut task::Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         let mut this = self.get_mut();
         let _ = ready!(Pin::new(&mut this.timeout).poll(task));
         let fut = A::handle(act, this.msg.take().unwrap(), ctx);
@@ -138,7 +138,7 @@ where
     A::Context: AsyncContext<A>,
     M: Message,
 {
-    type Item = ();
+    type Output = ();
     type Actor = A;
 
     fn poll(
@@ -146,7 +146,7 @@ where
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut task::Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         let mut this = self.get_mut();
         let fut = Handler::handle(act, this.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
@@ -187,7 +187,7 @@ where
     A::Context: AsyncContext<A>,
     M: Message,
 {
-    type Item = ();
+    type Output = ();
     type Actor = A;
 
     fn poll(
@@ -195,7 +195,7 @@ where
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut task::Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         let mut this = self.project();
         loop {
             match this.stream.as_mut().poll_next(task) {

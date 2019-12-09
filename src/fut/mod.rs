@@ -15,11 +15,9 @@ mod helpers;
 mod map;
 mod map_err;
 mod result;
-mod stream_and_then;
 mod stream_finish;
 mod stream_fold;
 mod stream_map;
-mod stream_map_err;
 mod stream_then;
 mod stream_timeout;
 mod then;
@@ -31,11 +29,9 @@ pub use self::helpers::{Finish, FinishStream};
 pub use self::map::Map;
 pub use self::map_err::{DropErr, MapErr};
 pub use self::result::{err, ok, result, FutureResult};
-pub use self::stream_and_then::StreamAndThen;
 pub use self::stream_finish::StreamFinish;
 pub use self::stream_fold::StreamFold;
 pub use self::stream_map::StreamMap;
-pub use self::stream_map_err::StreamMapErr;
 pub use self::stream_then::StreamThen;
 pub use self::stream_timeout::StreamTimeout;
 pub use self::then::Then;
@@ -133,7 +129,7 @@ use std::task;
 pub trait ActorFuture {
     /// The type of value that this future will resolved with if it is
     /// successful.
-    type Item;
+    type Output;
 
     /// The actor within which this future runs
     type Actor: Actor;
@@ -143,88 +139,43 @@ pub trait ActorFuture {
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut Context<'_>,
-    ) -> Poll<Self::Item>;
+    ) -> Poll<Self::Output>;
 
-    /*
     /// Map this future's result to a different type, returning a new future of
     /// the resulting type.
     fn map<F, U>(self, f: F) -> Map<Self, F>
     where
         F: FnOnce(
-            Self::Item,
+            Self::Output,
             &mut Self::Actor,
             &mut <Self::Actor as Actor>::Context,
         ) -> U,
-        Self: Sized,
+        Self: Sized + Unpin,
     {
         map::new(self, f)
     }
-    /// Map this future's error to a different error, returning a new future.
-    fn map_err<F, E>(self, f: F) -> MapErr<Self, F>
-    where
-        F: FnOnce(
-            Self::Error,
-            &mut Self::Actor,
-            &mut <Self::Actor as Actor>::Context,
-        ) -> E,
-        Self: Sized,
-    {
-        map_err::new(self, f)
-    }
-    /// Drop this future's error, returning a new future.
-    fn drop_err(self) -> DropErr<Self>
-    where
-        Self: Sized,
-    {
-        map_err::DropErr::new(self)
-    }
-    /// Map this future's error to any error implementing `From` for
-    /// this future's `Error`, returning a new future.
-    fn from_err<E: From<Self::Error>>(self) -> FromErr<Self, E>
-    where
-        Self: Sized,
-    {
-        from_err::new(self)
-    }
-    */
 
     /// Chain on a computation for when a future finished, passing the result of
     /// the future to the provided closure `f`.
     fn then<F, B>(self, f: F) -> Then<Self, B, F>
     where
         F: FnOnce(
-            Self::Item,
+            Self::Output,
             &mut Self::Actor,
             &mut <Self::Actor as Actor>::Context,
         ) -> B,
         B: IntoActorFuture<Actor = Self::Actor>,
-        Self: Sized,
+        Self: Sized + Unpin,
     {
         then::new(self, f)
     }
-
-    /*
-    /// Execute another future after this one has resolved successfully.
-    fn and_then<F, B>(self, f: F) -> AndThen<Self, B, F>
-    where
-        F: FnOnce(
-            Self::Item,
-            &mut Self::Actor,
-            &mut <Self::Actor as Actor>::Context,
-        ) -> B,
-        B: IntoActorFuture<Error = Self::Error, Actor = Self::Actor>,
-        Self: Sized,
-    {
-        and_then::new(self, f)
-    }
-    */
 
     /// Add timeout to futures chain.
     ///
     /// `err` value get returned as a timeout error.
     fn timeout<E>(self, timeout: Duration, err: E) -> Timeout<Self, E>
     where
-        Self: Sized,
+        Self: Sized + Unpin,
     {
         timeout::new(self, timeout, err)
     }
@@ -240,98 +191,72 @@ pub trait ActorStream {
     /// The actor within which this stream runs.
     type Actor: Actor;
 
-    fn poll(
+    fn poll_next(
         self: Pin<&mut Self>,
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>>;
-    /*
-        /// Converts a stream of type `T` to a stream of type `U`.
-        fn map<U, F>(self, f: F) -> StreamMap<Self, F>
-        where
-            F: FnMut(
-                Self::Item,
-                &mut Self::Actor,
-                &mut <Self::Actor as Actor>::Context,
-            ) -> U,
-            Self: Sized,
-        {
-            stream_map::new(self, f)
-        }
-        /// Converts a stream of error type `T` to a stream of error type `E`.
-        fn map_err<E, F>(self, f: F) -> StreamMapErr<Self, F>
-        where
-            F: FnMut(
-                Self::Error,
-                &mut Self::Actor,
-                &mut <Self::Actor as Actor>::Context,
-            ) -> E,
-            Self: Sized,
-        {
-            stream_map_err::new(self, f)
-        }
-        /// Chain on a computation for when a value is ready, passing the resulting
-        /// item to the provided closure `f`.
-        fn then<F, U>(self, f: F) -> StreamThen<Self, F, U>
-        where
-            F: FnMut(
-                Result<Self::Item, Self::Error>,
-                &mut Self::Actor,
-                &mut <Self::Actor as Actor>::Context,
-            ) -> U,
-            U: IntoActorFuture<Actor = Self::Actor>,
-            Self: Sized,
-        {
-            stream_then::new(self, f)
-        }
-        /// Chain on a computation for when a value is ready, passing the successful
-        /// results to the provided closure `f`.
-        fn and_then<F, U>(self, f: F) -> StreamAndThen<Self, F, U>
-        where
-            F: FnMut(
-                Self::Item,
-                &mut Self::Actor,
-                &mut <Self::Actor as Actor>::Context,
-            ) -> U,
-            U: IntoActorFuture<Error = Self::Error, Actor = Self::Actor>,
-            Self: Sized,
-        {
-            stream_and_then::new(self, f)
-        }
-    ok
-        /// Execute an accumulating computation over a stream, collecting all the
-        /// values into one final result.
-        fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut, T>
-        where
-            F: FnMut(
-                T,
-                Self::Item,
-                &mut Self::Actor,
-                &mut <Self::Actor as Actor>::Context,
-            ) -> Fut,
-            Fut: IntoActorFuture<Actor = Self::Actor, Item = T>,
-            Self::Error: From<Fut::Error>,
-            Self: Sized,
-        {
-            stream_fold::new(self, f, init)
-        }
-        /// Add timeout to stream.
-        ///
-        /// `err` value get returned as a timeout error.
-        fn timeout(self, timeout: Duration, err: Self::Error) -> StreamTimeout<Self>
-        where
-            Self: Sized,
-            Self::Error: Clone,
-        {
-            stream_timeout::new(self, timeout, err)
-        }
-        */
+
+    /// Converts a stream of type `T` to a stream of type `U`.
+    fn map<U, F>(self, f: F) -> StreamMap<Self, F>
+    where
+        F: FnMut(
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> U,
+        Self: Sized,
+    {
+        stream_map::new(self, f)
+    }
+
+    /// Chain on a computation for when a value is ready, passing the resulting
+    /// item to the provided closure `f`.
+    fn then<F, U>(self, f: F) -> StreamThen<Self, F, U>
+    where
+        F: FnMut(
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> U,
+        U: IntoActorFuture<Actor = Self::Actor>,
+        Self: Sized + Unpin,
+    {
+        stream_then::new(self, f)
+    }
+
+    /// Execute an accumulating computation over a stream, collecting all the
+    /// values into one final result.
+    fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut, T>
+    where
+        F: FnMut(
+            T,
+            Self::Item,
+            &mut Self::Actor,
+            &mut <Self::Actor as Actor>::Context,
+        ) -> Fut,
+        Fut: IntoActorFuture<Actor = Self::Actor, Output = T>,
+        Self: Sized,
+    {
+        stream_fold::new(self, f, init)
+    }
+
+    /// Add timeout to stream.
+    ///
+    /// `err` value get returned as a timeout error.
+    // fn timeout(self, timeout: Duration, err: Self::Error) -> StreamTimeout<Self>
+    // where
+    //     Self: Sized,
+    //     Self::Error: Clone,
+    // {
+    //     stream_timeout::new(self, timeout, err)
+    // }
 
     /// Converts a stream to a future that resolves when stream finishes.
     fn finish(self) -> StreamFinish<Self>
     where
-        Self: Sized,
+        Self: Sized + Unpin,
     {
         stream_finish::new(self)
     }
@@ -344,10 +269,10 @@ pub trait ActorStream {
 pub trait IntoActorFuture {
     /// The future that this type can be converted into.
     #[rustfmt::skip]
-    type Future: ActorFuture<Item=Self::Item, Actor=Self::Actor>;
+    type Future: ActorFuture<Output=Self::Output, Actor=Self::Actor>;
 
     /// The item that the future may resolve with.
-    type Item;
+    type Output;
     /// The actor within which this future runs
     type Actor: Actor;
 
@@ -357,7 +282,7 @@ pub trait IntoActorFuture {
 
 impl<F: ActorFuture> IntoActorFuture for F {
     type Future = F;
-    type Item = F::Item;
+    type Output = F::Output;
     type Actor = F::Actor;
 
     fn into_future(self) -> F {
@@ -366,7 +291,7 @@ impl<F: ActorFuture> IntoActorFuture for F {
 }
 
 impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
-    type Item = F::Item;
+    type Output = F::Output;
     type Actor = F::Actor;
 
     fn poll(
@@ -374,7 +299,7 @@ impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
         srv: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         unsafe { Pin::new_unchecked(&mut **self.as_mut()) }.poll(srv, ctx, task)
     }
 }
@@ -385,10 +310,10 @@ where
     A: Actor,
 {
     /// The future that this type can be converted into.
-    type Future: ActorFuture<Item = Self::Item, Actor = A>;
+    type Future: ActorFuture<Output = Self::Output, Actor = A>;
 
     /// The item that the future may resolve with.
-    type Item;
+    type Output;
 
     #[doc(hidden)]
     fn actfuture(self) -> Self::Future;
@@ -399,7 +324,7 @@ where
 
 impl<F: Future, A: Actor> WrapFuture<A> for F {
     type Future = FutureWrap<F, A>;
-    type Item = F::Output;
+    type Output = F::Output;
 
     #[doc(hidden)]
     fn actfuture(self) -> Self::Future {
@@ -441,7 +366,7 @@ where
     F: Future,
     A: Actor,
 {
-    type Item = F::Output;
+    type Output = F::Output;
     type Actor = A;
 
     fn poll(
@@ -449,7 +374,7 @@ where
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
         task: &mut task::Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         self.project().fut.poll(task)
     }
 }
@@ -513,7 +438,7 @@ where
     type Item = S::Item;
     type Actor = A;
 
-    fn poll(
+    fn poll_next(
         self: Pin<&mut Self>,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,

@@ -20,14 +20,11 @@ impl Actor for MyActor {
     }
 }
 
-#[test]
-fn test_connected() {
-    System::run(move || {
-        Arbiter::spawn(async move {
-            let addr = MyActor::start(MyActor);
-            delay_for(Duration::from_millis(350)).await;
-            drop(addr);
-        });
-    })
-    .unwrap();
+#[actix_rt::test]
+async fn test_connected() {
+    Arbiter::spawn(async move {
+        let addr = MyActor::start(MyActor);
+        delay_for(Duration::from_millis(350)).await;
+        drop(addr);
+    });
 }

@@ -34,16 +34,16 @@ where
 impl<U, A, F> ActorFuture for Map<A, F>
 where
     A: ActorFuture + Unpin,
-    F: FnOnce(A::Item, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> U,
+    F: FnOnce(A::Output, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> U,
 {
-    type Item = U;
+    type Output = U;
     type Actor = A::Actor;
     fn poll(
         mut self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut Context<'_>,
-    ) -> Poll<Self::Item> {
+    ) -> Poll<Self::Output> {
         let mut this = self.as_mut();
         let e = match Pin::new(&mut this.future).poll(act, ctx, task) {
             Poll::Pending => return Poll::Pending,

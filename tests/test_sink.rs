@@ -1,9 +1,10 @@
 use actix::io::SinkWrite;
 use actix::prelude::*;
 use bytes::Bytes;
+use futures::channel::mpsc;
 use futures::sink::Sink;
-use futures::sync::mpsc;
-use futures::{Async, AsyncSink, Poll, StartSend};
+use futures::task::{Context, Poll};
+use std::pin::Pin;
 
 type ByteSender = mpsc::UnboundedSender<u8>;
 
@@ -14,23 +15,22 @@ struct MySink {
 
 // simple sink that send one bit at a time
 // and produce an error on '#'
-impl Sink for MySink {
-    type SinkItem = Bytes;
-    type SinkError = ();
+impl Sink<Bytes> for MySink {
+    type Error = ();
 
-    fn start_send(
-        &mut self,
-        bytes: Bytes,
-    ) -> StartSend<Self::SinkItem, Self::SinkError> {
+    fn start_send(self: Pin<&mut Self>, bytes: Bytes) -> Result<(), Self::Error> {
         self.queue.push(bytes);
-        Ok(AsyncSink::Ready)
+        Ok(())
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
+    fn poll_ready(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
         if !self.queue.is_empty() {
             let bytes = &mut self.queue[0];
             if bytes[0] == b'#' {
-                return Err(());
+                return Poll::Ready(Err(()));
             }
 
             self.sender.unbounded_send(bytes[0]).unwrap();
@@ -40,10 +40,10 @@ impl Sink for MySink {
             }
         }
         if self.queue.is_empty() {
-            Ok(Poll::Ready(()))
+            Poll::Ready(Ok(()))
         } else {
-            futures::task::current().notify();
-            Ok(Poll::Pending)
+            cx.waker().wake();
+            Poll::Pending
         }
     }
 }
@@ -58,7 +58,7 @@ impl Message for Data {
 }
 
 struct MyActor {
-    sink: SinkWrite<MySink>,
+    sink: SinkWrite<Bytes, MySink>,
 }
 
 impl Actor for MyActor {
@@ -175,14 +175,14 @@ fn test_send_error() {
 type BytesSender = mpsc::UnboundedSender<Bytes>;
 
 struct AnotherActor {
-    sink: SinkWrite<BytesSender>,
+    sink: SinkWrite<Bytes, BytesSender>,
 }
 
 impl Actor for AnotherActor {
     type Context = actix::Context<Self>;
 }
 
-impl actix::io::WriteHandler<mpsc::SendError<Bytes>> for AnotherActor {
+impl actix::io::WriteHandler<mpsc::SendError> for AnotherActor {
     fn finished(&mut self, _ctxt: &mut Self::Context) {
         System::current().stop();
     }
