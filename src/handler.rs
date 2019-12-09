@@ -1,5 +1,5 @@
-use std::fmt;
 use futures::Future;
+use std::fmt;
 use std::sync::Arc;
 
 use futures::channel::oneshot::Sender as SyncSender;

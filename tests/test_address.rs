@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use actix::prelude::*;
 use futures::Future;
-use tokio_timer::Delay;
+use tokio::time::Delay;
 
 #[derive(Message, Debug)]
 struct Ping(usize);

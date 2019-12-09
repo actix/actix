@@ -1,13 +1,21 @@
 use actix::prelude::*;
-use futures::Future;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use tokio::time::{delay_for, Duration};
 
-#[derive(Debug, Message)]
+#[derive(Debug)]
 struct Panic();
 
-#[derive(Debug, Message)]
+impl Message for Panic {
+    type Result = ();
+}
+
+#[derive(Debug)]
 struct Ping(usize);
+
+impl Message for Ping {
+    type Result = ();
+}
 
 struct MyActor(Arc<AtomicUsize>);
 
@@ -33,20 +41,18 @@ impl Handler<Panic> for MyActor {
     }
 }
 
-#[test]
-fn test_start_actor_message() {
+#[actix_rt::test]
+async fn test_start_actor_message() {
     let count = Arc::new(AtomicUsize::new(0));
     let act_count = Arc::clone(&count);
 
-    System::run(move || {
-        let arbiter = Arbiter::new();
+    let arbiter = Arbiter::new();
 
-        actix_rt::spawn(arbiter.exec(|| MyActor(act_count).start()).then(|res| {
-            res.unwrap().do_send(Ping(1));
-            Ok(())
-        }));
-    })
-    .unwrap();
+    actix_rt::spawn(async move {
+        let res = arbiter.exec(|| MyActor(act_count).start()).await;
+        res.unwrap().do_send(Ping(1));
+    });
 
+    delay_for(Duration::new(0, 10_000)).await;
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }

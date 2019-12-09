@@ -39,7 +39,7 @@ http = ["actix-http"]
 
 [dependencies]
 actix-rt = { git = "https://github.com/actix/actix-net", branch = "master" }
-actix_derive = "0.4"
+actix_derive = ""
 bytes = ""
 crossbeam-channel = ""
 derive_more = ""
