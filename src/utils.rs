@@ -205,7 +205,6 @@ trait IntervalFuncBox<A: Actor>: 'static {
 impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {
     #[allow(clippy::boxed_local)]
     fn call(&mut self, act: &mut A, ctx: &mut A::Context) {
-        println!("got here");
         (*self)(act, ctx)
     }
 }
@@ -221,11 +220,9 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
         task: &mut task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
-        println!("got here Poll::Ready");
         loop {
             match this.interval.poll_tick(task) {
                 Poll::Ready(_) => {
-                    println!("got here Poll::Ready");
                     //Interval Stream cannot return None
                     this.f.call(act, ctx);
                 }

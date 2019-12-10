@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use actix::prelude::*;
-use tokio::time::{delay_for, Duration, Instant}; 
+use tokio::time::{delay_for, Duration, Instant};
 
 #[derive(Debug)]
 struct Num(usize);
@@ -205,10 +205,9 @@ impl Actor for IntervalActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.instant = Some(Instant::now());
-        ctx.run_interval(Duration::from_millis(10), move |act, ctx| {
+        ctx.run_interval(Duration::from_millis(110), move |act, ctx| {
             act.elapses_left -= 1;
 
-            println!("got here in closure func ");
             if act.elapses_left == 0 {
                 act.sender
                     .send(act.instant.take().expect("To have Instant"))
@@ -220,22 +219,22 @@ impl Actor for IntervalActor {
     }
 }
 
-// #[actix_rt::test]
-// async fn test_run_interval() {
-//     const MAX_WAIT: Duration = Duration::from_millis(100_000);
+#[test]
+fn test_run_interval() {
+    const MAX_WAIT: Duration = Duration::from_millis(10_000);
 
-//     let (sender, receiver) = sync::mpsc::channel();
-//     thread::spawn(move || {
-//         System::run(move || {
-//             let _addr = IntervalActor::new(10, sender).start();
-//         })
-//         .unwrap();
-//     });
+    let (sender, receiver) = sync::mpsc::channel();
+    std::thread::spawn(move || {
+        System::run(move || {
+            let _addr = IntervalActor::new(10, sender).start();
+        })
+        .unwrap();
+    });
 
-//     let result = receiver
-//         .recv_timeout(MAX_WAIT)
-//         .expect("To receive response in time");
+    let result = receiver
+        .recv_timeout(MAX_WAIT)
+        .expect("To receive response in time");
 
-//     //We wait 10 intervals by ~100ms
-//     assert_eq!(result.elapsed().as_secs(), 1);
-// }
+    //We wait 10 intervals by ~100ms
+    assert_eq!(result.elapsed().as_secs(), 1);
+}

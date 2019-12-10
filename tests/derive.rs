@@ -1,199 +1,197 @@
-// use actix::prelude::*;
-// use futures::future;
-// use std::ops::Mul;
+use std::ops::Mul;
 
-// #[derive(Message)]
-// struct Empty;
+use actix::prelude::*;
+use actix_derive::{Message, MessageResponse};
 
-// struct EmptyActor;
+#[derive(Message)]
+#[rtype(result = "()")]
+struct Empty;
 
-// impl Actor for EmptyActor {
-//     type Context = Context<Self>;
-// }
+struct EmptyActor;
 
-// impl Handler<Empty> for EmptyActor {
-//     type Result = ();
+impl Actor for EmptyActor {
+    type Context = Context<Self>;
+}
 
-//     fn handle(&mut self, _message: Empty, _context: &mut Context<Self>) {}
-// }
+impl Handler<Empty> for EmptyActor {
+    type Result = ();
 
-// #[test]
-// #[cfg_attr(feature = "cargo-clippy", allow(unit_cmp))]
-// fn response_derive_empty() {
-//     System::run(|| {
-//         let addr = EmptyActor.start();
-//         let res = addr.send(Empty);
+    fn handle(&mut self, _message: Empty, _context: &mut Context<Self>) {}
+}
 
-//         actix::spawn(res.then(|res| {
-//             match res {
-//                 Ok(result) => assert!(result == ()),
-//                 _ => panic!("Something went wrong"),
-//             }
+#[test]
+#[cfg_attr(feature = "cargo-clippy", allow(unit_cmp))]
+fn response_derive_empty() {
+    System::run(|| {
+        let addr = EmptyActor.start();
+        let res = addr.send(Empty);
 
-//             System::current().stop();
-//         }));
-//     })
-//     .unwrap();
-// }
+        actix_rt::spawn(async move {
+            match res.await {
+                Ok(result) => assert!(result == ()),
+                _ => panic!("Something went wrong"),
+            }
 
-// #[derive(Message)]
-// #[rtype(result = "Result<usize, ()>")]
-// struct SumResult(usize, usize);
+            System::current().stop();
+        });
+    })
+    .unwrap();
+}
 
-// struct SumResultActor;
+#[derive(Message)]
+#[rtype(result = "Result<usize, ()>")]
+struct SumResult(usize, usize);
 
-// impl Actor for SumResultActor {
-//     type Context = Context<Self>;
-// }
+struct SumResultActor;
 
-// impl Handler<SumResult> for SumResultActor {
-//     type Result = Result<usize, ()>;
+impl Actor for SumResultActor {
+    type Context = Context<Self>;
+}
 
-//     fn handle(
-//         &mut self,
-//         message: SumResult,
-//         _context: &mut Context<Self>,
-//     ) -> Self::Result {
-//         Ok(message.0 + message.1)
-//     }
-// }
+impl Handler<SumResult> for SumResultActor {
+    type Result = Result<usize, ()>;
 
-// #[test]
-// pub fn derive_result() {
-//     System::run(|| {
-//         let addr = SumResultActor.start();
-//         let res = addr.send(SumResult(10, 5));
+    fn handle(
+        &mut self,
+        message: SumResult,
+        _context: &mut Context<Self>,
+    ) -> Self::Result {
+        Ok(message.0 + message.1)
+    }
+}
 
-//         actix::spawn(res.then(|res| {
-//             match res {
-//                 Ok(result) => assert!(result == Ok(10 + 5)),
-//                 _ => panic!("Something went wrong"),
-//             }
+#[test]
+pub fn derive_result() {
+    System::run(|| {
+        let addr = SumResultActor.start();
+        let res = addr.send(SumResult(10, 5));
 
-//             System::current().stop();
-//             future::result(Ok(()))
-//         }));
-//     })
-//     .unwrap();
-// }
+        actix_rt::spawn(async move {
+            match res.await {
+                Ok(result) => assert!(result == Ok(10 + 5)),
+                _ => panic!("Something went wrong"),
+            }
 
-// #[derive(Message)]
-// #[rtype(usize)]
-// struct SumOne(usize, usize);
+            System::current().stop();
+        });
+    })
+    .unwrap();
+}
 
-// struct SumOneActor;
+#[derive(Message)]
+#[rtype(usize)]
+struct SumOne(usize, usize);
 
-// impl Actor for SumOneActor {
-//     type Context = Context<Self>;
-// }
+struct SumOneActor;
 
-// impl Handler<SumOne> for SumOneActor {
-//     type Result = usize;
+impl Actor for SumOneActor {
+    type Context = Context<Self>;
+}
 
-//     fn handle(&mut self, message: SumOne, _context: &mut Context<Self>) -> Self::Result {
-//         message.0 + message.1
-//     }
-// }
+impl Handler<SumOne> for SumOneActor {
+    type Result = usize;
 
-// #[test]
-// pub fn response_derive_one() {
-//     System::run(|| {
-//         let addr = SumOneActor.start();
-//         let res = addr.send(SumOne(10, 5));
+    fn handle(&mut self, message: SumOne, _context: &mut Context<Self>) -> Self::Result {
+        message.0 + message.1
+    }
+}
 
-//         actix::spawn(res.then(|res| {
-//             match res {
-//                 Ok(result) => assert!(result == 10 + 5),
-//                 _ => panic!("Something went wrong"),
-//             }
+#[test]
+pub fn response_derive_one() {
+    System::run(|| {
+        let addr = SumOneActor.start();
+        let res = addr.send(SumOne(10, 5));
 
-//             System::current().stop();
-//             future::result(Ok(()))
-//         }));
-//     })
-//     .unwrap();
-// }
+        actix_rt::spawn(async move {
+            match res.await {
+                Ok(result) => assert!(result == 10 + 5),
+                _ => panic!("Something went wrong"),
+            }
 
-// #[derive(MessageResponse, PartialEq)]
-// struct MulRes(usize);
+            System::current().stop();
+        });
+    })
+    .unwrap();
+}
 
-// #[derive(Message)]
-// #[rtype(MulRes)]
-// struct MulOne(usize, usize);
+#[derive(MessageResponse, PartialEq)]
+struct MulRes(usize);
 
-// struct MulOneActor;
+#[derive(Message)]
+#[rtype(MulRes)]
+struct MulOne(usize, usize);
 
-// impl Actor for MulOneActor {
-//     type Context = Context<Self>;
-// }
+struct MulOneActor;
 
-// impl Handler<MulOne> for MulOneActor {
-//     type Result = MulRes;
+impl Actor for MulOneActor {
+    type Context = Context<Self>;
+}
 
-//     fn handle(&mut self, message: MulOne, _context: &mut Context<Self>) -> Self::Result {
-//         MulRes(message.0 * message.1)
-//     }
-// }
+impl Handler<MulOne> for MulOneActor {
+    type Result = MulRes;
 
-// #[test]
-// pub fn derive_response_one() {
-//     System::run(|| {
-//         let addr = MulOneActor.start();
-//         let res = addr.send(MulOne(10, 5));
+    fn handle(&mut self, message: MulOne, _context: &mut Context<Self>) -> Self::Result {
+        MulRes(message.0 * message.1)
+    }
+}
 
-//         actix::spawn(res.then(|res| {
-//             match res {
-//                 Ok(result) => assert!(result == MulRes(10 * 5)),
-//                 _ => panic!("Something went wrong"),
-//             }
+#[test]
+pub fn derive_response_one() {
+    System::run(|| {
+        let addr = MulOneActor.start();
+        let res = addr.send(MulOne(10, 5));
 
-//             System::current().stop();
-//             future::result(Ok(()))
-//         }));
-//     })
-//     .unwrap();
-// }
+        actix_rt::spawn(async move {
+            match res.await {
+                Ok(result) => assert!(result == MulRes(10 * 5)),
+                _ => panic!("Something went wrong"),
+            }
 
-// #[derive(MessageResponse, PartialEq)]
-// struct MulAny<T: 'static + Mul>(T);
+            System::current().stop();
+        });
+    })
+    .unwrap();
+}
 
-// #[derive(Message)]
-// #[rtype(result = "MulAny<usize>")]
-// struct MulAnyOne(usize, usize);
+#[derive(MessageResponse, PartialEq)]
+struct MulAny<T: 'static + Mul>(T);
 
-// struct MulAnyOneActor;
+#[derive(Message)]
+#[rtype(result = "MulAny<usize>")]
+struct MulAnyOne(usize, usize);
 
-// impl Actor for MulAnyOneActor {
-//     type Context = Context<Self>;
-// }
+struct MulAnyOneActor;
 
-// impl Handler<MulAnyOne> for MulAnyOneActor {
-//     type Result = MulAny<usize>;
+impl Actor for MulAnyOneActor {
+    type Context = Context<Self>;
+}
 
-//     fn handle(
-//         &mut self,
-//         message: MulAnyOne,
-//         _context: &mut Context<Self>,
-//     ) -> Self::Result {
-//         MulAny(message.0 * message.1)
-//     }
-// }
+impl Handler<MulAnyOne> for MulAnyOneActor {
+    type Result = MulAny<usize>;
 
-// #[test]
-// pub fn derive_response_two() {
-//     System::run(|| {
-//         let addr = MulAnyOneActor.start();
-//         let res = addr.send(MulAnyOne(10, 5));
+    fn handle(
+        &mut self,
+        message: MulAnyOne,
+        _context: &mut Context<Self>,
+    ) -> Self::Result {
+        MulAny(message.0 * message.1)
+    }
+}
 
-//         actix::spawn(res.then(|res| {
-//             match res {
-//                 Ok(result) => assert!(result == MulAny(10 * 5)),
-//                 _ => panic!("Something went wrong"),
-//             }
+#[test]
+pub fn derive_response_two() {
+    System::run(|| {
+        let addr = MulAnyOneActor.start();
+        let res = addr.send(MulAnyOne(10, 5));
 
-//             System::current().stop();
-//             future::result(Ok(()))
-//         }));
-//     })
-//     .unwrap();
-// }
+        actix_rt::spawn(async move {
+            match res.await {
+                Ok(result) => assert!(result == MulAny(10 * 5)),
+                _ => panic!("Something went wrong"),
+            }
+
+            System::current().stop();
+        });
+    })
+    .unwrap();
+}
