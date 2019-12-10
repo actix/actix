@@ -54,54 +54,14 @@ impl Sink<Bytes> for MySink {
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
     ) -> Poll<Result<(), Self::Error>> {
-        let this = self.get_mut();
-
-        if !this.queue.is_empty() {
-            let bytes = &mut this.queue[0];
-            if bytes[0] == b'#' {
-                return Poll::Ready(Err(()));
-            }
-
-            this.sender.unbounded_send(bytes[0]).unwrap();
-            bytes.split_to(1);
-            if bytes.len() == 0 {
-                this.queue.remove(0);
-            }
-        }
-
-        if this.queue.is_empty() {
-            Poll::Ready(Ok(()))
-        } else {
-            cx.waker().wake_by_ref();
-            Poll::Pending
-        }
+        self.poll_ready(cx)
     }
 
     fn poll_close(
         self: Pin<&mut Self>,
         cx: &mut Context,
     ) -> Poll<Result<(), Self::Error>> {
-        let this = self.get_mut();
-
-        if !this.queue.is_empty() {
-            let bytes = &mut this.queue[0];
-            if bytes[0] == b'#' {
-                return Poll::Ready(Err(()));
-            }
-
-            this.sender.unbounded_send(bytes[0]).unwrap();
-            bytes.split_to(1);
-            if bytes.len() == 0 {
-                this.queue.remove(0);
-            }
-        }
-
-        if this.queue.is_empty() {
-            Poll::Ready(Ok(()))
-        } else {
-            cx.waker().wake_by_ref();
-            Poll::Pending
-        }
+        self.poll_ready(cx)
     }
 }
 
