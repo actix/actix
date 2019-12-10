@@ -30,6 +30,7 @@ use std::task;
 /// ```rust
 /// # use actix::prelude::*;
 /// #[derive(Message)]
+/// #[rtype(result = "()")]
 /// struct Die;
 ///
 /// struct MyActor;

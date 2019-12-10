@@ -10,10 +10,8 @@ use std::time::Duration;
 
 mod chain;
 mod either;
-mod from_err;
 mod helpers;
 mod map;
-mod map_err;
 mod result;
 mod stream_finish;
 mod stream_fold;
@@ -24,10 +22,8 @@ mod then;
 mod timeout;
 
 pub use self::either::Either;
-pub use self::from_err::FromErr;
 pub use self::helpers::{Finish, FinishStream};
 pub use self::map::Map;
-pub use self::map_err::{DropErr, MapErr};
 pub use self::result::{err, ok, result, FutureResult};
 pub use self::stream_finish::StreamFinish;
 pub use self::stream_fold::StreamFold;

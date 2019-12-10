@@ -1,8 +1,5 @@
-use futures::{
-    task::{Context, Poll},
-    Future,
-};
-use tokio::time::Delay;
+use std::future::Future;
+use std::task::{Context, Poll};
 
 use std::pin::Pin;
 use std::time::Duration;
@@ -10,7 +7,7 @@ use std::time::Duration;
 use pin_project::pin_project;
 
 use crate::actor::Actor;
-use crate::clock;
+use crate::clock::{delay_for, Delay};
 use crate::fut::ActorFuture;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
@@ -38,7 +35,7 @@ where
     Timeout {
         fut: future,
         err: Some(err),
-        timeout: tokio::time::delay_for(timeout),
+        timeout: delay_for(timeout),
     }
 }
 

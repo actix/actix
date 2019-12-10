@@ -1,12 +1,12 @@
+use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
+use std::task::{self, Poll};
 use std::time::Duration;
 
 use futures::channel::oneshot;
-use futures::{task, task::Poll, Future};
-use tokio::time::Delay;
 
-use crate::clock;
+use crate::clock::Delay;
 use crate::handler::{Handler, Message};
 
 use super::channel::{AddressSender, Sender};
@@ -100,7 +100,7 @@ where
             match unsafe { Pin::new_unchecked(&mut this.rx.as_mut().unwrap()) }.poll(cx)
             {
                 Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
-                Poll::Ready(Err(e)) => Poll::Ready(Err(MailboxError::Closed)),
+                Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
                 Poll::Pending => this.poll_timeout(cx),
             }
         } else {

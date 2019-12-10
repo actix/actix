@@ -1,12 +1,10 @@
-use futures::{
-    task::{Context, Poll},
-    Stream,
-};
-use pin_project::{pin_project, project};
 use std::mem;
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use crate::actor::Actor; //{Future, Poll, IntoFuture, Async};
+use pin_project::{pin_project, project};
+
+use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 
 /// A future used to collect all the results of a stream into one generic type.
@@ -62,9 +60,10 @@ where
 {
     type Output = T;
     type Actor = S::Actor;
+
     #[project]
     fn poll(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
         task: &mut Context<'_>,

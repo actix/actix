@@ -8,4 +8,6 @@
 //!
 //! [Module `tokio_timer::clock`]: https://docs.rs/tokio-timer/latest/tokio_timer/clock/index.html
 
-pub use tokio::time::{delay_for, delay_until, Instant};
+pub use tokio::time::{
+    delay_for, delay_until, interval_at, Delay, Duration, Instant, Interval,
+};

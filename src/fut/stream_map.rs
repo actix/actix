@@ -1,6 +1,6 @@
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use futures::task::{Context, Poll};
 use pin_project::{pin_project, project};
 
 use crate::actor::Actor;
@@ -34,9 +34,10 @@ where
 {
     type Item = U;
     type Actor = S::Actor;
+
     #[project]
     fn poll_next(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
         task: &mut Context<'_>,

@@ -1,16 +1,14 @@
-use futures::Future;
+use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
-use std::task;
-use std::task::Poll;
+use std::task::{self, Poll};
 use std::time::Duration;
 
 use futures::Stream;
 use pin_project::pin_project;
-use tokio::time::Delay;
 
 use crate::actor::{Actor, ActorContext, AsyncContext};
-use crate::clock;
+use crate::clock::Delay;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
 
@@ -35,7 +33,7 @@ where
     }
 
     pub fn poll(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut task::Context<'_>,
@@ -100,7 +98,7 @@ where
         ctx: &mut A::Context,
         task: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
-        let mut this = self.get_mut();
+        let this = self.get_mut();
         let _ = ready!(Pin::new(&mut this.timeout).poll(task));
         let fut = A::handle(act, this.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
@@ -145,9 +143,9 @@ where
         self: Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
-        task: &mut task::Context<'_>,
+        _: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
-        let mut this = self.get_mut();
+        let this = self.get_mut();
         let fut = Handler::handle(act, this.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
         Poll::Ready(())

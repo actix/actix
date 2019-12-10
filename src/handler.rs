@@ -1,5 +1,5 @@
-use futures::Future;
 use std::fmt;
+use std::future::Future;
 use std::sync::Arc;
 
 use futures::channel::oneshot::Sender as SyncSender;
@@ -178,7 +178,7 @@ where
     M: Message<Result = Result<I, E>>,
     A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(mut self, _: &mut A::Context, tx: Option<R>) {
+    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         actix_rt::spawn(async move {
             if let Some(tx) = tx {
                 tx.send(self.await)

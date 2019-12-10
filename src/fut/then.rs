@@ -51,8 +51,7 @@ where
         self.project()
             .state
             .poll(act, ctx, task, |item, f, act, ctx| {
-                // This is not an error, just the second variant of the enum
-                Err(f(item, act, ctx).into_future())
+                f(item, act, ctx).into_future()
             })
     }
 }

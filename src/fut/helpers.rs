@@ -1,9 +1,8 @@
+use std::future::Future;
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use futures::{
-    task::{Context, Poll},
-    Future, Stream,
-};
+use futures::Stream;
 
 /// Helper trait that adds the helper method `finish()` to stream objects.
 #[doc(hidden)]
@@ -40,7 +39,7 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut this = unsafe { self.get_unchecked_mut() };
+        let this = unsafe { self.get_unchecked_mut() };
         loop {
             match unsafe { Pin::new_unchecked(&mut this.0) }.poll_next(cx) {
                 Poll::Pending => return Poll::Pending,

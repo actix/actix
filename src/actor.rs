@@ -314,15 +314,16 @@ where
     /// use futures::stream::once;
     ///
     /// #[derive(Message)]
+    /// #[rtype(result = "()")]
     /// struct Ping;
     ///
     /// struct MyActor;
     ///
-    /// impl StreamHandler<Ping, io::Error> for MyActor {
+    /// impl StreamHandler<Ping> for MyActor {
     ///
     ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    /// #       System::current().stop();
+    ///         System::current().stop();
     ///     }
     ///
     ///     fn finished(&mut self, ctx: &mut Self::Context) {
@@ -335,14 +336,15 @@ where
     ///
     ///    fn started(&mut self, ctx: &mut Context<Self>) {
     ///        // add stream
-    ///        ctx.add_stream(once::<Ping, io::Error>(Ok(Ping)));
+    ///        ctx.add_stream(once(async { Ping }));
     ///    }
     /// }
-    /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr = MyActor.start();
-    /// #    sys.run();
-    /// # }
+    ///
+    /// fn main() {
+    ///     let sys = System::new("example");
+    ///     let addr = MyActor.start();
+    ///     sys.run();
+    ///  }
     /// ```
     fn add_stream<S>(&mut self, fut: S) -> SpawnHandle
     where
@@ -362,6 +364,7 @@ where
     /// use futures::stream::once;
     ///
     /// #[derive(Message)]
+    /// #[rtype(result = "()")]
     /// struct Ping;
     ///
     /// struct MyActor;
@@ -380,14 +383,15 @@ where
     ///
     ///     fn started(&mut self, ctx: &mut Context<Self>) {
     ///         // add messages stream
-    ///         ctx.add_message_stream(once(Ok(Ping)));
+    ///         ctx.add_message_stream(once(async { Ping }));
     ///     }
     /// }
-    /// # fn main() {
-    /// #    System::run(|| {
-    /// #        let addr = MyActor.start();
-    /// #    });
-    /// # }
+    ///
+    /// fn main() {
+    ///    System::run(|| {
+    ///        let addr = MyActor.start();
+    ///    });
+    /// }
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
     where

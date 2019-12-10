@@ -1,23 +1,27 @@
-use futures::ready;
-use futures::task::{Context, Poll};
-use std::mem;
 use std::pin::Pin;
-
-use pin_project::{pin_project, project};
+use std::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
-// TODO: Check pinning guarantees,
-#[pin_project]
+#[must_use = "futures do nothing unless you `.await` or poll them"]
 #[derive(Debug)]
-pub enum Chain<A, B, C>
-where
-    A: ActorFuture,
-{
-    First(#[pin] A, Option<C>),
-    Second(#[pin] B),
-    Done,
+pub enum Chain<A, B, C> {
+    First(A, Option<C>),
+    Second(B),
+    Empty,
+}
+
+impl<A: Unpin, B: Unpin, C> Unpin for Chain<A, B, C> {}
+
+impl<A, B, C> Chain<A, B, C> {
+    pub fn is_terminated(&self) -> bool {
+        if let Chain::Empty = *self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl<A, B, C> Chain<A, B, C>
@@ -25,43 +29,44 @@ where
     A: ActorFuture,
     B: ActorFuture<Actor = A::Actor>,
 {
-    pub fn new(a: A, c: C) -> Self {
-        Chain::First(a, Some(c))
+    pub fn new(fut1: A, data: C) -> Chain<A, B, C> {
+        Chain::First(fut1, Some(data))
     }
 
-    #[project]
     pub fn poll<F>(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         srv: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut Context<'_>,
         f: F,
     ) -> Poll<B::Output>
     where
-        F: FnOnce(
-            A::Output,
-            C,
-            &mut A::Actor,
-            &mut <A::Actor as Actor>::Context,
-        ) -> Result<B::Output, B>,
+        F: FnOnce(A::Output, C, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> B,
     {
-        let mut this = self.as_mut();
-        #[project]
-        match this.project() {
-            Chain::First(a, mut data) => {
-                let a_res = ready!(a.poll(srv, ctx, task));
-                return match f(a_res, data.take().unwrap(), srv, ctx) {
-                    Ok(e) => Poll::Ready(e),
-                    Err(mut b) => {
-                        let ret =
-                            unsafe { Pin::new_unchecked(&mut b) }.poll(srv, ctx, task);
-                        self.set(Chain::Second(b));
-                        ret
-                    }
-                };
-            }
-            Chain::Second(b) => return b.poll(srv, ctx, task),
-            Done => panic!("cannot poll a chained future twice"),
-        };
+        let mut f = Some(f);
+
+        // Safe to call `get_unchecked_mut` because we won't move the futures.
+        let this = unsafe { self.get_unchecked_mut() };
+
+        loop {
+            let (output, data) = match this {
+                Chain::First(fut1, data) => {
+                    let output =
+                        match unsafe { Pin::new_unchecked(fut1) }.poll(srv, ctx, task) {
+                            Poll::Ready(t) => t,
+                            Poll::Pending => return Poll::Pending,
+                        };
+                    (output, data.take().unwrap())
+                }
+                Chain::Second(fut2) => {
+                    return unsafe { Pin::new_unchecked(fut2) }.poll(srv, ctx, task);
+                }
+                Chain::Empty => unreachable!(),
+            };
+
+            *this = Chain::Empty; // Drop fut1
+            let fut2 = (f.take().unwrap())(output, data, srv, ctx);
+            *this = Chain::Second(fut2)
+        }
     }
 }

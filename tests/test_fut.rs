@@ -1,9 +1,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use actix::clock::{delay_for, Duration};
 use actix::prelude::*;
-use futures::{FutureExt, StreamExt};
-use tokio::time::{delay_for, Duration, Instant};
+use futures::FutureExt;
 
 struct MyActor {
     timeout: Arc<AtomicBool>,
@@ -76,15 +76,15 @@ impl Actor for MyStreamActor {
     }
 }
 
-// #[test]
-// fn test_stream_timeout() {
-//     let timeout = Arc::new(AtomicBool::new(false));
-//     let timeout2 = Arc::clone(&timeout);
+//#[test]
+//fn test_stream_timeout() {
+//let timeout = Arc::new(AtomicBool::new(false));
+//let timeout2 = Arc::clone(&timeout);
 
-//     System::run(|| {
-//         let _addr = MyStreamActor { timeout: timeout2 }.start();
-//     })
-//     .unwrap();
+//System::run(|| {
+//let _addr = MyStreamActor { timeout: timeout2 }.start();
+//})
+//.unwrap();
 
-//     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
-// }
+//assert!(timeout.load(Ordering::Relaxed), "Not timeout");
+//}

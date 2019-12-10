@@ -1,6 +1,4 @@
 use actix::prelude::*;
-use actix_rt::spawn;
-use futures::Future;
 
 /// Define `Ping` message
 struct Ping(usize);

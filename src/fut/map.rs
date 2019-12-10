@@ -1,9 +1,6 @@
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use futures::{
-    task::{Context, Poll},
-    Future,
-};
 use pin_project::pin_project;
 
 use crate::actor::Actor;
@@ -39,22 +36,16 @@ where
     type Output = U;
     type Actor = A::Actor;
     fn poll(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
-        let mut this = self.project();
+        let this = self.project();
         let e = match this.future.poll(act, ctx, task) {
             Poll::Pending => return Poll::Pending,
             Poll::Ready(e) => e,
         };
-        // match e {
-        //     Ok(item) => Poll::Ready(self.f.take().expect("cannot poll Map twice")(
-        //         item, act, ctx,
-        //     )),
-        //     Err(err) => Poll::Ready(Err(err)),
-        // }
         Poll::Ready(this.f.take().expect("cannot poll Map twice")(e, act, ctx))
     }
 }

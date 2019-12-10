@@ -791,7 +791,7 @@ impl<A: Actor> Stream for AddressReceiver<A> {
         self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
     ) -> Poll<Option<Self::Item>> {
-        let mut this = self.get_mut();
+        let this = self.get_mut();
         loop {
             // Try to read a message off of the message queue.
             let msg = match this.next_message() {

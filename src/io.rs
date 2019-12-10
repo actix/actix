@@ -8,9 +8,7 @@ use bitflags::bitflags;
 use bytes::BytesMut;
 use futures::sink::Sink;
 use futures::task::{Context, Poll};
-use tokio::io::AsyncWrite;
-use tokio::io::AsyncWriteExt;
-use tokio::net::TcpStream;
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio_util::codec::Encoder;
 
 use crate::actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
@@ -310,12 +308,12 @@ where
 
 /// A wrapper for the `AsyncWrite` and `Encoder` types. The AsyncWrite will be flushed when this
 /// struct is dropped.
-pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
+pub struct FramedWrite<T: AsyncWrite + Unpin, U: Encoder> {
     enc: U,
     inner: UnsafeWriter<T, U::Error>,
 }
 
-impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
+impl<T: AsyncWrite + Unpin, U: Encoder> FramedWrite<T, U> {
     pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
@@ -410,23 +408,21 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
     }
 }
 
-impl<T: AsyncWrite, U: Encoder> Drop for FramedWrite<T, U> {
+impl<T: AsyncWrite + Unpin, U: Encoder> Drop for FramedWrite<T, U> {
     fn drop(&mut self) {
         // Attempts to write any remaining bytes to the stream and flush it
         let mut async_writer = self.inner.1.borrow_mut();
         let inner = self.inner.0.borrow_mut();
         if !inner.buffer.is_empty() {
             // Results must be ignored during drop, as the errors cannot be handled meaningfully
-
-            // TODO: Removed because of unpin
-            //let _ = async_writer.write(&inner.buffer);
-            //let _ = async_writer.flush();
+            let _ = async_writer.write(&inner.buffer);
+            let _ = async_writer.flush();
         }
     }
 }
 
 /// A wrapper for the `Sink` type.
-pub struct SinkWrite<I, S: Sink<I>> {
+pub struct SinkWrite<I, S: Sink<I> + Unpin> {
     inner: Rc<RefCell<InnerSinkWrite<I, S>>>,
 }
 
@@ -454,18 +450,13 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
     }
 
     /// Sends an item to the sink.
-    pub fn write(&mut self, item: I) -> Result<Poll<I>, S::Error> {
-        // TODO: cx handling
-        /*
-        let res = self.inner.borrow_mut().sink.start_send(item);
+    pub fn write(&mut self, item: I) -> Result<(), S::Error> {
+        let res = Pin::new(&mut self.inner.borrow_mut().sink).start_send(item);
         match res {
-            Err(_) => {} // TODO close or send to inner future ?
-            Ok(AsyncSink::Ready) => self.notify_task(),
-            Ok(AsyncSink::NotReady(_)) => {}
+            Ok(()) => self.notify_task(),
+            Err(_) => {}
         }
         res
-        */
-        unimplemented!()
     }
 
     /// Gracefully closes the sink.
@@ -520,8 +511,8 @@ where
         ctxt: &mut A::Context,
         cx: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
-        let mut this = self.get_mut();
-        let mut inner = &mut this.inner.borrow_mut();
+        let this = self.get_mut();
+        let inner = &mut this.inner.borrow_mut();
         inner.task = None;
         if !inner.closing_flag.contains(Flags::CLOSING) {
             match Pin::new(&mut inner.sink).poll_flush(cx) {

@@ -323,7 +323,6 @@ where
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use futures::Future;
 
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;

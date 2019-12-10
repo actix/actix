@@ -1,5 +1,4 @@
 //! Definition of the `Result` (immediately finished) combinator
-use futures::Future;
 use std::marker::PhantomData;
 use std::task::Poll;
 

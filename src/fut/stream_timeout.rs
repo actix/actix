@@ -1,15 +1,11 @@
-use futures::{
-    task::{Context, Poll},
-    Future,
-};
+use std::future::Future;
 use std::pin::Pin;
-use std::time::Duration;
+use std::task::{Context, Poll};
 
 use pin_project::{pin_project, project};
-use tokio::time::{delay_for, Delay};
 
 use crate::actor::Actor;
-use crate::clock;
+use crate::clock::{Delay, Duration};
 use crate::fut::ActorStream;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes

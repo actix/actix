@@ -1,13 +1,11 @@
-use futures::Future;
+use std::future::Future;
 use std::task::Poll;
 use std::time::Duration;
 
 use futures::channel::oneshot;
-use futures::Stream;
-use tokio::time::{interval_at, Delay, Instant, Interval};
 
 use crate::actor::Actor;
-use crate::clock;
+use crate::clock::{interval_at, Delay, Instant, Interval};
 use crate::fut::{ActorFuture, ActorStream};
 use std::pin::Pin;
 use std::task;
@@ -131,7 +129,7 @@ where
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
-        let mut this = self.get_mut();
+        let this = self.get_mut();
         match Pin::new(&mut this.timeout).poll(task) {
             Poll::Ready(_) => {
                 if let Some(f) = this.f.take() {
@@ -199,9 +197,11 @@ impl<A: Actor> IntervalFunc<A> {
         }
     }
 }
+
 trait IntervalFuncBox<A: Actor>: 'static {
     fn call(&mut self, _: &mut A, _: &mut A::Context);
 }
+
 impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {
     #[allow(clippy::boxed_local)]
     fn call(&mut self, act: &mut A, ctx: &mut A::Context) {

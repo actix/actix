@@ -1,15 +1,12 @@
-use futures::{
-    task::{Context, Poll},
-    Stream,
-};
-use log::error;
-use pin_project::pin_project;
 use std::marker::PhantomData;
 use std::pin::Pin;
+use std::task::{Context, Poll};
 
-use crate::actor::{
-    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle,
-};
+use futures::Stream;
+use log::error;
+use pin_project::pin_project;
+
+use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use crate::fut::ActorFuture;
 
 /// Stream handler
@@ -44,20 +41,20 @@ where
     /// allows to handle `Stream` in similar way as normal actor messages.
     ///
     /// ```rust
-    /// # use std::io;
     /// use actix::prelude::*;
     /// use futures::stream::once;
     ///
     /// #[derive(Message)]
+    /// #[rtype(result = "()")]
     /// struct Ping;
     ///
     /// struct MyActor;
     ///
-    /// impl StreamHandler<Ping, io::Error> for MyActor {
+    /// impl StreamHandler<Ping> for MyActor {
     ///
     ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
     ///         println!("PING");
-    /// #       System::current().stop()
+    ///         System::current().stop()
     ///     }
     ///
     ///     fn finished(&mut self, ctx: &mut Self::Context) {
@@ -70,14 +67,15 @@ where
     ///
     ///    fn started(&mut self, ctx: &mut Context<Self>) {
     ///        // add stream
-    ///        Self::add_stream(once::<Ping, io::Error>(Ok(Ping)), ctx);
+    ///        Self::add_stream(once(async { Ping }), ctx);
     ///    }
     /// }
-    /// # fn main() {
-    /// #    let sys = System::new("example");
-    /// #    let addr = MyActor.start();
-    /// #    sys.run();
-    /// # }
+    ///
+    /// fn main() {
+    ///     let sys = System::new("example");
+    ///     let addr = MyActor.start();
+    ///     sys.run();
+    /// }
     /// ```
     fn add_stream<S>(fut: S, ctx: &mut Self::Context) -> SpawnHandle
     where
