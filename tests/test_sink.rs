@@ -225,49 +225,48 @@ async fn test_send_error() {
     assert_eq!(b"Hello ", &res[..]);
 }
 
-// type BytesSender = mpsc::UnboundedSender<Bytes>;
+type BytesSender = mpsc::UnboundedSender<Bytes>;
 
-// struct AnotherActor {
-//     sink: SinkWrite<Bytes, BytesSender>,
-// }
+struct AnotherActor {
+    sink: SinkWrite<Bytes, BytesSender>,
+}
 
-// impl Actor for AnotherActor {
-//     type Context = actix::Context<Self>;
-// }
+impl Actor for AnotherActor {
+    type Context = actix::Context<Self>;
+}
 
-// impl actix::io::WriteHandler<mpsc::SendError> for AnotherActor {
-//     fn finished(&mut self, _ctxt: &mut Self::Context) {
-//         System::current().stop();
-//     }
-// }
+impl actix::io::WriteHandler<mpsc::SendError> for AnotherActor {
+    fn finished(&mut self, _ctxt: &mut Self::Context) {
+        System::current().stop();
+    }
+}
 
-// impl Handler<Data> for AnotherActor {
-//     type Result = ();
-//     fn handle(&mut self, data: Data, _ctxt: &mut Self::Context) {
-//         self.sink.write(data.bytes).unwrap();
-//         if data.last {
-//             self.sink.close();
-//         }
-//     }
-// }
+impl Handler<Data> for AnotherActor {
+    type Result = ();
+    fn handle(&mut self, data: Data, _ctxt: &mut Self::Context) {
+        self.sink.write(data.bytes).unwrap();
+        if data.last {
+            self.sink.close();
+        }
+    }
+}
 
-// #[test]
-// fn test_send_bytes() {
-//     let (sender, receiver) = mpsc::unbounded();
-//     let bytes = Bytes::from_static(b"Hello");
-//     let expected_bytes = bytes.clone();
-//     actix::System::run(move || {
-//         let addr = AnotherActor::create(move |ctxt| AnotherActor {
-//             sink: SinkWrite::new(sender, ctxt),
-//         });
+#[actix_rt::test]
+async fn test_send_bytes() {
+    let (sender, mut receiver) = mpsc::unbounded();
+    let bytes = Bytes::from_static(b"Hello");
+    let expected_bytes = bytes.clone();
 
-//         let data = Data { bytes, last: true };
+    actix_rt::spawn(async move {
+        let addr = AnotherActor::create(move |ctxt| AnotherActor {
+            sink: SinkWrite::new(sender, ctxt),
+        });
 
-//         addr.do_send(data);
-//     })
-//     .unwrap();
+        let data = Data { bytes, last: true };
 
-//     let mut iter = receiver.wait();
-//     let res = iter.next().unwrap().unwrap();
-//     assert_eq!(expected_bytes, res);
-// }
+        addr.do_send(data);
+    });
+
+    let res = receiver.next().await.unwrap();
+    assert_eq!(expected_bytes, res);
+}
