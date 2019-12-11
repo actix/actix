@@ -1,16 +1,22 @@
 //! `ClientSession` is an actor, it manages peer tcp connection and
 //! proxies commands from peer to `ChatServer`.
-use actix::prelude::*;
 use std::io;
-use std::time::{Duration, Instant};
-use tokio_io::io::WriteHalf;
-use tokio_tcp::TcpStream;
+use std::pin::Pin;
+
+use actix::clock::{Duration, Instant};
+use actix::prelude::*;
+
+use futures::FutureExt;
+
+use tokio::io::WriteHalf;
+use tokio::net::TcpStream;
 
 use crate::codec::{ChatCodec, ChatRequest, ChatResponse};
 use crate::server::{self, ChatServer};
 
 /// Chat server sends this messages to session
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Message(pub String);
 
 /// `ChatSession` actor is responsible for tcp peer communications.
@@ -31,26 +37,24 @@ pub struct ChatSession {
 impl Actor for ChatSession {
     type Context = actix::Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(self: Pin<&mut Self>, ctx: &mut Self::Context) {
+        let this = self.get_mut();
         // we'll start heartbeat process on session start.
-        self.hb(ctx);
+        this.hb(ctx);
 
         // register self in chat server. `AsyncContext::wait` register
         // future within context, but context waits until this future resolves
         // before processing any other events.
-        self.addr
+        this.addr
             .send(server::Connect {
                 addr: ctx.address(),
             })
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                match res {
-                    Ok(res) => act.id = res,
-                    // something is wrong with chat server
-                    _ => ctx.stop(),
+            .then(move |res| {
+                async {
+                    (*this).id = res.unwrap();
                 }
-                actix::fut::ok(())
             })
+            .into_actor(this)
             .wait(ctx);
     }
 
@@ -64,11 +68,11 @@ impl Actor for ChatSession {
 impl actix::io::WriteHandler<io::Error> for ChatSession {}
 
 /// To use `Framed` with an actor, we have to implement `StreamHandler` trait
-impl StreamHandler<ChatRequest, io::Error> for ChatSession {
+impl StreamHandler<Result<ChatRequest, io::Error>> for ChatSession {
     /// This is main event loop for client requests
-    fn handle(&mut self, msg: ChatRequest, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: Result<ChatRequest, io::Error>, ctx: &mut Self::Context) {
         match msg {
-            ChatRequest::List => {
+            Ok(ChatRequest::List) => {
                 // Send ListRooms message to chat server and wait for response
                 println!("List rooms");
                 self.addr
@@ -78,14 +82,14 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
                         match res {
                             Ok(rooms) => act.framed.write(ChatResponse::Rooms(rooms)),
                             _ => println!("Something is wrong"),
-                        }
-                        actix::fut::ok(())
+                        };
+                        async {}.into_actor(self)
                     })
                     .wait(ctx)
                 // .wait(ctx) pauses all events in context,
                 // so actor wont receive any new messages until it get list of rooms back
             }
-            ChatRequest::Join(name) => {
+            Ok(ChatRequest::Join(name)) => {
                 println!("Join to room: {}", name);
                 self.room = name.clone();
                 self.addr.do_send(server::Join {
@@ -94,7 +98,7 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
                 });
                 self.framed.write(ChatResponse::Joined(name));
             }
-            ChatRequest::Message(message) => {
+            Ok(ChatRequest::Message(message)) => {
                 // send message to chat server
                 println!("Peer message: {}", message);
                 self.addr.do_send(server::Message {
@@ -104,7 +108,8 @@ impl StreamHandler<ChatRequest, io::Error> for ChatSession {
                 })
             }
             // we update heartbeat time on ping from peer
-            ChatRequest::Ping => self.hb = Instant::now(),
+            Ok(ChatRequest::Ping) => self.hb = Instant::now(),
+            _ => unimplemented!(),
         }
     }
 }

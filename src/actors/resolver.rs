@@ -182,20 +182,21 @@ impl Resolver {
 impl Actor for Resolver {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(self: Pin<&mut Self>, ctx: &mut Self::Context) {
         // AsyncResolver::new() returns the AsyncResolver itself, plus an anonymous
         // future which gets spawned as a background task for doing DNS
         // resolution. So we use our litle `start_resolver` wrapper to spawn
         // the background task (which gets cleaned up automatically if no
         // outstanding AsyncResolvers stil have a handle to it).
-        let resolver = if let Some(cfg) = self.cfg.take() {
-            self.start_resolver(ctx, AsyncResolver::new(cfg.0, cfg.1))
+        let this = self.get_mut();
+        let resolver = if let Some(cfg) = this.cfg.take() {
+            this.start_resolver(ctx, AsyncResolver::new(cfg.0, cfg.1))
         } else {
             match AsyncResolver::from_system_conf() {
-                Ok(resolver) => self.start_resolver(ctx, resolver),
+                Ok(resolver) => this.start_resolver(ctx, resolver),
                 Err(err) => {
                     warn!("Can not create system dns resolver: {}", err);
-                    self.start_resolver(
+                    this.start_resolver(
                         ctx,
                         AsyncResolver::new(
                             ResolverConfig::default(),
@@ -207,7 +208,7 @@ impl Actor for Resolver {
         };
 
         // Keep the resolver itself.
-        self.resolver = Some(resolver);
+        this.resolver = Some(resolver);
     }
 }
 

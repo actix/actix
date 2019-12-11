@@ -1,14 +1,16 @@
 #![allow(dead_code)]
+use std::io;
+
 use actix::Message;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{BufMut, BytesMut};
 use serde_derive::{Deserialize, Serialize};
 use serde_json as json;
-use std::io;
-use tokio_io::codec::{Decoder, Encoder};
+use tokio_util::codec::{Decoder, Encoder};
 
 /// Client request
 #[derive(Serialize, Deserialize, Debug, Message)]
+#[rtype(result = "()")]
 #[serde(tag = "cmd", content = "data")]
 pub enum ChatRequest {
     /// List rooms
@@ -23,6 +25,7 @@ pub enum ChatRequest {
 
 /// Server response
 #[derive(Serialize, Deserialize, Debug, Message)]
+#[rtype(result = "()")]
 #[serde(tag = "cmd", content = "data")]
 pub enum ChatResponse {
     Ping,
@@ -75,7 +78,7 @@ impl Encoder for ChatCodec {
         let msg_ref: &[u8] = msg.as_ref();
 
         dst.reserve(msg_ref.len() + 2);
-        dst.put_u16_be(msg_ref.len() as u16);
+        dst.put_u16(msg_ref.len() as u16);
         dst.put(msg_ref);
 
         Ok(())
@@ -120,7 +123,7 @@ impl Encoder for ClientChatCodec {
         let msg_ref: &[u8] = msg.as_ref();
 
         dst.reserve(msg_ref.len() + 2);
-        dst.put_u16_be(msg_ref.len() as u16);
+        dst.put_u16(msg_ref.len() as u16);
         dst.put(msg_ref);
 
         Ok(())

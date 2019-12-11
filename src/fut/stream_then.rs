@@ -13,7 +13,7 @@ use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 #[pin_project]
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
-pub struct StreamThen<S, F, U>
+pub struct StreamThen<S, F: 'static, U>
 where
     U: IntoActorFuture,
     S: ActorStream,
@@ -24,7 +24,7 @@ where
     f: F,
 }
 
-pub fn new<S, F, U>(stream: S, f: F) -> StreamThen<S, F, U>
+pub fn new<S, F: 'static, U>(stream: S, f: F) -> StreamThen<S, F, U>
 where
     S: ActorStream,
     F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
@@ -37,7 +37,7 @@ where
     }
 }
 
-impl<S, F, U> ActorStream for StreamThen<S, F, U>
+impl<S, F: 'static, U> ActorStream for StreamThen<S, F, U>
 where
     S: ActorStream + Unpin,
     F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,

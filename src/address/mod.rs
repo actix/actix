@@ -324,6 +324,7 @@ where
 mod tests {
     use crate::prelude::*;
 
+    use std::pin::Pin;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
 
@@ -332,7 +333,7 @@ mod tests {
     impl Actor for ActorWithSmallMailBox {
         type Context = Context<Self>;
 
-        fn started(&mut self, ctx: &mut Self::Context) {
+        fn started(self: Pin<&mut Self>, ctx: &mut Self::Context) {
             ctx.set_mailbox_capacity(1);
         }
     }

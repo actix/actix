@@ -14,7 +14,7 @@ use std::task;
 #[pin_project]
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
-pub struct Then<A, B, F>
+pub struct Then<A, B, F: 'static>
 where
     A: ActorFuture,
     B: IntoActorFuture<Actor = A::Actor>,
@@ -23,7 +23,7 @@ where
     state: Chain<A, B::Future, F>,
 }
 
-pub fn new<A, B, F>(future: A, f: F) -> Then<A, B, F>
+pub fn new<A, B, F: 'static>(future: A, f: F) -> Then<A, B, F>
 where
     A: ActorFuture,
     B: IntoActorFuture<Actor = A::Actor>,

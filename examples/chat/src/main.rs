@@ -3,10 +3,12 @@ use std::net;
 use std::str::FromStr;
 
 use actix::prelude::*;
-use futures::Stream;
-use tokio_codec::FramedRead;
-use tokio_io::AsyncRead;
-use tokio_tcp::{TcpListener, TcpStream};
+use actix_rt::*;
+use tokio::io::AsyncRead;
+use tokio::net::{TcpListener, TcpStream};
+use tokio_util::codec::FramedRead;
+
+use futures::{Stream, StreamExt};
 
 mod codec;
 mod server;
@@ -29,6 +31,7 @@ impl Actor for Server {
 }
 
 #[derive(Message)]
+#[rtype(result = "()")]
 struct TcpConnect(pub TcpStream, pub net::SocketAddr);
 
 /// Handle stream of TcpStream's
@@ -49,38 +52,32 @@ impl Handler<TcpConnect> for Server {
     }
 }
 
-fn main() -> std::io::Result<()> {
-    actix::System::run(|| {
-        // Start chat server actor
-        let server = ChatServer::default().start();
+#[actix_rt::main]
+async fn main() {
+    // Start chat server actor
+    let server = ChatServer::default().start();
 
-        // Create server listener
-        let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-        let listener = TcpListener::bind(&addr).unwrap();
+    // Create server listener
+    let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
+    let listener = TcpListener::bind(&addr).await.unwrap();
 
-        // Our chat server `Server` is an actor, first we need to start it
-        // and then add stream on incoming tcp connections to it.
-        // TcpListener::incoming() returns stream of the (TcpStream, net::SocketAddr)
-        // items So to be able to handle this events `Server` actor has to implement
-        // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
-        Server::create(|ctx| {
-            ctx.add_message_stream(listener.incoming().map_err(|_| ()).map(|st| {
-                let addr = st.peer_addr().unwrap();
-                TcpConnect(st, addr)
-            }));
-            Server { chat: server }
-        });
+    // Our chat server `Server` is an actor, first we need to start it
+    // and then add stream on incoming tcp connections to it.
+    // TcpListener::incoming() returns stream of the (TcpStream, net::SocketAddr)
+    // items So to be able to handle this events `Server` actor has to implement
+    // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
+    Server::create(|ctx| {
+        ctx.add_message_stream(listener.incoming().map(|st| {
+            let st = st.unwrap();
+            let addr = st.peer_addr().unwrap();
+            TcpConnect(st, addr)
+        }));
+        Server { chat: server }
+    });
 
-        let ctrl_c = tokio_signal::ctrl_c().flatten_stream();
-        let handle_shutdown = ctrl_c
-            .for_each(|()| {
-                println!("Ctrl-C received, shutting down");
-                System::current().stop();
-                Ok(())
-            })
-            .map_err(|_| ());
-        actix::spawn(handle_shutdown);
+    println!("Running chat server on 127.0.0.1:12345");
 
-        println!("Running chat server on 127.0.0.1:12345");
-    })
+    tokio::signal::ctrl_c().await.unwrap();
+    println!("Ctrl-C received, shutting down");
+    System::current().stop();
 }

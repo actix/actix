@@ -14,17 +14,18 @@ name = "client"
 path = "src/client.rs"
 
 [dependencies]
-rand = "0.3"
-bytes = "0.4"
-byteorder = "1.1"
-futures = "0.1"
-tokio-codec = "0.1"
-tokio-io = "0.1"
-tokio-tcp = "0.1"
-tokio-signal = "0.2"
+bytes = ""
+byteorder = ""
+futures = ""
+rand = ""
 
-serde = "1.0"
-serde_json = "1.0"
-serde_derive = "1.0"
+serde = ""
+serde_json = ""
+serde_derive = ""
+
+tokio = { version = "0.2", default-features=false, features=["rt-core", "rt-util", "io-driver", "tcp", "uds", "udp", "time", "signal", "sync", "io-util"] }
+tokio-util   = { version = "", features = ["full"] }
 
 actix = { path = "../../" }
+actix_derive = ""
+actix-rt = { git = "https://github.com/actix/actix-net", branch = "master" }

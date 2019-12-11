@@ -344,7 +344,7 @@ where
 
         if !this.ctx.parts().flags.contains(ContextFlags::STARTED) {
             this.ctx.parts().flags.insert(ContextFlags::STARTED);
-            Actor::started(&mut this.act, &mut this.ctx);
+            Actor::started(Pin::new(&mut this.act), &mut this.ctx);
 
             // check cancelled handles, just in case
             if this.merge() {

@@ -1,3 +1,4 @@
+use std::pin::Pin;
 use std::time::Duration;
 
 use actix_rt::Arbiter;
@@ -78,7 +79,7 @@ pub trait Actor: Sized + Unpin + 'static {
     type Context: ActorContext;
 
     /// Called when an actor gets polled the first time.
-    fn started(&mut self, ctx: &mut Self::Context) {}
+    fn started(self: Pin<&mut Self>, ctx: &mut Self::Context) {}
 
     /// Called after an actor is in `Actor::Stopping` state.
     ///

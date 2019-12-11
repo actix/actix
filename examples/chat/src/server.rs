@@ -10,26 +10,23 @@ use crate::session;
 
 /// Message for chat server communications
 
+#[derive(Message)]
+#[rtype(result = "usize")]
 /// New chat session is created
 pub struct Connect {
     pub addr: Addr<session::ChatSession>,
 }
 
-/// Response type for Connect message
-///
-/// Chat server returns unique session id
-impl actix::Message for Connect {
-    type Result = usize;
-}
-
 /// Session is disconnected
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Disconnect {
     pub id: usize,
 }
 
 /// Send message to specific room
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Message {
     /// Id of the client session
     pub id: usize,
@@ -48,6 +45,7 @@ impl actix::Message for ListRooms {
 
 /// Join room, if room does not exists create new one.
 #[derive(Message)]
+#[rtype(result = "()")]
 pub struct Join {
     /// Client id
     pub id: usize,
