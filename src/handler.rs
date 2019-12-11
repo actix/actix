@@ -306,7 +306,6 @@ where
                     if let Some(tx) = tx {
                         tx.send(res)
                     }
-                    // TODO: cleaner solution here
                     async {}.into_actor(this)
                 });
 

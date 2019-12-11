@@ -14,16 +14,6 @@ pub enum Chain<A, B, C> {
 
 impl<A: Unpin, B: Unpin, C> Unpin for Chain<A, B, C> {}
 
-impl<A, B, C> Chain<A, B, C> {
-    pub fn is_terminated(&self) -> bool {
-        if let Chain::Empty = *self {
-            true
-        } else {
-            false
-        }
-    }
-}
-
 impl<A, B, C> Chain<A, B, C>
 where
     A: ActorFuture,
