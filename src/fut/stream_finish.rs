@@ -1,18 +1,17 @@
+use std::pin::Pin;
+
 use futures::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream};
-use pin_project::{pin_project, project};
-use std::pin::Pin;
 
 /// A combinator used to convert stream into a future, future resolves
 /// when stream completes.
 ///
 /// This structure is produced by the `ActorStream::finish` method.
-#[pin_project]
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
-pub struct StreamFinish<S: ActorStream + Unpin>(#[pin] S);
+pub struct StreamFinish<S: ActorStream + Unpin>(S);
 
 pub fn new<S>(s: S) -> StreamFinish<S>
 where
@@ -29,7 +28,6 @@ where
     type Output = ();
     type Actor = S::Actor;
 
-    #[project]
     fn poll(
         self: Pin<&mut Self>,
         act: &mut S::Actor,

@@ -41,7 +41,8 @@ impl<S, F, U> ActorStream for StreamThen<S, F, U>
 where
     S: ActorStream + Unpin,
     F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
-    U: IntoActorFuture<Actor = S::Actor> + Unpin,
+    U: IntoActorFuture<Actor = S::Actor>,
+    U::Future: Unpin,
 {
     type Item = U::Output;
     type Actor = S::Actor;
@@ -63,9 +64,7 @@ where
             this.future = Some((this.f)(item, act, ctx).into_future());
         }
         assert!(this.future.is_some());
-        match unsafe { Pin::new_unchecked(&mut this.future.take().unwrap()) }
-            .poll(act, ctx, task)
-        {
+        match Pin::new(&mut this.future.take().unwrap()).poll(act, ctx, task) {
             Poll::Ready(e) => {
                 this.future = None;
                 Poll::Ready(Some(e))

@@ -169,11 +169,11 @@ pub trait ActorFuture {
     /// Add timeout to futures chain.
     ///
     /// `err` value get returned as a timeout error.
-    fn timeout<E>(self, timeout: Duration, err: E) -> Timeout<Self, E>
+    fn timeout(self, timeout: Duration) -> Timeout<Self>
     where
         Self: Sized,
     {
-        timeout::new(self, timeout, err)
+        timeout::new(self, timeout)
     }
 }
 
@@ -217,7 +217,7 @@ pub trait ActorStream {
             &mut <Self::Actor as Actor>::Context,
         ) -> U,
         U: IntoActorFuture<Actor = Self::Actor>,
-        Self: Sized,
+        Self: Unpin + Sized,
     {
         stream_then::new(self, f)
     }
@@ -241,12 +241,11 @@ pub trait ActorStream {
     /// Add timeout to stream.
     ///
     /// `err` value get returned as a timeout error.
-    fn timeout<E>(self, timeout: Duration, err: E) -> StreamTimeout<Self, E>
+    fn timeout(self, timeout: Duration) -> StreamTimeout<Self>
     where
-        Self: Sized,
-        E: Clone,
+        Self: Sized + Unpin,
     {
-        stream_timeout::new(self, timeout, err)
+        stream_timeout::new(self, timeout)
     }
 
     /// Converts a stream to a future that resolves when stream finishes.
@@ -393,7 +392,7 @@ where
     fn into_actor(self, a: &A) -> Self::Stream;
 }
 
-impl<S: Stream, A: Actor> WrapStream<A> for S {
+impl<S: Stream + Unpin, A: Actor> WrapStream<A> for S {
     type Stream = StreamWrap<S, A>;
     type Item = S::Item;
 
