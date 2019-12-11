@@ -53,7 +53,7 @@ struct ClientCommand(String);
 impl Actor for ChatClient {
     type Context = Context<Self>;
 
-    fn started(self: Pin<&mut Self>, ctx: &mut Context<Self>) {
+    fn started(&mut self, ctx: &mut Context<Self>) {
         // start heartbeats otherwise server will disconnect after 10 seconds
         self.hb(ctx)
     }

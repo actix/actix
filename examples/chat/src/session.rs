@@ -37,15 +37,14 @@ pub struct ChatSession {
 impl Actor for ChatSession {
     type Context = actix::Context<Self>;
 
-    fn started(self: Pin<&mut Self>, ctx: &mut Self::Context) {
-        let this = self.get_mut();
+    fn started(&mut self, ctx: &mut Self::Context) {
         // we'll start heartbeat process on session start.
-        this.hb(ctx);
+        self.hb(ctx);
 
         // register self in chat server. `AsyncContext::wait` register
         // future within context, but context waits until this future resolves
         // before processing any other events.
-        this.addr
+        self.addr
             .send(server::Connect {
                 addr: ctx.address(),
             })

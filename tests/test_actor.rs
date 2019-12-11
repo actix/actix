@@ -53,65 +53,6 @@ async fn test_stream() {
     assert!(err.load(Ordering::Relaxed));
 }
 
-// #[test]
-// fn test_stream_with_error() {
-//     let count = Arc::new(AtomicUsize::new(0));
-//     let error = Arc::new(AtomicBool::new(false));
-//     let items = vec![
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Err(()),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//     ];
-
-//     let act_count = Arc::clone(&count);
-//     let act_error = Arc::clone(&error);
-
-//     System::run(move || {
-//         MyActor::create(move |ctx| {
-//             MyActor::add_stream(futures::stream::iter(items), ctx);
-//             MyActor(act_count, act_error, Running::Stop)
-//         });
-//     })
-//     .unwrap();
-
-//     assert_eq!(count.load(Ordering::Relaxed), 3);
-//     assert!(error.load(Ordering::Relaxed));
-// }
-
-// #[actix_rt::test]
-// async fn test_stream_with_error_no_stop() {
-//     let count = Arc::new(AtomicUsize::new(0));
-//     let error = Arc::new(AtomicBool::new(false));
-//     let items = vec![
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Err(()),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//         Ok(Num(1)),
-//     ];
-
-//     let act_count = Arc::clone(&count);
-//     let act_error = Arc::clone(&error);
-
-//     System::run(move || {
-//         MyActor::create(move |ctx| {
-//             MyActor::add_stream(futures::stream::iter_result(items), ctx);
-//             MyActor(act_count, act_error, Running::Continue)
-//         });
-//     })
-//     .unwrap();
-//     assert_eq!(count.load(Ordering::Relaxed), 8);
-//     assert!(error.load(Ordering::Relaxed));
-// }
-
 struct MySyncActor {
     started: Arc<AtomicUsize>,
     stopping: Arc<AtomicUsize>,

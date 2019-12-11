@@ -248,7 +248,7 @@ where
         let mut act = self.act.take().unwrap();
 
         // started
-        A::started(Pin::new(&mut act), self);
+        A::started(&mut act, self);
         self.state = ActorState::Running;
 
         loop {
@@ -278,7 +278,7 @@ where
                 // start new actor
                 self.state = ActorState::Started;
                 act = (*self.factory)();
-                A::started(Pin::new(&mut act), self);
+                A::started(&mut act, self);
                 self.state = ActorState::Running;
             }
         }
