@@ -87,8 +87,8 @@ impl actix::Handler<Num> for MySyncActor {
     }
 }
 
-#[actix_rt::test]
-async fn test_restart_sync_actor() {
+#[test]
+fn test_restart_sync_actor() {
     let started = Arc::new(AtomicUsize::new(0));
     let stopping = Arc::new(AtomicUsize::new(0));
     let stopped = Arc::new(AtomicUsize::new(0));
@@ -99,24 +99,26 @@ async fn test_restart_sync_actor() {
     let stopped1 = Arc::clone(&stopped);
     let msgs1 = Arc::clone(&msgs);
 
-    let addr = SyncArbiter::start(1, move || MySyncActor {
-        started: Arc::clone(&started1),
-        stopping: Arc::clone(&stopping1),
-        stopped: Arc::clone(&stopped1),
-        msgs: Arc::clone(&msgs1),
-        stop: started1.load(Ordering::Relaxed) == 0,
-    });
+    System::run(move || {
+        actix_rt::spawn(async move {
+            let addr = SyncArbiter::start(1, move || MySyncActor {
+                started: Arc::clone(&started1),
+                stopping: Arc::clone(&stopping1),
+                stopped: Arc::clone(&stopped1),
+                msgs: Arc::clone(&msgs1),
+                stop: started1.load(Ordering::Relaxed) == 0,
+            });
 
-    let _ = addr.send(Num(2)).await;
+            let _ = addr.send(Num(2)).await;
 
-    actix_rt::spawn(async move {
-        let _ = addr.send(Num(4)).await;
-        delay_for(Duration::new(0, 1_000_000)).await;
-        System::current().stop();
-    });
-
-    // Give time for the spawned task to update the variables
-    delay_for(Duration::new(0, 2_000_000)).await;
+            actix_rt::spawn(async move {
+                let _ = addr.send(Num(4)).await;
+                delay_for(Duration::new(0, 1_000_000)).await;
+                System::current().stop();
+            });
+        });
+    })
+    .unwrap();
 
     assert_eq!(started.load(Ordering::Relaxed), 2);
     assert_eq!(stopping.load(Ordering::Relaxed), 2);
