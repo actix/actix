@@ -1,7 +1,6 @@
 use actix::prelude::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use tokio::time::{delay_for, Duration};
 
 #[derive(Debug)]
 struct Panic();
