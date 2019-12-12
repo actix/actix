@@ -16,16 +16,16 @@ path = "src/client.rs"
 [dependencies]
 bytes = ""
 byteorder = ""
-futures = ""
+futures = "0.3"
 rand = ""
 
 serde = ""
 serde_json = ""
 serde_derive = ""
 
-tokio = { version = "0.2", default-features=false, features=["rt-core", "rt-util", "io-driver", "tcp", "uds", "udp", "time", "signal", "sync", "io-util"] }
-tokio-util   = { version = "", features = ["full"] }
+tokio = { version = "0.2", default-features=false, features=["tcp", "time", "signal", "io-util"] }
+tokio-util = { version = "", features = ["codec"] }
 
 actix = { path = "../../" }
 actix_derive = ""
-actix-rt = { git = "https://github.com/actix/actix-net", branch = "master" }
+actix-rt = "1.0"

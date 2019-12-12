@@ -38,7 +38,7 @@ mailbox_assert = []
 http = ["actix-http"]
 
 [dependencies]
-actix-rt = { git = "https://github.com/actix/actix-net", branch = "master" }
+actix-rt = "1.0" 
 actix_derive = ""
 bytes = ""
 crossbeam-channel = ""
@@ -54,7 +54,7 @@ tokio = { version = "0.2", default-features=false, features=["rt-core", "rt-util
 tokio-util   = { version = "", features = ["full"] }
 
 # actix-http support
-actix-http = { version = "1.0.0-alpha.3", optional = true }
+actix-http = { version = "1.0.0-alpha.6", optional = true }
 
 # dns resolver
 trust-dns-resolver = { version = "0.18.0-alpha", optional = true, default-features = false }

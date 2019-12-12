@@ -1,12 +1,10 @@
-use std::future::Future;
 use std::str::FromStr;
 use std::time::Duration;
-use std::{io, net, process, thread};
+use std::{io, net, thread};
 
 use futures::FutureExt;
 
 use actix::prelude::*;
-use tokio::io::AsyncRead;
 use tokio::io::WriteHalf;
 use tokio::net::TcpStream;
 use tokio_util::codec::FramedRead;
@@ -19,8 +17,8 @@ async fn main() {
 
     // Connect to server
     let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    actix_rt::spawn(async move {
-        let stream = TcpStream::connect(&addr).await.unwrap();
+    Arbiter::spawn(TcpStream::connect(addr).then(|stream| {
+        let stream = stream.unwrap();
         let addr = ChatClient::create(|ctx| {
             let (r, w) = tokio::io::split(stream);
             ctx.add_stream(FramedRead::new(r, codec::ClientChatCodec));
@@ -39,7 +37,13 @@ async fn main() {
 
             addr.do_send(ClientCommand(cmd));
         });
-    });
+
+        async {}
+    }));
+
+    tokio::signal::ctrl_c().await.unwrap();
+    println!("Ctrl-C received, shutting down");
+    System::current().stop();
 }
 
 struct ChatClient {

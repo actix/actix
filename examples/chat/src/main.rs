@@ -3,12 +3,9 @@ use std::net;
 use std::str::FromStr;
 
 use actix::prelude::*;
-use actix_rt::*;
-use tokio::io::AsyncRead;
+use futures::StreamExt;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::FramedRead;
-
-use futures::{Stream, StreamExt};
 
 mod codec;
 mod server;
@@ -59,7 +56,7 @@ async fn main() {
 
     // Create server listener
     let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    let mut listener = TcpListener::bind(&addr).await.unwrap();
+    let listener = Box::new(TcpListener::bind(&addr).await.unwrap());
 
     // Our chat server `Server` is an actor, first we need to start it
     // and then add stream on incoming tcp connections to it.
@@ -67,7 +64,7 @@ async fn main() {
     // items So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
     Server::create(move |ctx| {
-        ctx.add_message_stream(listener.incoming().map(|st| {
+        ctx.add_message_stream(Box::leak(listener).incoming().map(|st| {
             let st = st.unwrap();
             let addr = st.peer_addr().unwrap();
             TcpConnect(st, addr)
