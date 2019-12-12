@@ -193,7 +193,7 @@ impl<A: Actor> IntervalFunc<A> {
     {
         Self {
             f: Box::new(f),
-            interval: interval_at(Instant::now(), timeout),
+            interval: interval_at(Instant::now() + timeout, timeout),
         }
     }
 }

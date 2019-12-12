@@ -48,12 +48,11 @@ impl Actor for ChatSession {
             .send(server::Connect {
                 addr: ctx.address(),
             })
-            .then(move |res| {
-                async {
-                    (*this).id = res.unwrap();
-                }
+            .into_actor(self)
+            .then(move |res, act, _| {
+                act.id = res.unwrap();
+                async {}.into_actor(act)
             })
-            .into_actor(this)
             .wait(ctx);
     }
 
@@ -82,7 +81,7 @@ impl StreamHandler<Result<ChatRequest, io::Error>> for ChatSession {
                             Ok(rooms) => act.framed.write(ChatResponse::Rooms(rooms)),
                             _ => println!("Something is wrong"),
                         };
-                        async {}.into_actor(self)
+                        async {}.into_actor(act)
                     })
                     .wait(ctx)
                 // .wait(ctx) pauses all events in context,

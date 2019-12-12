@@ -45,7 +45,7 @@ impl Handler<TcpConnect> for Server {
         // with out chat server address.
         let server = self.chat.clone();
         ChatSession::create(move |ctx| {
-            let (r, w) = msg.0.split();
+            let (r, w) = tokio::io::split(msg.0);
             ChatSession::add_stream(FramedRead::new(r, ChatCodec), ctx);
             ChatSession::new(server, actix::io::FramedWrite::new(w, ChatCodec, ctx))
         });
@@ -59,14 +59,14 @@ async fn main() {
 
     // Create server listener
     let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    let listener = TcpListener::bind(&addr).await.unwrap();
+    let mut listener = TcpListener::bind(&addr).await.unwrap();
 
     // Our chat server `Server` is an actor, first we need to start it
     // and then add stream on incoming tcp connections to it.
     // TcpListener::incoming() returns stream of the (TcpStream, net::SocketAddr)
     // items So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
-    Server::create(|ctx| {
+    Server::create(move |ctx| {
         ctx.add_message_stream(listener.incoming().map(|st| {
             let st = st.unwrap();
             let addr = st.peer_addr().unwrap();
