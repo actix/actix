@@ -41,18 +41,20 @@ impl Handler<Panic> for MyActor {
     }
 }
 
-#[actix_rt::test]
-async fn test_start_actor_message() {
+#[test]
+fn test_start_actor_message() {
     let count = Arc::new(AtomicUsize::new(0));
     let act_count = Arc::clone(&count);
 
-    let arbiter = Arbiter::new();
+    System::run(move || {
+        let arbiter = Arbiter::new();
 
-    actix_rt::spawn(async move {
-        let res = arbiter.exec(|| MyActor(act_count).start()).await;
-        res.unwrap().do_send(Ping(1));
-    });
+        actix_rt::spawn(async move {
+            let res = arbiter.exec(|| MyActor(act_count).start()).await;
+            res.unwrap().do_send(Ping(1));
+        });
+    })
+    .unwrap();
 
-    delay_for(Duration::new(0, 10_000)).await;
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
