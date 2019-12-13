@@ -54,7 +54,7 @@ tokio = { version = "0.2", default-features=false, features=["rt-core", "rt-util
 tokio-util   = { version = "0.2", features = ["full"] }
 
 # actix-http support
-actix-http = { version = "1.0.0-alpha.6", optional = true }
+actix-http = { version = "1.0", optional = true }
 
 # dns resolver
 trust-dns-resolver = { version = "0.18.0-alpha.2", optional = true, default-features = false }

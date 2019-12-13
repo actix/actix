@@ -3,7 +3,7 @@ use std::task::{Context, Poll};
 
 use actix::io::SinkWrite;
 use actix::prelude::*;
-use bytes::Bytes;
+use bytes::{Buf, Bytes};
 use futures::{channel::mpsc, sink::Sink, StreamExt};
 
 type ByteSender = mpsc::UnboundedSender<u8>;
@@ -36,7 +36,7 @@ impl Sink<Bytes> for MySink {
             }
 
             this.sender.unbounded_send(bytes[0]).unwrap();
-            bytes.split_to(1);
+            bytes.advance(1);
             if bytes.len() == 0 {
                 this.queue.remove(0);
             }
