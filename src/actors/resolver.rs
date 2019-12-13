@@ -50,6 +50,7 @@ use trust_dns_resolver::BackgroundLookupIp;
 use crate::clock::Delay;
 use crate::fut::wrap_future;
 use crate::fut::ActorFuture;
+use crate::fut::Either;
 use crate::prelude::*;
 
 #[deprecated(since = "0.7.0", note = "please use `Resolver` instead")]
@@ -252,13 +253,9 @@ impl Handler<Connect> for Resolver {
                 msg.port.unwrap_or(0),
                 self.resolver.as_ref().unwrap(),
             )
-            .then(move |addrs, _, _| {
-                let res = match addrs {
-                    Ok(a) => Ok(TcpConnector::with_timeout(a, timeout)),
-                    Err(e) => Err(e),
-                };
-
-                res.unwrap()
+            .then(move |addrs, act, _| match addrs {
+                Ok(a) => Either::Left(TcpConnector::with_timeout(a, timeout)),
+                Err(e) => Either::Right(async move { Err(e) }.into_actor(act)),
             }),
         )
     }
