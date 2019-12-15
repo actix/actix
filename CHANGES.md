@@ -1,10 +1,12 @@
 # CHANGES
 
-## [0.9.0-alpha.1] (unreleased)
+## [0.9.0-alpha.1] 2019-12-15
 
 ### Added
 
 * Added `Context::connected()` to check any addresses are alive
+
+* Added `fut::ready()` future
 
 ### Changed
 
@@ -15,7 +17,9 @@
 * Upgrade `smallvec` to 1.0.0
 
 ### Fixed
+
 * Added `#[must_use]` attribute to `ActorFuture` and `ActorStream`
+
 
 ## [0.8.3] (2019-05-29)
 
