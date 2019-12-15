@@ -1,9 +1,10 @@
-use futures::{Async, Stream};
-use std::fmt;
+use futures::StreamExt;
+use std::{fmt, task};
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::EnvelopeProxy;
 use crate::address::{channel, Addr, AddressReceiver, AddressSenderProducer};
+use std::task::Poll;
 
 #[cfg(feature = "mailbox_assert")]
 /// Maximum number of consecutive polls in a loop
@@ -75,7 +76,12 @@ where
         self.msgs.sender_producer()
     }
 
-    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context) {
+    pub fn poll(
+        &mut self,
+        act: &mut A,
+        ctx: &mut A::Context,
+        task: &mut task::Context<'_>,
+    ) {
         #[cfg(feature = "mailbox_assert")]
         let mut n_polls = 0u16;
 
@@ -88,12 +94,12 @@ where
                     return;
                 }
 
-                match self.msgs.poll() {
-                    Ok(Async::Ready(Some(mut msg))) => {
+                match self.msgs.poll_next_unpin(task) {
+                    Poll::Ready(Some(mut msg)) => {
                         not_ready = false;
                         msg.handle(act, ctx);
                     }
-                    Ok(Async::Ready(None)) | Ok(Async::NotReady) | Err(_) => break,
+                    Poll::Ready(None) | Poll::Pending => break,
                 }
 
                 #[cfg(feature = "mailbox_assert")]

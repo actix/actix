@@ -1,10 +1,11 @@
 //! Definition of the `Result` (immediately finished) combinator
-
-use futures::{Async, Poll};
 use std::marker::PhantomData;
+use std::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
+use std::pin::Pin;
+use std::task;
 
 /// A future representing a value that is immediately ready.
 ///
@@ -91,19 +92,21 @@ impl<T, E, A> ActorFuture for FutureResult<T, E, A>
 where
     A: Actor,
 {
-    type Item = T;
-    type Error = E;
+    type Output = Result<T, E>;
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
-    ) -> Poll<T, E> {
-        self.inner
-            .take()
-            .expect("cannot poll Result twice")
-            .map(Async::Ready)
+        _: &mut task::Context<'_>,
+    ) -> Poll<Self::Output> {
+        Poll::Ready(
+            unsafe { self.get_unchecked_mut() }
+                .inner
+                .take()
+                .expect("cannot poll Result twice"),
+        )
     }
 }
 

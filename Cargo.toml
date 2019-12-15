@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.8.3"
+version = "0.9.0"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -29,7 +29,7 @@ members = ["examples/chat"]
 default = ["resolver", "http"]
 
 # dns resolver
-resolver = ["trust-dns-resolver", "tokio-tcp"]
+resolver = ["trust-dns-resolver"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
@@ -38,28 +38,26 @@ mailbox_assert = []
 http = ["actix-http"]
 
 [dependencies]
-actix-rt = "0.2.2"
-actix_derive = "0.4"
-bytes = "0.4"
-crossbeam-channel = "0.3"
-derive_more = "0.15.0"
-futures = "0.1.25"
+actix-rt = "1.0" 
+actix_derive = "0.5"
+bytes = "0.5"
+crossbeam-channel = "0.4"
+derive_more = "0.99"
+futures = "0.3"
 log = "0.4"
-lazy_static = "1.2"
-bitflags = "1.0"
+pin-project = "0.4"
+lazy_static = "1.4"
+bitflags = "1.2"
 smallvec = "1.0"
-parking_lot = "0.9"
-tokio-io = "0.1"
-tokio-codec = "0.1"
-tokio-executor = "0.1"
-tokio-tcp = { version = "0.1", optional = true }
-tokio-timer = "0.2.8"
+parking_lot = "0.10"
+tokio = { version = "0.2", default-features = false, features=["rt-core", "rt-util", "io-driver", "tcp", "uds", "udp", "time", "signal", "sync"] }
+tokio-util   = { version = "0.2", features = ["full"] }
 
 # actix-http support
-actix-http = { version = "0.2.0", optional = true }
+actix-http = { version = "1.0", optional = true }
 
 # dns resolver
-trust-dns-resolver = { version = "0.11.0", optional = true, default-features = false }
+trust-dns-resolver = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
 
 [dev-dependencies]
 doc-comment = "0.3"

@@ -1,4 +1,7 @@
-use futures::{Async, Poll};
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+use pin_project::{pin_project, project};
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
@@ -7,25 +10,24 @@ use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 /// stream.
 ///
 /// This structure is produced by the `ActorStream::then` method.
+#[pin_project]
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
-pub struct StreamThen<S, F, U>
+pub struct StreamThen<S, F: 'static, U>
 where
     U: IntoActorFuture,
+    S: ActorStream,
 {
+    #[pin]
     stream: S,
     future: Option<U::Future>,
     f: F,
 }
 
-pub fn new<S, F, U>(stream: S, f: F) -> StreamThen<S, F, U>
+pub fn new<S, F: 'static, U>(stream: S, f: F) -> StreamThen<S, F, U>
 where
     S: ActorStream,
-    F: FnMut(
-        Result<S::Item, S::Error>,
-        &mut S::Actor,
-        &mut <S::Actor as Actor>::Context,
-    ) -> U,
+    F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
     U: IntoActorFuture<Actor = S::Actor>,
 {
     StreamThen {
@@ -35,45 +37,39 @@ where
     }
 }
 
-impl<S, F, U> ActorStream for StreamThen<S, F, U>
+impl<S, F: 'static, U> ActorStream for StreamThen<S, F, U>
 where
-    S: ActorStream,
-    F: FnMut(
-        Result<S::Item, S::Error>,
-        &mut S::Actor,
-        &mut <S::Actor as Actor>::Context,
-    ) -> U,
+    S: ActorStream + Unpin,
+    F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
     U: IntoActorFuture<Actor = S::Actor>,
+    U::Future: Unpin,
 {
-    type Item = U::Item;
-    type Error = U::Error;
+    type Item = U::Output;
     type Actor = S::Actor;
 
-    fn poll(
-        &mut self,
+    #[project]
+    fn poll_next(
+        self: Pin<&mut Self>,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
-    ) -> Poll<Option<U::Item>, U::Error> {
-        if self.future.is_none() {
-            let item = match self.stream.poll(act, ctx) {
-                Ok(Async::NotReady) => return Ok(Async::NotReady),
-                Ok(Async::Ready(None)) => return Ok(Async::Ready(None)),
-                Ok(Async::Ready(Some(e))) => Ok(e),
-                Err(e) => Err(e),
+        task: &mut Context<'_>,
+    ) -> Poll<Option<U::Output>> {
+        let mut this = self.get_mut();
+        if this.future.is_none() {
+            let item = match Pin::new(&mut this.stream).poll_next(act, ctx, task) {
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(None) => return Poll::Ready(None),
+                Poll::Ready(Some(e)) => e,
             };
-            self.future = Some((self.f)(item, act, ctx).into_future());
+            this.future = Some((this.f)(item, act, ctx).into_future());
         }
-        assert!(self.future.is_some());
-        match self.future.as_mut().unwrap().poll(act, ctx) {
-            Ok(Async::Ready(e)) => {
-                self.future = None;
-                Ok(Async::Ready(Some(e)))
+        assert!(this.future.is_some());
+        match Pin::new(&mut this.future.take().unwrap()).poll(act, ctx, task) {
+            Poll::Ready(e) => {
+                this.future = None;
+                Poll::Ready(Some(e))
             }
-            Err(e) => {
-                self.future = None;
-                Err(e)
-            }
-            Ok(Async::NotReady) => Ok(Async::NotReady),
+            Poll::Pending => Poll::Pending,
         }
     }
 }

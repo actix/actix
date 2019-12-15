@@ -1,4 +1,4 @@
-use futures::sync::oneshot::Sender;
+use futures::channel::oneshot::Sender;
 use std::marker::PhantomData;
 
 // use super::{MessageDestination, MessageDestinationTransport, Syn};

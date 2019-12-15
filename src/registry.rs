@@ -33,6 +33,7 @@ type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
+/// #[rtype(result = "()")]
 /// struct Ping;
 ///
 /// #[derive(Default)]
@@ -172,6 +173,7 @@ impl Registry {
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
+/// #[rtype(result = "()")]
 /// struct Ping;
 ///
 /// #[derive(Default)]

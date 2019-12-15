@@ -1,10 +1,9 @@
-use std::time::Duration;
-
-use futures::{Async, Future, Poll};
-use tokio_timer::Delay;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use crate::actor::Actor;
-use crate::clock;
+use crate::clock::{self, Delay, Duration};
 use crate::fut::ActorStream;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
@@ -15,22 +14,19 @@ use crate::fut::ActorStream;
 #[must_use = "streams do nothing unless polled"]
 pub struct StreamTimeout<S>
 where
-    S: ActorStream,
+    S: ActorStream + Unpin,
 {
     stream: S,
-    err: S::Error,
     dur: Duration,
     timeout: Option<Delay>,
 }
 
-pub fn new<S>(stream: S, timeout: Duration, err: S::Error) -> StreamTimeout<S>
+pub fn new<S>(stream: S, timeout: Duration) -> StreamTimeout<S>
 where
-    S: ActorStream,
-    S::Error: Clone,
+    S: ActorStream + Unpin,
 {
     StreamTimeout {
         stream,
-        err,
         dur: timeout,
         timeout: None,
     }
@@ -38,39 +34,39 @@ where
 
 impl<S> ActorStream for StreamTimeout<S>
 where
-    S: ActorStream,
-    S::Error: Clone,
+    S: ActorStream + Unpin,
 {
-    type Item = S::Item;
-    type Error = S::Error;
+    type Item = Result<S::Item, ()>;
     type Actor = S::Actor;
 
-    fn poll(
-        &mut self,
+    fn poll_next(
+        self: Pin<&mut Self>,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
-    ) -> Poll<Option<S::Item>, S::Error> {
-        match self.stream.poll(act, ctx) {
-            Ok(Async::Ready(res)) => {
-                self.timeout.take();
-                return Ok(Async::Ready(res));
+        task: &mut Context<'_>,
+    ) -> Poll<Option<Result<S::Item, ()>>> {
+        let this = self.get_mut();
+
+        match Pin::new(&mut this.stream).poll_next(act, ctx, task) {
+            Poll::Ready(Some(res)) => {
+                this.timeout.take();
+                return Poll::Ready(Some(Ok(res)));
             }
-            Ok(Async::NotReady) => (),
-            Err(err) => return Err(err),
+            Poll::Ready(None) => return Poll::Ready(None),
+            Poll::Pending => (),
         }
 
-        if self.timeout.is_none() {
-            self.timeout = Some(Delay::new(clock::now() + self.dur));
+        if this.timeout.is_none() {
+            this.timeout = Some(clock::delay_for(this.dur));
         }
 
         // check timeout
-        match self.timeout.as_mut().unwrap().poll() {
-            Ok(Async::Ready(())) => (),
-            Ok(Async::NotReady) => return Ok(Async::NotReady),
-            Err(_) => unreachable!(),
+        match Pin::new(this.timeout.as_mut().unwrap()).poll(task) {
+            Poll::Ready(_) => (),
+            Poll::Pending => return Poll::Pending,
         }
-        self.timeout.take();
+        this.timeout.take();
 
-        Err(self.err.clone())
+        Poll::Ready(Some(Err(())))
     }
 }

@@ -1,4 +1,5 @@
-use futures::Poll;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
@@ -8,20 +9,41 @@ use crate::fut::ActorFuture;
 #[derive(Debug)]
 pub enum Either<A, B> {
     /// First branch of the type
-    A(A),
+    Left(A),
     /// Second branch of the type
-    B(B),
+    Right(B),
 }
 
-impl<T, A, B> Either<(T, A), (T, B)> {
-    /// Splits out the homogeneous type from an either of tuples.
+impl<A, B, T> Either<(T, A), (T, B)> {
+    /// Factor out a homogeneous type from an either of pairs.
     ///
-    /// This method is typically useful when combined with the `Future::select2`
-    /// combinator.
-    pub fn split(self) -> (T, Either<A, B>) {
+    /// Here, the homogeneous type is the first element of the pairs.
+    pub fn factor_first(self) -> (T, Either<A, B>) {
         match self {
-            Either::A((a, b)) => (a, Either::A(b)),
-            Either::B((a, b)) => (a, Either::B(b)),
+            Either::Left((x, a)) => (x, Either::Left(a)),
+            Either::Right((x, b)) => (x, Either::Right(b)),
+        }
+    }
+}
+
+impl<A, B, T> Either<(A, T), (B, T)> {
+    /// Factor out a homogeneous type from an either of pairs.
+    ///
+    /// Here, the homogeneous type is the second element of the pairs.
+    pub fn factor_second(self) -> (Either<A, B>, T) {
+        match self {
+            Either::Left((a, x)) => (Either::Left(a), x),
+            Either::Right((b, x)) => (Either::Right(b), x),
+        }
+    }
+}
+
+impl<T> Either<T, T> {
+    /// Extract the value of an either over two equivalent types.
+    pub fn into_inner(self) -> T {
+        match self {
+            Either::Left(x) => x,
+            Either::Right(x) => x,
         }
     }
 }
@@ -29,20 +51,22 @@ impl<T, A, B> Either<(T, A), (T, B)> {
 impl<A, B> ActorFuture for Either<A, B>
 where
     A: ActorFuture,
-    B: ActorFuture<Item = A::Item, Error = A::Error, Actor = A::Actor>,
+    B: ActorFuture<Output = A::Output, Actor = A::Actor>,
 {
-    type Item = A::Item;
-    type Error = A::Error;
+    type Output = A::Output;
     type Actor = A::Actor;
 
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         act: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
-    ) -> Poll<A::Item, B::Error> {
-        match *self {
-            Either::A(ref mut a) => a.poll(act, ctx),
-            Either::B(ref mut b) => b.poll(act, ctx),
+        task: &mut Context<'_>,
+    ) -> Poll<A::Output> {
+        unsafe {
+            match self.get_unchecked_mut() {
+                Either::Left(x) => Pin::new_unchecked(x).poll(act, ctx, task),
+                Either::Right(x) => Pin::new_unchecked(x).poll(act, ctx, task),
+            }
         }
     }
 }

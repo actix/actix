@@ -1,9 +1,10 @@
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
 use actix::io::SinkWrite;
 use actix::prelude::*;
-use bytes::Bytes;
-use futures::sink::Sink;
-use futures::sync::mpsc;
-use futures::{Async, AsyncSink, Poll, StartSend};
+use bytes::{Buf, Bytes};
+use futures::{channel::mpsc, sink::Sink, StreamExt};
 
 type ByteSender = mpsc::UnboundedSender<u8>;
 
@@ -14,37 +15,53 @@ struct MySink {
 
 // simple sink that send one bit at a time
 // and produce an error on '#'
-impl Sink for MySink {
-    type SinkItem = Bytes;
-    type SinkError = ();
+impl Sink<Bytes> for MySink {
+    type Error = ();
 
-    fn start_send(
-        &mut self,
-        bytes: Bytes,
-    ) -> StartSend<Self::SinkItem, Self::SinkError> {
-        self.queue.push(bytes);
-        Ok(AsyncSink::Ready)
+    fn start_send(self: Pin<&mut Self>, bytes: Bytes) -> Result<(), Self::Error> {
+        self.get_mut().queue.push(bytes);
+        Ok(())
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        if !self.queue.is_empty() {
-            let bytes = &mut self.queue[0];
+    fn poll_ready(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        let this = self.get_mut();
+
+        if !this.queue.is_empty() {
+            let bytes = &mut this.queue[0];
             if bytes[0] == b'#' {
-                return Err(());
+                return Poll::Ready(Err(()));
             }
 
-            self.sender.unbounded_send(bytes[0]).unwrap();
-            bytes.split_to(1);
+            this.sender.unbounded_send(bytes[0]).unwrap();
+            bytes.advance(1);
             if bytes.len() == 0 {
-                self.queue.remove(0);
+                this.queue.remove(0);
             }
         }
-        if self.queue.is_empty() {
-            Ok(Async::Ready(()))
+
+        if this.queue.is_empty() {
+            Poll::Ready(Ok(()))
         } else {
-            futures::task::current().notify();
-            Ok(Async::NotReady)
+            cx.waker().wake_by_ref();
+            Poll::Pending
         }
+    }
+
+    fn poll_flush(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        self.poll_ready(cx)
+    }
+
+    fn poll_close(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+    ) -> Poll<Result<(), Self::Error>> {
+        self.poll_ready(cx)
     }
 }
 
@@ -58,7 +75,7 @@ impl Message for Data {
 }
 
 struct MyActor {
-    sink: SinkWrite<MySink>,
+    sink: SinkWrite<Bytes, MySink>,
 }
 
 impl Actor for MyActor {
@@ -81,10 +98,11 @@ impl Handler<Data> for MyActor {
     }
 }
 
-#[test]
-fn test_send_1() {
+#[actix_rt::test]
+async fn test_send_1() {
     let (sender, receiver) = mpsc::unbounded();
-    actix::System::run(move || {
+
+    actix_rt::spawn(async move {
         let addr = MyActor::create(move |ctxt| {
             let sink = MySink {
                 sender,
@@ -101,18 +119,17 @@ fn test_send_1() {
         };
 
         addr.do_send(data);
-    })
-    .unwrap();
+    });
 
-    let res = receiver.collect().wait();
-    let res = res.unwrap();
+    let res = receiver.collect::<Vec<u8>>().await;
     assert_eq!(b"Hello", &res[..]);
 }
 
-#[test]
-fn test_send_2() {
+#[actix_rt::test]
+async fn test_send_2() {
     let (sender, receiver) = mpsc::unbounded();
-    actix::System::run(move || {
+
+    actix_rt::spawn(async move {
         let addr = MyActor::create(move |ctxt| {
             let sink = MySink {
                 sender,
@@ -136,18 +153,16 @@ fn test_send_2() {
         };
 
         addr.do_send(data);
-    })
-    .unwrap();
+    });
 
-    let res = receiver.collect().wait();
-    let res = res.unwrap();
+    let res = receiver.collect::<Vec<u8>>().await;
     assert_eq!(b"Hello world", &res[..]);
 }
 
-#[test]
-fn test_send_error() {
+#[actix_rt::test]
+async fn test_send_error() {
     let (sender, receiver) = mpsc::unbounded();
-    actix::System::run(move || {
+    actix_rt::spawn(async move {
         let addr = MyActor::create(move |ctxt| {
             let sink = MySink {
                 sender,
@@ -164,25 +179,23 @@ fn test_send_error() {
         };
 
         addr.do_send(data);
-    })
-    .unwrap();
+    });
 
-    let res = receiver.collect().wait();
-    let res = res.unwrap();
+    let res = receiver.collect::<Vec<u8>>().await;
     assert_eq!(b"Hello ", &res[..]);
 }
 
 type BytesSender = mpsc::UnboundedSender<Bytes>;
 
 struct AnotherActor {
-    sink: SinkWrite<BytesSender>,
+    sink: SinkWrite<Bytes, BytesSender>,
 }
 
 impl Actor for AnotherActor {
     type Context = actix::Context<Self>;
 }
 
-impl actix::io::WriteHandler<mpsc::SendError<Bytes>> for AnotherActor {
+impl actix::io::WriteHandler<mpsc::SendError> for AnotherActor {
     fn finished(&mut self, _ctxt: &mut Self::Context) {
         System::current().stop();
     }
@@ -198,12 +211,13 @@ impl Handler<Data> for AnotherActor {
     }
 }
 
-#[test]
-fn test_send_bytes() {
-    let (sender, receiver) = mpsc::unbounded();
+#[actix_rt::test]
+async fn test_send_bytes() {
+    let (sender, mut receiver) = mpsc::unbounded();
     let bytes = Bytes::from_static(b"Hello");
     let expected_bytes = bytes.clone();
-    actix::System::run(move || {
+
+    actix_rt::spawn(async move {
         let addr = AnotherActor::create(move |ctxt| AnotherActor {
             sink: SinkWrite::new(sender, ctxt),
         });
@@ -211,10 +225,8 @@ fn test_send_bytes() {
         let data = Data { bytes, last: true };
 
         addr.do_send(data);
-    })
-    .unwrap();
+    });
 
-    let mut iter = receiver.wait();
-    let res = iter.next().unwrap().unwrap();
+    let res = receiver.next().await.unwrap();
     assert_eq!(expected_bytes, res);
 }

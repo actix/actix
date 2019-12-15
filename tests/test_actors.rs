@@ -1,26 +1,18 @@
 use actix::actors::resolver;
 use actix::prelude::*;
-use futures::Future;
 
-#[test]
-fn test_resolver() {
-    System::run(|| {
-        Arbiter::spawn({
-            let resolver = resolver::Resolver::from_registry();
-            resolver
-                .send(resolver::Resolve::host("localhost"))
-                .then(|_| {
-                    System::current().stop();
-                    Ok::<_, ()>(())
-                })
-        });
+#[actix_rt::test]
+async fn test_resolver() {
+    Arbiter::spawn(async {
+        let resolver = resolver::Resolver::from_registry();
+        let _ = resolver.send(resolver::Resolve::host("localhost")).await;
+        System::current().stop();
+    });
 
-        Arbiter::spawn({
-            let resolver = resolver::Resolver::from_registry();
-            resolver
-                .send(resolver::Connect::host("localhost:5000"))
-                .then(|_| Ok::<_, ()>(()))
-        });
-    })
-    .unwrap();
+    Arbiter::spawn(async {
+        let resolver = resolver::Resolver::from_registry();
+        let _ = resolver
+            .send(resolver::Connect::host("localhost:5000"))
+            .await;
+    });
 }

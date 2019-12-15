@@ -2,14 +2,16 @@ use std::collections::HashSet;
 use std::mem::drop;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::Future;
-use tokio_timer::Delay;
+use tokio::time::{delay_for, Duration};
 
-#[derive(Message, Debug)]
+#[derive(Debug)]
 struct Ping(usize);
+
+impl Message for Ping {
+    type Result = ();
+}
 
 struct MyActor(Arc<AtomicUsize>);
 
@@ -55,19 +57,11 @@ fn test_address() {
         arbiter.exec_fn(move || {
             addr3.do_send(Ping(2));
 
-            let send_ping = addr2
-                .send(Ping(3))
-                .map_err(|_| panic!("Unable to send ping 3"))
-                .then(move |_| {
-                    addr2
-                        .send(Ping(4))
-                        .map_err(|_| panic!("Unable to send ping 4"))
-                })
-                .then(|_| {
-                    System::current().stop();
-                    Ok(())
-                });
-            Arbiter::spawn(send_ping);
+            Arbiter::spawn(async move {
+                let _ = addr2.send(Ping(3)).await;
+                let _ = addr2.send(Ping(4)).await;
+                System::current().stop();
+            });
         });
     })
     .unwrap();
@@ -121,12 +115,11 @@ fn test_sync_recipient_call() {
         let addr2 = addr.clone().recipient();
         addr.do_send(Ping(0));
 
-        actix_rt::spawn(addr2.send(Ping(1)).then(move |_| {
-            addr2.send(Ping(2)).then(|_| {
-                System::current().stop();
-                Ok(())
-            })
-        }));
+        actix_rt::spawn(async move {
+            let _ = addr2.send(Ping(1)).await;
+            let _ = addr2.send(Ping(2)).await;
+            System::current().stop();
+        });
     })
     .unwrap();
 
@@ -138,13 +131,13 @@ fn test_error_result() {
     System::run(|| {
         let addr = MyActor3.start();
 
-        actix_rt::spawn(addr.send(Ping(0)).then(|res| {
+        actix_rt::spawn(async move {
+            let res = addr.send(Ping(0)).await;
             match res {
                 Ok(_) => (),
                 _ => panic!("Should not happen"),
-            }
-            Ok(())
-        }));
+            };
+        });
     })
     .unwrap();
 }
@@ -159,8 +152,7 @@ impl Handler<Ping> for TimeoutActor {
     type Result = ();
 
     fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
-        Delay::new(Instant::now() + Duration::new(0, 5_000_000))
-            .map_err(|_| ())
+        delay_for(Duration::new(0, 5_000_000))
             .into_actor(self)
             .wait(ctx);
     }
@@ -175,19 +167,17 @@ fn test_message_timeout() {
         let addr = TimeoutActor.start();
 
         addr.do_send(Ping(0));
-        actix_rt::spawn(addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).then(
-            move |res| {
-                match res {
-                    Ok(_) => panic!("Should not happen"),
-                    Err(MailboxError::Timeout) => {
-                        count2.fetch_add(1, Ordering::Relaxed);
-                    }
-                    _ => panic!("Should not happen"),
+        actix_rt::spawn(async move {
+            let res = addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).await;
+            match res {
+                Ok(_) => panic!("Should not happen"),
+                Err(MailboxError::Timeout) => {
+                    count2.fetch_add(1, Ordering::Relaxed);
                 }
-                System::current().stop();
-                futures::future::result(Ok(()))
-            },
-        ));
+                _ => panic!("Should not happen"),
+            }
+            System::current().stop();
+        });
     })
     .unwrap();
 
@@ -214,9 +204,9 @@ impl Actor for TimeoutActor3 {
                     _ => panic!("Should not happen"),
                 }
                 System::current().stop();
-                actix::fut::ok(())
+                async {}.into_actor(act)
             })
-            .wait(ctx)
+            .wait(ctx);
     }
 }
 

@@ -1,40 +1,33 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
+use actix::clock::{delay_for, Duration};
 use actix::prelude::*;
-use futures::stream::futures_ordered;
-use tokio_timer::Delay;
+use futures::FutureExt;
 
 struct MyActor {
     timeout: Arc<AtomicBool>,
-}
-
-#[derive(PartialEq, Copy, Clone)]
-enum Error {
-    Timeout,
-    Generic,
 }
 
 impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        Delay::new(Instant::now() + Duration::new(0, 5_000_000))
+        delay_for(Duration::new(0, 5_000_000))
             .then(|_| {
-                System::current().stop();
-                Ok::<_, Error>(())
-            })
-            .into_actor(self)
-            .timeout(Duration::new(0, 100), Error::Timeout)
-            .map_err(|e, act, _| {
-                if e == Error::Timeout {
-                    act.timeout.store(true, Ordering::Relaxed);
+                async {
                     System::current().stop();
-                    ()
                 }
             })
-            .wait(ctx)
+            .into_actor(self)
+            .timeout(Duration::new(0, 100))
+            .map(|e, act, _| {
+                if e == Err(()) {
+                    act.timeout.store(true, Ordering::Relaxed);
+                    System::current().stop();
+                }
+            })
+            .wait(ctx);
     }
 }
 
@@ -59,19 +52,18 @@ impl Actor for MyStreamActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let s = futures_ordered(vec![
-            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
-            Delay::new(Instant::now() + Duration::new(0, 5_000_000)),
-        ]);
+        let mut s = futures::stream::FuturesOrdered::new();
+        s.push(delay_for(Duration::new(0, 5_000_000)));
+        s.push(delay_for(Duration::new(0, 5_000_000)));
 
-        s.map_err(|_| Error::Generic)
-            .into_actor(self)
-            .timeout(Duration::new(0, 1000), Error::Timeout)
-            .map_err(|e, act, _| {
-                if e == Error::Timeout {
+        s.into_actor(self)
+            .timeout(Duration::new(0, 1000))
+            .map(|e, act, _| match e {
+                Err(()) => {
                     act.timeout.store(true, Ordering::Relaxed);
                     System::current().stop();
                 }
+                Ok(_) => (),
             })
             .finish()
             .wait(ctx)

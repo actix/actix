@@ -1,17 +1,19 @@
 use std::cell::RefCell;
-use std::io;
 use std::marker::PhantomData;
+use std::pin::Pin;
 use std::rc::Rc;
+use std::{io, task};
 
 use bitflags::bitflags;
 use bytes::BytesMut;
 use futures::sink::Sink;
-use futures::{task, Async, AsyncSink, Poll, StartSend};
-use tokio_codec::Encoder;
-use tokio_io::AsyncWrite;
+use futures::task::{Context, Poll};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
+use tokio_util::codec::Encoder;
 
 use crate::actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
 use crate::fut::ActorFuture;
+use std::ops::DerefMut;
 
 /// A helper trait for write handling.
 ///
@@ -72,7 +74,7 @@ struct InnerWriter<E: From<io::Error>> {
     low: usize,
     high: usize,
     handle: SpawnHandle,
-    task: Option<task::Task>,
+    task: Option<task::Waker>,
 }
 
 impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
@@ -80,7 +82,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
     where
         A: Actor<Context = C> + WriteHandler<E>,
         C: AsyncContext<A>,
-        T: 'static,
+        T: Unpin + 'static,
     {
         let inner = UnsafeWriter(
             Rc::new(RefCell::new(InnerWriter {
@@ -128,7 +130,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
         let mut inner = self.inner.0.borrow_mut();
         inner.buffer.extend_from_slice(msg);
         if let Some(task) = inner.task.take() {
-            task.notify();
+            task.wake_by_ref();
         }
     }
 
@@ -149,33 +151,36 @@ where
 
 impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
 where
-    T: AsyncWrite,
+    T: AsyncWrite + Unpin,
     E: From<io::Error>,
     A: Actor + WriteHandler<E>,
     A::Context: AsyncContext<A>,
 {
-    type Item = ();
-    type Error = ();
+    type Output = ();
     type Actor = A;
 
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
-    ) -> Poll<Self::Item, Self::Error> {
-        let mut inner = self.inner.0.borrow_mut();
+        task: &mut task::Context<'_>,
+    ) -> Poll<Self::Output> {
+        let this = self.get_mut();
+        let mut inner = this.inner.0.borrow_mut();
         if let Some(err) = inner.error.take() {
             if act.error(err, ctx) == Running::Stop {
                 act.finished(ctx);
-                return Ok(Async::Ready(()));
+                return Poll::Ready(());
             }
         }
 
-        let mut io = self.inner.1.borrow_mut();
+        let mut io = this.inner.1.borrow_mut();
         inner.task = None;
         while !inner.buffer.is_empty() {
-            match io.write(&inner.buffer) {
-                Ok(n) => {
+            match unsafe { Pin::new_unchecked(io.deref_mut()) }
+                .poll_write(task, &inner.buffer)
+            {
+                Poll::Ready(Ok(n)) => {
                     if n == 0
                         && act.error(
                             io::Error::new(
@@ -187,38 +192,40 @@ where
                         ) == Running::Stop
                     {
                         act.finished(ctx);
-                        return Ok(Async::Ready(()));
+                        return Poll::Ready(());
                     }
                     let _ = inner.buffer.split_to(n);
                 }
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
                     if inner.buffer.len() > inner.high {
                         ctx.wait(WriterDrain {
-                            inner: self.inner.clone(),
+                            inner: this.inner.clone(),
                             act: PhantomData,
                         });
                     }
-                    return Ok(Async::NotReady);
+                    return Poll::Pending;
                 }
-                Err(e) => {
+                Poll::Ready(Err(e)) => {
                     if act.error(e.into(), ctx) == Running::Stop {
                         act.finished(ctx);
-                        return Ok(Async::Ready(()));
+                        return Poll::Ready(());
                     }
                 }
+                Poll::Pending => return Poll::Pending,
             }
         }
 
         // Try flushing the underlying IO
-        match io.flush() {
-            Ok(_) => (),
-            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                return Ok(Async::NotReady);
+        match unsafe { Pin::new_unchecked(io.deref_mut()) }.poll_flush(task) {
+            Poll::Ready(Ok(_)) => (),
+            Poll::Pending => return Poll::Pending,
+            Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
+                return Poll::Pending;
             }
-            Err(e) => {
+            Poll::Ready(Err(e)) => {
                 if act.error(e.into(), ctx) == Running::Stop {
                     act.finished(ctx);
-                    return Ok(Async::Ready(()));
+                    return Poll::Ready(());
                 }
             }
         }
@@ -227,17 +234,17 @@ where
         if inner.flags.contains(Flags::CLOSING) {
             inner.flags |= Flags::CLOSED;
             act.finished(ctx);
-            Ok(Async::Ready(()))
+            Poll::Ready(())
         } else {
-            inner.task = Some(task::current());
-            Ok(Async::NotReady)
+            inner.task = Some(task.waker().clone());
+            Poll::Pending
         }
     }
 }
 
 struct WriterDrain<T, E, A>
 where
-    T: AsyncWrite,
+    T: AsyncWrite + Unpin,
     E: From<io::Error>,
 {
     act: PhantomData<A>,
@@ -246,25 +253,29 @@ where
 
 impl<T, E, A> ActorFuture for WriterDrain<T, E, A>
 where
-    T: AsyncWrite,
+    T: AsyncWrite + Unpin,
     E: From<io::Error>,
     A: Actor,
     A::Context: AsyncContext<A>,
 {
-    type Item = ();
-    type Error = ();
+    type Output = ();
     type Actor = A;
 
-    fn poll(&mut self, _: &mut A, _: &mut A::Context) -> Poll<Self::Item, Self::Error> {
-        let mut inner = self.inner.0.borrow_mut();
+    fn poll(
+        self: Pin<&mut Self>,
+        _: &mut A,
+        _: &mut A::Context,
+        task: &mut Context,
+    ) -> Poll<Self::Output> {
+        let this = self.get_mut();
+        let mut inner = this.inner.0.borrow_mut();
         if inner.error.is_some() {
-            return Ok(Async::Ready(()));
+            return Poll::Ready(());
         }
-
-        let mut io = self.inner.1.borrow_mut();
+        let mut io = this.inner.1.borrow_mut();
         while !inner.buffer.is_empty() {
-            match io.write(&inner.buffer) {
-                Ok(n) => {
+            match Pin::new(io.deref_mut()).poll_write(task, &inner.buffer) {
+                Poll::Ready(Ok(n)) => {
                     if n == 0 {
                         inner.error = Some(
                             io::Error::new(
@@ -273,41 +284,42 @@ where
                             )
                             .into(),
                         );
-                        return Err(());
+                        return Poll::Ready(());
                     }
                     let _ = inner.buffer.split_to(n);
                 }
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
                     return if inner.buffer.len() < inner.low {
-                        Ok(Async::Ready(()))
+                        Poll::Ready(())
                     } else {
-                        Ok(Async::NotReady)
+                        Poll::Pending
                     };
                 }
-                Err(e) => {
+                Poll::Ready(Err(e)) => {
                     inner.error = Some(e.into());
-                    return Err(());
+                    return Poll::Ready(());
                 }
+                Poll::Pending => return Poll::Pending,
             }
         }
-        Ok(Async::Ready(()))
+        Poll::Ready(())
     }
 }
 
 /// A wrapper for the `AsyncWrite` and `Encoder` types. The AsyncWrite will be flushed when this
 /// struct is dropped.
-pub struct FramedWrite<T: AsyncWrite, U: Encoder> {
+pub struct FramedWrite<T: AsyncWrite + Unpin, U: Encoder> {
     enc: U,
     inner: UnsafeWriter<T, U::Error>,
 }
 
-impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
+impl<T: AsyncWrite + Unpin, U: Encoder> FramedWrite<T, U> {
     pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
         C: AsyncContext<A>,
         U::Error: 'static,
-        T: 'static,
+        T: Unpin + 'static,
     {
         let inner = UnsafeWriter(
             Rc::new(RefCell::new(InnerWriter {
@@ -336,7 +348,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
         A: Actor<Context = C> + WriteHandler<U::Error>,
         C: AsyncContext<A>,
         U::Error: 'static,
-        T: 'static,
+        T: Unpin + 'static,
     {
         let inner = UnsafeWriter(
             Rc::new(RefCell::new(InnerWriter {
@@ -386,7 +398,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
             inner.error = Some(e);
         });
         if let Some(task) = inner.task.take() {
-            task.notify();
+            task.wake_by_ref();
         }
     }
 
@@ -396,7 +408,7 @@ impl<T: AsyncWrite, U: Encoder> FramedWrite<T, U> {
     }
 }
 
-impl<T: AsyncWrite, U: Encoder> Drop for FramedWrite<T, U> {
+impl<T: AsyncWrite + Unpin, U: Encoder> Drop for FramedWrite<T, U> {
     fn drop(&mut self) {
         // Attempts to write any remaining bytes to the stream and flush it
         let mut async_writer = self.inner.1.borrow_mut();
@@ -410,17 +422,18 @@ impl<T: AsyncWrite, U: Encoder> Drop for FramedWrite<T, U> {
 }
 
 /// A wrapper for the `Sink` type.
-pub struct SinkWrite<S: Sink> {
-    inner: Rc<RefCell<InnerSinkWrite<S>>>,
+pub struct SinkWrite<I, S: Sink<I> + Unpin> {
+    inner: Rc<RefCell<InnerSinkWrite<I, S>>>,
 }
 
-impl<S: Sink + 'static> SinkWrite<S> {
+impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
     pub fn new<A, C>(sink: S, ctxt: &mut C) -> Self
     where
-        A: Actor<Context = C> + WriteHandler<S::SinkError>,
+        A: Actor<Context = C> + WriteHandler<S::Error>,
         C: AsyncContext<A>,
     {
         let inner = Rc::new(RefCell::new(InnerSinkWrite {
+            _i: PhantomData,
             closing_flag: Flags::empty(),
             sink,
             task: None,
@@ -437,12 +450,11 @@ impl<S: Sink + 'static> SinkWrite<S> {
     }
 
     /// Sends an item to the sink.
-    pub fn write(&mut self, item: S::SinkItem) -> StartSend<S::SinkItem, S::SinkError> {
-        let res = self.inner.borrow_mut().sink.start_send(item);
+    pub fn write(&mut self, item: I) -> Result<(), S::Error> {
+        let res = Pin::new(&mut self.inner.borrow_mut().sink).start_send(item);
         match res {
-            Err(_) => {} // TODO close or send to inner future ?
-            Ok(AsyncSink::Ready) => self.notify_task(),
-            Ok(AsyncSink::NotReady(_)) => {}
+            Ok(()) => self.notify_task(),
+            Err(_) => {}
         }
         res
     }
@@ -462,7 +474,7 @@ impl<S: Sink + 'static> SinkWrite<S> {
 
     fn notify_task(&self) {
         if let Some(task) = &self.inner.borrow().task {
-            task.notify()
+            task.wake_by_ref()
         }
     }
 
@@ -472,66 +484,66 @@ impl<S: Sink + 'static> SinkWrite<S> {
     }
 }
 
-struct InnerSinkWrite<S: Sink> {
+struct InnerSinkWrite<I, S: Sink<I>> {
+    _i: PhantomData<I>,
     closing_flag: Flags,
     sink: S,
-    task: Option<task::Task>,
+    task: Option<task::Waker>,
     handle: SpawnHandle,
 }
 
-struct SinkWriteFuture<S: Sink, A> {
-    inner: Rc<RefCell<InnerSinkWrite<S>>>,
+struct SinkWriteFuture<I: 'static, S: Sink<I>, A> {
+    inner: Rc<RefCell<InnerSinkWrite<I, S>>>,
     _actor: PhantomData<A>,
 }
 
-impl<S, A> ActorFuture for SinkWriteFuture<S, A>
+impl<I: 'static, S: futures::sink::Sink<I>, A> ActorFuture for SinkWriteFuture<I, S, A>
 where
-    S: Sink,
-    A: Actor + WriteHandler<S::SinkError>,
+    S: Sink<I> + Unpin,
+    A: Actor + WriteHandler<S::Error>,
     A::Context: AsyncContext<A>,
 {
-    type Item = ();
-    type Error = ();
+    type Output = ();
     type Actor = A;
-
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         act: &mut A,
         ctxt: &mut A::Context,
-    ) -> Poll<Self::Item, Self::Error> {
-        let inner = &mut self.inner.borrow_mut();
+        cx: &mut task::Context<'_>,
+    ) -> Poll<Self::Output> {
+        let this = self.get_mut();
+        let inner = &mut this.inner.borrow_mut();
         inner.task = None;
-
         if !inner.closing_flag.contains(Flags::CLOSING) {
-            match inner.sink.poll_complete() {
-                Err(e) => {
+            match Pin::new(&mut inner.sink).poll_flush(cx) {
+                Poll::Ready(Err(e)) => {
                     if act.error(e, ctxt) == Running::Stop {
                         act.finished(ctxt);
-                        return Ok(Async::Ready(()));
+                        return Poll::Ready(());
                     }
                 }
-                Ok(Async::Ready(())) => {}
-                Ok(Async::NotReady) => {}
+                Poll::Ready(Ok(())) => {}
+                Poll::Pending => {}
             }
         } else {
             assert!(!inner.closing_flag.contains(Flags::CLOSED));
-            match inner.sink.close() {
-                Err(e) => {
+            match Pin::new(&mut inner.sink).poll_close(cx) {
+                Poll::Ready(Err(e)) => {
                     if act.error(e, ctxt) == Running::Stop {
                         act.finished(ctxt);
-                        return Ok(Async::Ready(()));
+                        return Poll::Ready(());
                     }
                 }
-                Ok(Async::Ready(())) => {
+                Poll::Ready(Ok(())) => {
                     inner.closing_flag |= Flags::CLOSED;
                     act.finished(ctxt);
-                    return Ok(Async::Ready(()));
+                    return Poll::Ready(());
                 }
-                Ok(Async::NotReady) => {}
+                Poll::Pending => {}
             }
         }
+        inner.task = Some(cx.waker().clone());
 
-        inner.task = Some(futures::task::current());
-        Ok(Async::NotReady)
+        Poll::Pending
     }
 }

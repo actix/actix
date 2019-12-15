@@ -1,6 +1,4 @@
 use actix::prelude::*;
-use actix_rt::spawn;
-use futures::Future;
 
 /// Define `Ping` message
 struct Ping(usize);
@@ -29,24 +27,17 @@ impl Handler<Ping> for MyActor {
     }
 }
 
-fn main() -> std::io::Result<()> {
-    // start system, this is required step
-    System::run(|| {
-        // start new actor
-        let addr = MyActor { count: 10 }.start();
+#[actix_rt::main]
+async fn main() {
+    // start new actor
+    let addr = MyActor { count: 10 }.start();
 
-        // send message and get future for result
-        let res = addr.send(Ping(10));
+    // send message and get future for result
+    let res = addr.send(Ping(10)).await;
 
-        // handle() returns tokio handle
-        spawn(
-            res.map(|res| {
-                println!("RESULT: {}", res == 20);
+    // handle() returns tokio handle
+    println!("RESULT: {}", res.unwrap() == 20);
 
-                // stop system and exit
-                System::current().stop();
-            })
-            .map_err(|_| ()),
-        );
-    })
+    // stop system and exit
+    System::current().stop();
 }

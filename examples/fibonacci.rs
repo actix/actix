@@ -4,7 +4,6 @@
 //! actor in each.
 
 use actix::prelude::*;
-use actix_rt::spawn;
 
 struct Fibonacci(pub u32);
 
@@ -42,19 +41,15 @@ impl Handler<Fibonacci> for SyncActor {
     }
 }
 
-fn main() -> std::io::Result<()> {
-    System::run(|| {
-        // start sync arbiter with 3 threads
-        let addr = SyncArbiter::start(3, || SyncActor);
+#[actix_rt::main]
+async fn main() {
+    // start sync arbiter with 3 threads
+    let addr = SyncArbiter::start(3, || SyncActor);
 
-        // send 5 messages
-        for n in 5..10 {
-            addr.do_send(Fibonacci(n));
-        }
+    // send 5 messages
+    for n in 5..10 {
+        println!("{:?}", addr.send(Fibonacci(n)).await.unwrap());
+    }
 
-        spawn(futures::lazy(|| {
-            System::current().stop();
-            futures::future::result(Ok(()))
-        }));
-    })
+    System::current().stop();
 }

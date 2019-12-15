@@ -4,56 +4,53 @@
 //!
 //! ```rust
 //! #![recursion_limit="128"]
-//! # use futures::{future, Future};
+//! use futures::{future, FutureExt};
 //! use actix::prelude::*;
 //! use actix::actors::resolver;
 //!
-//! fn main() {
-//!     System::run(|| {
-//!
-//!         actix_rt::spawn({
+//! #[actix_rt::main]
+//! async fn main() {
+//!         actix_rt::spawn(async {
 //!             let resolver = resolver::Resolver::from_registry();
 //!
-//!             resolver.send(
-//!                 // resolve "localhost"
-//!                 resolver::Resolve::host("localhost"))
-//!                     .then(|addrs| {
-//!                         println!("RESULT: {:?}", addrs);
-//! #                       System::current().stop();
-//!                         Ok::<_, ()>(())
-//!                     })
-//!         });
+//!             let addrs = resolver.send(
+//!                  resolver::Connect::host("localhost")).await;
 //!
-//!         actix_rt::spawn({
-//!             let resolver = resolver::Resolver::from_registry();
-//!
-//!             resolver.send(
-//!                 // connect to a "localhost:5000"
-//!                 resolver::Connect::host_and_port("localhost", 5000))
-//!                     .then(|stream| {
-//!                         println!("RESULT: {:?}", stream);
-//!                         Ok::<_, ()>(())
-//!                     })
+//!             println!("RESULT: {:?}", addrs);
+//!             System::current().stop();
 //!        });
-//!    });
+//!
+//!         actix_rt::spawn(async {
+//!             let resolver = resolver::Resolver::from_registry();
+//!
+//!             let stream = resolver.send(
+//!                  resolver::Connect::host_and_port("localhost", 5000)).await;
+//!
+//!             println!("RESULT: {:?}", stream);
+//!        });
 //! }
 //! ```
 use std::collections::VecDeque;
+use std::future::Future;
 use std::io;
 use std::net::SocketAddr;
+use std::pin::Pin;
+use std::task::{self, Poll};
 use std::time::Duration;
 
 use derive_more::Display;
-use futures::{Async, Future, Poll};
 use log::warn;
-use tokio_tcp::{ConnectFuture, TcpStream};
-use tokio_timer::Delay;
+use tokio::net::TcpStream;
+
+use pin_project::{pin_project, project};
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::AsyncResolver;
 use trust_dns_resolver::BackgroundLookupIp;
 
-use crate::clock;
+use crate::clock::Delay;
 use crate::fut::wrap_future;
+use crate::fut::ActorFuture;
+use crate::fut::Either;
 use crate::prelude::*;
 
 #[deprecated(since = "0.7.0", note = "please use `Resolver` instead")]
@@ -176,7 +173,7 @@ impl Resolver {
         parts: (AsyncResolver, F),
     ) -> AsyncResolver
     where
-        F: 'static + Future<Item = (), Error = ()>,
+        F: 'static + Future<Output = ()>,
     {
         ctx.spawn(wrap_future::<_, Self>(parts.1));
         parts.0
@@ -189,9 +186,9 @@ impl Actor for Resolver {
     fn started(&mut self, ctx: &mut Self::Context) {
         // AsyncResolver::new() returns the AsyncResolver itself, plus an anonymous
         // future which gets spawned as a background task for doing DNS
-        // resolution. So we use our litle `start_resolver` wrapper to spawn
+        // resolution. So we use our little `start_resolver` wrapper to spawn
         // the background task (which gets cleaned up automatically if no
-        // outstanding AsyncResolvers stil have a handle to it).
+        // outstanding AsyncResolvers still have a handle to it).
         let resolver = if let Some(cfg) = self.cfg.take() {
             self.start_resolver(ctx, AsyncResolver::new(cfg.0, cfg.1))
         } else {
@@ -230,7 +227,7 @@ impl Default for Resolver {
 }
 
 impl Handler<Resolve> for Resolver {
-    type Result = ResponseActFuture<Self, VecDeque<SocketAddr>, ResolverError>;
+    type Result = ResponseActFuture<Self, Result<VecDeque<SocketAddr>, ResolverError>>;
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
         if let Some(ref err) = self.err {
@@ -246,7 +243,7 @@ impl Handler<Resolve> for Resolver {
 }
 
 impl Handler<Connect> for Resolver {
-    type Result = ResponseActFuture<Self, TcpStream, ResolverError>;
+    type Result = ResponseActFuture<Self, Result<TcpStream, ResolverError>>;
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         let timeout = msg.timeout;
@@ -256,13 +253,16 @@ impl Handler<Connect> for Resolver {
                 msg.port.unwrap_or(0),
                 self.resolver.as_ref().unwrap(),
             )
-            .and_then(move |addrs, _, _| TcpConnector::with_timeout(addrs, timeout)),
+            .then(move |addrs, act, _| match addrs {
+                Ok(a) => Either::Left(TcpConnector::with_timeout(a, timeout)),
+                Err(e) => Either::Right(async move { Err(e) }.into_actor(act)),
+            }),
         )
     }
 }
 
 impl Handler<ConnectAddr> for Resolver {
-    type Result = ResponseActFuture<Self, TcpStream, ResolverError>;
+    type Result = ResponseActFuture<Self, Result<TcpStream, ResolverError>>;
 
     fn handle(&mut self, msg: ConnectAddr, _: &mut Self::Context) -> Self::Result {
         let mut v = VecDeque::new();
@@ -350,48 +350,51 @@ impl ResolveFut {
 }
 
 impl ActorFuture for ResolveFut {
-    type Item = VecDeque<SocketAddr>;
-    type Error = ResolverError;
+    type Output = Result<VecDeque<SocketAddr>, ResolverError>;
     type Actor = Resolver;
-
     fn poll(
-        &mut self,
+        mut self: Pin<&mut Self>,
         _: &mut Resolver,
         _: &mut Context<Resolver>,
-    ) -> Poll<Self::Item, Self::Error> {
+        task: &mut task::Context<'_>,
+    ) -> Poll<Self::Output> {
         if let Some(err) = self.error.take() {
-            Err(err)
+            Poll::Ready(Err(err))
         } else if let Some(err) = self.error2.take() {
-            Err(ResolverError::Resolver(err))
+            Poll::Ready(Err(ResolverError::Resolver(err)))
         } else if let Some(addrs) = self.addrs.take() {
-            Ok(Async::Ready(addrs))
+            Poll::Ready(Ok(addrs))
         } else {
-            match self.lookup.as_mut().unwrap().poll() {
-                Ok(Async::NotReady) => Ok(Async::NotReady),
-                Ok(Async::Ready(ips)) => {
+            match Pin::new(self.lookup.as_mut().unwrap()).poll(task) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(Ok(ips)) => {
                     let addrs: VecDeque<_> = ips
                         .iter()
                         .map(|ip| SocketAddr::new(ip, self.port))
                         .collect();
                     if addrs.is_empty() {
-                        Err(ResolverError::Resolver(
+                        Poll::Ready(Err(ResolverError::Resolver(
                             "Expect at least one A dns record".to_owned(),
-                        ))
+                        )))
                     } else {
-                        Ok(Async::Ready(addrs))
+                        Poll::Ready(Ok(addrs))
                     }
                 }
-                Err(err) => Err(ResolverError::Resolver(format!("{}", err))),
+                Poll::Ready(Err(err)) => {
+                    Poll::Ready(Err(ResolverError::Resolver(format!("{}", err))))
+                }
             }
         }
     }
 }
 
 /// A TCP stream connector.
+#[pin_project]
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
+    #[pin]
     timeout: Delay,
-    stream: Option<ConnectFuture>,
+    stream: Option<Box<dyn Future<Output = Result<TcpStream, io::Error>>>>,
 }
 
 impl TcpConnector {
@@ -403,43 +406,45 @@ impl TcpConnector {
         TcpConnector {
             addrs,
             stream: None,
-            timeout: Delay::new(clock::now() + timeout),
+            timeout: tokio::time::delay_for(timeout),
         }
     }
 }
 
 impl ActorFuture for TcpConnector {
-    type Item = TcpStream;
-    type Error = ResolverError;
+    type Output = Result<TcpStream, ResolverError>;
     type Actor = Resolver;
 
+    #[project]
     fn poll(
-        &mut self,
+        self: Pin<&mut Self>,
         _: &mut Resolver,
         _: &mut Context<Resolver>,
-    ) -> Poll<Self::Item, Self::Error> {
+        task: &mut task::Context<'_>,
+    ) -> Poll<Self::Output> {
+        let mut this = self.get_mut();
         // timeout
-        if let Ok(Async::Ready(_)) = self.timeout.poll() {
-            return Err(ResolverError::Timeout);
+        if let Poll::Ready(_) = Pin::new(&mut this.timeout).poll(task) {
+            return Poll::Ready(Err(ResolverError::Timeout));
         }
-
         // connect
         loop {
-            if let Some(new) = self.stream.as_mut() {
-                match new.poll() {
-                    Ok(Async::Ready(sock)) => return Ok(Async::Ready(sock)),
-                    Ok(Async::NotReady) => return Ok(Async::NotReady),
-                    Err(err) => {
-                        if self.addrs.is_empty() {
-                            return Err(ResolverError::IoError(err));
-                        }
+            match unsafe {
+                Pin::new_unchecked(&mut *this.stream.take().unwrap().as_mut())
+            }
+            .poll(task)
+            {
+                Poll::Ready(Ok(sock)) => return Poll::Ready(Ok(sock)),
+                Poll::Pending => return Poll::Pending,
+                Poll::Ready(Err(err)) => {
+                    if this.addrs.is_empty() {
+                        return Poll::Ready(Err(ResolverError::IoError(err)));
                     }
                 }
             }
-
             // try to connect
-            let addr = self.addrs.pop_front().unwrap();
-            self.stream = Some(TcpStream::connect(&addr));
+            let addr = this.addrs.pop_front().unwrap();
+            this.stream = Some(Box::new(TcpStream::connect(addr)));
         }
     }
 }

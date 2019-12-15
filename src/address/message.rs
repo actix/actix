@@ -1,11 +1,12 @@
+use std::future::Future;
 use std::marker::PhantomData;
+use std::pin::Pin;
+use std::task::{self, Poll};
 use std::time::Duration;
 
-use futures::sync::oneshot;
-use futures::{Async, Future, Poll};
-use tokio_timer::Delay;
+use futures::channel::oneshot;
 
-use crate::clock;
+use crate::clock::Delay;
 use crate::handler::{Handler, Message};
 
 use super::channel::{AddressSender, Sender};
@@ -51,19 +52,21 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(Delay::new(clock::now() + dur));
+        self.timeout = Some(tokio::time::delay_for(dur));
         self
     }
 
-    fn poll_timeout(&mut self) -> Poll<M::Result, MailboxError> {
+    fn poll_timeout(
+        &mut self,
+        cx: &mut task::Context<'_>,
+    ) -> Poll<Result<M::Result, MailboxError>> {
         if let Some(ref mut timeout) = self.timeout {
-            match timeout.poll() {
-                Ok(Async::Ready(())) => Err(MailboxError::Timeout),
-                Ok(Async::NotReady) => Ok(Async::NotReady),
-                Err(_) => unreachable!(),
+            match unsafe { Pin::new_unchecked(timeout) }.poll(cx) {
+                Poll::Ready(()) => Poll::Ready(Err(MailboxError::Timeout)),
+                Poll::Pending => Poll::Pending,
             }
         } else {
-            Ok(Async::NotReady)
+            Poll::Pending
         }
     }
 }
@@ -75,29 +78,33 @@ where
     M: Message + Send,
     M::Result: Send,
 {
-    type Item = M::Result;
-    type Error = MailboxError;
+    type Output = Result<M::Result, MailboxError>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        if let Some((sender, msg)) = self.info.take() {
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        let mut this = unsafe { self.get_unchecked_mut() };
+
+        if let Some((sender, msg)) = this.info.take() {
             match sender.send(msg) {
-                Ok(rx) => self.rx = Some(rx),
+                Ok(rx) => this.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
-                    self.info = Some((sender, msg));
-                    return Ok(Async::NotReady);
+                    this.info = Some((sender, msg));
+                    return Poll::Pending;
                 }
-                Err(SendError::Closed(_)) => return Err(MailboxError::Closed),
+                Err(SendError::Closed(_)) => {
+                    return Poll::Ready(Err(MailboxError::Closed))
+                }
             }
         }
 
-        if self.rx.is_some() {
-            match self.rx.as_mut().unwrap().poll() {
-                Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
-                Ok(Async::NotReady) => self.poll_timeout(),
-                Err(_) => Err(MailboxError::Closed),
+        if this.rx.is_some() {
+            match unsafe { Pin::new_unchecked(&mut this.rx.as_mut().unwrap()) }.poll(cx)
+            {
+                Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
+                Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
+                Poll::Pending => this.poll_timeout(cx),
             }
         } else {
-            Err(MailboxError::Closed)
+            Poll::Ready(Err(MailboxError::Closed))
         }
     }
 }
@@ -132,19 +139,21 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(Delay::new(clock::now() + dur));
+        self.timeout = Some(tokio::time::delay_for(dur));
         self
     }
 
-    fn poll_timeout(&mut self) -> Poll<M::Result, MailboxError> {
+    fn poll_timeout(
+        &mut self,
+        cx: &mut task::Context<'_>,
+    ) -> Poll<Result<M::Result, MailboxError>> {
         if let Some(ref mut timeout) = self.timeout {
-            match timeout.poll() {
-                Ok(Async::Ready(())) => Err(MailboxError::Timeout),
-                Ok(Async::NotReady) => Ok(Async::NotReady),
-                Err(_) => unreachable!(),
+            match unsafe { Pin::new_unchecked(timeout) }.poll(cx) {
+                Poll::Ready(()) => Poll::Ready(Err(MailboxError::Timeout)),
+                Poll::Pending => Poll::Pending,
             }
         } else {
-            Ok(Async::NotReady)
+            Poll::Pending
         }
     }
 }
@@ -154,32 +163,33 @@ where
     M: Message + Send + 'static,
     M::Result: Send,
 {
-    type Item = M::Result;
-    type Error = MailboxError;
+    type Output = Result<M::Result, MailboxError>;
 
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        if let Some((sender, msg)) = self.info.take() {
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        let mut this = unsafe { self.get_unchecked_mut() };
+
+        if let Some((sender, msg)) = this.info.take() {
             match sender.send(msg) {
-                Ok(rx) => self.rx = Some(rx),
+                Ok(rx) => this.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
-                    self.info = Some((sender, msg));
-                    return Ok(Async::NotReady);
+                    this.info = Some((sender, msg));
+                    return Poll::Pending;
                 }
-                Err(SendError::Closed(_)) => return Err(MailboxError::Closed),
+                Err(SendError::Closed(_)) => {
+                    return Poll::Ready(Err(MailboxError::Closed))
+                }
             }
         }
 
-        if let Some(mut rx) = self.rx.take() {
-            match rx.poll() {
-                Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
-                Ok(Async::NotReady) => {
-                    self.rx = Some(rx);
-                    self.poll_timeout()
-                }
-                Err(_) => Err(MailboxError::Closed),
+        if this.rx.is_some() {
+            match unsafe { Pin::new_unchecked(&mut this.rx.as_mut().unwrap()) }.poll(cx)
+            {
+                Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
+                Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
+                Poll::Pending => this.poll_timeout(cx),
             }
         } else {
-            Err(MailboxError::Closed)
+            Poll::Ready(Err(MailboxError::Closed))
         }
     }
 }

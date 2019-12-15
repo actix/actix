@@ -166,30 +166,25 @@ pub mod dev {
 /// # Examples
 ///
 /// ```
-/// # use futures::Future;
 /// use std::time::{Duration, Instant};
-/// use tokio_timer::Delay;
+/// use tokio::time::delay_for;
 ///
 /// fn main() {
-///   actix::run(
-///       || Delay::new(Instant::now() + Duration::from_millis(100))
-///            .map(|_| actix::System::current().stop())
-///            .map_err(|_| ())
-///   );
+///   actix::run(async move {
+///       delay_for(Duration::from_millis(100)).await;
+///       actix::System::current().stop();
+///   });
 /// }
 /// ```
 ///
 /// # Panics
 ///
 /// This function panics if the actix system is already running.
-pub fn run<F, R>(f: F) -> std::io::Result<()>
+pub fn run<R>(f: R) -> std::io::Result<()>
 where
-    F: FnOnce() -> R,
-    R: futures::Future<Item = (), Error = ()> + 'static,
+    R: futures::Future<Output = ()> + 'static,
 {
-    let sys = actix_rt::System::new("Default");
-    actix_rt::spawn(f());
-    sys.run()
+    Ok(actix_rt::System::new("Default").block_on(f))
 }
 
 /// Spawns a future on the current arbiter.
@@ -199,7 +194,7 @@ where
 /// This function panics if the actix system is not running.
 pub fn spawn<F>(f: F)
 where
-    F: futures::Future<Item = (), Error = ()> + 'static,
+    F: futures::Future<Output = ()> + 'static,
 {
     actix_rt::spawn(f);
 }

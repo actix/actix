@@ -323,7 +323,6 @@ where
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use futures::Future;
 
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
@@ -363,25 +362,23 @@ mod tests {
                 ctx.set_mailbox_capacity(1);
                 ActorWithSmallMailBox(count2)
             });
-            //Use clone to make sure that regardless of how many messages
-            //are cloned capacity will be taken into account.
-            let send = addr.clone().send(SetCounter(1));
-            assert!(send.rx_is_some());
-            let addr2 = addr.clone();
-            let send2 = addr2.send(SetCounter(2));
-            assert!(send2.rx_is_some());
-            let send3 = addr2.send(SetCounter(3));
-            assert!(!send3.rx_is_some());
-            let send = send
-                .join(send2)
-                .join(send3)
-                .map(|_| {
-                    System::current().stop();
-                })
-                .map_err(|_| {
-                    panic!("Message over limit should be delivered, but it is not!");
-                });
-            Arbiter::spawn(send);
+
+            let fut = async move {
+                let send = addr.clone().send(SetCounter(1));
+                assert!(send.rx_is_some());
+                let addr2 = addr.clone();
+                let send2 = addr2.send(SetCounter(2));
+                assert!(send2.rx_is_some());
+                let send3 = addr2.send(SetCounter(3));
+                assert!(!send3.rx_is_some());
+
+                let _ = send.await;
+                let _ = send2.await;
+                let _ = send3.await;
+
+                System::current().stop();
+            };
+            Arbiter::spawn(fut);
         })
         .unwrap();
 

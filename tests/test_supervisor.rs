@@ -1,10 +1,8 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
 
 use actix::prelude::*;
-use futures::{future, Future};
-use tokio_timer::Delay;
+use tokio::time::{delay_for, Duration};
 
 struct Die;
 
@@ -55,12 +53,10 @@ fn test_supervisor_restart() {
         addr.do_send(Die);
         *addr2.lock().unwrap() = Some(addr);
 
-        actix::spawn(Delay::new(Instant::now() + Duration::new(0, 100_000)).then(
-            |_| {
-                System::current().stop();
-                future::result(Ok(()))
-            },
-        ));
+        actix::spawn(async move {
+            delay_for(Duration::new(0, 100_000)).await;
+            System::current().stop();
+        });
     })
     .unwrap();
 
