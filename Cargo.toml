@@ -60,7 +60,7 @@ actix-http = { version = "1.0", optional = true }
 trust-dns-resolver = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
 
 [dev-dependencies]
-doc-comment = ""
+doc-comment = "0.3"
 
 [profile.release]
 lto = true
