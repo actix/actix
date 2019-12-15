@@ -100,22 +100,20 @@ fn test_restart_sync_actor() {
     let msgs1 = Arc::clone(&msgs);
 
     System::run(move || {
+        let addr = SyncArbiter::start(1, move || MySyncActor {
+            started: Arc::clone(&started1),
+            stopping: Arc::clone(&stopping1),
+            stopped: Arc::clone(&stopped1),
+            msgs: Arc::clone(&msgs1),
+            stop: started1.load(Ordering::Relaxed) == 0,
+        });
+
+        addr.do_send(Num(2));
+
         actix_rt::spawn(async move {
-            let addr = SyncArbiter::start(1, move || MySyncActor {
-                started: Arc::clone(&started1),
-                stopping: Arc::clone(&stopping1),
-                stopped: Arc::clone(&stopped1),
-                msgs: Arc::clone(&msgs1),
-                stop: started1.load(Ordering::Relaxed) == 0,
-            });
-
-            let _ = addr.send(Num(2)).await;
-
-            actix_rt::spawn(async move {
-                let _ = addr.send(Num(4)).await;
-                delay_for(Duration::new(0, 1_000_000)).await;
-                System::current().stop();
-            });
+            let _ = addr.send(Num(4)).await;
+            delay_for(Duration::new(0, 1_000_000)).await;
+            System::current().stop();
         });
     })
     .unwrap();

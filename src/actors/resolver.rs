@@ -186,9 +186,9 @@ impl Actor for Resolver {
     fn started(&mut self, ctx: &mut Self::Context) {
         // AsyncResolver::new() returns the AsyncResolver itself, plus an anonymous
         // future which gets spawned as a background task for doing DNS
-        // resolution. So we use our litle `start_resolver` wrapper to spawn
+        // resolution. So we use our little `start_resolver` wrapper to spawn
         // the background task (which gets cleaned up automatically if no
-        // outstanding AsyncResolvers stil have a handle to it).
+        // outstanding AsyncResolvers still have a handle to it).
         let resolver = if let Some(cfg) = self.cfg.take() {
             self.start_resolver(ctx, AsyncResolver::new(cfg.0, cfg.1))
         } else {
