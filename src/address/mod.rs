@@ -1,6 +1,7 @@
-use derive_more::Display;
 use std::hash::{Hash, Hasher};
 use std::{error, fmt};
+
+use derive_more::Display;
 
 pub(crate) mod channel;
 mod envelope;

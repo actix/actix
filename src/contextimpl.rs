@@ -1,6 +1,10 @@
-use bitflags::bitflags;
-use smallvec::SmallVec;
 use std::fmt;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+use bitflags::bitflags;
+use futures::Future;
+use smallvec::SmallVec;
 
 use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
@@ -9,9 +13,6 @@ use crate::address::{Addr, AddressSenderProducer};
 use crate::contextitems::ActorWaitItem;
 use crate::fut::ActorFuture;
 use crate::mailbox::Mailbox;
-use futures::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 bitflags! {
     /// internal context state

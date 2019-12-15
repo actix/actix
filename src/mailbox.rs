@@ -1,10 +1,11 @@
-use futures::StreamExt;
+use std::task::Poll;
 use std::{fmt, task};
+
+use futures::StreamExt;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::EnvelopeProxy;
 use crate::address::{channel, Addr, AddressReceiver, AddressSenderProducer};
-use std::task::Poll;
 
 #[cfg(feature = "mailbox_assert")]
 /// Maximum number of consecutive polls in a loop

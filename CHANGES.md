@@ -1,6 +1,6 @@
 # CHANGES
 
-## [0.8.4] (unreleased)
+## [0.9.0-alpha.1] (unreleased)
 
 ### Added
 
@@ -8,8 +8,10 @@
 
 ### Changed
 
-* Remove `hashbrown` crate from dependencies
-* Upgrade `derive_more` to 0.15.0
+* Migrate to std::future, tokio 0.2 and actix-rt 1.0.0 @bcmcmill #300
+
+* Upgrade `derive_more` to 0.99.2
+
 * Upgrade `smallvec` to 1.0.0
 
 ### Fixed

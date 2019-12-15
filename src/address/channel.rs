@@ -1,5 +1,6 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
 use std::hash::{Hash, Hasher};
+use std::pin::Pin;
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::{Arc, Weak};
@@ -8,7 +9,7 @@ use std::{fmt, task};
 use std::{thread, usize};
 
 use futures::channel::oneshot::{channel as sync_channel, Receiver};
-
+use futures::Stream;
 use parking_lot::Mutex;
 
 use crate::actor::Actor;
@@ -17,8 +18,6 @@ use crate::handler::{Handler, Message};
 use super::envelope::{Envelope, ToEnvelope};
 use super::queue::{PopResult, Queue};
 use super::SendError;
-use futures::Stream;
-use std::pin::Pin;
 
 pub trait Sender<M>: Send
 where

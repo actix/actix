@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::ops::DerefMut;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::{io, task};
@@ -13,7 +14,6 @@ use tokio_util::codec::Encoder;
 
 use crate::actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
 use crate::fut::ActorFuture;
-use std::ops::DerefMut;
 
 /// A helper trait for write handling.
 ///

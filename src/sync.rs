@@ -6,8 +6,8 @@
 //! Actor type A and B, sharing the same thread pool. You need to create two
 //! SyncArbiters and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
-use futures::Future;
 use std::marker::PhantomData;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::task::Poll;
 use std::{task, thread};
@@ -15,6 +15,7 @@ use std::{task, thread};
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures::channel::oneshot::Sender as SyncSender;
+use futures::{Future, StreamExt};
 use log::warn;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
@@ -22,8 +23,6 @@ use crate::address::channel;
 use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};
-use futures::StreamExt;
-use std::pin::Pin;
 
 /// SyncArbiter provides the resources for a single Sync Actor to run on a dedicated
 /// thread or threads. This is generally used for CPU bound concurrent workloads. It's

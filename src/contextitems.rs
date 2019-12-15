@@ -4,15 +4,13 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
-use futures::Stream;
+use futures::{ready, Stream};
 use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, AsyncContext};
 use crate::clock::Delay;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
-
-use futures::ready;
 
 #[pin_project]
 pub(crate) struct ActorWaitItem<A: Actor>(

@@ -1,12 +1,11 @@
 //! Custom `Future` implementation with `Actix` support
 
-use futures::{
-    task::{Context, Poll},
-    Future, Stream,
-};
-use pin_project::pin_project;
 use std::marker::PhantomData;
+use std::task::{Context, Poll};
 use std::time::Duration;
+
+use futures::{Future, Stream};
+use pin_project::pin_project;
 
 mod chain;
 mod either;

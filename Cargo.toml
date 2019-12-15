@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.9.0"
+version = "0.9.0-alpha.1"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -29,7 +29,7 @@ members = ["examples/chat"]
 default = ["resolver", "http"]
 
 # dns resolver
-resolver = ["trust-dns-resolver"]
+resolver = ["trust-dns-proto", "trust-dns-resolver"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
@@ -38,14 +38,14 @@ mailbox_assert = []
 http = ["actix-http"]
 
 [dependencies]
-actix-rt = "1.0" 
+actix-rt = "1.0.0"
 actix_derive = "0.5"
-bytes = "0.5"
+bytes = "0.5.3"
 crossbeam-channel = "0.4"
-derive_more = "0.99"
-futures = "0.3"
+derive_more = "0.99.2"
+futures = "0.3.1"
 log = "0.4"
-pin-project = "0.4"
+pin-project = "0.4.6"
 lazy_static = "1.4"
 bitflags = "1.2"
 smallvec = "1.0"
@@ -54,9 +54,10 @@ tokio = { version = "0.2", default-features = false, features=["rt-core", "rt-ut
 tokio-util   = { version = "0.2", features = ["full"] }
 
 # actix-http support
-actix-http = { version = "1.0", optional = true }
+actix-http = { version = "1.0.0", optional = true }
 
 # dns resolver
+trust-dns-proto = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
 trust-dns-resolver = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
 
 [dev-dependencies]

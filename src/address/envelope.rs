@@ -1,7 +1,7 @@
-use futures::channel::oneshot::Sender;
 use std::marker::PhantomData;
 
-// use super::{MessageDestination, MessageDestinationTransport, Syn};
+use futures::channel::oneshot::Sender;
+
 use crate::actor::{Actor, AsyncContext};
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};

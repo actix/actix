@@ -5,12 +5,12 @@
 //! is unique per system.
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::default::Default;
 use std::rc::Rc;
 
 use actix_rt::{Arbiter, System};
 use parking_lot::Mutex;
-use std::collections::HashMap;
 
 use crate::actor::{Actor, Supervised};
 use crate::address::Addr;

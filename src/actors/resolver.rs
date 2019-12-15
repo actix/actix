@@ -40,9 +40,8 @@ use std::time::Duration;
 
 use derive_more::Display;
 use log::warn;
-use tokio::net::TcpStream;
-
 use pin_project::{pin_project, project};
+use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::AsyncResolver;
 use trust_dns_resolver::BackgroundLookupIp;

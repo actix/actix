@@ -1,5 +1,6 @@
 use std::future::Future;
-use std::task::Poll;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use std::time::Duration;
 
 use futures::channel::oneshot;
@@ -7,8 +8,6 @@ use futures::channel::oneshot;
 use crate::actor::Actor;
 use crate::clock::{interval_at, Delay, Instant, Interval};
 use crate::fut::{ActorFuture, ActorStream};
-use std::pin::Pin;
-use std::task;
 
 pub struct Condition<T>
 where
@@ -127,7 +126,7 @@ where
         self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-        task: &mut task::Context<'_>,
+        task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.get_mut();
         match Pin::new(&mut this.timeout).poll(task) {
@@ -217,7 +216,7 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
         self: Pin<&mut Self>,
         act: &mut Self::Actor,
         ctx: &mut <Self::Actor as Actor>::Context,
-        task: &mut task::Context<'_>,
+        task: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
         loop {

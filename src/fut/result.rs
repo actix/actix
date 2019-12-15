@@ -1,11 +1,11 @@
 //! Definition of the `Result` (immediately finished) combinator
 use std::marker::PhantomData;
+use std::pin::Pin;
+use std::task;
 use std::task::Poll;
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
-use std::pin::Pin;
-use std::task;
 
 /// A future representing a value that is immediately ready.
 ///

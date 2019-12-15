@@ -1,9 +1,9 @@
-use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
-use crate::address::{Addr, AddressReceiver};
-use crate::fut::ActorFuture;
 use std::fmt;
 
+use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
+use crate::address::{Addr, AddressReceiver};
 use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
+use crate::fut::ActorFuture;
 use crate::mailbox::Mailbox;
 
 /// An actor execution context.
