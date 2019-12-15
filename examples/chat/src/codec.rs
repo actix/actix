@@ -3,7 +3,7 @@ use std::io;
 
 use actix::Message;
 use byteorder::{BigEndian, ByteOrder};
-use bytes::{BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
 use serde_derive::{Deserialize, Serialize};
 use serde_json as json;
 use tokio_util::codec::{Decoder, Encoder};
@@ -56,7 +56,7 @@ impl Decoder for ChatCodec {
         };
 
         if src.len() >= size + 2 {
-            src.split_to(2);
+            src.advance(2);
             let buf = src.split_to(size);
             Ok(Some(json::from_slice::<ChatRequest>(&buf)?))
         } else {
@@ -101,7 +101,7 @@ impl Decoder for ClientChatCodec {
         };
 
         if src.len() >= size + 2 {
-            src.split_to(2);
+            src.advance(2);
             let buf = src.split_to(size);
             Ok(Some(json::from_slice::<ChatResponse>(&buf)?))
         } else {
