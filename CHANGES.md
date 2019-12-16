@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.9.0-alpha.2] 2019-12-16
+
+### Fixed
+
+* Fix `Resolve` actor's panic
+
 ## [0.9.0-alpha.1] 2019-12-15
 
 ### Added

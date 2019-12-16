@@ -40,7 +40,6 @@ use std::time::Duration;
 
 use derive_more::Display;
 use log::warn;
-use pin_project::{pin_project, project};
 use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::AsyncResolver;
@@ -388,12 +387,10 @@ impl ActorFuture for ResolveFut {
 }
 
 /// A TCP stream connector.
-#[pin_project]
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
-    #[pin]
     timeout: Delay,
-    stream: Option<Box<dyn Future<Output = Result<TcpStream, io::Error>>>>,
+    stream: Option<Pin<Box<dyn Future<Output = Result<TcpStream, io::Error>>>>>,
 }
 
 impl TcpConnector {
@@ -414,36 +411,35 @@ impl ActorFuture for TcpConnector {
     type Output = Result<TcpStream, ResolverError>;
     type Actor = Resolver;
 
-    #[project]
     fn poll(
         self: Pin<&mut Self>,
         _: &mut Resolver,
         _: &mut Context<Resolver>,
-        task: &mut task::Context<'_>,
+        cx: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
         let mut this = self.get_mut();
+
         // timeout
-        if let Poll::Ready(_) = Pin::new(&mut this.timeout).poll(task) {
+        if let Poll::Ready(_) = Pin::new(&mut this.timeout).poll(cx) {
             return Poll::Ready(Err(ResolverError::Timeout));
         }
+
         // connect
         loop {
-            match unsafe {
-                Pin::new_unchecked(&mut *this.stream.take().unwrap().as_mut())
-            }
-            .poll(task)
-            {
-                Poll::Ready(Ok(sock)) => return Poll::Ready(Ok(sock)),
-                Poll::Pending => return Poll::Pending,
-                Poll::Ready(Err(err)) => {
-                    if this.addrs.is_empty() {
-                        return Poll::Ready(Err(ResolverError::IoError(err)));
+            if let Some(ref mut fut) = this.stream {
+                match Pin::new(fut).poll(cx) {
+                    Poll::Ready(Ok(sock)) => return Poll::Ready(Ok(sock)),
+                    Poll::Pending => return Poll::Pending,
+                    Poll::Ready(Err(err)) => {
+                        if this.addrs.is_empty() {
+                            return Poll::Ready(Err(ResolverError::IoError(err)));
+                        }
                     }
                 }
             }
             // try to connect
             let addr = this.addrs.pop_front().unwrap();
-            this.stream = Some(Box::new(TcpStream::connect(addr)));
+            this.stream = Some(Box::pin(TcpStream::connect(addr)));
         }
     }
 }
