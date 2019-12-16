@@ -1,5 +1,6 @@
 use std::fmt;
 use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use futures::channel::oneshot::Sender as SyncSender;
@@ -59,7 +60,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 pub type ResponseActFuture<A, I> = Box<dyn ActorFuture<Output = I, Actor = A>>;
 
 /// A specialized future for asynchronous message handling.
-pub type ResponseFuture<I> = Box<dyn Future<Output = I> + Unpin>;
+pub type ResponseFuture<I> = Pin<Box<dyn Future<Output = I>>>;
 
 /// A trait that defines a message response channel.
 pub trait ResponseChannel<M: Message>: 'static {

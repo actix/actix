@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.9.0-alpha.3] 2019-12-16
+
+### Fixed
+
+* Fix `ResolveFuture` type signature.
+
 ## [0.9.0-alpha.2] 2019-12-16
 
 ### Fixed
