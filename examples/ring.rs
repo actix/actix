@@ -33,9 +33,12 @@ impl Handler<Payload> for Node {
 
     fn handle(&mut self, msg: Payload, _: &mut Context<Self>) {
         if msg.0 >= self.limit {
-            println!("Reached limit of {} (payload was {})", self.limit, msg.0);
+            println!("Actor {} reached limit of {} (payload was {})", self.id, self.limit, msg.0);
             System::current().stop();
             return;
+        }
+        if msg.0 % 498989 == 1 { // prime
+            println!("Actor {} received message {} of {} ({:.2}%)", self.id, msg.0, self.limit, 100.0 * msg.0 as f32 / self.limit as f32);
         }
         self.next
             .do_send(Payload(msg.0 + 1))
