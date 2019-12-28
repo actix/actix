@@ -19,6 +19,7 @@ impl Message for Payload {
 }
 
 struct Node {
+    id: usize,
     limit: usize,
     next: Recipient<Payload>,
 }
@@ -75,13 +76,15 @@ async fn main() {
     let node = Node::create(move |ctx| {
         let first_addr = ctx.address();
         let mut prev_addr = Node {
+            id: 1,
             limit: n_nodes * n_times,
             next: first_addr.recipient(),
         }
         .start();
 
-        for _ in 2..n_nodes {
+        for i in 2..n_nodes {
             prev_addr = Node {
+                id: i,
                 limit: n_nodes * n_times,
                 next: prev_addr.recipient(),
             }
@@ -89,6 +92,7 @@ async fn main() {
         }
 
         Node {
+            id: n_nodes,
             limit: n_nodes * n_times,
             next: prev_addr.recipient(),
         }
