@@ -76,11 +76,12 @@ async fn main() {
     let now = SystemTime::now();
 
     println!("Setting up nodes");
+    let limit = n_nodes * n_times;
     let node = Node::create(move |ctx| {
         let first_addr = ctx.address();
         let mut prev_addr = Node {
             id: 1,
-            limit: n_nodes * n_times,
+            limit: limit,
             next: first_addr.recipient(),
         }
         .start();
@@ -88,7 +89,7 @@ async fn main() {
         for i in 2..n_nodes {
             prev_addr = Node {
                 id: i,
-                limit: n_nodes * n_times,
+                limit: limit,
                 next: prev_addr.recipient(),
             }
             .start();
@@ -96,7 +97,7 @@ async fn main() {
 
         Node {
             id: n_nodes,
-            limit: n_nodes * n_times,
+            limit: limit,
             next: prev_addr.recipient(),
         }
     });
