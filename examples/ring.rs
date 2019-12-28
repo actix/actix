@@ -74,7 +74,7 @@ fn main() -> std::io::Result<()> {
         print_usage_and_exit()
     };
 
-    let now = SystemTime::now();
+    let setup = SystemTime::now();
 
     println!("Setting up nodes");
     let limit = n_nodes * n_times;
@@ -102,6 +102,17 @@ fn main() -> std::io::Result<()> {
             next: prev_addr.recipient(),
         }
     });
+
+    match setup.elapsed() {
+        Ok(elapsed) => println!(
+            "Time taken: {}.{:06} seconds",
+            elapsed.as_secs(),
+            elapsed.subsec_micros()
+        ),
+        Err(e) => println!("An error occured: {:?}", e),
+    }
+    println!("Sending start message and waiting for termination after {} messages...", limit);
+    let now = SystemTime::now();
 
     let _req = node.send(Payload(1));
     system.run();
