@@ -51,8 +51,9 @@ fn print_usage_and_exit() -> ! {
     ::std::process::exit(1);
 }
 
-#[actix_rt::main]
-async fn main() {
+fn main() -> std::io::Result<()> {
+    let system = System::new("ring");
+
     let args = env::args().collect::<Vec<_>>();
     if args.len() < 3 {
         print_usage_and_exit();
@@ -101,7 +102,9 @@ async fn main() {
             next: prev_addr.recipient(),
         }
     });
-    node.send(Payload(0)).await.unwrap();
+
+    let _req = node.send(Payload(1));
+    system.run();
 
     match now.elapsed() {
         Ok(elapsed) => println!(
@@ -111,4 +114,6 @@ async fn main() {
         ),
         Err(e) => println!("An error occured: {:?}", e),
     }
+
+    Ok(())
 }
