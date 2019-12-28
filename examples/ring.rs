@@ -76,7 +76,7 @@ fn main() -> std::io::Result<()> {
 
     let setup = SystemTime::now();
 
-    println!("Setting up nodes");
+    println!("Setting up {} nodes", n_nodes);
     let limit = n_nodes * n_times;
     let node = Node::create(move |ctx| {
         let first_addr = ctx.address();
@@ -115,13 +115,17 @@ fn main() -> std::io::Result<()> {
     let now = SystemTime::now();
 
     let _req = node.send(Payload(1));
-    system.run();
+
+    match system.run() {
+        Ok(_) => println!("Completed"),
+        Err(e) => println!("An error occured: {:?}", e),
+    }
 
     match now.elapsed() {
         Ok(elapsed) => println!(
-            "Time taken: {}.{:06} seconds",
+            "Time taken: {}.{:06} seconds ({} msg/second)",
             elapsed.as_secs(),
-            elapsed.subsec_micros()
+            elapsed.subsec_micros(), (n_nodes * n_times * 1000000) as u128 / elapsed.as_micros()
         ),
         Err(e) => println!("An error occured: {:?}", e),
     }
