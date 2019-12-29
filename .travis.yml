@@ -1,11 +1,12 @@
 language: rust
 rust:
+  - 1.39.0 # MSRV
   - stable
   - beta
   - nightly
 
 sudo: required
-dist: trusty
+dist: xenial
 
 env:
   global:
