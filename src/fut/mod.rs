@@ -48,7 +48,9 @@ use std::task;
 /// Here is an example of a handler on a single actor, deferring work to another actor, and
 /// then updating the initiating actor's state:
 ///
-/// ```rust,ignore
+/// ```rust,no_run
+/// use actix::prelude::*;
+///
 /// // The response type returned by the actor future
 /// type OriginalActorResponse = ();
 /// // The error type returned by the actor future
@@ -85,25 +87,23 @@ use std::task;
 /// #     type Context = Context<Self>;
 /// # }
 ///
+/// # #[derive(Message)]
+/// # #[rtype(result = "Result<(), MessageError>")]
 /// # struct DeferredWork{}
 ///
-/// impl Message for DeferredWork {
-///     type Result = DeferredWorkResult;
-/// }
-///
 /// # #[derive(Message)]
+/// # #[rtype(result = "()")]
 /// # struct OtherMessage{}
 ///
 /// impl Handler<DeferredWork> for OriginalActor {
 ///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
-///     type Result = ResponseActFuture<Self, OriginalActorResponse, MessageError>;
+///     type Result = ResponseActFuture<Self, Result<OriginalActorResponse, MessageError>>;
 ///
 ///     fn handle(&mut self, _msg: DeferredWork, _ctx: &mut Context<Self>) -> Self::Result {
 ///         // this creates a `Future` representing the `.send` and subsequent `Result` from
 ///         // `other_actor`
 ///         let send_to_other = self.other_actor
-///             .send(OtherMessage {})
-///             .map_err(|_error| ());
+///             .send(OtherMessage {});
 ///
 ///         // Wrap that `Future` so subsequent chained handlers can access
 ///         // the `actor` (`self` in the  synchronous code) as well as the context.
@@ -112,7 +112,14 @@ use std::task;
 ///         // once the wrapped future resolves, update this actor's state
 ///         let update_self = send_to_other.map(|result, actor, _ctx| {
 ///             // Actor's state updated here
-///             actor.inner_state.update_from(result);
+///             match result {
+///                 Ok(v) => {
+///                     actor.inner_state.update_from(v);
+///                     Ok(())
+///                 },
+///                 // Failed to send message to other_actor
+///                 Err(_e) => Err(()),
+///             }
 ///         });
 ///
 ///         // return the wrapped future
