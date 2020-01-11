@@ -290,11 +290,64 @@ where
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<Result<I, E>>
+/// MessageResponse trait impl to enbale the use of any I: 'static with Actor Handlers
+/// Usage with Result<I,E>:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context<Self>; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// 
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = Result<u8,u8>;
+/// }
+/// impl Handler<MyQuestion> for MyActorAsync {
+///     type Result = Pin<Box<dyn std::future::Future<Output = Result<u8,u8> >>>;
+///     fn handle(&mut self, question: MyQuestion, _ctx: &mut Context<Self>) -> Self::Result {
+///         Box::pin(async {Ok(5)})
+///     }
+/// }
+/// ```
+/// Usage with Option<I>:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context<Self>; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = Option<u8>;
+/// }
+/// impl Handler<MyQuestion> for MyActorAsync {
+///     type Result = Pin<Box<dyn std::future::Future<Output = Option<u8>>>>;
+///     fn handle(&mut self, question: MyQuestion, _ctx: &mut Context<Self>) -> Self::Result {
+///         Box::pin(async {Some(5)})
+///     }
+/// }
+/// ```
+/// Usage with any I: 'static
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context<Self>; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = u8;
+/// }
+/// impl Handler<MyQuestion> for MyActorAsync {
+///     type Result = Pin<Box<dyn std::future::Future<Output = u8>>>;
+///     fn handle(&mut self, question: MyQuestion, _ctx: &mut Context<Self>) -> Self::Result {
+///         Box::pin(async {5})
+///     }
+/// }
+/// ```
+impl<A, M, I: 'static> MessageResponse<A, M> for ResponseFuture<I>
 where
     A: Actor,
     M::Result: Send,
-    M: Message<Result = Result<I, E>>,
+    M: Message<Result = I>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
