@@ -40,8 +40,9 @@ impl Handler<Payload> for Node {
             System::current().stop();
             return;
         }
+        // Some prime in order for different actors to report progress.
+        // Large enough to print about once per second in debug mode.
         if msg.0 % 498989 == 1 {
-            // prime
             println!(
                 "Actor {} received message {} of {} ({:.2}%)",
                 self.id,
