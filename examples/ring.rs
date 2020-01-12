@@ -33,12 +33,22 @@ impl Handler<Payload> for Node {
 
     fn handle(&mut self, msg: Payload, _: &mut Context<Self>) {
         if msg.0 >= self.limit {
-            println!("Actor {} reached limit of {} (payload was {})", self.id, self.limit, msg.0);
+            println!(
+                "Actor {} reached limit of {} (payload was {})",
+                self.id, self.limit, msg.0
+            );
             System::current().stop();
             return;
         }
-        if msg.0 % 498989 == 1 { // prime
-            println!("Actor {} received message {} of {} ({:.2}%)", self.id, msg.0, self.limit, 100.0 * msg.0 as f32 / self.limit as f32);
+        if msg.0 % 498989 == 1 {
+            // prime
+            println!(
+                "Actor {} received message {} of {} ({:.2}%)",
+                self.id,
+                msg.0,
+                self.limit,
+                100.0 * msg.0 as f32 / self.limit as f32
+            );
         }
         self.next
             .do_send(Payload(msg.0 + 1))
@@ -111,7 +121,10 @@ fn main() -> std::io::Result<()> {
         ),
         Err(e) => println!("An error occured: {:?}", e),
     }
-    println!("Sending start message and waiting for termination after {} messages...", limit);
+    println!(
+        "Sending start message and waiting for termination after {} messages...",
+        limit
+    );
     let now = SystemTime::now();
 
     let _req = node.send(Payload(1));
@@ -125,7 +138,8 @@ fn main() -> std::io::Result<()> {
         Ok(elapsed) => println!(
             "Time taken: {}.{:06} seconds ({} msg/second)",
             elapsed.as_secs(),
-            elapsed.subsec_micros(), (n_nodes * n_times * 1000000) as u128 / elapsed.as_micros()
+            elapsed.subsec_micros(),
+            (n_nodes * n_times * 1000000) as u128 / elapsed.as_micros()
         ),
         Err(e) => println!("An error occured: {:?}", e),
     }
