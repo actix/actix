@@ -82,15 +82,15 @@ fn main() -> std::io::Result<()> {
         let first_addr = ctx.address();
         let mut prev_addr = Node {
             id: 1,
-            limit: limit,
+            limit,
             next: first_addr.recipient(),
         }
         .start();
 
-        for i in 2..n_nodes {
+        for id in 2..n_nodes {
             prev_addr = Node {
-                id: i,
-                limit: limit,
+                id,
+                limit,
                 next: prev_addr.recipient(),
             }
             .start();
@@ -98,7 +98,7 @@ fn main() -> std::io::Result<()> {
 
         Node {
             id: n_nodes,
-            limit: limit,
+            limit,
             next: prev_addr.recipient(),
         }
     });
