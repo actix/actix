@@ -19,6 +19,7 @@ impl Message for Payload {
 }
 
 struct Node {
+    id: usize,
     limit: usize,
     next: Recipient<Payload>,
 }
@@ -32,9 +33,23 @@ impl Handler<Payload> for Node {
 
     fn handle(&mut self, msg: Payload, _: &mut Context<Self>) {
         if msg.0 >= self.limit {
-            println!("Reached limit of {} (payload was {})", self.limit, msg.0);
+            println!(
+                "Actor {} reached limit of {} (payload was {})",
+                self.id, self.limit, msg.0
+            );
             System::current().stop();
             return;
+        }
+        // Some prime in order for different actors to report progress.
+        // Large enough to print about once per second in debug mode.
+        if msg.0 % 498989 == 1 {
+            println!(
+                "Actor {} received message {} of {} ({:.2}%)",
+                self.id,
+                msg.0,
+                self.limit,
+                100.0 * msg.0 as f32 / self.limit as f32
+            );
         }
         self.next
             .do_send(Payload(msg.0 + 1))
@@ -47,8 +62,9 @@ fn print_usage_and_exit() -> ! {
     ::std::process::exit(1);
 }
 
-#[actix_rt::main]
-async fn main() {
+fn main() -> std::io::Result<()> {
+    let system = System::new("ring");
+
     let args = env::args().collect::<Vec<_>>();
     if args.len() < 3 {
         print_usage_and_exit();
@@ -69,33 +85,36 @@ async fn main() {
         print_usage_and_exit()
     };
 
-    let now = SystemTime::now();
+    let setup = SystemTime::now();
 
-    println!("Setting up nodes");
+    println!("Setting up {} nodes", n_nodes);
+    let limit = n_nodes * n_times;
     let node = Node::create(move |ctx| {
         let first_addr = ctx.address();
         let mut prev_addr = Node {
-            limit: n_nodes * n_times,
+            id: 1,
+            limit,
             next: first_addr.recipient(),
         }
         .start();
 
-        for _ in 2..n_nodes {
+        for id in 2..n_nodes {
             prev_addr = Node {
-                limit: n_nodes * n_times,
+                id,
+                limit,
                 next: prev_addr.recipient(),
             }
             .start();
         }
 
         Node {
-            limit: n_nodes * n_times,
+            id: n_nodes,
+            limit,
             next: prev_addr.recipient(),
         }
     });
-    node.send(Payload(0)).await.unwrap();
 
-    match now.elapsed() {
+    match setup.elapsed() {
         Ok(elapsed) => println!(
             "Time taken: {}.{:06} seconds",
             elapsed.as_secs(),
@@ -103,4 +122,28 @@ async fn main() {
         ),
         Err(e) => println!("An error occured: {:?}", e),
     }
+    println!(
+        "Sending start message and waiting for termination after {} messages...",
+        limit
+    );
+    let now = SystemTime::now();
+
+    let _req = node.send(Payload(1));
+
+    match system.run() {
+        Ok(_) => println!("Completed"),
+        Err(e) => println!("An error occured: {:?}", e),
+    }
+
+    match now.elapsed() {
+        Ok(elapsed) => println!(
+            "Time taken: {}.{:06} seconds ({} msg/second)",
+            elapsed.as_secs(),
+            elapsed.subsec_micros(),
+            (n_nodes * n_times * 1000000) as u128 / elapsed.as_micros()
+        ),
+        Err(e) => println!("An error occured: {:?}", e),
+    }
+
+    Ok(())
 }
