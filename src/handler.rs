@@ -155,11 +155,10 @@ where
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M>
-    for ResponseActFuture<A, Result<I, E>>
+impl<A, M, T: 'static> MessageResponse<A, M> for ResponseActFuture<A, T>
 where
     A: Actor,
-    M: Message<Result = Result<I, E>>,
+    M: Message<Result = T>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
