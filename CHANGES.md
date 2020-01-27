@@ -1,5 +1,11 @@
 # CHANGES
 
+## [0.9.1] 2020-??-??
+
+### Fixed
+
+* Fix `MessageResponse` implementation  for `ResponseFuture` to always poll the spawned `Future`. (#317)
+
 ## [0.9.0] 2019-12-20
 
 ### Fixed
