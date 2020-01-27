@@ -180,8 +180,9 @@ where
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         actix_rt::spawn(async move {
+            let res = self.await;
             if let Some(tx) = tx {
-                tx.send(self.await)
+                tx.send(res)
             }
         });
     }
