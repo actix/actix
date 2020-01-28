@@ -58,12 +58,9 @@ impl Actor for MyStreamActor {
 
         s.into_actor(self)
             .timeout(Duration::new(0, 1000))
-            .map(|e, act, _| match e {
-                Err(()) => {
-                    act.timeout.store(true, Ordering::Relaxed);
-                    System::current().stop();
-                }
-                Ok(_) => (),
+            .map(|e, act, _| if let Err(()) = e {
+                act.timeout.store(true, Ordering::Relaxed);
+                System::current().stop();
             })
             .finish()
             .wait(ctx)

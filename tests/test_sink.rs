@@ -37,7 +37,7 @@ impl Sink<Bytes> for MySink {
 
             this.sender.unbounded_send(bytes[0]).unwrap();
             bytes.advance(1);
-            if bytes.len() == 0 {
+            if bytes.is_empty() {
                 this.queue.remove(0);
             }
         }
