@@ -387,6 +387,7 @@ impl ActorFuture for ResolveFut {
 }
 
 /// A TCP stream connector.
+#[allow(clippy::type_complexity)]
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
     timeout: Delay,

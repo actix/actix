@@ -51,10 +51,10 @@ where
     ) -> Poll<Self::Output> {
         let this = self.project();
 
-        match this.timeout.poll(task) {
-            Poll::Ready(_) => return Poll::Ready(Err(())),
-            _ => {}
+        if let Poll::Ready(_) = this.timeout.poll(task) {
+            return Poll::Ready(Err(()))
         }
+
         this.fut.poll(act, ctx, task).map(Ok)
     }
 }
