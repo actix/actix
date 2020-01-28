@@ -52,6 +52,7 @@ jobs:
 
       - name: tests
         uses: actions-rs/cargo@v1
+        timeout-minutes: 40
         with:
           command: test
           args: --all --all-features --no-fail-fast -- --nocapture

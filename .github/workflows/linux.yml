@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - 1.39.0
+          - 1.39.0 # MSRV
           - stable
           - nightly
 
@@ -53,6 +53,7 @@ jobs:
 
       - name: tests
         uses: actions-rs/cargo@v1
+        timeout-minutes: 40
         with:
           command: test
           args: --all --all-features --no-fail-fast -- --nocapture
