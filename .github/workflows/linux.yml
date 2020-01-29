@@ -59,6 +59,13 @@ jobs:
           args: --all --all-features --no-fail-fast -- --nocapture
                 --skip=test_restart_sync_actor
 
+      - name: Codecov
+        if: matrix.version == 'stable'
+        run: |
+          RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install -f cargo-tarpaulin
+          cargo tarpaulin --out Xml -i
+          bash <(curl -s https://codecov.io/bash)
+
       - name: Clear the cargo caches
         run: |
           cargo install cargo-cache --no-default-features --features ci-autoclean
