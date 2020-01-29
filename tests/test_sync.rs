@@ -58,7 +58,7 @@ impl Handler<Fibonacci> for SyncActor {
 }
 
 #[test]
-#[cfg_attr(feature = "cargo-clippy", allow(mutex_atomic))]
+#[allow(clippy::mutex_atomic)]
 fn test_sync() {
     let l = Arc::new(Mutex::new(false));
     let cond = Arc::new(Condvar::new());

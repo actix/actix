@@ -20,7 +20,7 @@ impl Handler<Empty> for EmptyActor {
 }
 
 #[test]
-#[cfg_attr(feature = "cargo-clippy", allow(unit_cmp))]
+#[allow(clippy::unit_cmp)]
 fn response_derive_empty() {
     System::run(|| {
         let addr = EmptyActor.start();

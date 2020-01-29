@@ -452,9 +452,8 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
     /// Sends an item to the sink.
     pub fn write(&mut self, item: I) -> Result<(), S::Error> {
         let res = Pin::new(&mut self.inner.borrow_mut().sink).start_send(item);
-        match res {
-            Ok(()) => self.notify_task(),
-            Err(_) => {}
+        if let Ok(()) = res {
+            self.notify_task()
         }
         res
     }

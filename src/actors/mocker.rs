@@ -35,12 +35,14 @@ use crate::prelude::*;
 /// This actor is able to wrap another actor and accept all the messages the
 /// wrapped actor can, passing it to a closure which can mock the response of
 /// the actor.
+#[allow(clippy::type_complexity)]
 pub struct Mocker<T: Sized + Unpin + 'static> {
     phantom: PhantomData<T>,
     mock: Box<dyn FnMut(Box<dyn Any>, &mut Context<Mocker<T>>) -> Box<dyn Any>>,
 }
 
 impl<T: Unpin> Mocker<T> {
+    #[allow(clippy::type_complexity)]
     pub fn mock(
         mock: Box<dyn FnMut(Box<dyn Any>, &mut Context<Mocker<T>>) -> Box<dyn Any>>,
     ) -> Mocker<T> {

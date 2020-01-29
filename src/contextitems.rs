@@ -97,7 +97,7 @@ where
         task: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.get_mut();
-        let _ = ready!(Pin::new(&mut this.timeout).poll(task));
+        ready!(Pin::new(&mut this.timeout).poll(task));
         let fut = A::handle(act, this.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
         Poll::Ready(())

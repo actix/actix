@@ -287,7 +287,7 @@ fn test_recipient_eq() {
     System::run(move || {
         let addr0 = MyActor(count0).start();
         let recipient01 = addr0.clone().recipient::<Ping>();
-        let recipient02 = addr0.clone().recipient::<Ping>();
+        let recipient02 = addr0.recipient::<Ping>();
 
         assert!(recipient01 == recipient02);
 
@@ -295,7 +295,7 @@ fn test_recipient_eq() {
         assert!(recipient01 == recipient03);
 
         let addr1 = MyActor(count1).start();
-        let recipient11 = addr1.clone().recipient::<Ping>();
+        let recipient11 = addr1.recipient::<Ping>();
 
         assert!(recipient01 != recipient11);
 
@@ -312,7 +312,7 @@ fn test_recipient_hash() {
     System::run(move || {
         let addr0 = MyActor(count0).start();
         let recipient01 = addr0.clone().recipient::<Ping>();
-        let recipient02 = addr0.clone().recipient::<Ping>();
+        let recipient02 = addr0.recipient::<Ping>();
 
         let mut recipients = HashSet::new();
         recipients.insert(recipient01.clone());
@@ -323,7 +323,7 @@ fn test_recipient_hash() {
         assert!(recipients.contains(&recipient02));
 
         let addr1 = MyActor(count1).start();
-        let recipient11 = addr1.clone().recipient::<Ping>();
+        let recipient11 = addr1.recipient::<Ping>();
         recipients.insert(recipient11.clone());
 
         assert_eq!(recipients.len(), 2);
