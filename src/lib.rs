@@ -42,6 +42,8 @@
 //! cannot be used in asynchronous manner in actix.
 // It's pain for this crate and has false positives.
 #![allow(clippy::needless_doctest_main)]
+#![deny(bare_trait_objects, nonstandard_style, rust_2018_idioms, unused)]
+#![warn(deprecated_in_future, trivial_casts, trivial_numeric_casts)]
 
 #[doc(hidden)]
 pub use actix_derive::*;

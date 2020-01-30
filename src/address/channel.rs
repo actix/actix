@@ -55,7 +55,7 @@ pub struct AddressSender<A: Actor> {
 }
 
 impl<A: Actor> fmt::Debug for AddressSender<A> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("AddressSender")
             .field("sender_task", &self.sender_task)
             .field("maybe_parked", &self.maybe_parked)
@@ -71,7 +71,7 @@ pub struct WeakAddressSender<A: Actor> {
 }
 
 impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("WeakAddressSender").finish()
     }
 }
@@ -462,7 +462,8 @@ where
     }
 
     fn hash(&self) -> usize {
-        self.inner.as_ref() as *const _ as usize
+        let hash: *const _ = self.inner.as_ref();
+        hash as usize
     }
 
     fn connected(&self) -> bool {
@@ -524,7 +525,8 @@ impl<A: Actor> Eq for AddressSender<A> {}
 
 impl<A: Actor> Hash for AddressSender<A> {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        (self.inner.as_ref() as *const Inner<A>).hash(state);
+        let hash: *const Inner<A> = self.inner.as_ref();
+        hash.hash(state);
     }
 }
 
