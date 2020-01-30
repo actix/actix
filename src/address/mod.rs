@@ -22,7 +22,7 @@ pub enum SendError<T> {
     Closed(T),
 }
 
-#[derive(Display)]
+#[derive(Display, Clone, Copy)]
 /// The errors that can occur during the message delivery process.
 pub enum MailboxError {
     #[display(fmt = "Mailbox has closed")]
@@ -44,7 +44,7 @@ impl<T> SendError<T> {
 impl<T> error::Error for SendError<T> {}
 
 impl<T> fmt::Debug for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             SendError::Full(_) => write!(fmt, "SendError::Full(..)"),
             SendError::Closed(_) => write!(fmt, "SendError::Closed(..)"),
@@ -53,7 +53,7 @@ impl<T> fmt::Debug for SendError<T> {
 }
 
 impl<T> fmt::Display for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             SendError::Full(_) => write!(fmt, "send failed because receiver is full"),
             SendError::Closed(_) => write!(fmt, "send failed because receiver is gone"),
@@ -62,7 +62,7 @@ impl<T> fmt::Display for SendError<T> {
 }
 
 impl fmt::Debug for MailboxError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "MailboxError({})", self)
     }
 }
@@ -316,7 +316,7 @@ where
     M: Message + Send,
     M::Result: Send,
 {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "Recipient {{ /* omitted */ }}")
     }
 }

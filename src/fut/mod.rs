@@ -36,7 +36,6 @@ pub use self::timeout::Timeout;
 
 use crate::actor::Actor;
 use std::pin::Pin;
-use std::task;
 
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.
@@ -376,7 +375,7 @@ where
         self: Pin<&mut Self>,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
-        task: &mut task::Context<'_>,
+        task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         self.project().fut.poll(task)
     }
@@ -445,7 +444,7 @@ where
         self: Pin<&mut Self>,
         _: &mut Self::Actor,
         _: &mut <Self::Actor as Actor>::Context,
-        task: &mut task::Context<'_>,
+        task: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         self.project().st.poll_next(task)
     }

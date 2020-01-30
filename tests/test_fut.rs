@@ -14,10 +14,8 @@ impl Actor for MyActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         delay_for(Duration::new(0, 5_000_000))
-            .then(|_| {
-                async {
-                    System::current().stop();
-                }
+            .then(|_| async {
+                System::current().stop();
             })
             .into_actor(self)
             .timeout(Duration::new(0, 100))
@@ -58,9 +56,11 @@ impl Actor for MyStreamActor {
 
         s.into_actor(self)
             .timeout(Duration::new(0, 1000))
-            .map(|e, act, _| if let Err(()) = e {
-                act.timeout.store(true, Ordering::Relaxed);
-                System::current().stop();
+            .map(|e, act, _| {
+                if let Err(()) = e {
+                    act.timeout.store(true, Ordering::Relaxed);
+                    System::current().stop();
+                }
             })
             .finish()
             .wait(ctx)

@@ -52,7 +52,7 @@ where
         let this = self.project();
 
         if let Poll::Ready(_) = this.timeout.poll(task) {
-            return Poll::Ready(Err(()))
+            return Poll::Ready(Err(()));
         }
 
         this.fut.poll(act, ctx, task).map(Ok)
