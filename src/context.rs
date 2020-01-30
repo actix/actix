@@ -16,7 +16,7 @@ where
 }
 
 impl<A: Actor<Context = Context<A>>> fmt::Debug for Context<A> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("Context")
             .field("parts", &self.parts)
             .field("mb", &self.mb)
