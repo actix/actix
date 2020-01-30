@@ -1,7 +1,5 @@
 # Actix [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix) [![crates.io](http://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix) [![Join the chat at https://gitter.im/actix/actix](https://badges.gitter.im/actix/actix.svg)](https://gitter.im/actix/actix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-![CI (Linux)](https://github.com/actix/actix/workflows/CI%20(Linux)/badge.svg) ![CI (Windows)](https://github.com/actix/actix/workflows/CI%20(Windows)/badge.svg) ![CI (macOS)](https://github.com/actix/actix/workflows/CI%20(macOS)/badge.svg) 
-
 Actix is a Rust actors framework.
 
 * [User Guide](https://actix.rs/book/actix/)
@@ -9,6 +7,12 @@ Actix is a Rust actors framework.
 * [API Documentation (Releases)](https://docs.rs/actix/)
 * Cargo package: [actix](https://crates.io/crates/actix)
 * Minimum supported Rust version: 1.39 or later
+
+| Platform | Build Status |
+| -------- | ------------ |
+| Linux | [![build status](https://github.com/actix/actix/workflows/CI%20%28Linux%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
+| macOS | [![build status](https://github.com/actix/actix/workflows/CI%20%28macOS%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
+| Windows | [![build status](https://github.com/actix/actix/workflows/CI%20%28Windows%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
 
 ---
 
