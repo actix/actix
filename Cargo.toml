@@ -10,12 +10,10 @@ repository = "https://github.com/actix/actix.git"
 documentation = "https://docs.rs/actix/"
 categories = ["network-programming", "asynchronous"]
 license = "MIT/Apache-2.0"
-exclude = [".gitignore", ".travis.yml", ".cargo/config", "appveyor.yml"]
+exclude = [".gitignore", ".cargo/config"]
 edition = "2018"
 
 [badges]
-travis-ci = { repository = "actix/actix", branch = "master" }
-appveyor = { repository = "actix/actix" }
 codecov = { repository = "actix/actix", branch = "master", service = "github" }
 
 [lib]
