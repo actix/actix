@@ -8,6 +8,12 @@ Actix is a Rust actors framework.
 * Cargo package: [actix](https://crates.io/crates/actix)
 * Minimum supported Rust version: 1.39 or later
 
+| Platform | Build Status |
+| -------- | ------------ |
+| Linux | [![build status](https://github.com/actix/actix/workflows/CI%20%28Linux%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
+| macOS | [![build status](https://github.com/actix/actix/workflows/CI%20%28macOS%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
+| Windows | [![build status](https://github.com/actix/actix/workflows/CI%20%28Windows%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
+
 ---
 
 ## Features
