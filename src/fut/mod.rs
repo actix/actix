@@ -57,39 +57,39 @@ use std::pin::Pin;
 /// // This is the needed result for the DeferredWork message
 /// // It's a result that combine both Response and Error from the future response.
 /// type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
-///
+/// #
 /// # struct ActorState {}
-///
+/// #
 /// # impl ActorState {
 /// #    fn update_from(&mut self, _result: ()) {}
 /// # }
-///
+/// #
 /// # struct OtherActor {}
-///
+/// #
 /// # impl Actor for OtherActor {
 /// #    type Context = Context<Self>;
 /// # }
-///
+/// #
 /// # impl Handler<OtherMessage> for OtherActor {
 /// #    type Result = ();
 /// #
 /// #    fn handle(&mut self, _msg: OtherMessage, _ctx: &mut Context<Self>) -> Self::Result {
 /// #    }
 /// # }
-///
+/// #
 /// # struct OriginalActor{
 /// #     other_actor: Addr<OtherActor>,
 /// #     inner_state: ActorState
 /// # }
-///
+/// #
 /// # impl Actor for OriginalActor{
 /// #     type Context = Context<Self>;
 /// # }
-///
+/// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "Result<(), MessageError>")]
 /// # struct DeferredWork{}
-///
+/// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "()")]
 /// # struct OtherMessage{}
