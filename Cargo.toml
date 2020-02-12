@@ -35,6 +35,9 @@ mailbox_assert = []
 # actix-http support
 http = ["actix-http"]
 
+# mocker
+mocker = []
+
 [dependencies]
 actix-rt = "1.0.0"
 actix_derive = "0.5"

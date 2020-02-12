@@ -80,8 +80,8 @@ pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr};
 pub use crate::context::Context;
 pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
 pub use crate::handler::{
-    ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
-    ResponseFuture,
+    ActorResponse, AsyncHandler, AsyncMessage, Handler, Message, MessageResult,
+    Response, ResponseActFuture, ResponseFuture, TempRef,
 };
 pub use crate::registry::{ArbiterService, Registry, SystemRegistry, SystemService};
 pub use crate::stream::StreamHandler;
