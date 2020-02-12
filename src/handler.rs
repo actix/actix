@@ -377,7 +377,7 @@ where
     }
 }
 
-pub struct AsyncResponse<M: AsyncMessage>(pub M::Result);
+pub struct AsyncResponse<M: AsyncMessage>(M::Result);
 
 impl<A, M> MessageResponse<A, M> for ResponseFuture<AsyncResponse<M>>
 where
