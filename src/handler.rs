@@ -24,8 +24,6 @@ impl<T> TempRef<T> {
             let x = self.inner;
             &*x
         }
-
-        //        todo!()
     }
     pub fn as_mut(&mut self) -> &mut T {
         unsafe {
