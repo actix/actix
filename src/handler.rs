@@ -43,19 +43,6 @@ where
 {
     type Result: Future<Output = M::Result> + Sized + 'static;
 
-    //    fn handle(&mut self, msg: (), ctx: &mut Context<MyActor>) {
-    //        use std::sync::Weak;
-    //
-    //        let this = self as *mut Self;
-    //
-    //        let handle = AsyncActorHandle {
-    //            inner: this
-    //        };
-    //
-    //
-    //        Self::async_handle(handle, ());
-    //    }
-
     fn handle(
         actor: TempRef<Self>,
         msg: M,
