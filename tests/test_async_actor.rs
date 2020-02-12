@@ -4,6 +4,8 @@ use futures::{future::ready, StreamExt};
 
 use actix::prelude::*;
 use actix::{AsyncHandler, AsyncMessage, TempRef};
+use tokio::time::delay_for;
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy)]
 struct Num(usize);
@@ -31,6 +33,7 @@ impl AsyncHandler<Num> for MyActor {
         _ctx: TempRef<Self::Context>,
     ) -> Self::Result {
         let res = tokio::task::spawn(async move {
+            delay_for(Duration::from_millis(msg.0 as u64)).await;
             this.as_mut().count += msg.0;
             this.as_ref().count
         });
@@ -41,7 +44,7 @@ impl AsyncHandler<Num> for MyActor {
 
 #[actix_rt::test]
 async fn test_async_actor() {
-    let items = vec![Num(1), Num(1), Num(2), Num(3), Num(5), Num(8), Num(13)];
+    let items = vec![Num(7), Num(6), Num(5), Num(4), Num(3), Num(2), Num(1)];
 
     let addr = MyActor { count: 0 }.start();
 
@@ -53,7 +56,12 @@ async fn test_async_actor() {
             ready(acc)
         });
 
+    let start = Instant::now();
+
     let result = fut.await;
 
-    assert_eq!(result, vec![1, 2, 4, 7, 12, 20, 33]);
+    let took_ms = Instant::now().duration_since(start).as_millis();
+
+    assert_eq!(result, vec![7, 13, 18, 22, 25, 27, 28]);
+    assert!(took_ms >= 28)
 }
