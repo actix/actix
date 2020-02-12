@@ -1,21 +1,9 @@
 use std::pin::Pin;
-use std::sync;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
 
-use futures::channel::oneshot::{self, Canceled};
-use futures::FutureExt;
-use futures::StreamExt;
-use tokio::time::{delay_for, Duration, Instant};
+use futures::{future::ready, StreamExt};
 
-use actix::fut::wrap_future;
-use actix::prelude::dev::MessageResponse;
 use actix::prelude::*;
 use actix::{AsyncHandler, AsyncMessage, TempRef};
-
-type OriginalActorResponse = ();
-type MessageError = ();
-type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
 
 #[derive(Debug, Clone, Copy)]
 struct Num(usize);
@@ -37,7 +25,11 @@ impl Actor for MyActor {
 impl AsyncHandler<Num> for MyActor {
     type Result = Pin<Box<dyn Future<Output = <Num as Message>::Result>>>;
 
-    fn handle(mut this: TempRef<Self>, msg: Num, _ctx: TempRef<Self::Context>) -> Self::Result {
+    fn handle(
+        mut this: TempRef<Self>,
+        msg: Num,
+        _ctx: TempRef<Self::Context>,
+    ) -> Self::Result {
         let res = tokio::task::spawn(async move {
             this.as_mut().count += msg.0;
             this.as_ref().count
@@ -52,8 +44,6 @@ async fn test_async_actor() {
     let items = vec![Num(1), Num(1), Num(2), Num(3), Num(5), Num(8), Num(13)];
 
     let addr = MyActor { count: 0 }.start();
-
-    use futures::{future::ready, join, FutureExt, StreamExt};
 
     let fut = futures::stream::iter(items.clone())
         .map(move |i| addr.send(i))
