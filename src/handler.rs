@@ -4,17 +4,17 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use futures::channel::oneshot::{self, Receiver as SyncReceiver, Sender as SyncSender};
-use futures::{FutureExt, future::join3};
+use futures::{future::join3, FutureExt};
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
 use crate::context::Context;
-use crate::fut::{ActorFuture, wrap_future};
+use crate::fut::{wrap_future, ActorFuture};
 use crate::WrapFuture;
 
 pub struct TempRef<T> {
     inner: *mut T,
-    drop_sender: Option<SyncSender<()>>
+    drop_sender: Option<SyncSender<()>>,
 }
 
 unsafe impl<T: Send> Send for TempRef<T> {}
@@ -22,10 +22,13 @@ unsafe impl<T: Send> Send for TempRef<T> {}
 impl<T> TempRef<T> {
     fn new(inner: *mut T) -> (Self, SyncReceiver<()>) {
         let (s, r) = oneshot::channel::<()>();
-        (TempRef {
-            inner,
-            drop_sender: Some(s),
-        }, r)
+        (
+            TempRef {
+                inner,
+                drop_sender: Some(s),
+            },
+            r,
+        )
     }
 
     pub fn as_ref(&self) -> &T {
@@ -45,7 +48,9 @@ impl<T> TempRef<T> {
 impl<T> Drop for TempRef<T> {
     fn drop(&mut self) {
         let sender = self.drop_sender.take().unwrap();
-        sender.send(()).unwrap_or_else(|_| panic!("Failed to notify about dropping TempRef. Bug!"))
+        sender
+            .send(())
+            .unwrap_or_else(|_| panic!("Failed to notify about dropping TempRef. Bug!"))
     }
 }
 
@@ -57,11 +62,8 @@ where
 {
     type Result: Future<Output = M::Result> + Sized + 'static;
 
-    fn handle(
-        actor: TempRef<Self>,
-        msg: M,
-        ctx: TempRef<Self::Context>,
-    ) -> Self::Result;
+    fn handle(actor: TempRef<Self>, msg: M, ctx: TempRef<Self::Context>)
+        -> Self::Result;
 }
 
 impl<M, I: Send + 'static, AH> Handler<M> for AH
@@ -77,14 +79,12 @@ where
 
         let (tmp_ctx, ctx_dropped) = TempRef::new(ctx);
 
-        let fut_res = async move {
-            Self::handle(actor, msg, tmp_ctx).await
-        };
+        let fut_res = async move { Self::handle(actor, msg, tmp_ctx).await };
 
         let (s, r) = oneshot::channel::<M::Result>();
 
         ctx.wait(wrap_future(async move {
-            let (res, _, _) = join3(fut_res,actor_dropped, ctx_dropped).await;
+            let (res, _, _) = join3(fut_res, actor_dropped, ctx_dropped).await;
             s.send(res)
                 .unwrap_or_else(|_| panic!("Failed to send future result. Bug!"));
         }));

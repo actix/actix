@@ -4,8 +4,8 @@ use futures::{future::ready, StreamExt};
 
 use actix::prelude::*;
 use actix::{AsyncHandler, AsyncMessage, TempRef};
-use tokio::time::delay_for;
 use std::time::{Duration, Instant};
+use tokio::time::delay_for;
 
 #[derive(Debug, Clone, Copy)]
 struct Num(usize);
