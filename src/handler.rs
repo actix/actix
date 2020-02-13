@@ -3,22 +3,31 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use futures::channel::oneshot::{self, Sender as SyncSender};
-use futures::FutureExt;
+use futures::channel::oneshot::{self, Receiver as SyncReceiver, Sender as SyncSender};
+use futures::{FutureExt, future::join3};
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
 use crate::context::Context;
-use crate::fut::{wrap_future, ActorFuture};
+use crate::fut::{ActorFuture, wrap_future};
 use crate::WrapFuture;
 
 pub struct TempRef<T> {
     inner: *mut T,
+    drop_sender: Option<SyncSender<()>>
 }
 
 unsafe impl<T: Send> Send for TempRef<T> {}
 
 impl<T> TempRef<T> {
+    fn new(inner: *mut T) -> (Self, SyncReceiver<()>) {
+        let (s, r) = oneshot::channel::<()>();
+        (TempRef {
+            inner,
+            drop_sender: Some(s),
+        }, r)
+    }
+
     pub fn as_ref(&self) -> &T {
         unsafe {
             let x = self.inner;
@@ -30,6 +39,13 @@ impl<T> TempRef<T> {
             let x = self.inner;
             &mut *x
         }
+    }
+}
+
+impl<T> Drop for TempRef<T> {
+    fn drop(&mut self) {
+        let sender = self.drop_sender.take().unwrap();
+        sender.send(()).unwrap_or_else(|_| panic!("Failed to notify about dropping TempRef. Bug!"))
     }
 }
 
@@ -57,18 +73,20 @@ where
     type Result = ResponseFuture<AsyncResponse<M>>;
 
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> Self::Result {
-        let actor = TempRef { inner: self };
+        let (actor, actor_dropped) = TempRef::new(self);
 
-        let tmp_ctx = TempRef { inner: ctx };
+        let (tmp_ctx, ctx_dropped) = TempRef::new(ctx);
 
-        let fut_res = Self::handle(actor, msg, tmp_ctx);
+        let fut_res = async move {
+            Self::handle(actor, msg, tmp_ctx).await
+        };
 
         let (s, r) = oneshot::channel::<M::Result>();
 
         ctx.wait(wrap_future(async move {
-            let res = fut_res.await;
+            let (res, _, _) = join3(fut_res,actor_dropped, ctx_dropped).await;
             s.send(res)
-                .unwrap_or_else(|_| panic!("Failed to send future result"));
+                .unwrap_or_else(|_| panic!("Failed to send future result. Bug!"));
         }));
 
         Box::pin(r.map(|r| AsyncResponse(r.unwrap())))
