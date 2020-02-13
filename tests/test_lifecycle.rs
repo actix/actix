@@ -4,8 +4,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use actix::prelude::*;
-use futures::channel::oneshot::{channel, Sender};
-use futures::FutureExt;
+use futures_channel::oneshot::{channel, Sender};
+use futures_util::future::FutureExt;
 use tokio::time::{delay_for, Duration};
 
 struct MyActor {

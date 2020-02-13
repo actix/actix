@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use actix_rt::Arbiter;
-use futures::Stream;
+use futures_util::stream::Stream;
 use log::error;
 
 use crate::address::{channel, Addr};
@@ -311,7 +311,7 @@ where
     /// ```rust
     /// # use std::io;
     /// use actix::prelude::*;
-    /// use futures::stream::once;
+    /// use futures_util::stream::once;
     ///
     /// #[derive(Message)]
     /// #[rtype(result = "()")]
@@ -361,7 +361,7 @@ where
     ///
     /// ```rust
     /// use actix::prelude::*;
-    /// use futures::stream::once;
+    /// use futures_util::stream::once;
     ///
     /// #[derive(Message)]
     /// #[rtype(result = "()")]

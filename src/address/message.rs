@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
-use futures::channel::oneshot;
+use futures_channel::oneshot;
 
 use pin_project::pin_project;
 

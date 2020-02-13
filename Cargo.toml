@@ -38,7 +38,8 @@ actix_derive = "0.5"
 bytes = "0.5.3"
 crossbeam-channel = "0.4"
 derive_more = "0.99.2"
-futures = "0.3.1"
+futures-channel = { version = "0.3.1", default-features = false }
+futures-util = { version = "0.3.1", default-features = false }
 log = "0.4"
 pin-project = "0.4.6"
 lazy_static = "1.4"

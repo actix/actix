@@ -96,7 +96,7 @@ are typed. Let's define a simple `Sum` message with two `usize` parameters,
 and an actor which will accept this message and return the sum of those two numbers.
 
 ```rust
-use futures::{future, Future};
+use futures_util::{future, future::Future};
 use actix::*;
 
 // this is our Message

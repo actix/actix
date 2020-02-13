@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use bitflags::bitflags;
-use futures::Future;
+use futures_util::future::Future;
 use smallvec::SmallVec;
 
 use crate::actor::{
@@ -226,8 +226,8 @@ where
     fn drop(&mut self) {
         if self.alive() {
             self.ctx.parts().stop();
-            let waker = futures::task::noop_waker();
-            let mut cx = futures::task::Context::from_waker(&waker);
+            let waker = futures_util::task::noop_waker();
+            let mut cx = futures_util::task::Context::from_waker(&waker);
             let _ = Pin::new(self).poll(&mut cx);
         }
     }

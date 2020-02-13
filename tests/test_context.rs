@@ -3,9 +3,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use actix::prelude::*;
-use futures::channel::mpsc::unbounded;
-use futures::stream::once;
-use futures::StreamExt;
+use futures_channel::mpsc::unbounded;
+use futures_util::stream::once;
+use futures_util::stream::StreamExt;
 use tokio::time::{delay_for, interval_at, Duration, Instant};
 
 #[derive(Debug, PartialEq)]

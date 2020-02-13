@@ -1,7 +1,7 @@
 use std::task::Poll;
 use std::{fmt, task};
 
-use futures::StreamExt;
+use futures_util::stream::StreamExt;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::EnvelopeProxy;

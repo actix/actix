@@ -3,7 +3,7 @@ use std::net;
 use std::str::FromStr;
 
 use actix::prelude::*;
-use futures::StreamExt;
+use futures_util::stream::StreamExt;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::FramedRead;
 

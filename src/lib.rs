@@ -129,7 +129,7 @@ pub mod prelude {
     pub use crate::io;
     pub use crate::utils::{Condition, IntervalFunc, TimerFunc};
 
-    pub use futures::{Future, Stream};
+    pub use futures_util::{future::Future, stream::Stream};
 }
 
 pub mod dev {
@@ -188,7 +188,7 @@ pub mod dev {
 #[allow(clippy::unit_arg)]
 pub fn run<R>(f: R) -> std::io::Result<()>
 where
-    R: futures::Future<Output = ()> + 'static,
+    R: futures_util::future::Future<Output = ()> + 'static,
 {
     Ok(actix_rt::System::new("Default").block_on(f))
 }
@@ -200,7 +200,7 @@ where
 /// This function panics if the actix system is not running.
 pub fn spawn<F>(f: F)
 where
-    F: futures::Future<Output = ()> + 'static,
+    F: futures_util::future::Future<Output = ()> + 'static,
 {
     actix_rt::spawn(f);
 }

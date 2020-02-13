@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use futures::channel::oneshot::Sender;
+use futures_channel::oneshot::Sender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::context::Context;

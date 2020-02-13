@@ -43,7 +43,7 @@ async fn test_stream() {
     let act_err = Arc::clone(&err);
 
     MyActor::create(move |ctx| {
-        MyActor::add_stream(futures::stream::iter::<_>(items), ctx);
+        MyActor::add_stream(futures_util::stream::iter::<_>(items), ctx);
         MyActor(act_count, act_err, Running::Stop)
     });
 
