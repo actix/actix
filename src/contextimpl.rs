@@ -340,7 +340,6 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // let this = unsafe { self.get_unchecked_mut() };
         let this = self.get_mut();
 
         if !this.ctx.parts().flags.contains(ContextFlags::STARTED) {
