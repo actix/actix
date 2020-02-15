@@ -3,6 +3,7 @@ use std::task::{self, Poll};
 
 use actix_rt::Arbiter;
 use futures::Future;
+use pin_project::pin_project;
 
 use crate::actor::{Actor, AsyncContext, Supervised};
 use crate::address::{channel, Addr};
@@ -63,11 +64,13 @@ use crate::mailbox::DEFAULT_CAPACITY;
 ///     });
 /// }
 /// ```
+#[pin_project]
 #[derive(Debug)]
 pub struct Supervisor<A>
 where
     A: Supervised + Actor<Context = Context<A>>,
 {
+    #[pin]
     fut: ContextFut<A, Context<A>>,
 }
 
@@ -142,9 +145,9 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        let this = unsafe { self.get_unchecked_mut() };
+        let mut this = self.project();
         loop {
-            match unsafe { Pin::new_unchecked(&mut this.fut) }.poll(cx) {
+            match this.fut.as_mut().poll(cx) {
                 Poll::Pending => return Poll::Pending,
                 Poll::Ready(_) => {
                     // stop if context's address is not connected

@@ -1,18 +1,18 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use pin_project::{pin_project, project};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
+#[pin_project]
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 #[derive(Debug)]
 pub enum Chain<A, B, C> {
-    First(A, Option<C>),
-    Second(B),
+    First(#[pin] A, Option<C>),
+    Second(#[pin] B),
     Empty,
 }
-
-impl<A: Unpin, B: Unpin, C> Unpin for Chain<A, B, C> {}
 
 impl<A, B, C> Chain<A, B, C>
 where
@@ -23,8 +23,9 @@ where
         Chain::First(fut1, Some(data))
     }
 
+    #[project]
     pub fn poll<F>(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         srv: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut Context<'_>,
@@ -35,28 +36,27 @@ where
     {
         let mut f = Some(f);
 
-        // Safe to call `get_unchecked_mut` because we won't move the futures.
-        let this = unsafe { self.get_unchecked_mut() };
-
         loop {
+            let this = self.as_mut().project();
+            #[project]
             let (output, data) = match this {
                 Chain::First(fut1, data) => {
                     let output =
-                        match unsafe { Pin::new_unchecked(fut1) }.poll(srv, ctx, task) {
+                        match fut1.poll(srv, ctx, task) {
                             Poll::Ready(t) => t,
                             Poll::Pending => return Poll::Pending,
                         };
                     (output, data.take().unwrap())
                 }
                 Chain::Second(fut2) => {
-                    return unsafe { Pin::new_unchecked(fut2) }.poll(srv, ctx, task);
+                    return fut2.poll(srv, ctx, task);
                 }
                 Chain::Empty => unreachable!(),
             };
 
-            *this = Chain::Empty; // Drop fut1
+            self.set(Chain::Empty);
             let fut2 = (f.take().unwrap())(output, data, srv, ctx);
-            *this = Chain::Second(fut2)
+            self.set(Chain::Second(fut2))
         }
     }
 }
