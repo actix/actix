@@ -16,8 +16,8 @@ use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures::channel::oneshot::Sender as SyncSender;
 use futures::{Future, StreamExt};
-use pin_project::pin_project;
 use log::warn;
+use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
 use crate::address::channel;
@@ -115,25 +115,27 @@ where
     {
         let factory = Arc::new(factory);
         let (sender, receiver) = cb_channel::unbounded();
+        let (tx, rx) = channel::channel(0);
+        let addr = Addr::new(tx);
 
         for _ in 0..threads {
             let f = Arc::clone(&factory);
             let sys = System::current();
             let actor_queue = receiver.clone();
+            let inner_a = addr.clone();
 
             thread::spawn(move || {
                 System::set_current(sys);
-                SyncContext::new(f, actor_queue).run();
+                SyncContext::new(f, actor_queue, inner_a.clone()).run();
             });
         }
 
-        let (tx, rx) = channel::channel(0);
         actix_rt::spawn(Self {
             queue: Some(sender),
             msgs: rx,
         });
 
-        Addr::new(tx)
+        addr
     }
 }
 
@@ -152,7 +154,7 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        let this = self.project(); 
+        let this = self.project();
         loop {
             match this.msgs.poll_next_unpin(cx) {
                 Poll::Ready(Some(msg)) => {
@@ -225,6 +227,7 @@ where
     stopping: bool,
     state: ActorState,
     factory: Arc<dyn Fn() -> A>,
+    address: Addr<A>,
 }
 
 impl<A> SyncContext<A>
@@ -234,6 +237,7 @@ where
     fn new(
         factory: Arc<dyn Fn() -> A>,
         queue: cb_channel::Receiver<Envelope<A>>,
+        address: Addr<A>,
     ) -> Self {
         let act = factory();
         Self {
@@ -242,6 +246,7 @@ where
             act: Some(act),
             stopping: false,
             state: ActorState::Started,
+            address,
         }
     }
 
@@ -283,6 +288,10 @@ where
                 self.state = ActorState::Running;
             }
         }
+    }
+
+    pub fn address(&self) -> Addr<A> {
+        self.address.clone()
     }
 }
 
