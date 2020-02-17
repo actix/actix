@@ -6,6 +6,10 @@
 
 * Fix `MessageResponse` implementation  for `ResponseFuture` to always poll the spawned `Future`. (#317)
 
+### Added
+
+* Allow return of any `T: 'static` on `ResponseFuture`. (#343)
+
 ## [0.9.0] 2019-12-20
 
 ### Fixed
