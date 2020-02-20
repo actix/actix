@@ -142,7 +142,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
 
 struct WriterFut<T, E, A>
 where
-    T: AsyncWrite,
+    T: AsyncWrite + Unpin,
     E: From<io::Error>,
 {
     act: PhantomData<A>,
@@ -177,7 +177,7 @@ where
         let mut io = this.inner.1.borrow_mut();
         inner.task = None;
         while !inner.buffer.is_empty() {
-            match unsafe { Pin::new_unchecked(io.deref_mut()) }
+            match Pin::new(io.deref_mut())
                 .poll_write(task, &inner.buffer)
             {
                 Poll::Ready(Ok(n)) => {
@@ -216,7 +216,7 @@ where
         }
 
         // Try flushing the underlying IO
-        match unsafe { Pin::new_unchecked(io.deref_mut()) }.poll_flush(task) {
+        match Pin::new(io.deref_mut()).poll_flush(task) {
             Poll::Ready(Ok(_)) => (),
             Poll::Pending => return Poll::Pending,
             Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
