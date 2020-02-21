@@ -87,7 +87,7 @@ where
                     }
                 }
                 State::Processing(mut fut) => {
-                    match unsafe { Pin::new_unchecked(&mut fut) }.poll(act, ctx, task) {
+                    match Pin::new(&mut fut).poll(act, ctx, task) {
                         Poll::Ready(state) => this.state = State::Ready(state),
                         Poll::Pending => {
                             this.state = State::Processing(fut);
