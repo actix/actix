@@ -114,6 +114,7 @@ where
 
 /// A `Future` which represents an asynchronous message sending process.
 #[must_use = "future do nothing unless polled"]
+#[pin_project]
 pub struct RecipientRequest<M>
 where
     M: Message + Send + 'static,
@@ -151,7 +152,7 @@ where
         cx: &mut task::Context<'_>,
     ) -> Poll<Result<M::Result, MailboxError>> {
         if let Some(ref mut timeout) = self.timeout {
-            match unsafe { Pin::new_unchecked(timeout) }.poll(cx) {
+            match Pin::new(timeout).poll(cx) {
                 Poll::Ready(()) => Poll::Ready(Err(MailboxError::Timeout)),
                 Poll::Pending => Poll::Pending,
             }
@@ -168,14 +169,14 @@ where
 {
     type Output = Result<M::Result, MailboxError>;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        let mut this = unsafe { self.get_unchecked_mut() };
+    fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        let this = self.as_mut().project();
 
         if let Some((sender, msg)) = this.info.take() {
             match sender.send(msg) {
-                Ok(rx) => this.rx = Some(rx),
+                Ok(rx) => *this.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
-                    this.info = Some((sender, msg));
+                    *this.info = Some((sender, msg));
                     return Poll::Pending;
                 }
                 Err(SendError::Closed(_)) => {
@@ -185,11 +186,11 @@ where
         }
 
         if this.rx.is_some() {
-            match unsafe { Pin::new_unchecked(&mut this.rx.as_mut().unwrap()) }.poll(cx)
+            match Pin::new(&mut this.rx.as_mut().unwrap()).poll(cx)
             {
                 Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
                 Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
-                Poll::Pending => this.poll_timeout(cx),
+                Poll::Pending => self.poll_timeout(cx),
             }
         } else {
             Poll::Ready(Err(MailboxError::Closed))
