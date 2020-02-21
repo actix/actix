@@ -292,7 +292,7 @@ impl<F: ActorFuture> IntoActorFuture for F {
     }
 }
 
-impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
+impl<F: ActorFuture + Unpin + ?Sized> ActorFuture for Box<F> {
     type Output = F::Output;
     type Actor = F::Actor;
 
@@ -302,7 +302,24 @@ impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
-        unsafe { Pin::new_unchecked(&mut **self.as_mut()) }.poll(srv, ctx, task)
+        Pin::new(&mut **self.as_mut()).poll(srv, ctx, task)
+    }
+}
+
+impl<P> ActorFuture for Pin<P>
+where P: Unpin + std::ops::DerefMut,
+      <P as std::ops::Deref>::Target: ActorFuture
+{
+    type Output = <<P as std::ops::Deref>::Target as ActorFuture>::Output;
+    type Actor = <<P as std::ops::Deref>::Target as ActorFuture>::Actor;
+
+    fn poll(
+        self: Pin<&mut Self>,
+        srv: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
+        task: &mut Context<'_>,
+    ) -> Poll<Self::Output> {
+        Pin::get_mut(self).as_mut().poll(srv, ctx, task)
     }
 }
 

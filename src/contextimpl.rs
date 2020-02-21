@@ -25,7 +25,7 @@ bitflags! {
     }
 }
 
-type Item<A> = (SpawnHandle, Box<dyn ActorFuture<Output = (), Actor = A>>);
+type Item<A> = (SpawnHandle, Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>);
 
 pub trait AsyncContextParts<A>: ActorContext + AsyncContext<A>
 where
@@ -134,7 +134,7 @@ where
         let handle = self.handles[0].next();
         self.handles[0] = handle;
         let fut: Box<dyn ActorFuture<Output = (), Actor = A>> = Box::new(fut);
-        self.items.push((handle, fut));
+        self.items.push((handle, Pin::from(fut)));
         handle
     }
 

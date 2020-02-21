@@ -12,9 +12,8 @@ use crate::clock::Delay;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
 
-#[pin_project]
 pub(crate) struct ActorWaitItem<A: Actor>(
-    #[pin] Box<dyn ActorFuture<Output = (), Actor = A>>,
+    Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>,
 );
 
 impl<A> ActorWaitItem<A>
@@ -27,16 +26,16 @@ where
     where
         F: ActorFuture<Output = (), Actor = A> + 'static,
     {
-        ActorWaitItem(Box::new(fut))
+        ActorWaitItem(Box::pin(fut))
     }
 
     pub fn poll(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut task::Context<'_>,
     ) -> Poll<()> {
-        match self.project().0.poll(act, ctx, task) {
+        match self.0.as_mut().poll(act, ctx, task) {
             Poll::Pending => {
                 if ctx.state().alive() {
                     Poll::Pending
