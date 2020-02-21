@@ -61,7 +61,7 @@ where
         cx: &mut task::Context<'_>,
     ) -> Poll<Result<M::Result, MailboxError>> {
         if let Some(ref mut timeout) = self.timeout {
-            match unsafe { Pin::new_unchecked(timeout) }.poll(cx) {
+            match Pin::new(timeout).poll(cx) {
                 Poll::Ready(()) => Poll::Ready(Err(MailboxError::Timeout)),
                 Poll::Pending => Poll::Pending,
             }
