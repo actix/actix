@@ -281,7 +281,7 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.spawn(self.then(move |res, this, _| {
+        ctx.spawn(Box::new(Pin::from(self)).then(move |res, this, _| {
             if let Some(tx) = tx {
                 tx.send(res);
             }
@@ -478,7 +478,7 @@ where
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
-                let fut = fut.then(move |res, this, _| {
+                let fut = Box::new(Pin::from(fut)).then(move |res, this, _| {
                     if let Some(tx) = tx {
                         tx.send(res)
                     }
