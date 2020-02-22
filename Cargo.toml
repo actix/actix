@@ -55,8 +55,8 @@ tokio-util   = { version = "0.2", features = ["full"] }
 actix-http = { version = "1.0.1", optional = true }
 
 # dns resolver
-trust-dns-proto = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
-trust-dns-resolver = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
+trust-dns-proto = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime"] }
+trust-dns-resolver = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime", "system-config"] }
 
 [dev-dependencies]
 doc-comment = "0.3"

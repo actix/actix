@@ -12,6 +12,12 @@
 
 * Allow return of any `T: 'static` on `ResponseActFuture`. (#310)
 
+### Changed
+
+* Upgrade `trust-dns-proto` to 0.19
+
+* Upgrade `trust-dns-resolver` to 0.19
+
 ## [0.9.0] 2019-12-20
 
 ### Fixed
