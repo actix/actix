@@ -3,31 +3,27 @@
 //! ## Example
 //!
 //! ```rust
-//! #![recursion_limit="128"]
-//! use futures::{future, FutureExt};
-//! use actix::prelude::*;
 //! use actix::actors::resolver;
+//! use actix::prelude::*;
 //!
 //! #[actix_rt::main]
 //! async fn main() {
-//!         actix_rt::spawn(async {
-//!             let resolver = resolver::Resolver::from_registry();
+//!     Arbiter::spawn(async {
+//!         let resolver = resolver::Resolver::from_registry();
+//!         let addrs = resolver
+//!             .send(resolver::Resolve::host("localhost"))
+//!             .await
+//!             .unwrap();
 //!
-//!             let addrs = resolver.send(
-//!                  resolver::Connect::host("localhost")).await;
+//!         println!("RESULT: {:?}", addrs);
+//!     });
 //!
-//!             println!("RESULT: {:?}", addrs);
-//!             System::current().stop();
-//!        });
-//!
-//!         actix_rt::spawn(async {
-//!             let resolver = resolver::Resolver::from_registry();
-//!
-//!             let stream = resolver.send(
-//!                  resolver::Connect::host_and_port("localhost", 5000)).await;
-//!
-//!             println!("RESULT: {:?}", stream);
-//!        });
+//!     let resolver = resolver::Resolver::from_registry();
+//!     let addrs = resolver
+//!         .send(resolver::Connect::host_and_port("localhost", 5000))
+//!         .await
+//!         .unwrap();
+//!     println!("RESULT: {:?}", addrs);
 //! }
 //! ```
 use std::collections::VecDeque;

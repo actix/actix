@@ -5,14 +5,15 @@ use actix::prelude::*;
 async fn test_resolver() {
     Arbiter::spawn(async {
         let resolver = resolver::Resolver::from_registry();
-        let _ = resolver.send(resolver::Resolve::host("localhost")).await;
-        System::current().stop();
+        let _ = resolver
+            .send(resolver::Resolve::host("localhost"))
+            .await
+            .unwrap();
     });
 
-    Arbiter::spawn(async {
-        let resolver = resolver::Resolver::from_registry();
-        let _ = resolver
-            .send(resolver::Connect::host("localhost:5000"))
-            .await;
-    });
+    let resolver = resolver::Resolver::from_registry();
+    let _ = resolver
+        .send(resolver::Connect::host("localhost:5000"))
+        .await
+        .unwrap();
 }
