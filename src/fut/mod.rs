@@ -307,8 +307,9 @@ impl<F: ActorFuture + Unpin + ?Sized> ActorFuture for Box<F> {
 }
 
 impl<P> ActorFuture for Pin<P>
-where P: Unpin + std::ops::DerefMut,
-      <P as std::ops::Deref>::Target: ActorFuture
+where
+    P: Unpin + std::ops::DerefMut,
+    <P as std::ops::Deref>::Target: ActorFuture,
 {
     type Output = <<P as std::ops::Deref>::Target as ActorFuture>::Output;
     type Actor = <<P as std::ops::Deref>::Target as ActorFuture>::Actor;

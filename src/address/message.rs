@@ -100,8 +100,7 @@ where
         }
 
         if this.rx.is_some() {
-            match Pin::new(&mut this.rx.as_mut().unwrap()).poll(cx)
-            {
+            match Pin::new(&mut this.rx.as_mut().unwrap()).poll(cx) {
                 Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
                 Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
                 Poll::Pending => self.poll_timeout(cx),
@@ -186,8 +185,7 @@ where
         }
 
         if this.rx.is_some() {
-            match Pin::new(&mut this.rx.as_mut().unwrap()).poll(cx)
-            {
+            match Pin::new(&mut this.rx.as_mut().unwrap()).poll(cx) {
                 Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
                 Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
                 Poll::Pending => self.poll_timeout(cx),

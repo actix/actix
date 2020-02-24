@@ -16,8 +16,8 @@ use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures::channel::oneshot::Sender as SyncSender;
 use futures::{Future, StreamExt};
-use pin_project::pin_project;
 use log::warn;
+use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
 use crate::address::channel;
@@ -152,7 +152,7 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        let this = self.project(); 
+        let this = self.project();
         loop {
             match this.msgs.poll_next_unpin(cx) {
                 Poll::Ready(Some(msg)) => {
