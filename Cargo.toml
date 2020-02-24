@@ -24,16 +24,13 @@ path = "src/lib.rs"
 members = ["examples/chat"]
 
 [features]
-default = ["resolver", "http"]
+default = ["resolver"]
 
 # dns resolver
 resolver = ["trust-dns-proto", "trust-dns-resolver"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
-
-# actix-http support
-http = ["actix-http"]
 
 [dependencies]
 actix-rt = "1.0.0"
@@ -50,9 +47,6 @@ smallvec = "1.0"
 parking_lot = "0.10"
 tokio = { version = "0.2.6", default-features = false, features=["rt-core", "rt-util", "io-driver", "io-util", "tcp", "uds", "udp", "time", "signal", "sync"] }
 tokio-util   = { version = "0.2", features = ["full"] }
-
-# actix-http support
-actix-http = { version = "1.0.1", optional = true }
 
 # dns resolver
 trust-dns-proto = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime"] }

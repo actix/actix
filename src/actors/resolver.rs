@@ -141,10 +141,6 @@ pub enum ResolverError {
     IoError(io::Error),
 }
 
-/// `InternalServerError` for `actix::MailboxError`
-#[cfg(feature = "http")]
-impl actix_http::ResponseError for ResolverError {}
-
 pub struct Resolver {
     resolver: Option<AsyncResolver>,
     cfg: Option<(ResolverConfig, ResolverOpts)>,

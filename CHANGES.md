@@ -1,5 +1,11 @@
 # CHANGES
 
+## [NEXT]
+
+### Changed
+
+* Feature `http` was removed. Actix support for http was moved solely to actix-http and actix-web crates.
+
 ## [0.9.1] 2020-??-??
 
 ### Fixed
