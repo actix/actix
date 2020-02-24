@@ -45,12 +45,12 @@ lazy_static = "1.4"
 bitflags = "1.2"
 smallvec = "1.0"
 parking_lot = "0.10"
-tokio = { version = "0.2.6", default-features = false, features=["rt-core", "rt-util", "io-driver", "tcp", "uds", "udp", "time", "signal", "sync"] }
+tokio = { version = "0.2.6", default-features = false, features=["rt-core", "rt-util", "io-driver", "io-util", "tcp", "uds", "udp", "time", "signal", "sync"] }
 tokio-util   = { version = "0.2", features = ["full"] }
 
 # dns resolver
-trust-dns-proto = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
-trust-dns-resolver = { version = "=0.18.0-alpha.2", optional = true, default-features = false }
+trust-dns-proto = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime"] }
+trust-dns-resolver = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime", "system-config"] }
 
 [dev-dependencies]
 doc-comment = "0.3"

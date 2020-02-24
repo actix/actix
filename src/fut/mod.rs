@@ -57,39 +57,39 @@ use std::pin::Pin;
 /// // This is the needed result for the DeferredWork message
 /// // It's a result that combine both Response and Error from the future response.
 /// type DeferredWorkResult = Result<OriginalActorResponse, MessageError>;
-///
+/// #
 /// # struct ActorState {}
-///
+/// #
 /// # impl ActorState {
 /// #    fn update_from(&mut self, _result: ()) {}
 /// # }
-///
+/// #
 /// # struct OtherActor {}
-///
+/// #
 /// # impl Actor for OtherActor {
 /// #    type Context = Context<Self>;
 /// # }
-///
+/// #
 /// # impl Handler<OtherMessage> for OtherActor {
 /// #    type Result = ();
 /// #
 /// #    fn handle(&mut self, _msg: OtherMessage, _ctx: &mut Context<Self>) -> Self::Result {
 /// #    }
 /// # }
-///
+/// #
 /// # struct OriginalActor{
 /// #     other_actor: Addr<OtherActor>,
 /// #     inner_state: ActorState
 /// # }
-///
+/// #
 /// # impl Actor for OriginalActor{
 /// #     type Context = Context<Self>;
 /// # }
-///
+/// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "Result<(), MessageError>")]
 /// # struct DeferredWork{}
-///
+/// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "()")]
 /// # struct OtherMessage{}
@@ -292,7 +292,7 @@ impl<F: ActorFuture> IntoActorFuture for F {
     }
 }
 
-impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
+impl<F: ActorFuture + Unpin + ?Sized> ActorFuture for Box<F> {
     type Output = F::Output;
     type Actor = F::Actor;
 
@@ -302,7 +302,24 @@ impl<F: ActorFuture + ?Sized> ActorFuture for Box<F> {
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
-        unsafe { Pin::new_unchecked(&mut **self.as_mut()) }.poll(srv, ctx, task)
+        Pin::new(&mut **self.as_mut()).poll(srv, ctx, task)
+    }
+}
+
+impl<P> ActorFuture for Pin<P>
+where P: Unpin + std::ops::DerefMut,
+      <P as std::ops::Deref>::Target: ActorFuture
+{
+    type Output = <<P as std::ops::Deref>::Target as ActorFuture>::Output;
+    type Actor = <<P as std::ops::Deref>::Target as ActorFuture>::Actor;
+
+    fn poll(
+        self: Pin<&mut Self>,
+        srv: &mut Self::Actor,
+        ctx: &mut <Self::Actor as Actor>::Context,
+        task: &mut Context<'_>,
+    ) -> Poll<Self::Output> {
+        Pin::get_mut(self).as_mut().poll(srv, ctx, task)
     }
 }
 

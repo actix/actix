@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task;
 use std::task::Poll;
+use pin_project::pin_project;
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
@@ -10,6 +11,7 @@ use crate::fut::ActorFuture;
 /// A future representing a value that is immediately ready.
 ///
 /// Created by the `result` function.
+#[pin_project]
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 // TODO: rename this to `Result` on the next major version
@@ -102,7 +104,7 @@ where
         _: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
         Poll::Ready(
-            unsafe { self.get_unchecked_mut() }
+            self.project()
                 .inner
                 .take()
                 .expect("cannot poll Result twice"),
