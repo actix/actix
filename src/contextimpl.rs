@@ -25,7 +25,10 @@ bitflags! {
     }
 }
 
-type Item<A> = (SpawnHandle, Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>);
+type Item<A> = (
+    SpawnHandle,
+    Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>,
+);
 
 pub trait AsyncContextParts<A>: ActorContext + AsyncContext<A>
 where

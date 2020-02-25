@@ -177,9 +177,7 @@ where
         let mut io = this.inner.1.borrow_mut();
         inner.task = None;
         while !inner.buffer.is_empty() {
-            match Pin::new(io.deref_mut())
-                .poll_write(task, &inner.buffer)
-            {
+            match Pin::new(io.deref_mut()).poll_write(task, &inner.buffer) {
                 Poll::Ready(Ok(n)) => {
                     if n == 0
                         && act.error(
