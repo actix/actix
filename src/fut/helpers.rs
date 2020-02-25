@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures::Stream;
+use pin_project::pin_project;
 
 /// Helper trait that adds the helper method `finish()` to stream objects.
 #[doc(hidden)]
@@ -22,9 +23,10 @@ impl<S: Stream> FinishStream for S {
 /// resolves when the stream completes.
 ///
 /// This structure is produced by the `Stream::finish` method.
+#[pin_project]
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
-pub struct Finish<S>(S);
+pub struct Finish<S>(#[pin] S);
 
 impl<S> Finish<S> {
     pub fn new(s: S) -> Finish<S> {
@@ -38,10 +40,10 @@ where
 {
     type Output = ();
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let this = unsafe { self.get_unchecked_mut() };
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         loop {
-            match unsafe { Pin::new_unchecked(&mut this.0) }.poll_next(cx) {
+            let this = self.as_mut().project();
+            match this.0.poll_next(cx) {
                 Poll::Pending => return Poll::Pending,
                 Poll::Ready(None) => return Poll::Ready(()),
                 Poll::Ready(Some(_)) => (),

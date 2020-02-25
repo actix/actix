@@ -1,9 +1,9 @@
 //! Definition of the `Result` (immediately finished) combinator
+use pin_project::pin_project;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task;
 use std::task::Poll;
-use pin_project::pin_project;
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
