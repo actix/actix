@@ -204,7 +204,3 @@ where
 {
     actix_rt::spawn(f);
 }
-
-/// `InternalServerError` for `actix::MailboxError`
-#[cfg(feature = "http")]
-impl actix_http::ResponseError for MailboxError {}

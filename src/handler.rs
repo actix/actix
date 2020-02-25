@@ -281,7 +281,7 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.spawn(self.then(move |res, this, _| {
+        ctx.spawn(Box::new(Pin::from(self)).then(move |res, this, _| {
             if let Some(tx) = tx {
                 tx.send(res);
             }
@@ -290,11 +290,67 @@ where
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ResponseFuture<Result<I, E>>
+/// MessageResponse trait impl to enbale the use of any `I: 'static` with asynchronous
+/// message handling
+///
+/// # Examples
+/// Usage with `Result<I,E>`:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context<Self>; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// #
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = Result<u8,u8>;
+/// }
+/// impl Handler<MyQuestion> for MyActorAsync {
+///     type Result = ResponseFuture<Result<u8,u8>>;
+///     fn handle(&mut self, question: MyQuestion, _ctx: &mut Context<Self>) -> Self::Result {
+///         Box::pin(async {Ok(5)})
+///     }
+/// }
+/// ```
+/// Usage with `Option<I>`:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context<Self>; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = Option<u8>;
+/// }
+/// impl Handler<MyQuestion> for MyActorAsync {
+///     type Result = ResponseFuture<Option<u8>>;
+///     fn handle(&mut self, question: MyQuestion, _ctx: &mut Context<Self>) -> Self::Result {
+///         Box::pin(async {Some(5)})
+///     }
+/// }
+/// ```
+/// Usage with any `I: 'static`:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context<Self>; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = u8;
+/// }
+/// impl Handler<MyQuestion> for MyActorAsync {
+///     type Result = ResponseFuture<u8>;
+///     fn handle(&mut self, question: MyQuestion, _ctx: &mut Context<Self>) -> Self::Result {
+///         Box::pin(async {5})
+///     }
+/// }
+/// ```
+impl<A, M, I: 'static> MessageResponse<A, M> for ResponseFuture<I>
 where
     A: Actor,
     M::Result: Send,
-    M: Message<Result = Result<I, E>>,
+    M: Message<Result = I>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
@@ -422,7 +478,7 @@ where
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
-                let fut = fut.then(move |res, this, _| {
+                let fut = Box::new(Pin::from(fut)).then(move |res, this, _| {
                     if let Some(tx) = tx {
                         tx.send(res)
                     }

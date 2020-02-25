@@ -3,31 +3,27 @@
 //! ## Example
 //!
 //! ```rust
-//! #![recursion_limit="128"]
-//! use futures::{future, FutureExt};
-//! use actix::prelude::*;
 //! use actix::actors::resolver;
+//! use actix::prelude::*;
 //!
 //! #[actix_rt::main]
 //! async fn main() {
-//!         actix_rt::spawn(async {
-//!             let resolver = resolver::Resolver::from_registry();
+//!     Arbiter::spawn(async {
+//!         let resolver = resolver::Resolver::from_registry();
+//!         let addrs = resolver
+//!             .send(resolver::Resolve::host("localhost"))
+//!             .await
+//!             .unwrap();
 //!
-//!             let addrs = resolver.send(
-//!                  resolver::Connect::host("localhost")).await;
+//!         println!("RESULT: {:?}", addrs);
+//!     });
 //!
-//!             println!("RESULT: {:?}", addrs);
-//!             System::current().stop();
-//!        });
-//!
-//!         actix_rt::spawn(async {
-//!             let resolver = resolver::Resolver::from_registry();
-//!
-//!             let stream = resolver.send(
-//!                  resolver::Connect::host_and_port("localhost", 5000)).await;
-//!
-//!             println!("RESULT: {:?}", stream);
-//!        });
+//!     let resolver = resolver::Resolver::from_registry();
+//!     let addrs = resolver
+//!         .send(resolver::Connect::host_and_port("localhost", 5000))
+//!         .await
+//!         .unwrap();
+//!     println!("RESULT: {:?}", addrs);
 //! }
 //! ```
 use std::collections::VecDeque;
@@ -42,11 +38,10 @@ use derive_more::Display;
 use log::warn;
 use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
-use trust_dns_resolver::AsyncResolver;
-use trust_dns_resolver::BackgroundLookupIp;
+use trust_dns_resolver::TokioAsyncResolver as AsyncResolver;
+use trust_dns_resolver::{error::ResolveError, lookup_ip::LookupIp};
 
 use crate::clock::Delay;
-use crate::fut::wrap_future;
 use crate::fut::ActorFuture;
 use crate::fut::Either;
 use crate::prelude::*;
@@ -146,10 +141,6 @@ pub enum ResolverError {
     IoError(io::Error),
 }
 
-/// `InternalServerError` for `actix::MailboxError`
-#[cfg(feature = "http")]
-impl actix_http::ResponseError for ResolverError {}
-
 pub struct Resolver {
     resolver: Option<AsyncResolver>,
     cfg: Option<(ResolverConfig, ResolverOpts)>,
@@ -164,49 +155,52 @@ impl Resolver {
             err: None,
         }
     }
-
-    fn start_resolver<F>(
-        &self,
-        ctx: &mut <Self as Actor>::Context,
-        parts: (AsyncResolver, F),
-    ) -> AsyncResolver
-    where
-        F: 'static + Future<Output = ()>,
-    {
-        ctx.spawn(wrap_future::<_, Self>(parts.1));
-        parts.0
-    }
 }
 
 impl Actor for Resolver {
     type Context = Context<Self>;
-
     fn started(&mut self, ctx: &mut Self::Context) {
-        // AsyncResolver::new() returns the AsyncResolver itself, plus an anonymous
-        // future which gets spawned as a background task for doing DNS
-        // resolution. So we use our little `start_resolver` wrapper to spawn
-        // the background task (which gets cleaned up automatically if no
-        // outstanding AsyncResolvers still have a handle to it).
-        let resolver = if let Some(cfg) = self.cfg.take() {
-            self.start_resolver(ctx, AsyncResolver::new(cfg.0, cfg.1))
-        } else {
-            match AsyncResolver::from_system_conf() {
-                Ok(resolver) => self.start_resolver(ctx, resolver),
-                Err(err) => {
-                    warn!("Can not create system dns resolver: {}", err);
-                    self.start_resolver(
-                        ctx,
-                        AsyncResolver::new(
-                            ResolverConfig::default(),
-                            ResolverOpts::default(),
-                        ),
-                    )
-                }
-            }
-        };
-
-        // Keep the resolver itself.
-        self.resolver = Some(resolver);
+        let cfg = self.cfg.take();
+        ctx.wait(
+            async move { cfg }
+                .into_actor(self)
+                .then(
+                    |cfg, this, _| -> Pin<Box<dyn ActorFuture<Actor = Self, Output = _>>> {
+                        if let Some(cfg) = cfg {
+                            return Box::pin(
+                                AsyncResolver::tokio(cfg.0, cfg.1).into_actor(this),
+                            );
+                        }
+                        Box::pin(
+                            async {
+                                match AsyncResolver::from_system_conf(
+                                    tokio::runtime::Handle::current(),
+                                )
+                                .await
+                                {
+                                    Ok(resolver) => Ok(resolver),
+                                    Err(err) => {
+                                        warn!(
+                                            "Can not create system dns resolver: {}",
+                                            err
+                                        );
+                                        AsyncResolver::tokio(
+                                            ResolverConfig::default(),
+                                            ResolverOpts::default(),
+                                        )
+                                        .await
+                                    }
+                                }
+                            }
+                            .into_actor(this),
+                        )
+                    },
+                )
+                .map(|resolver_res, this, _| {
+                    // Keep the resolver itself.
+                    this.resolver = Some(resolver_res.unwrap());
+                }),
+        );
     }
 }
 
@@ -269,9 +263,11 @@ impl Handler<ConnectAddr> for Resolver {
     }
 }
 
+type LookupIpFuture = Pin<Box<dyn Future<Output = Result<LookupIp, ResolveError>>>>;
+
 /// A resolver future.
 struct ResolveFut {
-    lookup: Option<BackgroundLookupIp>,
+    lookup: Option<LookupIpFuture>,
     port: u16,
     addrs: Option<VecDeque<SocketAddr>>,
     error: Option<ResolverError>,
@@ -301,7 +297,15 @@ impl ResolveFut {
             match ResolveFut::parse(addr.as_ref(), port) {
                 Ok((host, port)) => ResolveFut {
                     port,
-                    lookup: Some(resolver.lookup_ip(host)),
+                    lookup: {
+                        // Clone data so it can be moved to async block
+                        let resolver_clone = resolver.clone();
+                        let host = host.to_string();
+                        Some(Box::pin(async move {
+                            let resolver = resolver_clone;
+                            resolver.lookup_ip(host).await
+                        }))
+                    },
                     addrs: None,
                     error: None,
                     error2: None,

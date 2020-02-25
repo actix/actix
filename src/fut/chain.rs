@@ -1,6 +1,6 @@
+use pin_project::{pin_project, project};
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use pin_project::{pin_project, project};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
@@ -41,11 +41,10 @@ where
             #[project]
             let (output, data) = match this {
                 Chain::First(fut1, data) => {
-                    let output =
-                        match fut1.poll(srv, ctx, task) {
-                            Poll::Ready(t) => t,
-                            Poll::Pending => return Poll::Pending,
-                        };
+                    let output = match fut1.poll(srv, ctx, task) {
+                        Poll::Ready(t) => t,
+                        Poll::Pending => return Poll::Pending,
+                    };
                     (output, data.take().unwrap())
                 }
                 Chain::Second(fut2) => {

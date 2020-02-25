@@ -1,10 +1,38 @@
 # CHANGES
 
-## [0.9.1] 2020-??-??
+## [0.10.0-alpha.1] 2020-02-25
 
 ### Fixed
 
-* Fix `MessageResponse` implementation  for `ResponseFuture` to always poll the spawned `Future`. (#317)
+* Fix `MessageResponse` implementation  for `ResponseFuture` to always poll the spawned `Future`. [#317]
+
+### Added
+
+* Allow return of any `T: 'static` on `ResponseActFuture`. [#310]
+
+* Allow return of any `T: 'static` on `ResponseFuture`. [#343]
+
+### Changed
+
+* Feature `http` was removed. Actix support for http was moved solely to actix-http and actix-web crates. [#324]
+
+* Make `Pin`s safe [#335] [#346] [#347]
+
+* Only implement `ActorFuture` for `Box` where `ActorFuture` is `Unpin` [#348]
+
+* Upgrade `trust-dns-proto` to 0.19 [#349]
+
+* Upgrade `trust-dns-resolver` to 0.19 [#349]
+
+[#310]: https://github.com/actix/actix/pull/310
+[#317]: https://github.com/actix/actix/pull/317
+[#324]: https://github.com/actix/actix/pull/324
+[#335]: https://github.com/actix/actix/pull/335
+[#343]: https://github.com/actix/actix/pull/343
+[#346]: https://github.com/actix/actix/pull/346
+[#347]: https://github.com/actix/actix/pull/347
+[#348]: https://github.com/actix/actix/pull/348
+[#349]: https://github.com/actix/actix/pull/349
 
 ## [0.9.0] 2019-12-20
 
