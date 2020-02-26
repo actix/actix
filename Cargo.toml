@@ -47,7 +47,7 @@ bitflags = "1.2"
 smallvec = "1.0"
 parking_lot = "0.10"
 tokio = { version = "0.2.6", default-features = false, features=["rt-core", "rt-util", "io-driver", "io-util", "tcp", "uds", "udp", "time", "signal", "sync"] }
-tokio-util   = { version = "0.2", features = ["full"] }
+tokio-util = { version = "0.2", features = ["full"] }
 
 # dns resolver
 trust-dns-proto = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime"] }
