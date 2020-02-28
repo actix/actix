@@ -21,7 +21,7 @@ use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
 use crate::address::channel;
-use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope};
+use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope, AddressSenderProducer};
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};
 
@@ -115,19 +115,20 @@ where
     {
         let factory = Arc::new(factory);
         let (sender, receiver) = cb_channel::unbounded();
+        let (tx, rx) = channel::channel(0);
 
         for _ in 0..threads {
             let f = Arc::clone(&factory);
             let sys = System::current();
             let actor_queue = receiver.clone();
+            let inner_rx = rx.sender_producer();
 
             thread::spawn(move || {
                 System::set_current(sys);
-                SyncContext::new(f, actor_queue).run();
+                SyncContext::new(f, actor_queue, inner_rx).run();
             });
         }
 
-        let (tx, rx) = channel::channel(0);
         actix_rt::spawn(Self {
             queue: Some(sender),
             msgs: rx,
@@ -225,6 +226,7 @@ where
     stopping: bool,
     state: ActorState,
     factory: Arc<dyn Fn() -> A>,
+    address: AddressSenderProducer<A>,
 }
 
 impl<A> SyncContext<A>
@@ -234,6 +236,7 @@ where
     fn new(
         factory: Arc<dyn Fn() -> A>,
         queue: cb_channel::Receiver<Envelope<A>>,
+        address: AddressSenderProducer<A>,
     ) -> Self {
         let act = factory();
         Self {
@@ -242,6 +245,7 @@ where
             act: Some(act),
             stopping: false,
             state: ActorState::Started,
+            address,
         }
     }
 
@@ -283,6 +287,10 @@ where
                 self.state = ActorState::Running;
             }
         }
+    }
+
+    pub fn address(&self) -> Addr<A> {
+        Addr::new(self.address.sender())
     }
 }
 

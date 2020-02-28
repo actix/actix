@@ -8,6 +8,8 @@
 
 ### Added
 
+* New method address on SyncContext [#341]
+
 * Allow return of any `T: 'static` on `ResponseActFuture`. [#310]
 
 * Allow return of any `T: 'static` on `ResponseFuture`. [#343]
