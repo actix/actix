@@ -223,9 +223,9 @@ impl Handler<Resolve> for Resolver {
 
     fn handle(&mut self, msg: Resolve, _: &mut Self::Context) -> Self::Result {
         if let Some(ref err) = self.err {
-            Box::new(ResolveFut::err(err.clone()))
+            Box::pin(ResolveFut::err(err.clone()))
         } else {
-            Box::new(ResolveFut::new(
+            Box::pin(ResolveFut::new(
                 msg.name,
                 msg.port.unwrap_or(0),
                 self.resolver.as_ref().unwrap(),
@@ -239,7 +239,7 @@ impl Handler<Connect> for Resolver {
 
     fn handle(&mut self, msg: Connect, _: &mut Self::Context) -> Self::Result {
         let timeout = msg.timeout;
-        Box::new(
+        Box::pin(
             ResolveFut::new(
                 msg.name,
                 msg.port.unwrap_or(0),
@@ -259,7 +259,7 @@ impl Handler<ConnectAddr> for Resolver {
     fn handle(&mut self, msg: ConnectAddr, _: &mut Self::Context) -> Self::Result {
         let mut v = VecDeque::new();
         v.push_back(msg.0);
-        Box::new(TcpConnector::new(v))
+        Box::pin(TcpConnector::new(v))
     }
 }
 
