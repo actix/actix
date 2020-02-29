@@ -429,7 +429,7 @@ where
 
 enum ActorResponseTypeItem<A, I, E> {
     Result(Result<I, E>),
-    Fut(Box<dyn ActorFuture<Output = Result<I, E>, Actor = A>>),
+    Fut(Pin<Box<dyn ActorFuture<Output = Result<I, E>, Actor = A>>>),
 }
 
 /// A helper type for representing different types of message responses.
@@ -464,7 +464,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
         T: ActorFuture<Output = Result<I, E>, Actor = A> + 'static,
     {
         Self {
-            item: ActorResponseTypeItem::Fut(Box::new(fut)),
+            item: ActorResponseTypeItem::Fut(Box::pin(fut)),
         }
     }
 }
@@ -478,7 +478,7 @@ where
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
-                let fut = Box::new(Pin::from(fut)).then(move |res, this, _| {
+                let fut = fut.then(move |res, this, _| {
                     if let Some(tx) = tx {
                         tx.send(res)
                     }
