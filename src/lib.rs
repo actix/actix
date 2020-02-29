@@ -80,8 +80,8 @@ pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr};
 pub use crate::context::Context;
 pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
 pub use crate::handler::{
-    ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
-    ResponseFuture,
+    ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
+    ResponseActFuture, ResponseFuture,
 };
 pub use crate::registry::{ArbiterService, Registry, SystemRegistry, SystemService};
 pub use crate::stream::StreamHandler;
@@ -115,8 +115,8 @@ pub mod prelude {
     pub use crate::context::{Context, ContextFutureSpawner};
     pub use crate::fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use crate::handler::{
-        ActorResponse, Handler, Message, MessageResult, Response, ResponseActFuture,
-        ResponseFuture,
+        ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
+        ResponseActFuture, ResponseFuture,
     };
     pub use crate::registry::{ArbiterService, SystemService};
     pub use crate::stream::StreamHandler;
