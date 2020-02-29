@@ -116,7 +116,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 ///     type Result = ResponseActFuture<Self, Result<usize, ()>>;
 ///
 ///     fn handle(&mut self, _: Msg, _: &mut Context<Self>) -> Self::Result {
-///         Box::new(
+///         Box::pin(
 ///             async {
 ///                 // Some async computation
 ///                 42
@@ -130,7 +130,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 ///     }
 /// }
 /// ```
-pub type ResponseActFuture<A, I> = Box<dyn ActorFuture<Output = I, Actor = A>>;
+pub type ResponseActFuture<A, I> = Pin<Box<dyn ActorFuture<Output = I, Actor = A>>>;
 
 /// A specialized future for asynchronous message handling.
 ///
@@ -281,7 +281,7 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.spawn(Box::new(Pin::from(self)).then(move |res, this, _| {
+        ctx.spawn(self.then(move |res, this, _| {
             if let Some(tx) = tx {
                 tx.send(res);
             }

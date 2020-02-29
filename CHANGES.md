@@ -1,5 +1,11 @@
 # CHANGES
 
+## [TBD] TBD
+
+## Changed
+
+* Require `Pin` for `ResponseActFuture`. [#355]
+
 ## [0.10.0-alpha.1] 2020-02-25
 
 ### Fixed

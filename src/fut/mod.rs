@@ -122,7 +122,7 @@ use std::pin::Pin;
 ///         });
 ///
 ///         // return the wrapped future
-///         Box::new(update_self)
+///         Box::pin(update_self)
 ///     }
 /// }
 ///
