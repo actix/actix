@@ -9,7 +9,6 @@ use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
 use crate::context::Context;
 use crate::fut::ActorFuture;
-use crate::WrapFuture;
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -281,11 +280,10 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.spawn(self.then(move |res, this, _| {
+        ctx.spawn(self.map(move |res, _, _| {
             if let Some(tx) = tx {
                 tx.send(res);
             }
-            async {}.into_actor(this)
         }));
     }
 }
@@ -478,11 +476,10 @@ where
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
-                let fut = fut.then(move |res, this, _| {
+                let fut = fut.map(move |res, _, _| {
                     if let Some(tx) = tx {
                         tx.send(res)
                     }
-                    async {}.into_actor(this)
                 });
 
                 ctx.spawn(fut);
