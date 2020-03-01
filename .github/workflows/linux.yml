@@ -57,7 +57,6 @@ jobs:
         with:
           command: test
           args: --all --all-features --no-fail-fast -- --nocapture
-                --skip=test_restart_sync_actor
 
       - name: Generate coverage file
         if: matrix.version == 'stable' && github.ref == 'refs/heads/master'
