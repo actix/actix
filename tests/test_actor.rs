@@ -73,6 +73,9 @@ impl Actor for MySyncActor {
     }
     fn stopped(&mut self, _: &mut Self::Context) {
         self.stopped.fetch_add(1, Ordering::Relaxed);
+        if self.stopped.load(Ordering::Relaxed) >= 2 {
+            System::current().stop();
+        }
     }
 }
 
@@ -112,8 +115,6 @@ fn test_restart_sync_actor() {
 
         actix_rt::spawn(async move {
             let _ = addr.send(Num(4)).await;
-            delay_for(Duration::new(0, 1_000_000)).await;
-            System::current().stop();
         });
     })
     .unwrap();
