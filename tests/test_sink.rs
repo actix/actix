@@ -4,7 +4,8 @@ use std::task::{Context, Poll};
 use actix::io::SinkWrite;
 use actix::prelude::*;
 use bytes::{Buf, Bytes};
-use futures::{channel::mpsc, sink::Sink, StreamExt};
+use futures_channel::mpsc;
+use futures_util::{sink::Sink, stream::StreamExt};
 
 type ByteSender = mpsc::UnboundedSender<u8>;
 

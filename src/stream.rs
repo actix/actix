@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures::Stream;
+use futures_util::stream::Stream;
 use log::error;
 use pin_project::pin_project;
 
@@ -42,7 +42,7 @@ where
     ///
     /// ```rust
     /// use actix::prelude::*;
-    /// use futures::stream::once;
+    /// use futures_util::stream::once;
     ///
     /// #[derive(Message)]
     /// #[rtype(result = "()")]

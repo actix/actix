@@ -2,7 +2,7 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 
 use actix_rt::Arbiter;
-use futures::Future;
+use futures_util::future::Future;
 use pin_project::pin_project;
 
 use crate::actor::{Actor, AsyncContext, Supervised};

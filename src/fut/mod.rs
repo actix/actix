@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
-use futures::{Future, Stream};
+use futures_util::{future::Future, stream::Stream};
 use pin_project::pin_project;
 
 mod chain;
@@ -186,7 +186,7 @@ pub trait ActorFuture {
 
 /// A stream of values, not all of which may have been produced yet.
 ///
-/// This is similar to `futures::Stream` trait, except it works with `Actor`
+/// This is similar to `futures_util::stream::Stream` trait, except it works with `Actor`
 pub trait ActorStream {
     /// The type of item this stream will yield on success.
     type Item;

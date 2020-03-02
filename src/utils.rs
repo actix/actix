@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
-use futures::channel::oneshot;
+use futures_channel::oneshot;
 
 use crate::actor::Actor;
 use crate::clock::{interval_at, Delay, Instant, Interval};

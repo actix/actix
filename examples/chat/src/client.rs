@@ -2,7 +2,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::{io, net, thread};
 
-use futures::FutureExt;
+use futures_util::future::FutureExt;
 
 use actix::prelude::*;
 use tokio::io::WriteHalf;

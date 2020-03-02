@@ -3,7 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use futures::channel::oneshot::Sender as SyncSender;
+use futures_channel::oneshot::Sender as SyncSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;

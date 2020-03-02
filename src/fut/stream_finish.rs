@@ -1,6 +1,6 @@
 use std::pin::Pin;
 
-use futures::task::{Context, Poll};
+use futures_util::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream};

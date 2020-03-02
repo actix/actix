@@ -7,8 +7,8 @@ use std::{io, task};
 
 use bitflags::bitflags;
 use bytes::BytesMut;
-use futures::sink::Sink;
-use futures::task::{Context, Poll};
+use futures_util::sink::Sink;
+use futures_util::task::{Context, Poll};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio_util::codec::Encoder;
 

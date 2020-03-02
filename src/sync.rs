@@ -14,8 +14,8 @@ use std::{task, thread};
 
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
-use futures::channel::oneshot::Sender as SyncSender;
-use futures::{Future, StreamExt};
+use futures_channel::oneshot::Sender as SyncSender;
+use futures_util::{future::Future, stream::StreamExt};
 use log::warn;
 use pin_project::pin_project;
 

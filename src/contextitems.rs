@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
-use futures::{ready, Stream};
+use futures_util::{ready, stream::Stream};
 use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, AsyncContext};

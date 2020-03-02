@@ -2,7 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures::Stream;
+use futures_util::stream::Stream;
 use pin_project::pin_project;
 
 /// Helper trait that adds the helper method `finish()` to stream objects.
