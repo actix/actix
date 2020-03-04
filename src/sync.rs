@@ -21,7 +21,9 @@ use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
 use crate::address::channel;
-use crate::address::{Addr, AddressReceiver, Envelope, EnvelopeProxy, ToEnvelope, AddressSenderProducer};
+use crate::address::{
+    Addr, AddressReceiver, AddressSenderProducer, Envelope, EnvelopeProxy, ToEnvelope,
+};
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};
 
