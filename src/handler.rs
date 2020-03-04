@@ -9,7 +9,6 @@ use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
 use crate::context::Context;
 use crate::fut::ActorFuture;
-use crate::WrapFuture;
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -84,9 +83,85 @@ where
 /// ```
 pub struct MessageResult<M: Message>(pub M::Result);
 
+/// A specialized actor future holder for atomic asynchronous message handling.
+///
+/// Intended be used when the future returned will need exclusive access Actor's
+/// internal state or context, e.g., it can yield at critical sessions.
+/// When the actor starts to process this future, it will not pull any other
+/// spawned futures until this one as been completed.
+/// Check [ActorFuture] for available methods for accessing Actor's
+/// internal state.
+///
+/// ## Note
+/// The runtime itself is not blocked in the process, only the Actor,
+/// other futures, and therefore, other actors are still allowed to make
+/// progress when this [AtomicResponse] is used.
+///
+/// # Examples
+/// On the following example, the response to `Msg` would always be 29
+/// even if there are multiple `Msg` sent to `MyActor`.
+/// ```rust, no_run
+/// # use actix::prelude::*;
+/// # use actix::clock::delay_for;
+/// # use std::time::Duration;
+/// #
+/// # #[derive(Message)]
+/// # #[rtype(result = "usize")]
+/// # struct Msg;
+/// #
+/// # struct MyActor(usize);
+/// #
+/// # impl Actor for MyActor {
+/// #    type Context = Context<Self>;
+/// # }
+/// #
+/// impl Handler<Msg> for MyActor {
+///     type Result = AtomicResponse<Self, usize>;
+///
+///     fn handle(&mut self, _: Msg, _: &mut Context<Self>) -> Self::Result {
+///         AtomicResponse::new(Box::pin(
+///             async {}
+///                 .into_actor(self)
+///                 .map(|_, this, _| {
+///                     this.0 = 30;
+///                 })
+///                 .then(|_, this, _| {
+///                     delay_for(Duration::from_secs(3)).into_actor(this)
+///                 })
+///                 .map(|_, this, _| {
+///                     this.0 -= 1;
+///                     this.0
+///                 }),
+///         ))
+///     }
+/// }
+/// ```
+pub struct AtomicResponse<A, T>(ResponseActFuture<A, T>);
+
+impl<A, T> AtomicResponse<A, T> {
+    pub fn new(fut: ResponseActFuture<A, T>) -> Self {
+        AtomicResponse(fut)
+    }
+}
+
+impl<A, M, T: 'static> MessageResponse<A, M> for AtomicResponse<A, T>
+where
+    A: Actor,
+    M: Message<Result = T>,
+    A::Context: AsyncContext<A>,
+{
+    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+        ctx.wait(self.0.map(move |res, _, _| {
+            if let Some(tx) = tx {
+                tx.send(res);
+            }
+        }));
+    }
+}
+
 /// A specialized actor future for asynchronous message handling.
 ///
-/// Intended be used from when the future returned will,
+/// Intended be used when the future returned will,
 /// at some point, need to access Actor's internal state or context
 /// in order to finish.
 /// Check [ActorFuture] for available methods for accessing Actor's
@@ -97,6 +172,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 /// [Context], does not enforce the poll of any [ActorFuture] to be
 /// exclusive. Therefore, if other instances of [ActorFuture] are spawned
 /// into this Context **their execution won't necessarily be atomic**.
+/// Check [AtomicResponse] if you need exclusive access over the actor.
 ///
 /// # Examples
 /// ```rust, no_run
@@ -180,15 +256,16 @@ pub trait ResponseChannel<M: Message>: 'static {
 ///
 /// If `Actor::Context` implements [AsyncContext] it's possible to handle
 /// the message asynchronously.
-/// For asynchronous message handling we offer two possible response types
-/// [ResponseFuture] and [ResponseActFuture].
+/// For asynchronous message handling we offer the following possible response types:
 /// - [ResponseFuture] should be used for when the future returned doesn't
 ///   need to access Actor's internal state or context to progress, either
 ///   because it's completely agnostic to it or because the required data has
 ///   already been moved to it and it won't need Actor state to continue.
-/// - [ResponseActFuture] should be used from when the future returned
+/// - [ResponseActFuture] should be used when the future returned
 ///   will, at some point, need to access Actor's internal state or context
 ///   in order to finish.
+/// - [AtomicResponse] should be used when the future returned needs exclusive
+///   access to  Actor's internal state or context.
 pub trait MessageResponse<A: Actor, M: Message> {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>);
 }
@@ -281,11 +358,10 @@ where
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.spawn(self.then(move |res, this, _| {
+        ctx.spawn(self.map(move |res, _, _| {
             if let Some(tx) = tx {
                 tx.send(res);
             }
-            async {}.into_actor(this)
         }));
     }
 }
@@ -478,11 +554,10 @@ where
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
-                let fut = fut.then(move |res, this, _| {
+                let fut = fut.map(move |res, _, _| {
                     if let Some(tx) = tx {
                         tx.send(res)
                     }
-                    async {}.into_actor(this)
                 });
 
                 ctx.spawn(fut);

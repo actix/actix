@@ -2,6 +2,10 @@
 
 ## [TBD] TBD
 
+## Added
+
+* New `AtomicResponse`, a `MessageResponse` with exclusive poll over actor's reference. [#357]
+
 ## Changed
 
 * Require `Pin` for `ResponseActFuture`. [#355]
