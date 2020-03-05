@@ -1,6 +1,6 @@
 # CHANGES
 
-## [TBD] TBD
+## [0.10.0-alpha.2] 2020-03-05
 
 ## Added
 
@@ -9,6 +9,9 @@
 ## Changed
 
 * Require `Pin` for `ResponseActFuture`. [#355]
+
+[#355]: https://github.com/actix/actix/pull/355
+[#357]: https://github.com/actix/actix/pull/357
 
 ## [0.10.0-alpha.1] 2020-02-25
 
