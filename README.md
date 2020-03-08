@@ -67,8 +67,8 @@ impl Actor for MyActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-       println!("I am alive!");
-       System::current().stop(); // <- stop system
+        println!("I am alive!");
+        System::current().stop(); // <- stop system
     }
 }
 
@@ -94,18 +94,16 @@ for more information on the actor lifecycle.
 An Actor communicates with another Actor by sending messages. In actix all messages
 are typed. Let's define a simple `Sum` message with two `usize` parameters,
 and an actor which will accept this message and return the sum of those two numbers.
+Here we use the [actix-rt](https://github.com/actix/actix-net) as way start our `System`
+and drive our main `Future` so we can easily `.await` for the messages sent to the `Actor`.
 
 ```rust
-use futures_util::{future, future::Future};
-use actix::*;
+use actix::prelude::*;
 
 // this is our Message
+#[derive(Message)]
+#[rtype(result = "usize")] // we have to define the response type for `Sum` message
 struct Sum(usize, usize);
-
-// we have to define the response type for `Sum` message
-impl Message for Sum {
-    type Result = usize;
-}
 
 // Actor definition
 struct Summator;
@@ -116,30 +114,22 @@ impl Actor for Summator {
 
 // now we need to define `MessageHandler` for the `Sum` message.
 impl Handler<Sum> for Summator {
-    type Result = usize;   // <- Message response type
+    type Result = usize; // <- Message response type
 
     fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Self::Result {
         msg.0 + msg.1
     }
 }
 
-fn main() {
-    let sys = System::new("test");
-
+#[actix_rt::main] // <- starts the system and block until future resolves
+async fn main() {
     let addr = Summator.start();
-    let res = addr.send(Sum(10, 5));  // <- send message and get future for result
+    let res = addr.send(Sum(10, 5)).await; // <- send message and get future for result
 
-    Arbiter::spawn(res.then(|res| {
-        match res {
-            Ok(result) => println!("SUM: {}", result),
-            _ => println!("Something wrong"),
-        }
-
-        System::current().stop();
-        future::result(Ok(()))
-    }));
-
-    sys.run();
+    match res {
+        Ok(result) => println!("SUM: {}", result),
+        _ => println!("Communication to the actor has failed"),
+    }
 }
 ```
 
@@ -157,11 +147,14 @@ an actor that can handle the message, we can use the `Recipient` interface. Let'
 a new actor that uses `Recipient`.
 
 ```rust
-use std::time::Duration;
 use actix::prelude::*;
+use std::time::Duration;
 
 #[derive(Message)]
-struct Ping { pub id: usize }
+#[rtype(result = "()")]
+struct Ping {
+    pub id: usize,
+}
 
 // Actor definition
 struct Game {
@@ -187,7 +180,7 @@ impl Handler<Ping> for Game {
 
             // wait 100 nanos
             ctx.run_later(Duration::new(0, 100), move |act, _| {
-                act.addr.do_send(Ping{id: msg.id + 1});
+                act.addr.do_send(Ping { id: msg.id + 1 });
             });
         }
     }
@@ -201,13 +194,20 @@ fn main() {
     let addr = Game::create(|ctx| {
         // now we can get an address of the first actor and create the second actor
         let addr = ctx.address();
-        let addr2 = Game{counter: 0, addr: addr.recipient()}.start();
+        let addr2 = Game {
+            counter: 0,
+            addr: addr.recipient(),
+        }
+        .start();
 
         // let's start pings
-        addr2.do_send(Ping{id: 10});
+        addr2.do_send(Ping { id: 10 });
 
         // now we can finally create first actor
-        Game{counter: 0, addr: addr2.recipient()}
+        Game {
+            counter: 0,
+            addr: addr2.recipient(),
+        }
     });
 
     system.run();
