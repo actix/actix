@@ -5,7 +5,7 @@ use std::sync::Arc;
 use actix::prelude::*;
 use tokio::time::{delay_for, Duration, Instant};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Num(usize);
 
 impl Message for Num {
@@ -51,6 +51,68 @@ async fn test_stream() {
 
     assert_eq!(count.load(Ordering::Relaxed), 7);
     assert!(err.load(Ordering::Relaxed));
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+struct Stop;
+
+struct StopOnRequest(Arc<AtomicUsize>, Arc<AtomicBool>, Arc<AtomicBool>);
+
+impl Actor for StopOnRequest {
+    type Context = actix::Context<Self>;
+}
+
+impl StreamHandler<Num> for StopOnRequest {
+    fn handle(&mut self, msg: Num, _: &mut Self::Context) {
+        self.0.fetch_add(msg.0, Ordering::Relaxed);
+    }
+
+    fn finished(&mut self, _: &mut Self::Context) {
+        self.2.store(true, Ordering::Relaxed);
+    }
+}
+
+impl actix::Handler<Stop> for StopOnRequest {
+    type Result = ();
+
+    fn handle(&mut self, _: Stop, ctx: &mut Self::Context) {
+        self.1.store(true, Ordering::Relaxed);
+        ctx.stop();
+    }
+}
+
+#[actix_rt::test]
+async fn test_infinite_stream() {
+    let count = Arc::new(AtomicUsize::new(0));
+    let stopped = Arc::new(AtomicBool::new(false));
+    let finished = Arc::new(AtomicBool::new(false));
+
+    let act_count = Arc::clone(&count);
+    let act_stopped = Arc::clone(&stopped);
+    let act_finished = Arc::clone(&finished);
+
+    let addr = StopOnRequest::create(move |ctx| {
+        StopOnRequest::add_stream(futures_util::stream::repeat(Num(1)), ctx);
+        StopOnRequest(act_count, act_stopped, act_finished)
+    });
+
+    delay_for(Duration::new(0, 1_000_000)).await;
+
+    addr.send(Stop).await.unwrap();
+
+    assert!(
+        count.load(Ordering::Relaxed) > 0,
+        "Some items should be processed as actor has ran for some time"
+    );
+    assert!(
+        stopped.load(Ordering::Relaxed),
+        "Actor should have processed the Stop message"
+    );
+    assert!(
+        !finished.load(Ordering::Relaxed),
+        "As the stream is infinite, finished should never be called"
+    );
 }
 
 struct MySyncActor {
