@@ -4,7 +4,7 @@ use std::io;
 use actix::Message;
 use byteorder::{BigEndian, ByteOrder};
 use bytes::{Buf, BufMut, BytesMut};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json as json;
 use tokio_util::codec::{Decoder, Encoder};
 
@@ -65,8 +65,7 @@ impl Decoder for ChatCodec {
     }
 }
 
-impl Encoder for ChatCodec {
-    type Item = ChatResponse;
+impl Encoder<ChatResponse> for ChatCodec {
     type Error = io::Error;
 
     fn encode(
@@ -110,8 +109,7 @@ impl Decoder for ClientChatCodec {
     }
 }
 
-impl Encoder for ClientChatCodec {
-    type Item = ChatRequest;
+impl Encoder<ChatRequest> for ClientChatCodec {
     type Error = io::Error;
 
     fn encode(
