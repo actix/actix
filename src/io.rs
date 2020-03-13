@@ -306,12 +306,12 @@ where
 
 /// A wrapper for the `AsyncWrite` and `Encoder` types. The AsyncWrite will be flushed when this
 /// struct is dropped.
-pub struct FramedWrite<T: AsyncWrite + Unpin, U: Encoder> {
+pub struct FramedWrite<I, T: AsyncWrite + Unpin, U: Encoder<I>> {
     enc: U,
     inner: UnsafeWriter<T, U::Error>,
 }
 
-impl<T: AsyncWrite + Unpin, U: Encoder> FramedWrite<T, U> {
+impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
     pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> Self
     where
         A: Actor<Context = C> + WriteHandler<U::Error>,
@@ -390,7 +390,7 @@ impl<T: AsyncWrite + Unpin, U: Encoder> FramedWrite<T, U> {
     }
 
     /// Writes an item to the sink.
-    pub fn write(&mut self, item: U::Item) {
+    pub fn write(&mut self, item: I) {
         let mut inner = self.inner.0.borrow_mut();
         let _ = self.enc.encode(item, &mut inner.buffer).map_err(|e| {
             inner.error = Some(e);
@@ -406,7 +406,7 @@ impl<T: AsyncWrite + Unpin, U: Encoder> FramedWrite<T, U> {
     }
 }
 
-impl<T: AsyncWrite + Unpin, U: Encoder> Drop for FramedWrite<T, U> {
+impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> Drop for FramedWrite<I, T, U> {
     fn drop(&mut self) {
         // Attempts to write any remaining bytes to the stream and flush it
         let mut async_writer = self.inner.1.borrow_mut();
