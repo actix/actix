@@ -141,13 +141,13 @@ where
                     // Let the future's context know that this future might be polled right the way
                     task.waker().wake_by_ref();
                 }
-                return Poll::Pending;
+                Poll::Pending
             }
             Poll::Ready(None) => {
                 A::finished(act, ctx);
-                return Poll::Ready(());
+                Poll::Ready(())
             }
-            Poll::Pending => return Poll::Pending,
+            Poll::Pending => Poll::Pending,
         }
     }
 }

@@ -10,6 +10,7 @@ use std::default::Default;
 use std::rc::Rc;
 
 use actix_rt::{Arbiter, System};
+use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
 use crate::actor::{Actor, Supervised};
@@ -224,11 +225,8 @@ pub struct SystemRegistry {
     registry: HashMap<TypeId, Box<dyn Any + Send>>,
 }
 
-lazy_static::lazy_static! {
-    static ref SREG: Mutex<HashMap<usize, SystemRegistry>> = {
-        Mutex::new(HashMap::new())
-    };
-}
+static SREG: Lazy<Mutex<HashMap<usize, SystemRegistry>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Trait defines system's service.
 #[allow(unused_variables)]
