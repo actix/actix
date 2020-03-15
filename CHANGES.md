@@ -1,5 +1,13 @@
 # CHANGES
 
+## [0.10.0-alpha.3] - TBD
+
+## Changed
+
+* Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
+
+[#365]: https://github.com/actix/actix/pull/365
+
 ## [0.10.0-alpha.2] 2020-03-05
 
 ## Added

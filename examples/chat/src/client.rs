@@ -47,7 +47,11 @@ async fn main() {
 }
 
 struct ChatClient {
-    framed: actix::io::FramedWrite<WriteHalf<TcpStream>, codec::ClientChatCodec>,
+    framed: actix::io::FramedWrite<
+        codec::ChatRequest,
+        WriteHalf<TcpStream>,
+        codec::ClientChatCodec,
+    >,
 }
 
 #[derive(Message)]
