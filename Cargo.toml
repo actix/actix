@@ -10,7 +10,7 @@ repository = "https://github.com/actix/actix.git"
 documentation = "https://docs.rs/actix/"
 categories = ["network-programming", "asynchronous"]
 license = "MIT/Apache-2.0"
-exclude = [".gitignore", ".cargo/config"]
+exclude = [".gitignore", ".cargo/config", ".github/**"]
 edition = "2018"
 
 [badges]
@@ -42,7 +42,7 @@ futures-channel = { version = "0.3.1", default-features = false }
 futures-util = { version = "0.3.1", default-features = false }
 log = "0.4"
 pin-project = "0.4.6"
-lazy_static = "1.4"
+once_cell = "1.3"
 bitflags = "1.2"
 smallvec = "1.0"
 parking_lot = "0.10"
