@@ -6,7 +6,10 @@
 
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
 
+* Update `actix-rt` dependency to 1.1. [#374]
+
 [#365]: https://github.com/actix/actix/pull/365
+[#374]: https://github.com/actix/actix/pull/374
 
 ## Fixed
 

@@ -33,7 +33,7 @@ resolver = ["trust-dns-proto", "trust-dns-resolver"]
 mailbox_assert = []
 
 [dependencies]
-actix-rt = "1.0.0"
+actix-rt = "1.1"
 actix_derive = "0.5"
 bytes = "0.5.3"
 crossbeam-channel = "0.4"
