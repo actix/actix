@@ -56,6 +56,16 @@ impl Actor for MyStreamActor {
 
         s.into_actor(self)
             .timeout(Duration::new(0, 1000))
+            .then(|res, act, _| {
+                // Additional waiting time to test `then` call as well
+                Box::pin(
+                    async move {
+                        delay_for(Duration::from_millis(500)).await;
+                        res
+                    }
+                    .into_actor(act),
+                )
+            })
             .map(|e, act, _| {
                 if let Err(()) = e {
                     act.timeout.store(true, Ordering::Relaxed);

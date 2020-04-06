@@ -64,7 +64,7 @@ where
             this.future = Some((this.f)(item, act, ctx).into_future());
         }
         assert!(this.future.is_some());
-        match Pin::new(&mut this.future.take().unwrap()).poll(act, ctx, task) {
+        match Pin::new(this.future.as_mut().unwrap()).poll(act, ctx, task) {
             Poll::Ready(e) => {
                 this.future = None;
                 Poll::Ready(Some(e))
