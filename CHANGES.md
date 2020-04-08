@@ -8,6 +8,12 @@
 
 [#365]: https://github.com/actix/actix/pull/365
 
+## Fixed
+
+* Fix `ActorFuture::poll_next` impl for `StreamThen` to not lose inner future when it's pending. [#376]
+
+[#376]: https://github.com/actix/actix/pull/376
+
 ## [0.10.0-alpha.2] 2020-03-05
 
 ## Added
