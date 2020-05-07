@@ -97,11 +97,11 @@ impl Handler<ClientCommand> for ChatClient {
         // we check for /sss type of messages
         if m.starts_with('/') {
             let v: Vec<&str> = m.splitn(2, ' ').collect();
-            match v[0] {
-                "/list" => {
+            match v.get(0) {
+                Some(&"/list") => {
                     self.framed.write(codec::ChatRequest::List);
                 }
-                "/join" => {
+                Some(&"/join") => {
                     if v.len() == 2 {
                         self.framed.write(codec::ChatRequest::Join(v[1].to_owned()));
                     } else {
