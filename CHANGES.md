@@ -6,6 +6,8 @@
 
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
 
+* Minimum Rust version is now 1.40 (to be able to use `#[cfg(doctest)]`)
+
 [#365]: https://github.com/actix/actix/pull/365
 
 ## Fixed
