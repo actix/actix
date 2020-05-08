@@ -6,9 +6,13 @@
 
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
 
+* Only poll dropped ContextFut if event loop is running. [#374]
+
 * Minimum Rust version is now 1.40 (to be able to use `#[cfg(doctest)]`)
 
+
 [#365]: https://github.com/actix/actix/pull/365
+[#374]: https://github.com/actix/actix/pull/374
 
 ## Fixed
 

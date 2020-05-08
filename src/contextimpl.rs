@@ -224,7 +224,7 @@ where
     A: Actor<Context = C>,
 {
     fn drop(&mut self) {
-        if self.alive() {
+        if self.alive() && actix_rt::Arbiter::is_running() {
             self.ctx.parts().stop();
             let waker = futures_util::task::noop_waker();
             let mut cx = futures_util::task::Context::from_waker(&waker);
