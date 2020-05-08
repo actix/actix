@@ -6,7 +6,7 @@
 
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
 
-* Update `actix-rt` dependency to 1.1. [#374]
+* Only poll dropped ContextFut if event loop is running. [#374]
 
 [#365]: https://github.com/actix/actix/pull/365
 [#374]: https://github.com/actix/actix/pull/374
