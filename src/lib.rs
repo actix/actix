@@ -14,7 +14,7 @@
 //! * [Chat on gitter](https://gitter.im/actix/actix)
 //! * [GitHub repository](https://github.com/actix/actix)
 //! * [Cargo package](https://crates.io/crates/actix)
-//! * Minimum supported Rust version: 1.39 or later
+//! * Minimum supported Rust version: 1.40 or later
 //!
 //! ## Features
 //!
@@ -48,7 +48,7 @@
 #[doc(hidden)]
 pub use actix_derive::*;
 
-#[cfg(test)]
+#[cfg(doctest)]
 doc_comment::doctest!("../README.md");
 
 mod actor;
