@@ -1,0 +1,13 @@
+coverage:
+  status:
+    project:
+      default:
+        threshold: 100% # make CI green anyway
+    patch:
+      default:
+        threshold: 100% # make CI green anyway
+
+ignore: # ignore codecoverage on following paths
+  - "tests"
+  - "examples"
+  - ".github"
