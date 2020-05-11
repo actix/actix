@@ -4,6 +4,8 @@
 
 ## Changed
 
+* `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
+
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
 
 * Only poll dropped ContextFut if event loop is running. [#374]

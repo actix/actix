@@ -448,11 +448,10 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
         SinkWrite { inner }
     }
 
-    /// Sends an item to the sink.
-    pub fn write(&mut self, item: I) -> Result<(), S::Error> {
+    /// Queues an item to be sent to the sink.
+    pub fn write(&mut self, item: I) {
         self.inner.borrow_mut().buffer.push_back(item);
         self.notify_task();
-        Ok(())
     }
 
     /// Gracefully closes the sink.
@@ -505,6 +504,7 @@ where
 {
     type Output = ();
     type Actor = A;
+
     fn poll(
         self: Pin<&mut Self>,
         act: &mut A,
