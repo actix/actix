@@ -4,7 +4,7 @@
 
 ## Changed
 
-* `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
+* BREAKING: `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
 
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
 

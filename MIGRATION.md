@@ -1,6 +1,18 @@
 ## 0.10.0
 
-* Calls to `SinkWrite::write` no longer return a Result.
+* `SinkWrite::write` no longer return a Result, instead it returns an
+  `Option<I>` containing the item that had attempted to be sent if the sink is
+  closing or closed.
+
+  Before:
+  ```rust
+  self.sink.write(data).unwrap();
+  ```
+
+  After:
+  ```rust
+  let _ = self.sink.write(data);
+  ```
 
 ## 0.7.9
 
