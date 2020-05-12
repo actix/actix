@@ -70,6 +70,14 @@ pub struct WeakAddressSender<A: Actor> {
     inner: Weak<Inner<A>>,
 }
 
+impl<A: Actor> Clone for WeakAddressSender<A> {
+    fn clone(&self) -> WeakAddressSender<A> {
+        WeakAddressSender {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("WeakAddressSender").finish()
