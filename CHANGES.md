@@ -1,8 +1,8 @@
 # CHANGES
 
-## [0.10.0-alpha.3] - TBD
+## [0.10.0-alpha.3] - 2020-05-13
 
-## Changed
+### Changed
 
 * BREAKING: `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
 
@@ -12,11 +12,10 @@
 
 * Minimum Rust version is now 1.40 (to be able to use `#[cfg(doctest)]`)
 
-
 [#365]: https://github.com/actix/actix/pull/365
 [#374]: https://github.com/actix/actix/pull/374
 
-## Fixed
+### Fixed
 
 * Fix `ActorFuture::poll_next` impl for `StreamThen` to not lose inner future when it's pending. [#376]
 
@@ -24,11 +23,11 @@
 
 ## [0.10.0-alpha.2] 2020-03-05
 
-## Added
+### Added
 
 * New `AtomicResponse`, a `MessageResponse` with exclusive poll over actor's reference. [#357]
 
-## Changed
+### Changed
 
 * Require `Pin` for `ResponseActFuture`. [#355]
 
