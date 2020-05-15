@@ -201,6 +201,14 @@ impl<A: Actor> WeakAddr<A> {
     }
 }
 
+impl<A: Actor> Clone for WeakAddr<A> {
+    fn clone(&self) -> WeakAddr<A> {
+        WeakAddr {
+            wtx: self.wtx.clone(),
+        }
+    }
+}
+
 /// The `Recipient` type allows to send one specific message to an
 /// actor.
 ///
