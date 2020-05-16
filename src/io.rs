@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use std::ops::DerefMut;
 use std::pin::Pin;
 use std::rc::Rc;
-use std::{io, task};
+use std::{collections::VecDeque, io, task};
 
 use bitflags::bitflags;
 use bytes::BytesMut;
@@ -436,6 +436,7 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
             sink,
             task: None,
             handle: SpawnHandle::default(),
+            buffer: VecDeque::new(),
         }));
 
         let handle = ctxt.spawn(SinkWriteFuture {
@@ -447,13 +448,17 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
         SinkWrite { inner }
     }
 
-    /// Sends an item to the sink.
-    pub fn write(&mut self, item: I) -> Result<(), S::Error> {
-        let res = Pin::new(&mut self.inner.borrow_mut().sink).start_send(item);
-        if let Ok(()) = res {
-            self.notify_task()
+    /// Queues an item to be sent to the sink.
+    ///
+    /// Returns unsent item if sink is closing or closed.
+    pub fn write(&mut self, item: I) -> Option<I> {
+        if self.inner.borrow().closing_flag.is_empty() {
+            self.inner.borrow_mut().buffer.push_back(item);
+            self.notify_task();
+            None
+        } else {
+            Some(item)
         }
-        res
     }
 
     /// Gracefully closes the sink.
@@ -487,6 +492,10 @@ struct InnerSinkWrite<I, S: Sink<I>> {
     sink: S,
     task: Option<task::Waker>,
     handle: SpawnHandle,
+
+    // buffer of items to be sent so that multiple
+    // calls to start_send don't silently skip items
+    buffer: VecDeque<I>,
 }
 
 struct SinkWriteFuture<I: 'static, S: Sink<I>, A> {
@@ -502,6 +511,7 @@ where
 {
     type Output = ();
     type Actor = A;
+
     fn poll(
         self: Pin<&mut Self>,
         act: &mut A,
@@ -510,7 +520,19 @@ where
     ) -> Poll<Self::Output> {
         let this = self.get_mut();
         let inner = &mut this.inner.borrow_mut();
-        inner.task = None;
+
+        // ensure sink is ready to receive next item
+        match Pin::new(&mut inner.sink).poll_ready(cx) {
+            Poll::Ready(Ok(())) => {
+                if let Some(item) = inner.buffer.pop_front() {
+                    // send front of buffer to sink
+                    let _ = Pin::new(&mut inner.sink).start_send(item);
+                }
+            }
+            Poll::Ready(Err(_err)) => {}
+            Poll::Pending => {}
+        }
+
         if !inner.closing_flag.contains(Flags::CLOSING) {
             match Pin::new(&mut inner.sink).poll_flush(cx) {
                 Poll::Ready(Err(e)) => {
@@ -532,14 +554,18 @@ where
                     }
                 }
                 Poll::Ready(Ok(())) => {
-                    inner.closing_flag |= Flags::CLOSED;
-                    act.finished(ctxt);
-                    return Poll::Ready(());
+                    // ensure all items in buffer have been sent before closing
+                    if inner.buffer.is_empty() {
+                        inner.closing_flag |= Flags::CLOSED;
+                        act.finished(ctxt);
+                        return Poll::Ready(());
+                    }
                 }
                 Poll::Pending => {}
             }
         }
-        inner.task = Some(cx.waker().clone());
+
+        inner.task.replace(cx.waker().clone());
 
         Poll::Pending
     }

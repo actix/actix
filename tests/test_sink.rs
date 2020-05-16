@@ -92,7 +92,7 @@ impl actix::io::WriteHandler<()> for MyActor {
 impl Handler<Data> for MyActor {
     type Result = ();
     fn handle(&mut self, data: Data, _ctxt: &mut Self::Context) {
-        self.sink.write(data.bytes).unwrap();
+        let _ = self.sink.write(data.bytes);
         if data.last {
             self.sink.close();
         }
@@ -205,7 +205,8 @@ impl actix::io::WriteHandler<mpsc::SendError> for AnotherActor {
 impl Handler<Data> for AnotherActor {
     type Result = ();
     fn handle(&mut self, data: Data, _ctxt: &mut Self::Context) {
-        self.sink.write(data.bytes).unwrap();
+        let _ = self.sink.write(data.bytes);
+
         if data.last {
             self.sink.close();
         }
