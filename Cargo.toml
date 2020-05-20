@@ -13,9 +13,6 @@ license = "MIT/Apache-2.0"
 exclude = [".gitignore", ".cargo/config", ".github/**"]
 edition = "2018"
 
-[badges]
-codecov = { repository = "actix/actix", branch = "master", service = "github" }
-
 [lib]
 name = "actix"
 path = "src/lib.rs"
