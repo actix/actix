@@ -319,7 +319,7 @@ where
         modified
     }
 
-    fn clean_cancled_handle(&mut self) {
+    fn clean_canceled_handle(&mut self) {
         while self.ctx.parts().handles.len() > 2 {
             let handle = self.ctx.parts().handles.pop().unwrap();
             let mut idx = 0;
@@ -351,7 +351,7 @@ where
 
             // check cancelled handles, just in case
             if this.merge() {
-                this.clean_cancled_handle();
+                this.clean_canceled_handle();
             }
         }
 
@@ -392,7 +392,7 @@ where
                             // this code is not very efficient, relaying on fact that
                             // cancellation should be rear also number of futures
                             // in actor context should be small
-                            this.clean_cancled_handle();
+                            this.clean_canceled_handle();
 
                             continue 'outer;
                         }
