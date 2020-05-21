@@ -1,10 +1,16 @@
 # CHANGES
 
-## [0.10.0-alpha.3] - 2020-05-13
+## [unreleased]
 
 ### Changed
 
 * BREAKING: `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
+
+[#384]: https://github.com/actix/actix/pull/384
+
+## [0.10.0-alpha.3] - 2020-05-13
+
+### Changed
 
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
 

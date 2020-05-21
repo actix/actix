@@ -366,7 +366,7 @@ where
     }
 }
 
-/// MessageResponse trait impl to enbale the use of any `I: 'static` with asynchronous
+/// MessageResponse trait impl to enable the use of any `I: 'static` with asynchronous
 /// message handling
 ///
 /// # Examples
