@@ -3,11 +3,11 @@ use std::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
-use pin_project::{pin_project, project};
+use pin_project::pin_project;
 
 /// Combines two different futures yielding the same item and error
 /// types into a single type.
-#[pin_project]
+#[pin_project(project = EitherProj)]
 #[derive(Debug)]
 pub enum Either<A, B> {
     /// First branch of the type
@@ -58,17 +58,15 @@ where
     type Output = A::Output;
     type Actor = A::Actor;
 
-    #[project]
     fn poll(
         self: Pin<&mut Self>,
         act: &mut A::Actor,
         ctx: &mut <A::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<A::Output> {
-        #[project]
         match self.project() {
-            Either::Left(x) => x.poll(act, ctx, task),
-            Either::Right(x) => x.poll(act, ctx, task),
+            EitherProj::Left(x) => x.poll(act, ctx, task),
+            EitherProj::Right(x) => x.poll(act, ctx, task),
         }
     }
 }
