@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use pin_project::{pin_project, project};
+use pin_project::pin_project;
 
 use crate::actor::Actor;
 use crate::fut::ActorStream;
@@ -35,7 +35,6 @@ where
     type Item = U;
     type Actor = S::Actor;
 
-    #[project]
     fn poll_next(
         self: Pin<&mut Self>,
         act: &mut Self::Actor,

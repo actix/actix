@@ -1,11 +1,11 @@
-use pin_project::{pin_project, project};
+use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
-#[pin_project]
+#[pin_project(project = ChainProj)]
 #[must_use = "futures do nothing unless you `.await` or poll them"]
 #[derive(Debug)]
 pub enum Chain<A, B, C> {
@@ -23,7 +23,6 @@ where
         Chain::First(fut1, Some(data))
     }
 
-    #[project]
     pub fn poll<F>(
         mut self: Pin<&mut Self>,
         srv: &mut A::Actor,
@@ -38,19 +37,18 @@ where
 
         loop {
             let this = self.as_mut().project();
-            #[project]
             let (output, data) = match this {
-                Chain::First(fut1, data) => {
+                ChainProj::First(fut1, data) => {
                     let output = match fut1.poll(srv, ctx, task) {
                         Poll::Ready(t) => t,
                         Poll::Pending => return Poll::Pending,
                     };
                     (output, data.take().unwrap())
                 }
-                Chain::Second(fut2) => {
+                ChainProj::Second(fut2) => {
                     return fut2.poll(srv, ctx, task);
                 }
-                Chain::Empty => unreachable!(),
+                ChainProj::Empty => unreachable!(),
             };
 
             self.set(Chain::Empty);
