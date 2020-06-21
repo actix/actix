@@ -32,6 +32,8 @@ where
 
     fn boxed(&self) -> Box<dyn Sender<M> + Sync>;
 
+    fn arced(&self) -> Arc<dyn Sender<M> + Sync>;
+
     fn hash(&self) -> usize;
 
     fn connected(&self) -> bool;
@@ -467,6 +469,9 @@ where
     }
     fn boxed(&self) -> Box<dyn Sender<M> + Sync> {
         Box::new(self.clone())
+    }
+    fn arced(&self) -> Arc<dyn Sender<M> + Sync> {
+        Arc::new(self.clone())
     }
 
     fn hash(&self) -> usize {
