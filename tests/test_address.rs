@@ -27,6 +27,7 @@ impl actix::Handler<Ping> for MyActor {
     }
 }
 
+#[derive(Debug)]
 struct MyActor3;
 
 impl Actor for MyActor3 {
@@ -69,9 +70,9 @@ fn test_address() {
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }
 
-struct WeakRunner;
+struct WeakAddressRunner;
 
-impl Actor for WeakRunner {
+impl Actor for WeakAddressRunner {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -100,7 +101,51 @@ impl Actor for WeakRunner {
 #[test]
 fn test_weak_address() {
     System::run(move || {
-        WeakRunner.start();
+        WeakAddressRunner.start();
+    })
+    .unwrap();
+}
+
+struct WeakRecipientRunner;
+
+impl Actor for WeakRecipientRunner {
+    type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let count0 = Arc::new(AtomicUsize::new(0));
+        let addr1 = MyActor(count0).start();
+        let addr2 = MyActor3.start();
+
+        let recipient1 = addr1.clone().recipient();
+        let recipient2 = addr2.recipient();
+
+        let weak1 = recipient1.downgrade();
+        let weak2 = recipient2.downgrade();
+        // not strictly necessary, weak1 is dropped by RIAA since nobody in `run_later` uses it.
+        // to make this test red, move drop(addr1) to the line before `System::current().stop()`
+        drop(addr1);
+
+        ctx.run_later(Duration::new(0, 1000), move |_, _| {
+            if weak1.upgrade().is_none() {
+            } else {
+                System::current().stop_with_code(1);
+                panic!("Should not be able to upgrade weak1!");
+            }
+            match weak2.upgrade() {
+                Some(addr) => {
+                    assert!(recipient2 == addr);
+                }
+                None => panic!("Should be able to upgrade weak2!"),
+            }
+            System::current().stop();
+        });
+    }
+}
+
+#[test]
+fn test_weak_recipient() {
+    System::run(move || {
+        WeakRecipientRunner.start();
     })
     .unwrap();
 }
