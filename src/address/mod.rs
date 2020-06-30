@@ -5,8 +5,11 @@ use derive_more::Display;
 
 pub(crate) mod channel;
 mod envelope;
+mod group;
 mod message;
 mod queue;
+
+pub use group::{GroupWeakAddr, GroupWeakAddrIterator};
 
 use crate::actor::Actor;
 use crate::handler::{Handler, Message};

@@ -75,7 +75,9 @@ pub use actix_rt::{Arbiter, System, SystemRunner};
 pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr};
+pub use crate::address::{
+    Addr, GroupWeakAddr, GroupWeakAddrIterator, MailboxError, Recipient, WeakAddr,
+};
 // pub use crate::arbiter::{Arbiter, ArbiterBuilder};
 pub use crate::context::Context;
 pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
@@ -110,7 +112,8 @@ pub mod prelude {
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
     pub use crate::address::{
-        Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
+        Addr, GroupWeakAddr, GroupWeakAddrIterator, MailboxError, Recipient,
+        RecipientRequest, Request, SendError,
     };
     pub use crate::context::{Context, ContextFutureSpawner};
     pub use crate::fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
