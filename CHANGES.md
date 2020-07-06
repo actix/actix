@@ -8,8 +8,11 @@
 
 * Add `Sync` bound for `Box<dyn Sender>` trait object that making `Recipient` a `Send` + `Sync` type. [#403]
 
+* Update `parking_lot` to 0.11 [#404]
+
 [#384]: https://github.com/actix/actix/pull/384
 [#403]: https://github.com/actix/actix/pull/403
+[#404]: https://github.com/actix/actix/pull/404
 
 ## [0.10.0-alpha.3] - 2020-05-13
 
