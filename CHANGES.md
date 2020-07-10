@@ -16,6 +16,7 @@
 [#384]: https://github.com/actix/actix/pull/384
 [#403]: https://github.com/actix/actix/pull/403
 [#404]: https://github.com/actix/actix/pull/404
+[#407]: https://github.com/actix/actix/pull/407
 
 ## [0.10.0-alpha.3] - 2020-05-13
 
