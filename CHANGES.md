@@ -10,6 +10,9 @@
 
 * Update `parking_lot` to 0.11 [#404]
 
+* Remove unnecessary `PhantomData` field from `Request` making it `Send + Sync`
+  regardless if `Request`'s type-argument is `Send` or `Sync` [#407]
+
 [#384]: https://github.com/actix/actix/pull/384
 [#403]: https://github.com/actix/actix/pull/403
 [#404]: https://github.com/actix/actix/pull/404
