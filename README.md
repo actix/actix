@@ -159,6 +159,7 @@ struct Ping {
 // Actor definition
 struct Game {
     counter: usize,
+    name: String,
     addr: Recipient<Ping>,
 }
 
@@ -176,7 +177,7 @@ impl Handler<Ping> for Game {
         if self.counter > 10 {
             System::current().stop();
         } else {
-            println!("Ping received {:?}", msg.id);
+            println!("[{0}] Ping received {1}", self.name, msg.id);
 
             // wait 100 nanos
             ctx.run_later(Duration::new(0, 100), move |act, _| {
@@ -196,6 +197,7 @@ fn main() {
         let addr = ctx.address();
         let addr2 = Game {
             counter: 0,
+            name: String::from("Game 2"),
             addr: addr.recipient(),
         }
         .start();
@@ -206,6 +208,7 @@ fn main() {
         // now we can finally create first actor
         Game {
             counter: 0,
+            name: String::from("Game 1"),
             addr: addr2.recipient(),
         }
     });

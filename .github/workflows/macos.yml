@@ -1,6 +1,12 @@
 name: CI (macOS)
 
-on: [push, pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - master
+      - '0.[0-9]+'
 
 jobs:
   build_and_test:

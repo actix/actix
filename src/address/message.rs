@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
@@ -27,7 +26,6 @@ where
     rx: Option<oneshot::Receiver<M::Result>>,
     info: Option<(AddressSender<A>, M)>,
     timeout: Option<Delay>,
-    act: PhantomData<A>,
 }
 
 impl<A, M> Request<A, M>
@@ -44,7 +42,6 @@ where
             rx,
             info,
             timeout: None,
-            act: PhantomData,
         }
     }
 
