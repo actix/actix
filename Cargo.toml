@@ -9,8 +9,8 @@ homepage = "https://actix.rs"
 repository = "https://github.com/actix/actix.git"
 documentation = "https://docs.rs/actix/"
 categories = ["network-programming", "asynchronous"]
-license = "MIT/Apache-2.0"
-exclude = [".gitignore", ".cargo/config", ".github/**"]
+license = "MIT OR Apache-2.0"
+exclude = [".gitignore", ".cargo/config", ".github/**", "codecov.yml"]
 edition = "2018"
 
 [lib]
