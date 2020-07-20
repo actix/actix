@@ -1,3 +1,6 @@
+<!-- Thanks for considering contributing actix! -->
+<!-- Please fill out the following to make our reviews easy. -->
+
 ## PR Type
 <!-- What kind of change does this PR make? -->
 <!-- Bug Fix / Feature / Refactor / Code Style / Other -->
@@ -12,6 +15,7 @@ Check your PR fulfills the following:
 - [ ] Tests for the changes have been added / updated.
 - [ ] Documentation comments have been added / updated.
 - [ ] A changelog entry has been made for the appropriate packages.
+- [ ] Format code with the latest stable rustfmt
 
 
 ## Overview
