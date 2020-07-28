@@ -74,7 +74,7 @@ where
 /// }
 ///
 /// impl Handler<Msg> for MyActor {
-///     type Result = MessageResult<Msg>;
+///     type Result = MessageResult<Response>;
 ///
 ///     fn handle(&mut self, _: Msg, _: &mut Context<Self>) -> Self::Result {
 ///         MessageResult(Response {})
