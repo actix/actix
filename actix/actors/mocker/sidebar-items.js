@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Mocker","This actor is able to wrap another actor and accept all the messages the wrapped actor can, passing it to a closure which can mock the response of the actor."]]});

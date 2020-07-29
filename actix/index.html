@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `actix` crate."><meta name="keywords" content="rust, rustlang, rust-lang, actix"><title>actix - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="shortcut icon" href="../favicon.ico"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../actix/index.html'><div class='logo-container'><img src='../rust-logo.png' alt='logo'></div></a><p class='location'>Crate actix</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all actix's items</p></a><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'actix', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/actix/lib.rs.html#1-206' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>actix</a></span></h1><div class='docblock'><h1 id="actix-is-a-rust-actors-framework" class="section-header"><a href="#actix-is-a-rust-actors-framework">Actix is a rust actors framework</a></h1>
+<p><a href="https://actix.github.io/actix/actix/trait.Actor.html">Actors</a> are
+objects which encapsulate state and behavior, they communicate
+exclusively by exchanging messages. Actix actors are implemented
+on top of <a href="https://tokio.rs">Tokio</a>.  Multiple actors can run in
+same thread. Actors can run in multiple threads using the
+<a href="struct.Arbiter.html"><code>Arbiter</code></a> API. Actors exchange typed
+messages.</p>
+<h2 id="documentation" class="section-header"><a href="#documentation">Documentation</a></h2>
+<ul>
+<li><a href="https://actix.rs/book/actix/">User Guide</a></li>
+<li><a href="https://gitter.im/actix/actix">Chat on gitter</a></li>
+<li><a href="https://github.com/actix/actix">GitHub repository</a></li>
+<li><a href="https://crates.io/crates/actix">Cargo package</a></li>
+<li>Minimum supported Rust version: 1.40 or later</li>
+</ul>
+<h2 id="features" class="section-header"><a href="#features">Features</a></h2>
+<ul>
+<li>Async/Sync actors.</li>
+<li>Actor communication in a local/thread context.</li>
+<li>Using Futures for asynchronous message handling.</li>
+<li>HTTP1/HTTP2 support (<a href="https://github.com/actix/actix-web">actix-web</a>)</li>
+<li>Actor supervision.</li>
+<li>Typed messages (No <code>Any</code> type). Generic messages are allowed.</li>
+</ul>
+<h2 id="package-feature" class="section-header"><a href="#package-feature">Package feature</a></h2>
+<ul>
+<li><code>resolver</code> - enables dns resolver actor, <code>actix::actors::resolver</code></li>
+</ul>
+<h2 id="tokio-runtime" class="section-header"><a href="#tokio-runtime">Tokio runtime</a></h2>
+<p>At the moment actix uses
+<a href="https://docs.rs/tokio/0.1.13/tokio/runtime/current_thread/index.html"><code>current_thread</code></a> runtime.</p>
+<p>While it provides minimum overhead, it has its own limits:</p>
+<ul>
+<li>You cannot use tokio's async file I/O, as it relies on blocking calls that are not available
+in <code>current_thread</code></li>
+<li><code>Stdin</code>, <code>Stderr</code> and <code>Stdout</code> from <code>tokio::io</code> are the same as file I/O in that regard and
+cannot be used in asynchronous manner in actix.</li>
+</ul>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Re-exports</a></h2>
+<table><tr><td><code>pub use crate::fut::<a class="trait" href="../actix/fut/trait.ActorFuture.html" title="trait actix::fut::ActorFuture">ActorFuture</a>;</code></td></tr><tr><td><code>pub use crate::fut::<a class="trait" href="../actix/fut/trait.ActorStream.html" title="trait actix::fut::ActorStream">ActorStream</a>;</code></td></tr><tr><td><code>pub use crate::fut::<a class="trait" href="../actix/fut/trait.WrapFuture.html" title="trait actix::fut::WrapFuture">WrapFuture</a>;</code></td></tr><tr><td><code>pub use crate::fut::<a class="trait" href="../actix/fut/trait.WrapStream.html" title="trait actix::fut::WrapStream">WrapStream</a>;</code></td></tr><tr><td><code>pub use crate::registry::<a class="trait" href="../actix/registry/trait.ArbiterService.html" title="trait actix::registry::ArbiterService">ArbiterService</a>;</code></td></tr><tr><td><code>pub use crate::registry::<a class="struct" href="../actix/registry/struct.Registry.html" title="struct actix::registry::Registry">Registry</a>;</code></td></tr><tr><td><code>pub use crate::registry::<a class="struct" href="../actix/registry/struct.SystemRegistry.html" title="struct actix::registry::SystemRegistry">SystemRegistry</a>;</code></td></tr><tr><td><code>pub use crate::registry::<a class="trait" href="../actix/registry/trait.SystemService.html" title="trait actix::registry::SystemService">SystemService</a>;</code></td></tr><tr><td><code>pub use crate::sync::<a class="struct" href="../actix/sync/struct.SyncArbiter.html" title="struct actix::sync::SyncArbiter">SyncArbiter</a>;</code></td></tr><tr><td><code>pub use crate::sync::<a class="struct" href="../actix/sync/struct.SyncContext.html" title="struct actix::sync::SyncContext">SyncContext</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table><tr class='module-item'><td><a class="mod" href="actors/index.html" title='actix::actors mod'>actors</a></td><td class='docblock-short'><p>Helper actors</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="clock/index.html" title='actix::clock mod'>clock</a></td><td class='docblock-short'><p>A configurable source of time.</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="dev/index.html" title='actix::dev mod'>dev</a></td><td class='docblock-short'><p>The <code>actix</code> prelude for library developers.</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="fut/index.html" title='actix::fut mod'>fut</a></td><td class='docblock-short'><p>Custom <code>Future</code> implementation with <code>Actix</code> support</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="io/index.html" title='actix::io mod'>io</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="prelude/index.html" title='actix::prelude mod'>prelude</a></td><td class='docblock-short'><p>The <code>actix</code> prelude.</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="registry/index.html" title='actix::registry mod'>registry</a></td><td class='docblock-short'><p>Actors registry</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="sync/index.html" title='actix::sync mod'>sync</a></td><td class='docblock-short'><p>Sync Actors support</p>
+</td></tr><tr class='module-item'><td><a class="mod" href="utils/index.html" title='actix::utils mod'>utils</a></td><td class='docblock-short'></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table><tr class='module-item'><td><a class="struct" href="struct.ActorResponse.html" title='actix::ActorResponse struct'>ActorResponse</a></td><td class='docblock-short'><p>A helper type for representing different types of message responses.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Addr.html" title='actix::Addr struct'>Addr</a></td><td class='docblock-short'><p>The address of an actor.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Arbiter.html" title='actix::Arbiter struct'>Arbiter</a></td><td class='docblock-short'><p>Arbiters provide an asynchronous execution environment for actors, functions
+and futures. When an Arbiter is created, it spawns a new OS thread, and
+hosts an event loop. Some Arbiter functions execute on the current thread.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.AtomicResponse.html" title='actix::AtomicResponse struct'>AtomicResponse</a></td><td class='docblock-short'><p>A specialized actor future holder for atomic asynchronous message handling.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Context.html" title='actix::Context struct'>Context</a></td><td class='docblock-short'><p>An actor execution context.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.MessageResult.html" title='actix::MessageResult struct'>MessageResult</a></td><td class='docblock-short'><p>A helper type that implements the <code>MessageResponse</code> trait.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Recipient.html" title='actix::Recipient struct'>Recipient</a></td><td class='docblock-short'><p>The <code>Recipient</code> type allows to send one specific message to an
+actor.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Response.html" title='actix::Response struct'>Response</a></td><td class='docblock-short'><p>Helper type for representing different type of message responses</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.SpawnHandle.html" title='actix::SpawnHandle struct'>SpawnHandle</a></td><td class='docblock-short'><p>A handle to a spawned future.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.Supervisor.html" title='actix::Supervisor struct'>Supervisor</a></td><td class='docblock-short'><p>Actor supervisor</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.System.html" title='actix::System struct'>System</a></td><td class='docblock-short'><p>System is a runtime manager.</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.SystemRunner.html" title='actix::SystemRunner struct'>SystemRunner</a></td><td class='docblock-short'><p>Helper object that runs System's event loop</p>
+</td></tr><tr class='module-item'><td><a class="struct" href="struct.WeakAddr.html" title='actix::WeakAddr struct'>WeakAddr</a></td><td class='docblock-short'><p>A weakly referenced counterpart to <code>Addr&lt;A&gt;</code>.</p>
+</td></tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table><tr class='module-item'><td><a class="enum" href="enum.ActorState.html" title='actix::ActorState enum'>ActorState</a></td><td class='docblock-short'><p>Actor execution state</p>
+</td></tr><tr class='module-item'><td><a class="enum" href="enum.MailboxError.html" title='actix::MailboxError enum'>MailboxError</a></td><td class='docblock-short'><p>The errors that can occur during the message delivery process.</p>
+</td></tr><tr class='module-item'><td><a class="enum" href="enum.Running.html" title='actix::Running enum'>Running</a></td><td class='docblock-short'></td></tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table><tr class='module-item'><td><a class="trait" href="trait.Actor.html" title='actix::Actor trait'>Actor</a></td><td class='docblock-short'><p>Actors are objects which encapsulate state and behavior.</p>
+</td></tr><tr class='module-item'><td><a class="trait" href="trait.ActorContext.html" title='actix::ActorContext trait'>ActorContext</a></td><td class='docblock-short'><p>Actor execution context.</p>
+</td></tr><tr class='module-item'><td><a class="trait" href="trait.AsyncContext.html" title='actix::AsyncContext trait'>AsyncContext</a></td><td class='docblock-short'><p>Asynchronous execution context.</p>
+</td></tr><tr class='module-item'><td><a class="trait" href="trait.Handler.html" title='actix::Handler trait'>Handler</a></td><td class='docblock-short'><p>Describes how to handle messages of a specific type.</p>
+</td></tr><tr class='module-item'><td><a class="trait" href="trait.Message.html" title='actix::Message trait'>Message</a></td><td class='docblock-short'><p>Represent message that can be handled by an actor.</p>
+</td></tr><tr class='module-item'><td><a class="trait" href="trait.StreamHandler.html" title='actix::StreamHandler trait'>StreamHandler</a></td><td class='docblock-short'><p>Stream handler</p>
+</td></tr><tr class='module-item'><td><a class="trait" href="trait.Supervised.html" title='actix::Supervised trait'>Supervised</a></td><td class='docblock-short'><p>Actors with the ability to restart after failure.</p>
+</td></tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table><tr class='module-item'><td><a class="fn" href="fn.run.html" title='actix::run fn'>run</a></td><td class='docblock-short'><p>Starts the system and executes the supplied future.</p>
+</td></tr><tr class='module-item'><td><a class="fn" href="fn.spawn.html" title='actix::spawn fn'>spawn</a></td><td class='docblock-short'><p>Spawns a future on the current arbiter.</p>
+</td></tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table><tr class='module-item'><td><a class="type" href="type.ResponseActFuture.html" title='actix::ResponseActFuture type'>ResponseActFuture</a></td><td class='docblock-short'><p>A specialized actor future for asynchronous message handling.</p>
+</td></tr><tr class='module-item'><td><a class="type" href="type.ResponseFuture.html" title='actix::ResponseFuture type'>ResponseFuture</a></td><td class='docblock-short'><p>A specialized future for asynchronous message handling.</p>
+</td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../";window.currentCrate = "actix";</script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>
