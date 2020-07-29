@@ -13,18 +13,18 @@ use crate::mailbox::DEFAULT_CAPACITY;
 
 /// Actor supervisor
 ///
-/// Supervisor manages incoming message for actor. In case of actor failure,
-/// supervisor creates new execution context and restarts actor lifecycle.
-/// Supervisor does not re-create actor, it just calls `restarting()`
+/// A Supervisor manages incoming messages for an actor. In case of actor failure,
+/// the supervisor creates a new execution context and restarts the actor's lifecycle.
+/// A Supervisor does not re-create their actor, it just calls the `restarting()`
 /// method.
 ///
-/// Supervisor has same lifecycle as actor. In situation when all addresses to
-/// supervisor get dropped and actor does not execute anything, supervisor
+/// Supervisors have the same lifecycle as actors. If all addresses to
+/// a supervisor gets dropped and its actor does not execute anything, the supervisor
 /// terminates.
 ///
-/// `Supervisor` can not guarantee that actor successfully process incoming
-/// message. If actor fails during message processing, this message can not be
-/// recovered. Sender would receive `Err(Cancelled)` error in this situation.
+/// Supervisors can not guarantee that their actors successfully processes incoming
+/// messages. If the actor fails during message processing, the message can not be
+/// recovered. The sender would receive an `Err(Cancelled)` error in this situation.
 ///
 /// ## Example
 ///
