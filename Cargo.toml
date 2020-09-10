@@ -21,13 +21,16 @@ path = "src/lib.rs"
 members = ["examples/chat"]
 
 [features]
-default = ["resolver"]
+default = ["resolver", "try_traits"]
 
 # dns resolver
 resolver = ["trust-dns-proto", "trust-dns-resolver"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
+
+# Adds ActorTryFuture and ActorTryFutureExt traits.
+try_traits = []
 
 [dependencies]
 actix-rt = "1.1"

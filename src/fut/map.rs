@@ -1,6 +1,7 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use futures_util::ready;
 use pin_project::pin_project;
 
 use crate::actor::Actor;
@@ -42,10 +43,7 @@ where
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.project();
-        let e = match this.future.poll(act, ctx, task) {
-            Poll::Pending => return Poll::Pending,
-            Poll::Ready(e) => e,
-        };
+        let e = ready!(this.future.poll(act, ctx, task));
         Poll::Ready(this.f.take().expect("cannot poll Map twice")(e, act, ctx))
     }
 }

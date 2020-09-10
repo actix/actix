@@ -21,6 +21,9 @@ mod stream_timeout;
 mod then;
 mod timeout;
 
+#[cfg(feature = "try_traits")]
+mod r#try;
+
 pub use self::either::Either;
 pub use self::helpers::{Finish, FinishStream};
 pub use self::map::Map;
@@ -33,6 +36,9 @@ pub use self::stream_then::StreamThen;
 pub use self::stream_timeout::StreamTimeout;
 pub use self::then::Then;
 pub use self::timeout::Timeout;
+
+#[cfg(feature = "try_traits")]
+pub use self::r#try::{ActorTryFuture, ActorTryFutureExt};
 
 use crate::actor::Actor;
 use std::pin::Pin;
@@ -270,11 +276,11 @@ pub trait ActorStream {
 /// used in a very similar fashion.
 pub trait IntoActorFuture {
     /// The future that this type can be converted into.
-    #[rustfmt::skip]
-    type Future: ActorFuture<Output=Self::Output, Actor=Self::Actor>;
+    type Future: ActorFuture<Output = Self::Output, Actor = Self::Actor>;
 
     /// The item that the future may resolve with.
     type Output;
+
     /// The actor within which this future runs
     type Actor: Actor;
 
@@ -352,7 +358,7 @@ impl<F: Future, A: Actor> WrapFuture<A> for F {
     }
 
     fn into_actor(self, _: &A) -> Self::Future {
-        wrap_future(self)
+        wrap_future::<F, A>(self)
     }
 }
 

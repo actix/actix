@@ -1,3 +1,4 @@
+use futures_util::ready;
 use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -37,12 +38,10 @@ where
 
         loop {
             let this = self.as_mut().project();
+
             let (output, data) = match this {
                 ChainProj::First(fut1, data) => {
-                    let output = match fut1.poll(srv, ctx, task) {
-                        Poll::Ready(t) => t,
-                        Poll::Pending => return Poll::Pending,
-                    };
+                    let output = ready!(fut1.poll(srv, ctx, task));
                     (output, data.take().unwrap())
                 }
                 ChainProj::Second(fut2) => {

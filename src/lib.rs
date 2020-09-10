@@ -42,7 +42,7 @@
 //! cannot be used in asynchronous manner in actix.
 // It's pain for this crate and has false positives.
 #![allow(clippy::needless_doctest_main)]
-#![deny(bare_trait_objects, nonstandard_style, rust_2018_idioms, unused)]
+#![deny(bare_trait_objects, nonstandard_style, rust_2018_idioms)]
 #![warn(deprecated_in_future, trivial_casts, trivial_numeric_casts)]
 
 #[doc(hidden)]
@@ -79,6 +79,10 @@ pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr};
 // pub use crate::arbiter::{Arbiter, ArbiterBuilder};
 pub use crate::context::Context;
 pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
+
+#[cfg(feature = "try_traits")]
+pub use crate::fut::{ActorTryFuture, ActorTryFutureExt};
+
 pub use crate::handler::{
     ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
     ResponseActFuture, ResponseFuture,
@@ -114,6 +118,10 @@ pub mod prelude {
     };
     pub use crate::context::{Context, ContextFutureSpawner};
     pub use crate::fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
+
+    #[cfg(feature = "try_traits")]
+    pub use crate::fut::{ActorTryFuture, ActorTryFutureExt};
+
     pub use crate::handler::{
         ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
         ResponseActFuture, ResponseFuture,
