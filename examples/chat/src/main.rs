@@ -15,7 +15,7 @@ use codec::ChatCodec;
 use server::ChatServer;
 use session::ChatSession;
 
-/// Define tcp server that will accept incoming tcp connection and create
+/// Define TCP server that will accept incoming TCP connection and create
 /// chat actors.
 struct Server {
     chat: Addr<ChatServer>,

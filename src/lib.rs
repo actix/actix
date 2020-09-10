@@ -1,6 +1,6 @@
-//! # Actix is a rust actors framework
+//! Actix is an actor framework.
 //!
-//! [Actors](https://actix.github.io/actix/actix/trait.Actor.html) are
+//! [Actors](./trait.Actor.html) are
 //! objects which encapsulate state and behavior, they communicate
 //! exclusively by exchanging messages. Actix actors are implemented
 //! on top of [Tokio](https://tokio.rs).  Multiple actors can run in
@@ -8,26 +8,23 @@
 //! [`Arbiter`](struct.Arbiter.html) API. Actors exchange typed
 //! messages.
 //!
-//! ## Documentation
+//! ## Other Documentation
 //!
-//! * [User Guide](https://actix.rs/book/actix/)
-//! * [Chat on gitter](https://gitter.im/actix/actix)
-//! * [GitHub repository](https://github.com/actix/actix)
-//! * [Cargo package](https://crates.io/crates/actix)
-//! * Minimum supported Rust version: 1.40 or later
+//! - [User Guide](https://actix.rs/book/actix/)
+//! - [Community Chat on Gitter](https://gitter.im/actix/actix)
 //!
 //! ## Features
 //!
-//! * Async/Sync actors.
-//! * Actor communication in a local/thread context.
-//! * Using Futures for asynchronous message handling.
-//! * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
-//! * Actor supervision.
-//! * Typed messages (No `Any` type). Generic messages are allowed.
+//! - Async/Sync actors
+//! - Actor communication in a local/thread context
+//! - Using Futures for asynchronous message handling
+//! - Actor supervision
+//! - Typed messages (No `Any` type). Generic messages are allowed
+//! - Runs on stable Rust 1.40+
 //!
 //! ## Package feature
 //!
-//! * `resolver` - enables dns resolver actor, `actix::actors::resolver`
+//! * `resolver` - enables DNS resolver actor; see [resolver](./actors/resolver/index.html) module
 //!
 //! ## Tokio runtime
 //!
@@ -36,13 +33,14 @@
 //!
 //! While it provides minimum overhead, it has its own limits:
 //!
-//! - You cannot use tokio's async file I/O, as it relies on blocking calls that are not available
+//! - You cannot use Tokio's async file I/O, as it relies on blocking calls that are not available
 //! in `current_thread`
 //! - `Stdin`, `Stderr` and `Stdout` from `tokio::io` are the same as file I/O in that regard and
 //! cannot be used in asynchronous manner in actix.
 // It's pain for this crate and has false positives.
+
 #![allow(clippy::needless_doctest_main)]
-#![deny(bare_trait_objects, nonstandard_style, rust_2018_idioms, unused)]
+#![deny(nonstandard_style, rust_2018_idioms)]
 #![warn(deprecated_in_future, trivial_casts, trivial_numeric_casts)]
 
 #[doc(hidden)]
