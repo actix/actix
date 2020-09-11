@@ -1,4 +1,4 @@
-//! `ClientSession` is an actor, it manages peer tcp connection and
+//! `ClientSession` is an actor, it manages peer TCP connection and
 //! proxies commands from peer to `ChatServer`.
 use std::io;
 
@@ -16,7 +16,7 @@ use crate::server::{self, ChatServer};
 #[rtype(result = "()")]
 pub struct Message(pub String);
 
-/// `ChatSession` actor is responsible for tcp peer communications.
+/// `ChatSession` actor is responsible for TCP peer communications.
 pub struct ChatSession {
     /// unique session id
     id: usize,

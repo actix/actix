@@ -1,29 +1,42 @@
-# Actix [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix) [![crates.io](https://img.shields.io/crates/v/actix)](https://crates.io/crates/actix) [![Join the chat at https://gitter.im/actix/actix](https://badges.gitter.im/actix/actix.svg)](https://gitter.im/actix/actix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+<div align="center">
+  <h1>Actix</h1>
+  <p>
+    <strong>Actor framework for Rust</strong>
+  </p>
+  <p>
 
-Actix is a Rust actors framework.
+[![crates.io](https://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
+[![Documentation](https://docs.rs/actix/badge.svg)](https://docs.rs/actix)
+[![Version](https://img.shields.io/badge/rustc-1.40+-ab6000.svg)](https://blog.rust-lang.org/2019/12/19/Rust-1.40.0.html)
+<br />
+![License](https://img.shields.io/crates/l/actix.svg)
+[![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix)
+[![Download](https://img.shields.io/crates/d/actix.svg)](https://crates.io/crates/actix)
+[![Join the chat at https://gitter.im/actix/actix](https://badges.gitter.im/actix/actix.svg)](https://gitter.im/actix/actix?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-* [User Guide](https://actix.rs/book/actix/)
-* [API Documentation (Development)](https://actix.github.io/actix/actix/)
-* [API Documentation (Releases)](https://docs.rs/actix/)
-* Cargo package: [actix](https://crates.io/crates/actix)
-* Minimum supported Rust version: 1.40 or later
+  </p>
+</div>
 
-| Platform | Build Status |
-| -------- | ------------ |
-| Linux | [![build status](https://github.com/actix/actix/workflows/CI%20%28Linux%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
-| macOS | [![build status](https://github.com/actix/actix/workflows/CI%20%28macOS%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
-| Windows | [![build status](https://github.com/actix/actix/workflows/CI%20%28Windows%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
+- [User Guide](https://actix.rs/book/actix/)
+- [API Documentation](https://docs.rs/actix/)
+- [API Documentation (master branch)](https://actix.github.io/actix/actix/)
+
+| Platform | Build Status                                                                                                                                              |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Linux    | [![build status](https://github.com/actix/actix/workflows/CI%20%28Linux%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions)   |
+| macOS    | [![build status](https://github.com/actix/actix/workflows/CI%20%28macOS%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions)   |
+| Windows  | [![build status](https://github.com/actix/actix/workflows/CI%20%28Windows%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions) |
 
 ---
 
 ## Features
 
-  * Async/Sync actors.
-  * Actor communication in a local/thread context.
-  * Uses [Futures](https://crates.io/crates/futures) for asynchronous message handling.
-  * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))
-  * Actor supervision.
-  * Typed messages (No `Any` type).
+- Async and sync actors
+- Actor communication in a local/thread context
+- Uses [futures](https://crates.io/crates/futures) for asynchronous message handling
+- Actor supervision
+- Typed messages (No `Any` type)
+- Runs on stable Rust 1.40+
 
 ## Usage
 
@@ -31,7 +44,7 @@ To use `actix`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-actix = "0.10.0-alpha.3"
+actix = "0.10"
 ```
 
 ### Initialize Actix
@@ -89,7 +102,7 @@ You can implement `started`, `stopping` and `stopped` methods of the Actor trait
 Check [API documentation](https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle)
 for more information on the actor lifecycle.
 
-### Handle messages
+### Handle Messages
 
 An Actor communicates with another Actor by sending messages. In actix all messages
 are typed. Let's define a simple `Sum` message with two `usize` parameters,
@@ -137,7 +150,7 @@ All communications with actors go through an `Addr` object. You can `do_send` a 
 without waiting for a response, or `send` an actor with specific message. The `Message`
 trait defines the result type for a message.
 
-### Actor state and subscription for specific messages
+### Actor State And Subscription For Specific Messages
 
 You may have noticed that methods of `Actor` and `Handler` traits accept `&mut self`, so you are
 welcome to store anything in an actor and mutate it whenever necessary.
@@ -179,7 +192,7 @@ impl Handler<Ping> for Game {
         } else {
             println!("[{0}] Ping received {1}", self.name, msg.id);
 
-            // wait 100 nanos
+            // wait 100 nanoseconds
             ctx.run_later(Duration::new(0, 100), move |act, _| {
                 act.addr.do_send(Ping { id: msg.id + 1 });
             });
@@ -217,16 +230,11 @@ fn main() {
 }
 ```
 
-### chat example
+### Chat Example
 
 There is a
 [chat example](https://github.com/actix/actix/tree/master/examples/chat)
 which provides a basic example of networking client/server service.
-
-### fectl
-
-You may consider checking out [fectl](https://github.com/fafhrd91/fectl) utility. It is written
-with `actix` and shows how to create networking application with relatively complex interactions.
 
 ## Contributing
 
@@ -236,15 +244,15 @@ All contributions are welcome, if you have a feature request don't hesitate to o
 
 This project is licensed under either of
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
-   https://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or
-   https://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+  https://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or
+  https://opensource.org/licenses/MIT)
 
 at your option.
 
 ## Code of Conduct
 
 Contribution to the actix crate is organized under the terms of the
-Contributor Covenant, the maintainer of actix, @fafhrd91, promises to
+Contributor Covenant, the maintainers of actix, promises to
 intervene to uphold that code of conduct.
