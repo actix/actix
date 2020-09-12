@@ -13,10 +13,13 @@
 * Remove unnecessary `PhantomData` field from `Request` making it `Send + Sync`
   regardless if `Request`'s type-argument is `Send` or `Sync` [#407]
 
+* The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a `Response` to be created with an `async` block [#421]
+
 [#384]: https://github.com/actix/actix/pull/384
 [#403]: https://github.com/actix/actix/pull/403
 [#404]: https://github.com/actix/actix/pull/404
 [#407]: https://github.com/actix/actix/pull/407
+[#421]: https://github.com/actix/actix/pull/421
 
 ## [0.10.0-alpha.3] - 2020-05-13
 
