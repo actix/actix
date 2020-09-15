@@ -73,17 +73,24 @@ where
 {
     type Result = M::Result;
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> M::Result {
-        let mut ret = (self.mock)(Box::new(msg), ctx);
+        let ret = (self.mock)(Box::new(msg), ctx);
 
-        match ret.downcast_mut::<Option<M::Result>>() {
-            Some(response) => response.take().unwrap(),
-            None => {
-                panic!(
-                    "Wrong return type for message. Expected a {} when responding to {}",
-                    any::type_name::<M::Result>(),
-                    any::type_name::<M>(),
-                );
-            }
+        match ret.downcast::<M::Result>() {
+            // The result was returned directly.
+            Ok(response) => *response,
+            // Note: We also handle the case where Option<M::Result> is returned
+            // for backwards compatibility.
+            Err(other) => match other.downcast::<Option<M::Result>>() {
+                Ok(mut response) => response.take().expect("No response provided"),
+                // We got something else, blow up with a useful error message.
+                Err(_) => {
+                    panic!(
+                        "Wrong return type for message. Expected a {} when responding to {}",
+                        any::type_name::<M::Result>(),
+                        any::type_name::<M>(),
+                    );
+                }
+            },
         }
     }
 }
@@ -146,7 +153,7 @@ mod tests {
         ) -> Box<dyn Any> {
             let msg = msg.downcast::<Ping>().expect("Unable to mock this message");
 
-            Box::new(Some(Pong(msg.0 + 123)))
+            Box::new(Pong(msg.0 + 123))
         }
 
         System::new("test").block_on(async {
