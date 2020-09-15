@@ -50,6 +50,22 @@ impl<T: Unpin> Mocker<T> {
             mock,
         }
     }
+
+    /// A helper for calling [`Mocker::mock()`] when it is known that only
+    /// one message type will ever be sent to the [`Mocker`].
+    pub fn mock_one<F, M>(mut mock: F) -> Mocker<T>
+    where
+        M: Message + 'static,
+        F: FnMut(M, &mut Context<Mocker<T>>) -> M::Result + 'static,
+    {
+        Mocker::mock(Box::new(move |msg, ctx| match msg.downcast::<M>() {
+            Ok(msg) => Box::new(mock(*msg, ctx)),
+            Err(_) => panic!(
+                "This mocker can only handle messages of type {}",
+                any::type_name::<M>()
+            ),
+        }))
+    }
 }
 
 impl<T: SystemService> SystemService for Mocker<T> {}
@@ -146,7 +162,7 @@ mod tests {
     }
 
     #[test]
-    fn mock_a_message_response() {
+    fn ping_pong_with_generic_mock_function() {
         fn example_handler<A: Actor>(
             msg: Box<dyn Any>,
             _ctx: &mut Context<Mocker<A>>,
@@ -159,6 +175,19 @@ mod tests {
         System::new("test").block_on(async {
             let mocker =
                 Mocker::<ActorBeingMocked>::mock(Box::new(example_handler)).start();
+
+            let response = mocker.send(Ping(1)).await.unwrap();
+
+            assert_eq!(response, Pong(1 + 123));
+        });
+    }
+
+    #[test]
+    fn ping_pong_with_mock_one() {
+        System::new("test").block_on(async {
+            let mocker =
+                Mocker::<ActorBeingMocked>::mock_one(|msg: Ping, _| Pong(msg.0 + 123))
+                    .start();
 
             let response = mocker.send(Ping(1)).await.unwrap();
 
