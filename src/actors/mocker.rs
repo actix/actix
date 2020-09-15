@@ -25,9 +25,8 @@
 //!
 //! See the mock example to see how it can be used.
 
-use std::any::Any;
+use std::any::{self, Any};
 use std::marker::PhantomData;
-use std::mem;
 
 use crate::handler::MessageResponse;
 use crate::prelude::*;
@@ -75,14 +74,88 @@ where
     type Result = M::Result;
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> M::Result {
         let mut ret = (self.mock)(Box::new(msg), ctx);
-        let out = mem::replace(
-            ret.downcast_mut::<Option<M::Result>>()
-                .expect("wrong return type for message"),
-            None,
-        );
-        match out {
-            Some(a) => a,
-            _ => panic!(),
+
+        match ret.downcast_mut::<Option<M::Result>>() {
+            Some(response) => response.take().unwrap(),
+            None => {
+                panic!(
+                    "Wrong return type for message. Expected a {} when responding to {}",
+                    any::type_name::<M::Result>(),
+                    any::type_name::<M>(),
+                );
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dev::ResponseChannel;
+
+    struct ActorBeingMocked;
+
+    impl Actor for ActorBeingMocked {
+        type Context = Context<Self>;
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct Ping(u32);
+
+    impl Message for Ping {
+        type Result = Pong;
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct Pong(u32);
+
+    impl<A: Actor> MessageResponse<A, Ping> for Pong {
+        fn handle<R: ResponseChannel<Ping>>(self, _ctx: &mut A::Context, tx: Option<R>) {
+            if let Some(tx) = tx {
+                tx.send(self);
+            }
+        }
+    }
+
+    impl Handler<Ping> for ActorBeingMocked {
+        type Result = MessageResult<Ping>;
+
+        fn handle(&mut self, _msg: Ping, _ctx: &mut Self::Context) -> Self::Result {
+            todo!()
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Wrong return type for message. Expected a actix::actors::mocker::tests::Pong when responding to actix::actors::mocker::tests::Ping"
+    )]
+    fn users_get_a_useful_panic_message_when_mocking_fails() {
+        System::new("test").block_on(async {
+            let bad_mocker =
+                Mocker::<ActorBeingMocked>::mock(Box::new(|_, _| Box::new(42))).start();
+
+            let _response = bad_mocker.send(Ping(1)).await.unwrap();
+        });
+    }
+
+    #[test]
+    fn mock_a_message_response() {
+        fn example_handler<A: Actor>(
+            msg: Box<dyn Any>,
+            _ctx: &mut Context<Mocker<A>>,
+        ) -> Box<dyn Any> {
+            let msg = msg.downcast::<Ping>().expect("Unable to mock this message");
+
+            Box::new(Some(Pong(msg.0 + 123)))
+        }
+
+        System::new("test").block_on(async {
+            let mocker =
+                Mocker::<ActorBeingMocked>::mock(Box::new(example_handler)).start();
+
+            let response = mocker.send(Ping(1)).await.unwrap();
+
+            assert_eq!(response, Pong(1 + 123));
+        });
     }
 }
