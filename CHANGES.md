@@ -1,6 +1,10 @@
 # CHANGES
 
 ## Unreleased - 2020-xx-xx
+### Fixed
+* Fix error for build with --no-default-features flag, add `sink` feature for futures-util dependency. [#427]
+
+[#427]: https://github.com/actix/actix/pull/427
 
 
 ## 0.10.0 - 2020-09-10
