@@ -2,7 +2,7 @@
 
 ## Unreleased - 2020-xx-xx
 ### Changed
-* Add `sink` feature for futures-util dependency. #427
+* Add `sink` feature for futures-util dependency. [#427]
 
 ## 0.10.0 - 2020-09-10
 ### Changed
