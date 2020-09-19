@@ -441,7 +441,7 @@ where
 
 enum ResponseTypeItem<I, E> {
     Result(Result<I, E>),
-    Fut(Box<dyn Future<Output = Result<I, E>> + Unpin>),
+    Fut(Pin<Box<dyn Future<Output = Result<I, E>>>>),
 }
 
 /// Helper type for representing different type of message responses
@@ -464,10 +464,10 @@ impl<I, E> Response<I, E> {
     /// Creates an asynchronous response.
     pub fn fut<T>(fut: T) -> Self
     where
-        T: Future<Output = Result<I, E>> + Unpin + 'static,
+        T: Future<Output = Result<I, E>> + 'static,
     {
         Self {
-            item: ResponseTypeItem::Fut(Box::new(fut)),
+            item: ResponseTypeItem::Fut(Box::pin(fut)),
         }
     }
 
