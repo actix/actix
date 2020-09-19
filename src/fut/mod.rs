@@ -270,8 +270,7 @@ pub trait ActorStream {
 /// used in a very similar fashion.
 pub trait IntoActorFuture {
     /// The future that this type can be converted into.
-    #[rustfmt::skip]
-    type Future: ActorFuture<Output=Self::Output, Actor=Self::Actor>;
+    type Future: ActorFuture<Output = Self::Output, Actor = Self::Actor>;
 
     /// The item that the future may resolve with.
     type Output;

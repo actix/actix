@@ -1,17 +1,19 @@
 # CHANGES
 
-## [unreleased]
+## Unreleased - 2020-xx-xx
+### Fixed
+* Fix error for build with --no-default-features flag, add `sink` feature for futures-util dependency. [#427]
 
+[#427]: https://github.com/actix/actix/pull/427
+
+
+## 0.10.0 - 2020-09-10
 ### Changed
-
-* BREAKING: `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
-
+* `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
 * Add `Sync` bound for `Box<dyn Sender>` trait object that making `Recipient` a `Send` + `Sync` type. [#403]
-
 * Update `parking_lot` to 0.11 [#404]
-
-* Remove unnecessary `PhantomData` field from `Request` making it `Send + Sync`
-  regardless if `Request`'s type-argument is `Send` or `Sync` [#407]
+* Remove unnecessary `PhantomData` field from `Request` making it `Send + Sync` regardless if
+  `Request`'s type-argument is `Send` or `Sync` [#407]
 
 * The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a `Response` to be created with an `async` block [#421]
 
@@ -21,14 +23,11 @@
 [#407]: https://github.com/actix/actix/pull/407
 [#421]: https://github.com/actix/actix/pull/421
 
-## [0.10.0-alpha.3] - 2020-05-13
 
+## 0.10.0-alpha.3 - 2020-05-13
 ### Changed
-
 * Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
-
 * Only poll dropped ContextFut if event loop is running. [#374]
-
 * Minimum Rust version is now 1.40 (to be able to use `#[cfg(doctest)]`)
 
 [#365]: https://github.com/actix/actix/pull/365

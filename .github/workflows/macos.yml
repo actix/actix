@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - master
-      - '0.[0-9]+'
+      - "0.[0-9]+"
 
 jobs:
   build_and_test:
@@ -18,7 +18,7 @@ jobs:
           - nightly
 
     name: ${{ matrix.version }} - x86_64-apple-darwin
-    runs-on: macOS-latest
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@master
@@ -34,6 +34,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: generate-lockfile
+
       - name: Cache cargo dirs
         uses: actions/cache@v2
         with:
@@ -42,6 +43,7 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin
           key: ${{ matrix.version }}-x86_64-apple-darwin-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Cache cargo build
         uses: actions/cache@v2
         with:
@@ -59,8 +61,7 @@ jobs:
         timeout-minutes: 40
         with:
           command: test
-          args: --all --all-features --no-fail-fast -- --nocapture
-                --skip=test_stream_timeout
+          args: --all --all-features --no-fail-fast -- --nocapture --skip=test_stream_timeout
 
       - name: Clear the cargo caches
         run: |

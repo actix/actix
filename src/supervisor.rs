@@ -57,11 +57,12 @@ use crate::mailbox::DEFAULT_CAPACITY;
 /// }
 ///
 /// fn main() {
-///     System::run(|| {
-///         let addr = actix::Supervisor::start(|_| MyActor);
+///     let sys = System::new("example");
 ///
-///         addr.do_send(Die);
-///     });
+///     let addr = actix::Supervisor::start(|_| MyActor);
+///     addr.do_send(Die);
+///
+///     sys.run();
 /// }
 /// ```
 #[pin_project]

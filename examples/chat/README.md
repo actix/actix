@@ -3,7 +3,7 @@
 
 ## Server
 
-Chat server listens for incoming tcp connections. Server can access several types of message:
+Chat server listens for incoming TCP connections. Server can access several types of message:
 
   * `/list` - list all available rooms
   * `/join name` - join room, if room does not exist, create new one
