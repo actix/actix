@@ -4,6 +4,14 @@
 ### Fixed
 * Fix error for build with --no-default-features flag, add `sink` feature for futures-util dependency. [#427]
 
+### Changed
+* The re-exported `actix-derive` macros are now conditionally included with the `derive` feature
+  which is enabled by default but can be switched off to reduce dependencies. [#424]
+* The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a
+  `Response` to be created with an `async` block [#421]
+
+[#421]: https://github.com/actix/actix/pull/421
+[#424]: https://github.com/actix/actix/pull/424
 [#427]: https://github.com/actix/actix/pull/427
 
 
@@ -15,13 +23,10 @@
 * Remove unnecessary `PhantomData` field from `Request` making it `Send + Sync` regardless if
   `Request`'s type-argument is `Send` or `Sync` [#407]
 
-* The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a `Response` to be created with an `async` block [#421]
-
 [#384]: https://github.com/actix/actix/pull/384
 [#403]: https://github.com/actix/actix/pull/403
 [#404]: https://github.com/actix/actix/pull/404
 [#407]: https://github.com/actix/actix/pull/407
-[#421]: https://github.com/actix/actix/pull/421
 
 
 ## 0.10.0-alpha.3 - 2020-05-13

@@ -44,6 +44,7 @@
 #![warn(deprecated_in_future, trivial_casts, trivial_numeric_casts)]
 
 #[doc(hidden)]
+#[cfg(feature = "derive")]
 pub use actix_derive::*;
 
 #[cfg(doctest)]
@@ -101,7 +102,9 @@ pub mod prelude {
     //! ```
 
     #[doc(hidden)]
+    #[cfg(feature = "derive")]
     pub use actix_derive::*;
+
     pub use actix_rt::{Arbiter, System, SystemRunner};
 
     pub use crate::actor::{
