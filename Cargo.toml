@@ -13,25 +13,29 @@ license = "MIT OR Apache-2.0"
 exclude = [".gitignore", ".cargo/config", ".github/**", "codecov.yml"]
 edition = "2018"
 
+[workspace]
+members = [".", "actix-derive", "examples/chat"]
+
 [lib]
 name = "actix"
 path = "src/lib.rs"
 
-[workspace]
-members = ["examples/chat"]
-
 [features]
-default = ["resolver"]
+default = ["resolver", "derive"]
 
 # DNS resolver
 resolver = ["trust-dns-proto", "trust-dns-resolver"]
+
+# Re-exports derive macros from actix-derive
+derive = ["actix_derive"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
 
 [dependencies]
 actix-rt = "1.1.1"
-actix_derive = "0.5"
+actix_derive = { version = "0.5", optional = true }
+
 bytes = "0.5.3"
 crossbeam-channel = "0.4"
 derive_more = "0.99.2"
@@ -57,3 +61,7 @@ doc-comment = "0.3"
 lto = true
 opt-level = 3
 codegen-units = 1
+
+[patch.crates-io]
+actix = { path = "." }
+actix_derive = { path = "actix-derive" }
