@@ -15,7 +15,7 @@ pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
 pub use self::message::{RecipientRequest, Request};
 
 pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
-use self::channel::{AddressSender, Sender, WeakAddressSender};
+use self::channel::{AddressSender, Sender, WeakAddressSender, WeakSender};
 
 pub enum SendError<T> {
     Full(T),
@@ -199,6 +199,16 @@ impl<A: Actor> WeakAddr<A> {
             None => None,
         }
     }
+
+    pub fn recipient<M: 'static>(self) -> WeakRecipient<M>
+    where
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
+        M: Message + Send,
+        M::Result: Send,
+    {
+        self.into()
+    }
 }
 
 impl<A: Actor> Clone for WeakAddr<A> {
@@ -326,6 +336,52 @@ where
 {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "Recipient {{ /* omitted */ }}")
+    }
+}
+
+/// A weakly referenced counterpart to `Recipient<M>`
+pub struct WeakRecipient<M: Message>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    wtx: Box<dyn WeakSender<M> + Sync>,
+}
+
+impl<M> WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    pub(crate) fn new(wtx: Box<dyn WeakSender<M> + Sync>) -> WeakRecipient<M> {
+        WeakRecipient { wtx }
+    }
+
+    /// Attempts to upgrade the `WeakRecipient<M>` pointer to an `Recipient<M>`, similar to `WeakAddr<A>`
+    pub fn upgrade(self) -> Option<Recipient<M>> {
+        self.wtx.upgrade().map(Recipient::new)
+    }
+}
+
+impl<A: Actor, M: Message + Send + 'static> Into<WeakRecipient<M>> for Addr<A>
+where
+    A: Handler<M>,
+    M::Result: Send,
+    A::Context: ToEnvelope<A, M>,
+{
+    fn into(self) -> WeakRecipient<M> {
+        self.downgrade().recipient()
+    }
+}
+
+impl<A: Actor, M: Message + Send + 'static> Into<WeakRecipient<M>> for WeakAddr<A>
+where
+    A: Handler<M>,
+    M::Result: Send,
+    A::Context: ToEnvelope<A, M>,
+{
+    fn into(self) -> WeakRecipient<M> {
+        WeakRecipient::new(Box::new(self.wtx))
     }
 }
 

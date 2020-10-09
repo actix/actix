@@ -36,6 +36,13 @@ where
 
     fn connected(&self) -> bool;
 }
+pub(crate) trait WeakSender<M>: Send
+where
+    M::Result: Send,
+    M: Message + Send,
+{
+    fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
+}
 
 /// The transmission end of a channel which is used to send values.
 ///
@@ -551,6 +558,22 @@ impl<A: Actor> WeakAddressSender<A> {
         match Weak::upgrade(&self.inner) {
             Some(inner) => Some(AddressSenderProducer { inner }.sender()),
             None => None,
+        }
+    }
+}
+
+impl<A, M> WeakSender<M> for WeakAddressSender<A>
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<A, M>,
+    M::Result: Send,
+    M: Message + Send + 'static,
+{
+    fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>> {
+        if let Some(inner) = WeakAddressSender::upgrade(&self) {
+            Some(Box::new(inner))
+        } else {
+            None
         }
     }
 }

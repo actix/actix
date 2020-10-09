@@ -74,7 +74,7 @@ pub use actix_rt::{Arbiter, System, SystemRunner};
 pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr};
+pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr, WeakRecipient};
 // pub use crate::arbiter::{Arbiter, ArbiterBuilder};
 pub use crate::context::Context;
 pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
