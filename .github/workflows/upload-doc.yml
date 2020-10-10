@@ -11,7 +11,7 @@ jobs:
     if: github.repository == 'actix/actix'
 
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -24,12 +24,14 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --no-deps
+          args: --no-deps --workspace --all-features
 
       - name: Tweak HTML
         run: echo "<meta http-equiv=refresh content=0;url=os_balloon/index.html>" > target/doc/index.html
 
-      - name: Upload documentation
-        run: |
-          git clone https://github.com/davisp/ghp-import.git
-          ./ghp-import/ghp_import.py -n -p -f -m "Documentation upload" -r https://${{ secrets.GITHUB_TOKEN }}@github.com/"${{ github.repository }}.git" target/doc
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@3.6.2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: target/doc
