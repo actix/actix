@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../actix/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../actix/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><span class="help-button">?</span>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -204,10 +205,11 @@
 <span id="204">204</span>
 <span id="205">205</span>
 <span id="206">206</span>
+<span id="207">207</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="doccomment">//! # Actix is a rust actors framework</span>
+<span class="doccomment">//! Actix is an actor framework.</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! [Actors](https://actix.github.io/actix/actix/trait.Actor.html) are</span>
+<span class="doccomment">//! [Actors](./trait.Actor.html) are</span>
 <span class="doccomment">//! objects which encapsulate state and behavior, they communicate</span>
 <span class="doccomment">//! exclusively by exchanging messages. Actix actors are implemented</span>
 <span class="doccomment">//! on top of [Tokio](https://tokio.rs).  Multiple actors can run in</span>
@@ -215,26 +217,23 @@
 <span class="doccomment">//! [`Arbiter`](struct.Arbiter.html) API. Actors exchange typed</span>
 <span class="doccomment">//! messages.</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! ## Documentation</span>
+<span class="doccomment">//! ## Other Documentation</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! * [User Guide](https://actix.rs/book/actix/)</span>
-<span class="doccomment">//! * [Chat on gitter](https://gitter.im/actix/actix)</span>
-<span class="doccomment">//! * [GitHub repository](https://github.com/actix/actix)</span>
-<span class="doccomment">//! * [Cargo package](https://crates.io/crates/actix)</span>
-<span class="doccomment">//! * Minimum supported Rust version: 1.40 or later</span>
+<span class="doccomment">//! - [User Guide](https://actix.rs/book/actix/)</span>
+<span class="doccomment">//! - [Community Chat on Gitter](https://gitter.im/actix/actix)</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Features</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! * Async/Sync actors.</span>
-<span class="doccomment">//! * Actor communication in a local/thread context.</span>
-<span class="doccomment">//! * Using Futures for asynchronous message handling.</span>
-<span class="doccomment">//! * HTTP1/HTTP2 support ([actix-web](https://github.com/actix/actix-web))</span>
-<span class="doccomment">//! * Actor supervision.</span>
-<span class="doccomment">//! * Typed messages (No `Any` type). Generic messages are allowed.</span>
+<span class="doccomment">//! - Async/Sync actors</span>
+<span class="doccomment">//! - Actor communication in a local/thread context</span>
+<span class="doccomment">//! - Using Futures for asynchronous message handling</span>
+<span class="doccomment">//! - Actor supervision</span>
+<span class="doccomment">//! - Typed messages (No `Any` type). Generic messages are allowed</span>
+<span class="doccomment">//! - Runs on stable Rust 1.40+</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Package feature</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! * `resolver` - enables dns resolver actor, `actix::actors::resolver`</span>
+<span class="doccomment">//! * `resolver` - enables DNS resolver actor; see [resolver](./actors/resolver/index.html) module</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Tokio runtime</span>
 <span class="doccomment">//!</span>
@@ -243,16 +242,18 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! While it provides minimum overhead, it has its own limits:</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! - You cannot use tokio&#39;s async file I/O, as it relies on blocking calls that are not available</span>
+<span class="doccomment">//! - You cannot use Tokio&#39;s async file I/O, as it relies on blocking calls that are not available</span>
 <span class="doccomment">//! in `current_thread`</span>
 <span class="doccomment">//! - `Stdin`, `Stderr` and `Stdout` from `tokio::io` are the same as file I/O in that regard and</span>
 <span class="doccomment">//! cannot be used in asynchronous manner in actix.</span>
 <span class="comment">// It&#39;s pain for this crate and has false positives.</span>
+
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_doctest_main</span>)]</span>
-<span class="attribute">#![<span class="ident">deny</span>(<span class="ident">bare_trait_objects</span>, <span class="ident">nonstandard_style</span>, <span class="ident">rust_2018_idioms</span>, <span class="ident">unused</span>)]</span>
+<span class="attribute">#![<span class="ident">deny</span>(<span class="ident">nonstandard_style</span>, <span class="ident">rust_2018_idioms</span>)]</span>
 <span class="attribute">#![<span class="ident">warn</span>(<span class="ident">deprecated_in_future</span>, <span class="ident">trivial_casts</span>, <span class="ident">trivial_numeric_casts</span>)]</span>
 
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::<span class="kw-2">*</span>;
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doctest</span>)]</span>
@@ -310,7 +311,9 @@
     <span class="doccomment">//! ```</span>
 
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>)]</span>
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::<span class="kw-2">*</span>;
+
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">Arbiter</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
 
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{
@@ -393,7 +396,7 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// This function panics if the actix system is already running.</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">unit_arg</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">R</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">R</span>) <span class="op">-&gt;</span> <span class="ident">std</span>::<span class="ident">io</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">R</span>: <span class="ident">futures_util</span>::<span class="ident">future</span>::<span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
 {

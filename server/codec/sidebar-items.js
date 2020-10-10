@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ChatRequest","Client request"],["ChatResponse","Server response"]],"struct":[["ChatCodec","Codec for Client -> Server transport"],["ClientChatCodec","Codec for Server -> Client transport"]]});
