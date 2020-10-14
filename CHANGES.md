@@ -9,6 +9,7 @@
   which is enabled by default but can be switched off to reduce dependencies. [#424]
 * The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a
   `Response` to be created with an `async` block [#421]
+* Update `pin-project` to 1.0
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
