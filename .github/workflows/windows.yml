@@ -25,7 +25,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
 
       - name: Install ${{ matrix.version }}
         uses: actions-rs/toolchain@v1
