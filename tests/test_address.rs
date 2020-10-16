@@ -126,8 +126,7 @@ impl Actor for WeakRecipientRunner {
         drop(addr1);
 
         ctx.run_later(Duration::new(0, 1000), move |_, _| {
-            if weak1.upgrade().is_none() {
-            } else {
+            if weak1.upgrade().is_some() {
                 System::current().stop_with_code(1);
                 panic!("Should not be able to upgrade weak1!");
             }
