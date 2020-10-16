@@ -41,6 +41,9 @@ where
     M::Result: Send,
     M: Message + Send,
 {
+    /// Attempts to upgrade a `WeakAddressSender<A>` to a [`Sender<M>`]
+    ///
+    /// Returns [`None`] if the actor has since been dropped.
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
 }
 
