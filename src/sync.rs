@@ -131,10 +131,10 @@ where
             });
         }
 
-        actix_rt::spawn(Self {
+        System::current().arbiter().send(Box::pin(Self {
             queue: Some(sender),
             msgs: rx,
-        });
+        }));
 
         Addr::new(tx)
     }

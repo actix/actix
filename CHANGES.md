@@ -9,10 +9,12 @@
   which is enabled by default but can be switched off to reduce dependencies. [#424]
 * The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a
   `Response` to be created with an `async` block [#421]
+* Send `SyncArbiter` to current `System`'s `Arbiter` and run it as future there. Enabling nested `SyncArbiter`s [#439]  
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
 [#427]: https://github.com/actix/actix/pull/427
+[#439]: https://github.com/actix/actix/pull/439
 
 
 ## 0.10.0 - 2020-09-10
