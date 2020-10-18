@@ -584,7 +584,6 @@ where
     fn boxed(&self) -> Box<dyn WeakSender<M> + Sync> {
         Box::new(self.clone())
     }
-
 }
 
 //
