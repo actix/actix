@@ -45,6 +45,7 @@ where
     ///
     /// Returns [`None`] if the actor has since been dropped.
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
+    fn boxed(&self) -> Box<dyn WeakSender<M> + Sync>;
 }
 
 /// The transmission end of a channel which is used to send values.
@@ -579,6 +580,11 @@ where
             None
         }
     }
+
+    fn boxed(&self) -> Box<dyn WeakSender<M> + Sync> {
+        Box::new(self.clone())
+    }
+
 }
 
 //

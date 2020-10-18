@@ -348,6 +348,16 @@ where
     wtx: Box<dyn WeakSender<M> + Sync>,
 }
 
+impl<M> fmt::Debug for WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "WeakRecipient {{ /* omitted */ }}")
+    }
+}
+
 impl<M> WeakRecipient<M>
 where
     M: Message + Send,
@@ -358,7 +368,7 @@ where
     }
 
     /// Attempts to upgrade the `WeakRecipient<M>` pointer to an `Recipient<M>`, similar to `WeakAddr<A>`
-    pub fn upgrade(self) -> Option<Recipient<M>> {
+    pub fn upgrade(&self) -> Option<Recipient<M>> {
         self.wtx.upgrade().map(Recipient::new)
     }
 }
