@@ -36,6 +36,17 @@ where
 
     fn connected(&self) -> bool;
 }
+pub(crate) trait WeakSender<M>: Send
+where
+    M::Result: Send,
+    M: Message + Send,
+{
+    /// Attempts to upgrade a `WeakAddressSender<A>` to a [`Sender<M>`]
+    ///
+    /// Returns [`None`] if the actor has since been dropped.
+    fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
+    fn boxed(&self) -> Box<dyn WeakSender<M> + Sync>;
+}
 
 /// The transmission end of a channel which is used to send values.
 ///
@@ -552,6 +563,26 @@ impl<A: Actor> WeakAddressSender<A> {
             Some(inner) => Some(AddressSenderProducer { inner }.sender()),
             None => None,
         }
+    }
+}
+
+impl<A, M> WeakSender<M> for WeakAddressSender<A>
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<A, M>,
+    M::Result: Send,
+    M: Message + Send + 'static,
+{
+    fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>> {
+        if let Some(inner) = WeakAddressSender::upgrade(&self) {
+            Some(Box::new(inner))
+        } else {
+            None
+        }
+    }
+
+    fn boxed(&self) -> Box<dyn WeakSender<M> + Sync> {
+        Box::new(self.clone())
     }
 }
 
