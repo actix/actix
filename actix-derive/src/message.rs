@@ -69,10 +69,10 @@ fn get_attribute_type_multiple(
             .map(|m| meta_item_to_ty(m).ok())
             .collect())
     } else {
-        return Err(syn::Error::new_spanned(
+        Err(syn::Error::new_spanned(
             attr,
             format!("The correct syntax is #[{}(type, type, ...)]", name),
-        ));
+        ))
     }
 }
 
