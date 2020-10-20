@@ -178,10 +178,10 @@
             .<span class="ident">map</span>(<span class="op">|</span><span class="ident">m</span><span class="op">|</span> <span class="ident">meta_item_to_ty</span>(<span class="ident">m</span>).<span class="ident">ok</span>())
             .<span class="ident">collect</span>())
     } <span class="kw">else</span> {
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new_spanned</span>(
+        <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new_spanned</span>(
             <span class="ident">attr</span>,
             <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;The correct syntax is #[{}(type, type, ...)]&quot;</span>, <span class="ident">name</span>),
-        ));
+        ))
     }
 }
 
