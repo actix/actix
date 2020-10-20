@@ -420,7 +420,7 @@ mod tests {
 
     #[actix_rt::test]
     async fn nested_sync_arbiters() {
-        let addr = SyncArbiter::start(1, || SyncActor1::run());
+        let addr = SyncArbiter::start(1, SyncActor1::run);
         let (tx, rx) = oneshot::channel();
         addr.send(Msg(tx)).await.unwrap();
         assert_eq!(233u8, rx.await.unwrap());
