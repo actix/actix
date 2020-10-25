@@ -9,6 +9,7 @@
   which is enabled by default but can be switched off to reduce dependencies. [#424]
 * The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a
   `Response` to be created with an `async` block [#421]
+* Update `pin-project` to 1.0. [#435]
 * Allow creating `WeakRecipient` from `WeakAddr`, similiar to `Recipient` from `Addr`. [#432]
 * Send `SyncArbiter` to current `System`'s `Arbiter` and run it as future there. Enabling nested `SyncArbiter`s [#439]  
 
@@ -16,6 +17,7 @@
 [#424]: https://github.com/actix/actix/pull/424
 [#427]: https://github.com/actix/actix/pull/427
 [#432]: https://github.com/actix/actix/pull/432
+[#435]: https://github.com/actix/actix/pull/435
 [#439]: https://github.com/actix/actix/pull/439
 
 
