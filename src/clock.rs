@@ -8,6 +8,7 @@
 //!
 //! [Module `tokio_timer::clock`]: https://docs.rs/tokio-timer/latest/tokio_timer/clock/index.html
 
+// TODO: use the re-export of actix-rt?
 pub use tokio::time::{
-    delay_for, delay_until, interval_at, Delay, Duration, Instant, Interval,
+    sleep, sleep_until, interval_at, Sleep, Duration, Instant, Interval,
 };

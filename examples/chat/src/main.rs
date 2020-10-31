@@ -64,7 +64,7 @@ async fn main() {
     // items So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
     Server::create(move |ctx| {
-        ctx.add_message_stream(Box::leak(listener).incoming().map(|st| {
+        ctx.add_message_stream(Box::leak(listener).map(|st| {
             let st = st.unwrap();
             let addr = st.peer_addr().unwrap();
             TcpConnect(st, addr)

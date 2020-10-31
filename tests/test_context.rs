@@ -6,7 +6,7 @@ use actix::prelude::*;
 use futures_channel::mpsc::unbounded;
 use futures_util::stream::once;
 use futures_util::stream::StreamExt;
-use tokio::time::{delay_for, interval_at, Duration, Instant};
+use tokio::time::{sleep, interval_at, Duration, Instant};
 
 #[derive(Debug, PartialEq)]
 enum Op {
@@ -89,7 +89,7 @@ fn test_add_timeout_cancel() {
         let _addr = MyActor { op: Op::Cancel }.start();
 
         actix_rt::spawn(async move {
-            delay_for(Duration::new(0, 1000)).await;
+            sleep(Duration::new(0, 1000)).await;
             System::current().stop();
         });
     })
@@ -148,7 +148,7 @@ impl Handler<Ping> for ContextWait {
         let cnt = self.cnt.load(Ordering::Relaxed);
         self.cnt.store(cnt + 1, Ordering::Relaxed);
 
-        let fut = delay_for(Duration::from_secs(1));
+        let fut = sleep(Duration::from_secs(1));
         fut.into_actor(self).wait(ctx);
 
         System::current().stop();
@@ -242,7 +242,7 @@ async fn test_nowait_context() {
         addr.do_send(Ping);
     });
 
-    delay_for(Duration::from_millis(200)).await;
+    sleep(Duration::from_millis(200)).await;
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -264,7 +264,7 @@ async fn test_message_stream_nowait_context() {
         });
     });
 
-    delay_for(Duration::from_millis(200)).await;
+    sleep(Duration::from_millis(200)).await;
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
@@ -286,7 +286,7 @@ fn test_stream_nowait_context() {
         });
 
         actix_rt::spawn(async move {
-            delay_for(Duration::from_millis(200)).await;
+            sleep(Duration::from_millis(200)).await;
             System::current().stop();
         });
     })
@@ -311,7 +311,7 @@ fn test_notify() {
         addr.do_send(Ping);
 
         actix_rt::spawn(async move {
-            delay_for(Duration::from_millis(200)).await;
+            sleep(Duration::from_millis(200)).await;
             System::current().stop();
         });
     })
@@ -445,14 +445,14 @@ fn test_cancel_completed_with_no_context_item() {
 
         // then, cancel the future which would already be completed
         actix_rt::spawn(async move {
-            delay_for(Duration::from_millis(100)).await;
+            sleep(Duration::from_millis(100)).await;
             addr.do_send(CancelMessage);
         });
 
         // finally, terminate the actor, which shouldn't be blocked unless
         // the actor context ate up CPU time
         actix_rt::spawn(async {
-            delay_for(Duration::from_millis(200)).await;
+            sleep(Duration::from_millis(200)).await;
             System::current().stop();
         });
     })

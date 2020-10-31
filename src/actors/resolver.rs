@@ -1,8 +1,8 @@
 //! DNS resolver and connector utility actor
 //!
 //! ## Example
-//!
-//! ```rust
+//! //FIXME: remove no_run when actors::resovler working on tokio 0.3
+//! ```rust no_run
 //! use actix::actors::resolver;
 //! use actix::prelude::*;
 //!
@@ -35,13 +35,12 @@ use std::task::{self, Poll};
 use std::time::Duration;
 
 use derive_more::Display;
-use log::warn;
 use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::TokioAsyncResolver as AsyncResolver;
 use trust_dns_resolver::{error::ResolveError, lookup_ip::LookupIp};
 
-use crate::clock::Delay;
+use crate::clock::Sleep;
 use crate::fut::ActorFuture;
 use crate::fut::Either;
 use crate::prelude::*;
@@ -173,24 +172,26 @@ impl Actor for Resolver {
                         }
                         Box::pin(
                             async {
-                                match AsyncResolver::from_system_conf(
-                                    tokio::runtime::Handle::current(),
-                                )
-                                .await
-                                {
-                                    Ok(resolver) => Ok(resolver),
-                                    Err(err) => {
-                                        warn!(
-                                            "Can not create system dns resolver: {}",
-                                            err
-                                        );
-                                        AsyncResolver::tokio(
-                                            ResolverConfig::default(),
-                                            ResolverOpts::default(),
-                                        )
-                                        .await
-                                    }
-                                }
+                                // FIXME: as the message below show
+                                unimplemented!("Disabled waiting for trust dns support")
+                                // match AsyncResolver::from_system_conf(
+                                //     tokio::runtime::Handle::current(),
+                                // )
+                                // .await
+                                // {
+                                //     Ok(resolver) => Ok(resolver),
+                                //     Err(err) => {
+                                //         log::warn!(
+                                //             "Can not create system dns resolver: {}",
+                                //             err
+                                //         );
+                                //         AsyncResolver::tokio(
+                                //             ResolverConfig::default(),
+                                //             ResolverOpts::default(),
+                                //         )
+                                //         .await
+                                //     }
+                                // }
                             }
                             .into_actor(this),
                         )
@@ -394,7 +395,7 @@ impl ActorFuture for ResolveFut {
 #[allow(clippy::type_complexity)]
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
-    timeout: Delay,
+    timeout: Sleep,
     stream: Option<Pin<Box<dyn Future<Output = Result<TcpStream, io::Error>>>>>,
 }
 
@@ -407,7 +408,7 @@ impl TcpConnector {
         TcpConnector {
             addrs,
             stream: None,
-            timeout: tokio::time::delay_for(timeout),
+            timeout: tokio::time::sleep(timeout),
         }
     }
 }

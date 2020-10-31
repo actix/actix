@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use actix::prelude::*;
-use tokio::time::{delay_for, Duration, Instant};
+use tokio::time::{sleep, Duration, Instant};
 
 #[derive(Clone, Debug)]
 struct Num(usize);
@@ -47,7 +47,7 @@ async fn test_stream() {
         MyActor(act_count, act_err, Running::Stop)
     });
 
-    delay_for(Duration::new(0, 1_000_000)).await;
+    sleep(Duration::new(0, 1_000_000)).await;
 
     assert_eq!(count.load(Ordering::Relaxed), 7);
     assert!(err.load(Ordering::Relaxed));
@@ -97,7 +97,7 @@ async fn test_infinite_stream() {
         StopOnRequest(act_count, act_stopped, act_finished)
     });
 
-    delay_for(Duration::new(0, 1_000_000)).await;
+    sleep(Duration::new(0, 1_000_000)).await;
 
     addr.send(Stop).await.unwrap();
 

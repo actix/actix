@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use actix::clock::{delay_for, Duration};
+use actix::clock::{sleep, Duration};
 use actix::prelude::*;
 use futures_util::future::FutureExt;
 
@@ -13,7 +13,7 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        delay_for(Duration::new(0, 5_000_000))
+        sleep(Duration::new(0, 5_000_000))
             .then(|_| async {
                 System::current().stop();
             })
@@ -51,8 +51,8 @@ impl Actor for MyStreamActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let mut s = futures_util::stream::FuturesOrdered::new();
-        s.push(delay_for(Duration::new(0, 5_000_000)));
-        s.push(delay_for(Duration::new(0, 5_000_000)));
+        s.push(sleep(Duration::new(0, 5_000_000)));
+        s.push(sleep(Duration::new(0, 5_000_000)));
 
         s.into_actor(self)
             .timeout(Duration::new(0, 1000))
@@ -60,7 +60,7 @@ impl Actor for MyStreamActor {
                 // Additional waiting time to test `then` call as well
                 Box::pin(
                     async move {
-                        delay_for(Duration::from_millis(500)).await;
+                        sleep(Duration::from_millis(500)).await;
                         res
                     }
                     .into_actor(act),

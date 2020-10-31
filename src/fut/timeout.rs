@@ -6,7 +6,7 @@ use std::time::Duration;
 use pin_project::pin_project;
 
 use crate::actor::Actor;
-use crate::clock::{delay_for, Delay};
+use crate::clock::{sleep, Sleep};
 use crate::fut::ActorFuture;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
@@ -23,7 +23,7 @@ where
     #[pin]
     fut: F,
     #[pin]
-    timeout: Delay,
+    timeout: Sleep,
 }
 
 pub fn new<F>(future: F, timeout: Duration) -> Timeout<F>
@@ -32,7 +32,7 @@ where
 {
     Timeout {
         fut: future,
-        timeout: delay_for(timeout),
+        timeout: sleep(timeout),
     }
 }
 

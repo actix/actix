@@ -7,7 +7,7 @@ use futures_channel::oneshot;
 
 use pin_project::pin_project;
 
-use crate::clock::Delay;
+use crate::clock::Sleep;
 use crate::handler::{Handler, Message};
 
 use super::channel::{AddressSender, Sender};
@@ -25,7 +25,7 @@ where
 {
     rx: Option<oneshot::Receiver<M::Result>>,
     info: Option<(AddressSender<A>, M)>,
-    timeout: Option<Delay>,
+    timeout: Option<Sleep>,
 }
 
 impl<A, M> Request<A, M>
@@ -52,7 +52,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(tokio::time::delay_for(dur));
+        self.timeout = Some(tokio::time::sleep(dur));
         self
     }
 
@@ -118,7 +118,7 @@ where
 {
     rx: Option<oneshot::Receiver<M::Result>>,
     info: Option<(Box<dyn Sender<M>>, M)>,
-    timeout: Option<Delay>,
+    timeout: Option<Sleep>,
 }
 
 impl<M> RecipientRequest<M>
@@ -139,7 +139,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(tokio::time::delay_for(dur));
+        self.timeout = Some(tokio::time::sleep(dur));
         self
     }
 

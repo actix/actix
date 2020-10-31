@@ -1,4 +1,4 @@
-use actix::clock::delay_for;
+use actix::clock::sleep;
 use actix::prelude::*;
 use futures_util::stream::StreamExt;
 use std::time::{Duration, Instant};
@@ -18,7 +18,7 @@ impl Handler<Num> for MyActor {
 
     fn handle(&mut self, msg: Num, _: &mut Self::Context) -> Self::Result {
         AtomicResponse::new(Box::pin(
-            delay_for(Duration::from_millis(msg.0 as u64))
+            sleep(Duration::from_millis(msg.0 as u64))
                 .into_actor(self)
                 .map(move |_res, this, _| {
                     this.0 += msg.0;

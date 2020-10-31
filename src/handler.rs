@@ -102,7 +102,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 /// even if there are multiple `Msg` sent to `MyActor`.
 /// ```rust, no_run
 /// # use actix::prelude::*;
-/// # use actix::clock::delay_for;
+/// # use actix::clock::sleep;
 /// # use std::time::Duration;
 /// #
 /// # #[derive(Message)]
@@ -126,7 +126,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 ///                     this.0 = 30;
 ///                 })
 ///                 .then(|_, this, _| {
-///                     delay_for(Duration::from_secs(3)).into_actor(this)
+///                     sleep(Duration::from_secs(3)).into_actor(this)
 ///                 })
 ///                 .map(|_, this, _| {
 ///                     this.0 -= 1;

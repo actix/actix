@@ -173,11 +173,11 @@ pub mod dev {
 ///
 /// ```
 /// use std::time::{Duration, Instant};
-/// use tokio::time::delay_for;
+/// use tokio::time::sleep;
 ///
 /// fn main() {
 ///   actix::run(async move {
-///       delay_for(Duration::from_millis(100)).await;
+///       sleep(Duration::from_millis(100)).await;
 ///       actix::System::current().stop();
 ///   });
 /// }

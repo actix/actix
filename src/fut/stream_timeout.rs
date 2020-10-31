@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::actor::Actor;
-use crate::clock::{self, Delay, Duration};
+use crate::clock::{self, Sleep, Duration};
 use crate::fut::ActorStream;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
@@ -18,7 +18,7 @@ where
 {
     stream: S,
     dur: Duration,
-    timeout: Option<Delay>,
+    timeout: Option<Sleep>,
 }
 
 pub fn new<S>(stream: S, timeout: Duration) -> StreamTimeout<S>
@@ -57,7 +57,7 @@ where
         }
 
         if this.timeout.is_none() {
-            this.timeout = Some(clock::delay_for(this.dur));
+            this.timeout = Some(clock::sleep(this.dur));
         }
 
         // check timeout

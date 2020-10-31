@@ -8,7 +8,7 @@ use futures_util::{ready, stream::Stream};
 use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, AsyncContext};
-use crate::clock::Delay;
+use crate::clock::Sleep;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
 
@@ -54,7 +54,7 @@ where
     M: Message,
 {
     msg: Option<M>,
-    timeout: Delay,
+    timeout: Sleep,
     act: PhantomData<A>,
     m: PhantomData<M>,
 }
@@ -73,7 +73,7 @@ where
     pub fn new(msg: M, timeout: Duration) -> Self {
         Self {
             msg: Some(msg),
-            timeout: tokio::time::delay_for(timeout),
+            timeout: tokio::time::sleep(timeout),
             act: PhantomData,
             m: PhantomData,
         }

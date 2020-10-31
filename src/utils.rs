@@ -4,9 +4,10 @@ use std::task::{Context, Poll};
 use std::time::Duration;
 
 use futures_channel::oneshot;
+use futures_util::StreamExt;
 
 use crate::actor::Actor;
-use crate::clock::{interval_at, Delay, Instant, Interval};
+use crate::clock::{interval_at, Sleep, Instant, Interval};
 use crate::fut::{ActorFuture, ActorStream};
 
 pub struct Condition<T>
@@ -85,7 +86,7 @@ where
     A: Actor,
 {
     f: Option<Box<dyn TimerFuncBox<A>>>,
-    timeout: Delay,
+    timeout: Sleep,
 }
 
 impl<A> TimerFunc<A>
@@ -99,7 +100,7 @@ where
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: tokio::time::delay_for(timeout),
+            timeout: tokio::time::sleep(timeout),
         }
     }
 }
@@ -220,7 +221,7 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
     ) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
         loop {
-            match this.interval.poll_tick(task) {
+            match this.interval.poll_next_unpin(task) {
                 Poll::Ready(_) => {
                     //Interval Stream cannot return None
                     this.f.call(act, ctx);
