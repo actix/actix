@@ -9,6 +9,7 @@ struct Added(usize);
 struct Sum(usize, usize);
 
 #[derive(Actor, Default)]
+#[actor(context = "::actix::SyncContext")]
 struct Adder;
 
 impl Handler<Sum> for Adder {

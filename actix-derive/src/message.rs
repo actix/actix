@@ -1,6 +1,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
 
+use crate::utils::find_attribute_meta;
+
 pub const MESSAGE_ATTR: &str = "rtype";
 
 pub fn expand(ast: &syn::DeriveInput) -> TokenStream {
@@ -42,25 +44,9 @@ fn get_attribute_type_multiple(
     ast: &syn::DeriveInput,
     name: &str,
 ) -> syn::Result<Vec<Option<syn::Type>>> {
-    let attr = ast
-        .attrs
-        .iter()
-        .find_map(|a| {
-            let a = a.parse_meta();
-            match a {
-                Ok(meta) => {
-                    if meta.path().is_ident(name) {
-                        Some(meta)
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            }
-        })
-        .ok_or_else(|| {
-            syn::Error::new(Span::call_site(), format!("Expect a attribute `{}`", name))
-        })?;
+    let attr = find_attribute_meta(ast, name).ok_or_else(|| {
+        syn::Error::new(Span::call_site(), format!("Expect a attribute `{}`", name))
+    })?;
 
     if let syn::Meta::List(ref list) = attr {
         Ok(list
