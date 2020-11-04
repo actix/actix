@@ -1,5 +1,5 @@
 use actix::{Actor, Handler, System};
-use actix_derive::{Actor, Message, MessageResponse};
+use actix_derive::{Message, MessageResponse};
 
 #[derive(MessageResponse)]
 struct Added(usize);
@@ -8,7 +8,7 @@ struct Added(usize);
 #[rtype(result = "Added")]
 struct Sum(usize, usize);
 
-#[derive(Actor, Default)]
+#[derive(actix_derive::Actor, Default)]
 struct Adder;
 
 impl Handler<Sum> for Adder {
