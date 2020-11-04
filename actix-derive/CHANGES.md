@@ -1,5 +1,7 @@
 # Changes
 
+* Add `Actor` proc derive macro
+
 ## 0.5.0 (2019-10-27
 * Update syn & quote to 1.0
 
