@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `examples/chat/src/session.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>session.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../server/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><span class="help-button">?</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `examples/chat/src/session.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>session.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../server/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><span class="help-button">?</span>
                 <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
@@ -209,12 +211,12 @@
             .<span class="ident">into_actor</span>(<span class="self">self</span>)
             .<span class="ident">then</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">res</span>, <span class="ident">act</span>, <span class="kw">_</span><span class="op">|</span> {
                 <span class="ident">act</span>.<span class="ident">id</span> <span class="op">=</span> <span class="ident">res</span>.<span class="ident">unwrap</span>();
-                <span class="kw">async</span> {}.<span class="ident">into_actor</span>(<span class="ident">act</span>)
+                <span class="ident">async</span> {}.<span class="ident">into_actor</span>(<span class="ident">act</span>)
             })
             .<span class="ident">wait</span>(<span class="ident">ctx</span>);
     }
 
-    <span class="kw">fn</span> <span class="ident">stopping</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>) <span class="op">-&gt;</span> <span class="ident">Running</span> {
+    <span class="kw">fn</span> <span class="ident">stopping</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Running</span> {
         <span class="comment">// notify chat server</span>
         <span class="self">self</span>.<span class="ident">addr</span>.<span class="ident">do_send</span>(<span class="ident">server</span>::<span class="ident">Disconnect</span> { <span class="ident">id</span>: <span class="self">self</span>.<span class="ident">id</span> });
         <span class="ident">Running</span>::<span class="ident">Stop</span>
@@ -224,11 +226,11 @@
 <span class="kw">impl</span> <span class="ident">actix</span>::<span class="ident">io</span>::<span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ChatSession</span> {}
 
 <span class="doccomment">/// To use `Framed` with an actor, we have to implement `StreamHandler` trait</span>
-<span class="kw">impl</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ChatRequest</span>, <span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;&gt;</span> <span class="kw">for</span> <span class="ident">ChatSession</span> {
+<span class="kw">impl</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ChatRequest</span>, <span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ChatSession</span> {
     <span class="doccomment">/// This is main event loop for client requests</span>
     <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ChatRequest</span>, <span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>) {
         <span class="kw">match</span> <span class="ident">msg</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">List</span>) <span class="op">=&gt;</span> {
+            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">List</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="comment">// Send ListRooms message to chat server and wait for response</span>
                 <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;List rooms&quot;</span>);
                 <span class="self">self</span>.<span class="ident">addr</span>
@@ -236,16 +238,16 @@
                     .<span class="ident">into_actor</span>(<span class="self">self</span>) <span class="comment">// &lt;- create actor compatible future</span>
                     .<span class="ident">then</span>(<span class="op">|</span><span class="ident">res</span>, <span class="ident">act</span>, <span class="kw">_</span><span class="op">|</span> {
                         <span class="kw">match</span> <span class="ident">res</span> {
-                            <span class="prelude-val">Ok</span>(<span class="ident">rooms</span>) <span class="op">=&gt;</span> <span class="ident">act</span>.<span class="ident">framed</span>.<span class="ident">write</span>(<span class="ident">ChatResponse</span>::<span class="ident">Rooms</span>(<span class="ident">rooms</span>)),
-                            <span class="kw">_</span> <span class="op">=&gt;</span> <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Something is wrong&quot;</span>),
+                            <span class="prelude-val">Ok</span>(<span class="ident">rooms</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">act</span>.<span class="ident">framed</span>.<span class="ident">write</span>(<span class="ident">ChatResponse</span>::<span class="ident">Rooms</span>(<span class="ident">rooms</span>)),
+                            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Something is wrong&quot;</span>),
                         };
-                        <span class="kw">async</span> {}.<span class="ident">into_actor</span>(<span class="ident">act</span>)
+                        <span class="ident">async</span> {}.<span class="ident">into_actor</span>(<span class="ident">act</span>)
                     })
                     .<span class="ident">wait</span>(<span class="ident">ctx</span>)
                 <span class="comment">// .wait(ctx) pauses all events in context,</span>
                 <span class="comment">// so actor wont receive any new messages until it get list of rooms back</span>
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">Join</span>(<span class="ident">name</span>)) <span class="op">=&gt;</span> {
+            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">Join</span>(<span class="ident">name</span>)) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Join to room: {}&quot;</span>, <span class="ident">name</span>);
                 <span class="self">self</span>.<span class="ident">room</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">clone</span>();
                 <span class="self">self</span>.<span class="ident">addr</span>.<span class="ident">do_send</span>(<span class="ident">server</span>::<span class="ident">Join</span> {
@@ -254,7 +256,7 @@
                 });
                 <span class="self">self</span>.<span class="ident">framed</span>.<span class="ident">write</span>(<span class="ident">ChatResponse</span>::<span class="ident">Joined</span>(<span class="ident">name</span>));
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">Message</span>(<span class="ident">message</span>)) <span class="op">=&gt;</span> {
+            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">Message</span>(<span class="ident">message</span>)) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="comment">// send message to chat server</span>
                 <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Peer message: {}&quot;</span>, <span class="ident">message</span>);
                 <span class="self">self</span>.<span class="ident">addr</span>.<span class="ident">do_send</span>(<span class="ident">server</span>::<span class="ident">Message</span> {
@@ -264,8 +266,8 @@
                 })
             }
             <span class="comment">// we update heartbeat time on ping from peer</span>
-            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">Ping</span>) <span class="op">=&gt;</span> <span class="self">self</span>.<span class="ident">hb</span> <span class="op">=</span> <span class="ident">Instant</span>::<span class="ident">now</span>(),
-            <span class="kw">_</span> <span class="op">=&gt;</span> <span class="macro">unimplemented</span><span class="macro">!</span>(),
+            <span class="prelude-val">Ok</span>(<span class="ident">ChatRequest</span>::<span class="ident">Ping</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">hb</span> <span class="op">=</span> <span class="ident">Instant</span>::<span class="ident">now</span>(),
+            <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unimplemented</span><span class="macro">!</span>(),
         }
     }
 }
@@ -286,7 +288,7 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
         <span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">ChatServer</span><span class="op">&gt;</span>,
         <span class="ident">framed</span>: <span class="ident">actix</span>::<span class="ident">io</span>::<span class="ident">FramedWrite</span><span class="op">&lt;</span><span class="ident">ChatResponse</span>, <span class="ident">WriteHalf</span><span class="op">&lt;</span><span class="ident">TcpStream</span><span class="op">&gt;</span>, <span class="ident">ChatCodec</span><span class="op">&gt;</span>,
-    ) <span class="op">-&gt;</span> <span class="ident">ChatSession</span> {
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ChatSession</span> {
         <span class="ident">ChatSession</span> {
             <span class="ident">addr</span>,
             <span class="ident">framed</span>,
