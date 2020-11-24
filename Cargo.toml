@@ -65,3 +65,4 @@ codegen-units = 1
 [patch.crates-io]
 actix = { path = "." }
 actix_derive = { path = "actix-derive" }
+actix-rt = { git = "https://github.com/fakeshadow/actix-net", branch = "actix-rt" }

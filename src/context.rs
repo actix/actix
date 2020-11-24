@@ -133,12 +133,14 @@ where
     ///
     ///     fn started(&mut self, ctx: &mut Self::Context) {
     ///         ctx.set_mailbox_capacity(1);
+    ///         System::current().stop();
     ///     }
     /// }
     ///
     /// # fn main() {
-    /// # System::new("test");
-    /// let addr = MyActor.start();
+    /// # let mut sys = System::new("test");
+    /// let addr = sys.block_on(async { MyActor.start() });
+    /// sys.run();
     /// # }
     /// ```
     pub fn set_mailbox_capacity(&mut self, cap: usize) {
