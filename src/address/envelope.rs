@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use futures_channel::oneshot::Sender;
 
 use crate::actor::{Actor, AsyncContext};
@@ -16,15 +14,9 @@ where
     fn pack(msg: M, tx: Option<Sender<M::Result>>) -> Envelope<A>;
 }
 
-pub trait EnvelopeProxy {
-    type Actor: Actor;
-
+pub trait EnvelopeProxy<A: Actor> {
     /// handle message within new actor and context
-    fn handle(
-        &mut self,
-        act: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
-    );
+    fn handle(&mut self, act: &mut A, ctx: &mut A::Context);
 }
 
 impl<A, M> ToEnvelope<A, M> for Context<A>
@@ -38,7 +30,7 @@ where
     }
 }
 
-pub struct Envelope<A: Actor>(Box<dyn EnvelopeProxy<Actor = A> + Send>);
+pub struct Envelope<A: Actor>(Box<dyn EnvelopeProxy<A> + Send>);
 
 impl<A: Actor> Envelope<A> {
     pub fn new<M>(msg: M, tx: Option<Sender<M::Result>>) -> Self
@@ -48,68 +40,44 @@ impl<A: Actor> Envelope<A> {
         M: Message + Send + 'static,
         M::Result: Send,
     {
-        Envelope(Box::new(SyncEnvelopeProxy {
-            tx,
-            msg: Some(msg),
-            act: PhantomData,
-        }))
+        Envelope(Box::new(SyncEnvelopeProxy { tx, msg: Some(msg) }))
     }
 
-    pub fn with_proxy(proxy: Box<dyn EnvelopeProxy<Actor = A> + Send>) -> Self {
+    pub fn with_proxy(proxy: Box<dyn EnvelopeProxy<A> + Send>) -> Self {
         Envelope(proxy)
     }
 }
 
-impl<A: Actor> EnvelopeProxy for Envelope<A> {
-    type Actor = A;
-
-    fn handle(
-        &mut self,
-        act: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
-    ) {
+impl<A: Actor> EnvelopeProxy<A> for Envelope<A> {
+    fn handle(&mut self, act: &mut A, ctx: &mut <A as Actor>::Context) {
         self.0.handle(act, ctx)
     }
 }
 
-pub struct SyncEnvelopeProxy<A, M>
+pub struct SyncEnvelopeProxy<M>
 where
     M: Message + Send,
     M::Result: Send,
 {
-    act: PhantomData<A>,
     msg: Option<M>,
     tx: Option<Sender<M::Result>>,
 }
 
-unsafe impl<A, M> Send for SyncEnvelopeProxy<A, M>
-where
-    M: Message + Send,
-    M::Result: Send,
-{
-}
-
-impl<A, M> EnvelopeProxy for SyncEnvelopeProxy<A, M>
+impl<A, M> EnvelopeProxy<A> for SyncEnvelopeProxy<M>
 where
     M: Message + Send + 'static,
     M::Result: Send,
     A: Actor + Handler<M>,
     A::Context: AsyncContext<A>,
 {
-    type Actor = A;
-
-    fn handle(
-        &mut self,
-        act: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
-    ) {
+    fn handle(&mut self, act: &mut A, ctx: &mut <A as Actor>::Context) {
         let tx = self.tx.take();
         if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
             return;
         }
 
         if let Some(msg) = self.msg.take() {
-            let fut = <Self::Actor as Handler<M>>::handle(act, msg, ctx);
+            let fut = <A as Handler<M>>::handle(act, msg, ctx);
             fut.handle(ctx, tx)
         }
     }
