@@ -111,7 +111,7 @@ impl Handler<TimePing> for Client {
     }
 }
 
-#[actix_rt::main]
+#[actix::main]
 async fn main() {
     {
         println!("🎩 creating client client");

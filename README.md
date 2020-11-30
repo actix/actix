@@ -107,7 +107,7 @@ for more information on the actor lifecycle.
 An Actor communicates with another Actor by sending messages. In actix all messages
 are typed. Let's define a simple `Sum` message with two `usize` parameters,
 and an actor which will accept this message and return the sum of those two numbers.
-Here we use the [actix-rt](https://github.com/actix/actix-net) as way start our `System`
+Here we use the `#[actix::main]` as way start our `System`
 and drive our main `Future` so we can easily `.await` for the messages sent to the `Actor`.
 
 ```rust
@@ -134,7 +134,7 @@ impl Handler<Sum> for Summator {
     }
 }
 
-#[actix_rt::main] // <- starts the system and block until future resolves
+#[actix::main] // <- starts the system and block until future resolves
 async fn main() {
     let addr = Summator.start();
     let res = addr.send(Sum(10, 5)).await; // <- send message and get future for result

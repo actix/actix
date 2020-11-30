@@ -41,7 +41,7 @@ impl Handler<Fibonacci> for SyncActor {
     }
 }
 
-#[actix_rt::main]
+#[actix::main]
 async fn main() {
     // start sync arbiter with 3 threads
     let addr = SyncArbiter::start(3, || SyncActor);
