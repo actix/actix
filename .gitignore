@@ -1,6 +1,7 @@
 Cargo.lock
 /gh-pages
 __pycache__
+.idea
 
 *.so
 *.out

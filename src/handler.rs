@@ -159,6 +159,79 @@ where
     }
 }
 
+/// This API is `unsound`
+///
+/// An experimental Response Type that can borrow `&mut Actor` and `&mut Context<Actor>`
+/// in async/await.
+///
+/// *. `IMPORTANT`: The async block can borrow only `&mut Actor` and `&mut Context<Actor>`.
+/// Borrowing anything else would end up with `UB` easily.
+/// e.g: Borrowing Message type, Borrowing variables created in Handler::handle method.
+///
+/// # Examples:
+/// On the following example, the response to `Msg` would always be 29
+/// even if there are multiple `Msg` sent to `MyActor`.
+/// ```rust, no_run
+/// # use actix::prelude::*;
+/// # use actix::clock::delay_for;
+/// # use std::time::Duration;
+/// #
+/// # #[derive(Message)]
+/// # #[rtype(result = "usize")]
+/// # struct Msg;
+/// #
+/// # struct MyActor(usize);
+/// #
+/// # impl Actor for MyActor {
+/// #    type Context = Context<Self>;
+/// # }
+/// #
+/// impl Handler<Msg> for MyActor {
+///     type Result = AtomicResponseUnsafe<usize>;
+///
+///     fn handle(&mut self, _: Msg, ctx: &mut Context<Self>) -> Self::Result {
+///         AtomicResponseUnsafe::new(async move {
+///             let ctx = ctx;
+///             self.0 = 30;
+///             delay_for(Duration::from_millis(1)).await;
+///             self.0 -= 1;
+///             self.0
+///         })
+///     }
+/// }
+/// ```
+pub struct AtomicResponseUnsafe<T>(ResponseFuture<T>);
+
+impl<T> AtomicResponseUnsafe<T> {
+    pub fn new<F>(fut: F) -> Self
+    where
+        F: Future<Output = T>,
+    {
+        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut);
+        // SAFETY:
+        //
+        // Borrow &mut Actor and &mut Context<Actor> is safe because the actor would be
+        // blocked on this future until it's resolved.
+        // This is achieved with Context::wait which give exclusive access to actor and context.
+        AtomicResponseUnsafe(unsafe { core::mem::transmute(fut) })
+    }
+}
+
+impl<A, M, T: 'static> MessageResponse<A, M> for AtomicResponseUnsafe<T>
+where
+    A: Actor,
+    M: Message<Result = T>,
+    A::Context: AsyncContext<A>,
+{
+    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+        ctx.wait(crate::fut::wrap_future(self.0).map(move |res, _, _| {
+            if let Some(tx) = tx {
+                tx.send(res);
+            }
+        }));
+    }
+}
+
 /// A specialized actor future for asynchronous message handling.
 ///
 /// Intended be used when the future returned will,
