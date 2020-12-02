@@ -191,7 +191,8 @@ where
 ///     type Result = ResponseAsync<usize>;
 ///
 ///     fn handle(&mut self, msg: Msg, ctx: &mut Context<Self>) -> Self::Result {
-///         ResponseAsync::atomic(self, msg, ctx, |act, msg, ctx| async move {
+///         ResponseAsync::atomic(self, ctx, |act, ctx| async move {
+///             let msg = msg;
 ///             let ctx = ctx;
 ///             act.0 = 30;
 ///             delay_for(Duration::from_millis(1)).await;
@@ -205,7 +206,8 @@ where
 ///     type Result = ResponseAsync<usize>;
 ///
 ///     fn handle(&mut self, msg: Msg2, ctx: &mut Context<Self>) -> Self::Result {
-///         ResponseAsync::concurrent(self, msg, ctx, |act, msg, ctx| async move {
+///         ResponseAsync::concurrent(self, ctx, |act, ctx| async move {
+///             let msg = msg;
 ///             let ctx = ctx;
 ///             delay_for(Duration::from_millis(1)).await;
 ///             act.0
@@ -219,20 +221,14 @@ pub enum ResponseAsync<T> {
 }
 
 impl<T: 'static> ResponseAsync<T> {
-    pub fn concurrent<'a, A, M, F, Fut>(
-        act: &'a A,
-        msg: M,
-        ctx: &'a A::Context,
-        fut: F,
-    ) -> Self
+    pub fn concurrent<'a, A, F, Fut>(act: &'a A, ctx: &'a A::Context, fut: F) -> Self
     where
         A: Actor,
         A::Context: AsyncContext<A>,
-        M: Message<Result = T>,
-        F: FnOnce(&'a A, M, &'a A::Context) -> Fut + 'static,
+        F: FnOnce(&'a A, &'a A::Context) -> Fut + 'static,
         Fut: Future<Output = T> + 'a,
     {
-        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut(act, msg, ctx));
+        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut(act, ctx));
         // SAFETY:
         //
         // Borrow & Actor and & Context<Actor> is unsafe by itself.
@@ -240,20 +236,14 @@ impl<T: 'static> ResponseAsync<T> {
         ResponseAsync::Concurrent(unsafe { core::mem::transmute(fut) })
     }
 
-    pub fn atomic<'a, A, M, F, Fut>(
-        act: &'a mut A,
-        msg: M,
-        ctx: &'a mut A::Context,
-        fut: F,
-    ) -> Self
+    pub fn atomic<'a, A, F, Fut>(act: &'a mut A, ctx: &'a mut A::Context, fut: F) -> Self
     where
         A: Actor,
         A::Context: AsyncContext<A>,
-        M: Message<Result = T>,
-        F: FnOnce(&'a mut A, M, &'a mut A::Context) -> Fut + 'static,
+        F: FnOnce(&'a mut A, &'a mut A::Context) -> Fut + 'static,
         Fut: Future<Output = T> + 'a,
     {
-        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut(act, msg, ctx));
+        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut(act, ctx));
         // SAFETY:
         //
         // Borrow &mut Actor and &mut Context<Actor> is safe because the actor would be
