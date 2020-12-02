@@ -194,6 +194,7 @@ where
     pub(crate) fn restart(&mut self) {
         self.flags = ContextFlags::RUNNING;
         self.wait = SmallVec::new();
+        self.wait_concurrent.clear();
         self.items = SmallVec::new();
         self.handles[0] = SpawnHandle::default();
     }
@@ -356,6 +357,7 @@ where
 
     // either waiting or waiting_concurrent is considered waiting items that need to be
     // dealt with.
+    #[inline]
     fn have_waiting(&self) -> bool {
         !self.wait.is_empty() || !self.wait_concurrent.is_empty()
     }
