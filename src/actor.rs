@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::future::Future;
 
 use actix_rt::Arbiter;
 use futures_util::stream::Stream;
@@ -286,6 +287,19 @@ where
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
         F: ActorFuture<Output = (), Actor = A> + 'static;
+
+    #[doc(hidden)]
+    #[allow(unused_variables)]
+    /// Spawn a transmute future into to context. This method is meant to be used internally.
+    /// DO NOT use it in public API.
+    ///
+    /// This future must be treated specially.
+    // TODO: point to Context where it's handled.
+    fn spawn_2<F>(&mut self, fut: F)
+    where
+        F: Future<Output = ()> + 'static,
+    {
+    }
 
     /// Spawns a future into the context, waiting for it to resolve.
     ///

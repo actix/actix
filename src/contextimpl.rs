@@ -45,6 +45,7 @@ where
     addr: AddressSenderProducer<A>,
     flags: ContextFlags,
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
+    wait_concurrent: Vec<Pin<Box<dyn Future<Output = ()> + 'static>>>,
     items: SmallVec<[Item<A>; 3]>,
     handles: SmallVec<[SpawnHandle; 2]>,
 }
@@ -73,6 +74,7 @@ where
             addr,
             flags: ContextFlags::RUNNING,
             wait: SmallVec::new(),
+            wait_concurrent: Vec::new(),
             items: SmallVec::new(),
             handles: SmallVec::from_slice(&[
                 SpawnHandle::default(),
@@ -116,7 +118,8 @@ where
     #[inline]
     /// Is context waiting for future completion
     pub fn waiting(&self) -> bool {
-        !self.wait.is_empty()
+        // Both wait and wait_concurrent are considered waiting tasks.
+        !self.wait.is_empty() || !self.wait_concurrent.is_empty()
             || self
                 .flags
                 .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
@@ -139,6 +142,16 @@ where
         let fut: Box<dyn ActorFuture<Output = (), Actor = A>> = Box::new(fut);
         self.items.push((handle, Pin::from(fut)));
         handle
+    }
+
+    #[inline]
+    #[doc(hidden)]
+    /// Spawn new future to this context.
+    pub fn spawn_2<F>(&mut self, fut: F)
+    where
+        F: Future<Output = ()> + 'static,
+    {
+        self.wait_concurrent.push( Box::pin(fut));
     }
 
     #[inline]
@@ -205,6 +218,7 @@ where
     act: A,
     mailbox: Mailbox<A>,
     wait: SmallVec<[ActorWaitItem<A>; 2]>,
+    wait_concurrent: Vec<Pin<Box<dyn Future<Output = ()> + 'static>>>,
     items: SmallVec<[Item<A>; 3]>,
 }
 
@@ -244,6 +258,7 @@ where
             act,
             mailbox,
             wait: SmallVec::new(),
+            wait_concurrent: Vec::new(),
             items: SmallVec::new(),
         }
     }
@@ -307,6 +322,10 @@ where
             modified = true;
             self.items.extend(parts.items.drain(0..));
         }
+        if !parts.wait_concurrent.is_empty() {
+            modified = true;
+            self.wait_concurrent.extend(parts.wait_concurrent.drain(0..));
+        }
         //
         if parts.flags.contains(ContextFlags::MB_CAP_CHANGED) {
             modified = true;
@@ -332,6 +351,12 @@ where
             }
         }
     }
+
+    // either waiting or waiting_concurrent is considered waiting items that need to be
+    // dealt with.
+    fn have_waiting(&self) -> bool {
+        !self.wait.is_empty() || !self.wait_concurrent.is_empty()
+    }
 }
 
 #[doc(hidden)]
@@ -356,24 +381,53 @@ where
         }
 
         'outer: loop {
-            // check wait futures. order does matter
-            // ctx.wait() always add to the back of the list
-            // and we always have to check most recent future
-            while !this.wait.is_empty() && !this.stopping() {
-                let idx = this.wait.len() - 1;
-                if let Some(item) = this.wait.last_mut() {
-                    match Pin::new(item).poll(&mut this.act, &mut this.ctx, cx) {
-                        Poll::Ready(_) => (),
-                        Poll::Pending => return Poll::Pending,
+            // process concurrent items. These futures borrowed A and A::Context immutably.
+            let mut idx = 0;
+            while idx < this.wait_concurrent.len() && !this.stopping() {
+                match Pin::new(&mut this.wait_concurrent[idx]).poll(cx) {
+                    Poll::Pending => {
+                        // check cancelled handles
+                        if this.ctx.parts().handles.len() > 2 {
+                            // this code is not very efficient, relaying on fact that
+                            // cancellation should be rear also number of futures
+                            // in actor context should be small
+                            this.clean_canceled_handle();
+
+                            continue 'outer;
+                        }
+
+                        idx += 1;
+                    }
+                    Poll::Ready(()) => {
+                        this.wait_concurrent.swap_remove(idx);
                     }
                 }
-                this.wait.remove(idx);
-                this.merge();
+            }
+
+            // *IMPORTANT:
+            // If wait_concurrent still have unfinished futures we just skip checking wait.
+            // As wait_concurrent futures have borrowed A and A::Context so we can't
+            // let anything borrow self mutably.
+            if this.wait_concurrent.is_empty() {
+                // check wait futures. order does matter
+                // ctx.wait() always add to the back of the list
+                // and we always have to check most recent future
+                while !this.wait.is_empty() && !this.stopping() {
+                    let idx = this.wait.len() - 1;
+                    if let Some(item) = this.wait.last_mut() {
+                        match Pin::new(item).poll(&mut this.act, &mut this.ctx, cx) {
+                            Poll::Ready(_) => (),
+                            Poll::Pending => return Poll::Pending,
+                        }
+                    }
+                    this.wait.remove(idx);
+                    this.merge();
+                }
             }
 
             // process mailbox
             this.mailbox.poll(&mut this.act, &mut this.ctx, cx);
-            if !this.wait.is_empty() && !this.stopping() {
+            if this.have_waiting() && !this.stopping() {
                 continue;
             }
 
@@ -398,7 +452,7 @@ where
                         }
 
                         // item scheduled wait future
-                        if !this.wait.is_empty() && !this.stopping() {
+                        if this.have_waiting() && !this.stopping() {
                             // move current item to end of poll queue
                             // otherwise it is possible that same item generate wait
                             // future and prevents polling
@@ -415,7 +469,7 @@ where
                     Poll::Ready(()) => {
                         this.items.swap_remove(idx);
                         // one of the items scheduled wait future
-                        if !this.wait.is_empty() && !this.stopping() {
+                        if this.have_waiting() && !this.stopping() {
                             continue 'outer;
                         }
                     }
