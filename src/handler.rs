@@ -187,37 +187,46 @@ where
 /// # }
 /// #
 /// impl Handler<Msg> for MyActor {
-///     type Result = AtomicResponseUnsafe<usize>;
+///     type Result = AtomicResponseAsync<usize>;
 ///
-///     fn handle(&mut self, _: Msg, ctx: &mut Context<Self>) -> Self::Result {
-///         AtomicResponseUnsafe::new(async move {
+///     fn handle(&mut self, msg: Msg, ctx: &mut Context<Self>) -> Self::Result {
+///         AtomicResponseAsync::new(self, msg, ctx, |act, msg, ctx| async move {
 ///             let ctx = ctx;
-///             self.0 = 30;
+///             act.0 = 30;
 ///             delay_for(Duration::from_millis(1)).await;
-///             self.0 -= 1;
-///             self.0
+///             act.0 -= 1;
+///             act.0
 ///         })
 ///     }
 /// }
 /// ```
-pub struct AtomicResponseUnsafe<T>(ResponseFuture<T>);
+pub struct AtomicResponseAsync<T>(ResponseFuture<T>);
 
-impl<T> AtomicResponseUnsafe<T> {
-    pub fn new<F>(fut: F) -> Self
+impl<T> AtomicResponseAsync<T> {
+    pub fn new<'a, A, M, F, Fut>(
+        act: &'a mut A,
+        msg: M,
+        ctx: &'a mut A::Context,
+        fut: F,
+    ) -> Self
     where
-        F: Future<Output = T>,
+        A: Actor,
+        A::Context: AsyncContext<A>,
+        M: Message<Result = T>,
+        F: FnOnce(&'a mut A, M, &'a mut A::Context) -> Fut,
+        Fut: Future<Output = T> + 'a,
     {
-        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut);
+        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut(act, msg, ctx));
         // SAFETY:
         //
         // Borrow &mut Actor and &mut Context<Actor> is safe because the actor would be
         // blocked on this future until it's resolved.
         // This is achieved with Context::wait which give exclusive access to actor and context.
-        AtomicResponseUnsafe(unsafe { core::mem::transmute(fut) })
+        AtomicResponseAsync(unsafe { core::mem::transmute(fut) })
     }
 }
 
-impl<A, M, T: 'static> MessageResponse<A, M> for AtomicResponseUnsafe<T>
+impl<A, M, T: 'static> MessageResponse<A, M> for AtomicResponseAsync<T>
 where
     A: Actor,
     M: Message<Result = T>,

@@ -116,7 +116,7 @@ pub mod prelude {
     pub use crate::context::{Context, ContextFutureSpawner};
     pub use crate::fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
     pub use crate::handler::{
-        ActorResponse, AtomicResponse, AtomicResponseUnsafe, Handler, Message,
+        ActorResponse, AtomicResponse, AtomicResponseAsync, Handler, Message,
         MessageResult, Response, ResponseActFuture, ResponseFuture,
     };
     pub use crate::registry::{ArbiterService, SystemService};
