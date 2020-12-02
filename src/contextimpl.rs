@@ -119,7 +119,8 @@ where
     /// Is context waiting for future completion
     pub fn waiting(&self) -> bool {
         // Both wait and wait_concurrent are considered waiting tasks.
-        !self.wait.is_empty() || !self.wait_concurrent.is_empty()
+        !self.wait.is_empty()
+            || !self.wait_concurrent.is_empty()
             || self
                 .flags
                 .intersects(ContextFlags::STOPPING | ContextFlags::STOPPED)
@@ -151,7 +152,7 @@ where
     where
         F: Future<Output = ()> + 'static,
     {
-        self.wait_concurrent.push( Box::pin(fut));
+        self.wait_concurrent.push(Box::pin(fut));
     }
 
     #[inline]
@@ -324,7 +325,8 @@ where
         }
         if !parts.wait_concurrent.is_empty() {
             modified = true;
-            self.wait_concurrent.extend(parts.wait_concurrent.drain(0..));
+            self.wait_concurrent
+                .extend(parts.wait_concurrent.drain(0..));
         }
         //
         if parts.flags.contains(ContextFlags::MB_CAP_CHANGED) {

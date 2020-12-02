@@ -1,5 +1,5 @@
-use std::time::Duration;
 use std::future::Future;
+use std::time::Duration;
 
 use actix_rt::Arbiter;
 use futures_util::stream::Stream;
