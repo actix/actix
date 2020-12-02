@@ -159,18 +159,10 @@ where
     }
 }
 
-/// This API is `unsound`
-///
 /// An experimental Response Type that can borrow `&mut Actor` and `&mut Context<Actor>`
 /// in async/await.
 ///
-/// *. `IMPORTANT`: The async block can borrow only `&mut Actor` and `&mut Context<Actor>`.
-/// Borrowing anything else would end up with `UB` easily.
-/// e.g: Borrowing Message type, Borrowing variables created in Handler::handle method.
-///
 /// # Examples:
-/// On the following example, the response to `Msg` would always be 29
-/// even if there are multiple `Msg` sent to `MyActor`.
 /// ```rust, no_run
 /// # use actix::prelude::*;
 /// # use actix::clock::delay_for;
@@ -202,7 +194,7 @@ where
 /// ```
 pub struct AtomicResponseAsync<T>(ResponseFuture<T>);
 
-impl<T> AtomicResponseAsync<T> {
+impl<T: 'static> AtomicResponseAsync<T> {
     pub fn new<'a, A, M, F, Fut>(
         act: &'a mut A,
         msg: M,
