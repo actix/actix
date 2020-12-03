@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::actor::Actor;
-use crate::clock::{self, Sleep, Duration};
+use crate::clock::{self, Duration, Sleep};
 use crate::fut::ActorStream;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes

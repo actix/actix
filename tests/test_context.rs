@@ -6,7 +6,7 @@ use actix::prelude::*;
 use futures_channel::mpsc::unbounded;
 use futures_util::stream::once;
 use futures_util::stream::StreamExt;
-use tokio::time::{sleep, interval_at, Duration, Instant};
+use tokio::time::{interval_at, sleep, Duration, Instant};
 
 #[derive(Debug, PartialEq)]
 enum Op {

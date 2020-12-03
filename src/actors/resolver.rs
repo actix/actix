@@ -1,8 +1,7 @@
 //! DNS resolver and connector utility actor
 //!
 //! ## Example
-//! //FIXME: remove no_run when actors::resovler working on tokio 0.3
-//! ```rust no_run
+//! ```rust
 //! use actix::actors::resolver;
 //! use actix::prelude::*;
 //!
@@ -160,48 +159,22 @@ impl Actor for Resolver {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         let cfg = self.cfg.take();
-        ctx.wait(
-            async move { cfg }
-                .into_actor(self)
-                .then(
-                    |cfg, this, _| -> Pin<Box<dyn ActorFuture<Actor = Self, Output = _>>> {
-                        if let Some(cfg) = cfg {
-                            return Box::pin(
-                                AsyncResolver::tokio(cfg.0, cfg.1).into_actor(this),
-                            );
-                        }
-                        Box::pin(
-                            async {
-                                // FIXME: as the message below show
-                                unimplemented!("Disabled waiting for trust dns support")
-                                // match AsyncResolver::from_system_conf(
-                                //     tokio::runtime::Handle::current(),
-                                // )
-                                // .await
-                                // {
-                                //     Ok(resolver) => Ok(resolver),
-                                //     Err(err) => {
-                                //         log::warn!(
-                                //             "Can not create system dns resolver: {}",
-                                //             err
-                                //         );
-                                //         AsyncResolver::tokio(
-                                //             ResolverConfig::default(),
-                                //             ResolverOpts::default(),
-                                //         )
-                                //         .await
-                                //     }
-                                // }
-                            }
-                            .into_actor(this),
+        ctx.wait(async move { cfg }.into_actor(self).map(|cfg, this, _| {
+            let resolver = match cfg {
+                Some((conf, opt)) => AsyncResolver::tokio(conf, opt),
+                None => match AsyncResolver::tokio_from_system_conf() {
+                    Ok(resolver) => Ok(resolver),
+                    Err(err) => {
+                        log::warn!("Can not create system dns resolver: {}", err);
+                        AsyncResolver::tokio(
+                            ResolverConfig::default(),
+                            ResolverOpts::default(),
                         )
-                    },
-                )
-                .map(|resolver_res, this, _| {
-                    // Keep the resolver itself.
-                    this.resolver = Some(resolver_res.unwrap());
-                }),
-        );
+                    }
+                },
+            };
+            this.resolver = Some(resolver.unwrap())
+        }));
     }
 }
 

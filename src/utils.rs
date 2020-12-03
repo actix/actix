@@ -7,7 +7,7 @@ use futures_channel::oneshot;
 use futures_util::StreamExt;
 
 use crate::actor::Actor;
-use crate::clock::{interval_at, Sleep, Instant, Interval};
+use crate::clock::{interval_at, Instant, Interval, Sleep};
 use crate::fut::{ActorFuture, ActorStream};
 
 pub struct Condition<T>

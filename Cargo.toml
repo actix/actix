@@ -51,11 +51,13 @@ tokio = { version = "0.3.1", features = ["io-util"] }
 tokio-util = { version = "0.5", features = ["full"] }
 
 # dns resolver
-trust-dns-proto = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime"] }
-trust-dns-resolver = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime", "system-config"] }
+# FIXME: use release build.
+trust-dns-proto = { git = "https://github.com/bluejekyll/trust-dns.git", branch = "main" , optional = true, default-features = false, features = ["tokio-runtime"] }
+trust-dns-resolver = { git = "https://github.com/bluejekyll/trust-dns.git", branch = "main" , optional = true, default-features = false, features = ["tokio-runtime", "system-config"] }
 
 [dev-dependencies]
 doc-comment = "0.3"
+futures-channel = { version = "0.3.1", default-features = false, features = ["sink"] }
 
 [profile.release]
 lto = true

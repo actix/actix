@@ -10,5 +10,5 @@
 
 // TODO: use the re-export of actix-rt?
 pub use tokio::time::{
-    sleep, sleep_until, interval_at, Sleep, Duration, Instant, Interval,
+    interval_at, sleep, sleep_until, Duration, Instant, Interval, Sleep,
 };
