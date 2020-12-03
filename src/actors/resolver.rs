@@ -6,7 +6,7 @@
 //! use actix::actors::resolver;
 //! use actix::prelude::*;
 //!
-//! #[actix_rt::main]
+//! #[actix::main]
 //! async fn main() {
 //!     Arbiter::spawn(async {
 //!         let resolver = resolver::Resolver::from_registry();
