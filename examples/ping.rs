@@ -27,7 +27,7 @@ impl Handler<Ping> for MyActor {
     }
 }
 
-#[actix_rt::main]
+#[actix::main]
 async fn main() {
     // start new actor
     let addr = MyActor { count: 10 }.start();

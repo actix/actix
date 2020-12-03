@@ -11,7 +11,7 @@ use tokio_util::codec::FramedRead;
 
 mod codec;
 
-#[actix_rt::main]
+#[actix::main]
 async fn main() {
     println!("Running chat client");
 
