@@ -49,7 +49,7 @@ impl Handler<TcpConnect> for Server {
     }
 }
 
-#[actix_rt::main]
+#[actix::main]
 async fn main() {
     // Start chat server actor
     let server = ChatServer::default().start();

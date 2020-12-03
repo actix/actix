@@ -6,7 +6,6 @@
 //! Actor type A and B, sharing the same thread pool. You need to create two
 //! SyncArbiters and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
-use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::Poll;
@@ -320,46 +319,30 @@ where
     }
 }
 
-pub(crate) struct SyncContextEnvelope<A, M>
+pub(crate) struct SyncContextEnvelope<M>
 where
-    A: Actor<Context = SyncContext<A>> + Handler<M>,
     M: Message + Send,
 {
     msg: Option<M>,
     tx: Option<SyncSender<M::Result>>,
-    actor: PhantomData<A>,
 }
 
-unsafe impl<A, M> Send for SyncContextEnvelope<A, M>
+impl<M> SyncContextEnvelope<M>
 where
-    A: Actor<Context = SyncContext<A>> + Handler<M>,
-    M: Message + Send,
-{
-}
-
-impl<A, M> SyncContextEnvelope<A, M>
-where
-    A: Actor<Context = SyncContext<A>> + Handler<M>,
     M: Message + Send,
     M::Result: Send,
 {
     pub fn new(msg: M, tx: Option<SyncSender<M::Result>>) -> Self {
-        Self {
-            tx,
-            msg: Some(msg),
-            actor: PhantomData,
-        }
+        Self { tx, msg: Some(msg) }
     }
 }
 
-impl<A, M> EnvelopeProxy for SyncContextEnvelope<A, M>
+impl<A, M> EnvelopeProxy<A> for SyncContextEnvelope<M>
 where
     M: Message + Send + 'static,
     M::Result: Send,
     A: Actor<Context = SyncContext<A>> + Handler<M>,
 {
-    type Actor = A;
-
     fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
         let tx = self.tx.take();
         if tx.is_some() && tx.as_ref().unwrap().is_canceled() {

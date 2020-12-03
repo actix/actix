@@ -1,9 +1,9 @@
 //! WeakRecipient example
 //!
-//! With a weak recipent you can register any client actor's addrs with a
+//! With a weak recipient you can register any client actor's addrs with a
 //! service and still get cleaned up correctly when the client actor is
 //! stopped. In contrast to a `WeakAddr` the Service is not bound to know
-//! exactly which type of client actor is registring itself.
+//! exactly which type of client actor is registering itself.
 
 use actix::{prelude::*, WeakRecipient};
 use actix::{Actor, Context};
@@ -153,7 +153,7 @@ impl Handler<TimePing> for ClientB {
     }
 }
 
-#[actix_rt::main]
+#[actix::main]
 async fn main() {
     {
         println!("🎩 creating client client A");
