@@ -294,8 +294,7 @@ where
     /// DO NOT use it in public API.
     ///
     /// This future must be treated specially.
-    // TODO: point to Context where it's handled.
-    fn spawn_2<F>(&mut self, fut: F)
+    fn wait_concurrent<F>(&mut self, fut: F)
     where
         F: Future<Output = ()> + 'static,
     {

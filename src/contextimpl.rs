@@ -12,7 +12,7 @@ use crate::actor::{
 use crate::address::{Addr, AddressSenderProducer};
 use crate::contextitems::ActorWaitItem;
 use crate::fut::ActorFuture;
-use crate::mailbox::Mailbox;
+use crate::mailbox::{Mailbox, DEFAULT_CAPACITY};
 
 bitflags! {
     /// internal context state
@@ -74,7 +74,7 @@ where
             addr,
             flags: ContextFlags::RUNNING,
             wait: SmallVec::new(),
-            wait_concurrent: Vec::new(),
+            wait_concurrent: Vec::with_capacity(DEFAULT_CAPACITY),
             items: SmallVec::new(),
             handles: SmallVec::from_slice(&[
                 SpawnHandle::default(),
@@ -147,8 +147,12 @@ where
 
     #[inline]
     #[doc(hidden)]
-    /// Spawn new future to this context.
-    pub fn spawn_2<F>(&mut self, fut: F)
+    /// Spawn concurrent futures to this context and wait for all of them completion.
+    ///
+    /// future spawned with `Context::wait_concurrent` have higher priority than `Context::wait`.
+    ///
+    /// During wait period actor does not receive any messages.
+    pub fn wait_concurrent<F>(&mut self, fut: F)
     where
         F: Future<Output = ()> + 'static,
     {
@@ -194,7 +198,7 @@ where
     pub(crate) fn restart(&mut self) {
         self.flags = ContextFlags::RUNNING;
         self.wait = SmallVec::new();
-        self.wait_concurrent.clear();
+        self.wait_concurrent = Vec::with_capacity(DEFAULT_CAPACITY);
         self.items = SmallVec::new();
         self.handles[0] = SpawnHandle::default();
     }
@@ -260,7 +264,7 @@ where
             act,
             mailbox,
             wait: SmallVec::new(),
-            wait_concurrent: Vec::new(),
+            wait_concurrent: Vec::with_capacity(DEFAULT_CAPACITY),
             items: SmallVec::new(),
         }
     }
@@ -303,6 +307,7 @@ where
     {
         if self.mailbox.connected() {
             self.wait = SmallVec::new();
+            self.wait_concurrent = Vec::with_capacity(DEFAULT_CAPACITY);
             self.items = SmallVec::new();
             self.ctx.parts().restart();
             self.act.restarting(&mut self.ctx);
@@ -329,7 +334,6 @@ where
             self.wait_concurrent
                 .extend(parts.wait_concurrent.drain(0..));
         }
-        //
         if parts.flags.contains(ContextFlags::MB_CAP_CHANGED) {
             modified = true;
             parts.flags.remove(ContextFlags::MB_CAP_CHANGED);
@@ -385,7 +389,8 @@ where
         }
 
         'outer: loop {
-            // process concurrent items. These futures borrowed A and A::Context immutably.
+            // process wait_concurrent futures.
+            // These futures borrowed A and A::Context immutably.
             let mut idx = 0;
             while idx < this.wait_concurrent.len() && !this.stopping() {
                 match Pin::new(&mut this.wait_concurrent[idx]).poll(cx) {
@@ -408,10 +413,10 @@ where
                 }
             }
 
-            // *IMPORTANT:
-            // If wait_concurrent still have unfinished futures we just skip checking wait.
+            // * IMPORTANT:
+            // If wait_concurrent still have unfinished futures we skip checking wait items.
             // As wait_concurrent futures have borrowed A and A::Context so we can't
-            // let anything borrow self mutably.
+            // let anything borrow them mutably.
             if this.wait_concurrent.is_empty() {
                 // check wait futures. order does matter
                 // ctx.wait() always add to the back of the list
@@ -430,7 +435,14 @@ where
             }
 
             // process mailbox
+            // mailbox poll would return immediately if wait_concurrent is not empty.
+            //
+            // TODO: It could be safe to poll the mailbox even when there are wait_concurrent
+            // futures holding immutable references of Actor and Context.
             this.mailbox.poll(&mut this.act, &mut this.ctx, cx);
+
+            // poll an extra iteration until all the waiting items(wait and wait_concurrent) are
+            // resolved.
             if this.have_waiting() && !this.stopping() {
                 continue;
             }
@@ -518,6 +530,11 @@ where
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPED) {
                 Actor::stopped(&mut this.act, &mut this.ctx);
                 return Poll::Ready(());
+            }
+
+            // try to free some memories.
+            if this.wait_concurrent.is_empty() {
+                this.wait_concurrent = Vec::with_capacity(DEFAULT_CAPACITY);
             }
 
             return Poll::Pending;

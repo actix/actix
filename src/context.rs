@@ -63,11 +63,11 @@ where
     #[doc(hidden)]
     #[inline]
     /// DO NOT use in public API.
-    fn spawn_2<F>(&mut self, fut: F)
+    fn wait_concurrent<F>(&mut self, fut: F)
     where
         F: Future<Output = ()> + 'static,
     {
-        self.parts.spawn_2(fut)
+        self.parts.wait_concurrent(fut)
     }
 
     #[inline]

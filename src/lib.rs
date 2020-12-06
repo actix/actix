@@ -80,7 +80,7 @@ pub use crate::context::Context;
 pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
 pub use crate::handler::{
     ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
-    ResponseActFuture, ResponseFuture,
+    ResponseActFuture, ResponseAsync, ResponseFuture,
 };
 pub use crate::registry::{ArbiterService, Registry, SystemRegistry, SystemService};
 pub use crate::stream::StreamHandler;

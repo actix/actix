@@ -269,7 +269,7 @@ where
                 }));
             }
             ResponseAsync::Concurrent(fut) => {
-                ctx.spawn_2(async {
+                ctx.wait_concurrent(async {
                     let res = fut.await;
                     if let Some(tx) = tx {
                         tx.send(res);
