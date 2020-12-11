@@ -2,6 +2,7 @@
 
 ## Unreleased - 2020-xx-xx
 ### Fixed
+* Unified MessageResponse impl (remove separate Item/Error divide, force user to use Result)
 * Fix error for build with --no-default-features flag, add `sink` feature for futures-util dependency. [#427]
 
 ### Changed
