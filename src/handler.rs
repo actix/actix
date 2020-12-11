@@ -439,17 +439,17 @@ where
     }
 }
 
-enum ResponseTypeItem<I, E> {
-    Result(Result<I, E>),
-    Fut(Pin<Box<dyn Future<Output = Result<I, E>>>>),
+enum ResponseTypeItem<I> {
+    Result(I),
+    Fut(Pin<Box<dyn Future<Output = I>>>),
 }
 
 /// Helper type for representing different type of message responses
-pub struct Response<I, E> {
-    item: ResponseTypeItem<I, E>,
+pub struct Response<I> {
+    item: ResponseTypeItem<I>,
 }
 
-impl<I, E> fmt::Debug for Response<I, E> {
+impl<I> fmt::Debug for Response<I> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut fmt = fmt.debug_struct("Response");
         match self.item {
@@ -460,11 +460,11 @@ impl<I, E> fmt::Debug for Response<I, E> {
     }
 }
 
-impl<I, E> Response<I, E> {
+impl<I> Response<I> {
     /// Creates an asynchronous response.
     pub fn fut<T>(fut: T) -> Self
     where
-        T: Future<Output = Result<I, E>> + 'static,
+        T: Future<Output = I> + 'static,
     {
         Self {
             item: ResponseTypeItem::Fut(Box::pin(fut)),
@@ -472,17 +472,17 @@ impl<I, E> Response<I, E> {
     }
 
     /// Creates a response.
-    pub fn reply(val: Result<I, E>) -> Self {
+    pub fn reply(val: I) -> Self {
         Self {
             item: ResponseTypeItem::Result(val),
         }
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for Response<I, E>
+impl<A, M, I: 'static> MessageResponse<A, M> for Response<I>
 where
     A: Actor,
-    M: Message<Result = Result<I, E>>,
+    M: Message<Result = I>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
@@ -503,17 +503,17 @@ where
     }
 }
 
-enum ActorResponseTypeItem<A, I, E> {
-    Result(Result<I, E>),
-    Fut(Pin<Box<dyn ActorFuture<Output = Result<I, E>, Actor = A>>>),
+enum ActorResponseTypeItem<A, I> {
+    Result(I),
+    Fut(Pin<Box<dyn ActorFuture<Output = I, Actor = A>>>),
 }
 
 /// A helper type for representing different types of message responses.
-pub struct ActorResponse<A, I, E> {
-    item: ActorResponseTypeItem<A, I, E>,
+pub struct ActorResponse<A, I> {
+    item: ActorResponseTypeItem<A, I>,
 }
 
-impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
+impl<A, I> fmt::Debug for ActorResponse<A, I> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut fmt = fmt.debug_struct("ActorResponse");
         match self.item {
@@ -526,9 +526,9 @@ impl<A, I, E> fmt::Debug for ActorResponse<A, I, E> {
     }
 }
 
-impl<A: Actor, I, E> ActorResponse<A, I, E> {
+impl<A: Actor, I> ActorResponse<A, I> {
     /// Creates a response.
-    pub fn reply(val: Result<I, E>) -> Self {
+    pub fn reply(val: I) -> Self {
         Self {
             item: ActorResponseTypeItem::Result(val),
         }
@@ -537,7 +537,7 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     /// Creates an asynchronous response.
     pub fn r#async<T>(fut: T) -> Self
     where
-        T: ActorFuture<Output = Result<I, E>, Actor = A> + 'static,
+        T: ActorFuture<Output = I, Actor = A> + 'static,
     {
         Self {
             item: ActorResponseTypeItem::Fut(Box::pin(fut)),
@@ -545,10 +545,10 @@ impl<A: Actor, I, E> ActorResponse<A, I, E> {
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for ActorResponse<A, I, E>
+impl<A, M, I: 'static> MessageResponse<A, M> for ActorResponse<A, I>
 where
     A: Actor,
-    M: Message<Result = Result<I, E>>,
+    M: Message<Result = I>,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
