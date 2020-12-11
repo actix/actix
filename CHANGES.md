@@ -2,6 +2,7 @@
 
 ## Unreleased - 2020-xx-xx
 ### Fixed
+* Unified MessageResponse impl (remove separate Item/Error divide, force user to use Result)
 * Fix error for build with --no-default-features flag, add `sink` feature for futures-util dependency. [#427]
 
 ### Changed
@@ -13,7 +14,8 @@
 * Allow creating `WeakRecipient` from `WeakAddr`, similiar to `Recipient` from `Addr`. [#432]
 * Send `SyncArbiter` to current `System`'s `Arbiter` and run it as future there. Enabling nested `SyncArbiter`s [#439] 
 * Use generic type instead of associate type for `EnvelopeProxy`. `SyncEnvelopeProxy` and `SyncContextEnvelope` are no 
-  longer bound to Actor. [#445] 
+  longer bound to Actor. [#445]
+* Re-export `actix_rt::main` macro as `actix::main` [#448]
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
@@ -22,6 +24,7 @@
 [#435]: https://github.com/actix/actix/pull/435
 [#439]: https://github.com/actix/actix/pull/439
 [#445]: https://github.com/actix/actix/pull/445
+[#448]: https://github.com/actix/actix/pull/448
 
 
 ## 0.10.0 - 2020-09-10
