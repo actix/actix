@@ -10,12 +10,14 @@ use crate::fut::ActorStream;
 /// more than `timeout`.
 ///
 /// This is created by the `ActorFuture::timeout()` method.
+#[pin_project::pin_project]
 #[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
 pub struct StreamTimeout<S>
 where
-    S: ActorStream + Unpin,
+    S: ActorStream,
 {
+    #[pin]
     stream: S,
     dur: Duration,
     timeout: Option<Pin<Box<Sleep>>>,
@@ -23,7 +25,7 @@ where
 
 pub fn new<S>(stream: S, timeout: Duration) -> StreamTimeout<S>
 where
-    S: ActorStream + Unpin,
+    S: ActorStream,
 {
     StreamTimeout {
         stream,
@@ -34,7 +36,7 @@ where
 
 impl<S> ActorStream for StreamTimeout<S>
 where
-    S: ActorStream + Unpin,
+    S: ActorStream,
 {
     type Item = Result<S::Item, ()>;
     type Actor = S::Actor;
@@ -45,9 +47,9 @@ where
         ctx: &mut <S::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Result<S::Item, ()>>> {
-        let this = self.get_mut();
+        let this = self.project();
 
-        match Pin::new(&mut this.stream).poll_next(act, ctx, task) {
+        match this.stream.poll_next(act, ctx, task) {
             Poll::Ready(Some(res)) => {
                 this.timeout.take();
                 return Poll::Ready(Some(Ok(res)));
@@ -57,13 +59,19 @@ where
         }
 
         if this.timeout.is_none() {
-            this.timeout = Some(Box::pin(clock::sleep(this.dur)));
+            *this.timeout = Some(Box::pin(clock::sleep(*this.dur)));
         }
 
         // check timeout
-        match Pin::new(this.timeout.as_mut().unwrap()).poll(task) {
-            Poll::Ready(_) => (),
-            Poll::Pending => return Poll::Pending,
+        if this
+            .timeout
+            .as_mut()
+            .unwrap()
+            .as_mut()
+            .poll(task)
+            .is_pending()
+        {
+            return Poll::Pending;
         }
         this.timeout.take();
 

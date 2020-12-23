@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use actix::clock::{sleep, Duration};
 use actix::prelude::*;
+use futures_util::future::FutureExt;
 
 struct MyActor {
     timeout: Arc<AtomicBool>,
@@ -12,19 +13,19 @@ impl Actor for MyActor {
     type Context = actix::Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        async {
-            sleep(Duration::new(0, 5_000_000)).await;
-            System::current().stop();
-        }
-        .into_actor(self)
-        .timeout(Duration::new(0, 100))
-        .map(|e, act, _| {
-            if e == Err(()) {
-                act.timeout.store(true, Ordering::Relaxed);
+        sleep(Duration::new(0, 5_000_000))
+            .then(|_| async {
                 System::current().stop();
-            }
-        })
-        .wait(ctx);
+            })
+            .into_actor(self)
+            .timeout(Duration::new(0, 100))
+            .map(|e, act, _| {
+                if e == Err(()) {
+                    act.timeout.store(true, Ordering::Relaxed);
+                    System::current().stop();
+                }
+            })
+            .wait(ctx);
     }
 }
 

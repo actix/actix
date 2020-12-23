@@ -59,7 +59,6 @@ trust-dns-resolver = { git = "https://github.com/bluejekyll/trust-dns.git", bran
 [dev-dependencies]
 doc-comment = "0.3"
 futures-channel = { version = "0.3.1", default-features = false, features = ["sink"] }
-tokio-stream = { git = "https://github.com/tokio-rs/tokio.git" }
 
 [profile.release]
 lto = true
@@ -69,6 +68,8 @@ codegen-units = 1
 [patch.crates-io]
 actix = { path = "." }
 actix_derive = { path = "actix-derive" }
+
+# FIXME: Remove override.
 actix-rt = { git = "https://github.com/fakeshadow/actix-net", branch = "mio-0.7.3" }
 tokio = { git = "https://github.com/tokio-rs/tokio.git" }
 tokio-util = { git = "https://github.com/tokio-rs/tokio.git" }

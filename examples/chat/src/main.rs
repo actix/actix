@@ -1,9 +1,10 @@
 #![allow(clippy::let_unit_value)]
 use std::net;
+use std::pin::Pin;
 use std::str::FromStr;
+use std::task::{Context as StdContext, Poll};
 
 use actix::prelude::*;
-use futures_util::stream::StreamExt;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::FramedRead;
 
@@ -56,7 +57,32 @@ async fn main() {
 
     // Create server listener
     let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    let listener = Box::new(TcpListener::bind(&addr).await.unwrap());
+    let listener = TcpListener::bind(&addr).await.unwrap();
+
+    struct WtfStream {
+        listener: TcpListener,
+    }
+
+    impl Stream for WtfStream {
+        type Item = TcpConnect;
+
+        fn poll_next(
+            self: Pin<&mut Self>,
+            cx: &mut StdContext<'_>,
+        ) -> Poll<Option<Self::Item>> {
+            match self.get_mut().listener.poll_accept(cx) {
+                Poll::Ready(Ok((st, addr))) => Poll::Ready(Some(TcpConnect(st, addr))),
+                Poll::Ready(Err(e)) => {
+                    if e.kind() == std::io::ErrorKind::WouldBlock {
+                        Poll::Pending
+                    } else {
+                        Poll::Ready(None)
+                    }
+                }
+                Poll::Pending => Poll::Pending,
+            }
+        }
+    }
 
     // Our chat server `Server` is an actor, first we need to start it
     // and then add stream on incoming tcp connections to it.
@@ -64,11 +90,7 @@ async fn main() {
     // items So to be able to handle this events `Server` actor has to implement
     // stream handler `StreamHandler<(TcpStream, net::SocketAddr), io::Error>`
     Server::create(move |ctx| {
-        ctx.add_message_stream(Box::leak(listener).map(|st| {
-            let st = st.unwrap();
-            let addr = st.peer_addr().unwrap();
-            TcpConnect(st, addr)
-        }));
+        ctx.add_message_stream(WtfStream { listener });
         Server { chat: server }
     });
 
