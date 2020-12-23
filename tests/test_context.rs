@@ -1,11 +1,12 @@
 #![allow(clippy::let_unit_value)]
+use std::pin::Pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::task::{Context as StdContext, Poll};
 
 use actix::prelude::*;
 use futures_channel::mpsc::unbounded;
 use futures_util::stream::once;
-use futures_util::stream::StreamExt;
 use tokio::time::{interval_at, sleep, Duration, Instant};
 
 #[derive(Debug, PartialEq)]
@@ -400,11 +401,28 @@ impl StreamHandler<CancelPacket> for CancelHandler {
 #[test]
 fn test_cancel_handler() {
     actix::System::run(|| {
+        struct WtfStream {
+            interval: tokio::time::Interval,
+        }
+
+        impl Stream for WtfStream {
+            type Item = CancelPacket;
+
+            fn poll_next(
+                self: Pin<&mut Self>,
+                cx: &mut StdContext<'_>,
+            ) -> Poll<Option<Self::Item>> {
+                self.get_mut()
+                    .interval
+                    .poll_tick(cx)
+                    .map(|_| Some(CancelPacket))
+            }
+        }
+
         CancelHandler::create(|ctx| CancelHandler {
-            source: ctx.add_stream(
-                interval_at(Instant::now(), Duration::from_millis(1))
-                    .map(|_| CancelPacket),
-            ),
+            source: ctx.add_stream(WtfStream {
+                interval: interval_at(Instant::now(), Duration::from_millis(1)),
+            }),
         });
     })
     .unwrap();

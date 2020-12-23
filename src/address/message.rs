@@ -25,6 +25,7 @@ where
 {
     rx: Option<oneshot::Receiver<M::Result>>,
     info: Option<(AddressSender<A>, M)>,
+    #[pin]
     timeout: Option<Sleep>,
 }
 
@@ -57,11 +58,11 @@ where
     }
 
     fn poll_timeout(
-        &mut self,
+        self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
     ) -> Poll<Result<M::Result, MailboxError>> {
-        if let Some(ref mut timeout) = self.timeout {
-            match Pin::new(timeout).poll(cx) {
+        if let Some(timeout) = self.project().timeout.as_pin_mut() {
+            match timeout.poll(cx) {
                 Poll::Ready(()) => Poll::Ready(Err(MailboxError::Timeout)),
                 Poll::Pending => Poll::Pending,
             }
@@ -118,6 +119,7 @@ where
 {
     rx: Option<oneshot::Receiver<M::Result>>,
     info: Option<(Box<dyn Sender<M>>, M)>,
+    #[pin]
     timeout: Option<Sleep>,
 }
 
@@ -144,11 +146,11 @@ where
     }
 
     fn poll_timeout(
-        &mut self,
+        self: Pin<&mut Self>,
         cx: &mut task::Context<'_>,
     ) -> Poll<Result<M::Result, MailboxError>> {
-        if let Some(ref mut timeout) = self.timeout {
-            match Pin::new(timeout).poll(cx) {
+        if let Some(timeout) = self.project().timeout.as_pin_mut() {
+            match timeout.poll(cx) {
                 Poll::Ready(()) => Poll::Ready(Err(MailboxError::Timeout)),
                 Poll::Pending => Poll::Pending,
             }

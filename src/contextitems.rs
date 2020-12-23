@@ -48,21 +48,17 @@ where
     }
 }
 
+#[pin_project::pin_project]
 pub(crate) struct ActorDelayedMessageItem<A, M>
 where
     A: Actor,
     M: Message,
 {
     msg: Option<M>,
+    #[pin]
     timeout: Sleep,
     act: PhantomData<A>,
     m: PhantomData<M>,
-}
-impl<A, M> Unpin for ActorDelayedMessageItem<A, M>
-where
-    A: Actor,
-    M: Message,
-{
 }
 
 impl<A, M> ActorDelayedMessageItem<A, M>
@@ -95,8 +91,8 @@ where
         ctx: &mut A::Context,
         task: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
-        let this = self.get_mut();
-        ready!(Pin::new(&mut this.timeout).poll(task));
+        let this = self.project();
+        ready!(this.timeout.poll(task));
         let fut = A::handle(act, this.msg.take().unwrap(), ctx);
         fut.handle::<()>(ctx, None);
         Poll::Ready(())

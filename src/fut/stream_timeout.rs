@@ -18,7 +18,7 @@ where
 {
     stream: S,
     dur: Duration,
-    timeout: Option<Sleep>,
+    timeout: Option<Pin<Box<Sleep>>>,
 }
 
 pub fn new<S>(stream: S, timeout: Duration) -> StreamTimeout<S>
@@ -57,7 +57,7 @@ where
         }
 
         if this.timeout.is_none() {
-            this.timeout = Some(clock::sleep(this.dur));
+            this.timeout = Some(Box::pin(clock::sleep(this.dur)));
         }
 
         // check timeout

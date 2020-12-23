@@ -366,8 +366,10 @@ impl ActorFuture for ResolveFut {
 
 /// A TCP stream connector.
 #[allow(clippy::type_complexity)]
+#[pin_project::pin_project]
 pub struct TcpConnector {
     addrs: VecDeque<SocketAddr>,
+    #[pin]
     timeout: Sleep,
     stream: Option<Pin<Box<dyn Future<Output = Result<TcpStream, io::Error>>>>>,
 }
@@ -396,10 +398,10 @@ impl ActorFuture for TcpConnector {
         _: &mut Context<Resolver>,
         cx: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
-        let mut this = self.get_mut();
+        let this = self.project();
 
         // timeout
-        if let Poll::Ready(_) = Pin::new(&mut this.timeout).poll(cx) {
+        if this.timeout.poll(cx).is_ready() {
             return Poll::Ready(Err(ResolverError::Timeout));
         }
 
@@ -418,7 +420,7 @@ impl ActorFuture for TcpConnector {
             }
             // try to connect
             let addr = this.addrs.pop_front().unwrap();
-            this.stream = Some(Box::pin(TcpStream::connect(addr)));
+            *this.stream = Some(Box::pin(TcpStream::connect(addr)));
         }
     }
 }
