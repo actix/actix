@@ -21,15 +21,8 @@ where
     #[pin]
     stream: S,
     #[pin]
-    future: FutureState<U::Future>,
+    future: Option<U::Future>,
     f: F,
-}
-
-#[pin_project(project = FutureProj)]
-#[derive(Debug)]
-enum FutureState<F> {
-    Some(#[pin] F),
-    None,
 }
 
 pub fn new<S, F: 'static, U>(stream: S, f: F) -> StreamThen<S, F, U>
@@ -41,7 +34,7 @@ where
     StreamThen {
         stream,
         f,
-        future: FutureState::None,
+        future: None,
     }
 }
 
@@ -62,21 +55,20 @@ where
     ) -> Poll<Option<U::Output>> {
         loop {
             let this = self.as_mut().project();
-            match this.future.project() {
-                FutureProj::None => {
+            match this.future.as_pin_mut() {
+                None => {
                     let item = match this.stream.poll_next(act, ctx, task) {
                         Poll::Pending => return Poll::Pending,
                         Poll::Ready(None) => return Poll::Ready(None),
                         Poll::Ready(Some(e)) => e,
                     };
                     let fut = (this.f)(item, act, ctx).into_future();
-                    let state = FutureState::Some(fut);
-                    self.as_mut().project().future.set(state);
+                    self.as_mut().project().future.set(Some(fut));
                 }
-                FutureProj::Some(fut) => {
+                Some(fut) => {
                     return match fut.poll(act, ctx, task) {
                         Poll::Ready(e) => {
-                            self.project().future.set(FutureState::None);
+                            self.project().future.set(None);
                             Poll::Ready(Some(e))
                         }
                         Poll::Pending => Poll::Pending,
@@ -84,23 +76,5 @@ where
                 }
             }
         }
-        //
-        // let this = self.project();
-        // if this.future.is_none() {
-        //     let item = match this.stream.poll_next(act, ctx, task) {
-        //         Poll::Pending => return Poll::Pending,
-        //         Poll::Ready(None) => return Poll::Ready(None),
-        //         Poll::Ready(Some(e)) => e,
-        //     };
-        //     *this.future = Some((this.f)(item, act, ctx).into_future());
-        // }
-        // assert!(this.future.is_some());
-        // match Pin::new(this.future.as_mut().unwrap()).poll(act, ctx, task) {
-        //     Poll::Ready(e) => {
-        //         *this.future = None;
-        //         Poll::Ready(Some(e))
-        //     }
-        //     Poll::Pending => Poll::Pending,
-        // }
     }
 }

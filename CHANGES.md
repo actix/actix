@@ -17,6 +17,11 @@
   longer bound to Actor. [#445]
 * Re-export `actix_rt::main` macro as `actix::main` [#448]
 * Bump `crossbeam-channel` to `0.5`
+* Update `bytes` to `1`.
+* Update `tokio` to `1`.
+* Update `tokio-util` tp `0.6`.
+* Rename `actix::clock::{delay_for, delay_until, Delay}` to `{sleep, sleep_until, Sleep}`
+* Remove all `Unpin` requirement from `ActorStream`.
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424

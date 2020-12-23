@@ -20,7 +20,8 @@ where
     #[pin]
     stream: S,
     dur: Duration,
-    timeout: Option<Pin<Box<Sleep>>>,
+    #[pin]
+    timeout: Option<Sleep>,
 }
 
 pub fn new<S>(stream: S, timeout: Duration) -> StreamTimeout<S>
@@ -47,11 +48,11 @@ where
         ctx: &mut <S::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Result<S::Item, ()>>> {
-        let this = self.project();
+        let mut this = self.project();
 
         match this.stream.poll_next(act, ctx, task) {
             Poll::Ready(Some(res)) => {
-                this.timeout.take();
+                this.timeout.set(None);
                 return Poll::Ready(Some(Ok(res)));
             }
             Poll::Ready(None) => return Poll::Ready(None),
@@ -59,21 +60,21 @@ where
         }
 
         if this.timeout.is_none() {
-            *this.timeout = Some(Box::pin(clock::sleep(*this.dur)));
+            this.timeout.set(Some(clock::sleep(*this.dur)));
         }
 
         // check timeout
         if this
             .timeout
             .as_mut()
+            .as_pin_mut()
             .unwrap()
-            .as_mut()
             .poll(task)
             .is_pending()
         {
             return Poll::Pending;
         }
-        this.timeout.take();
+        this.timeout.set(None);
 
         Poll::Ready(Some(Err(())))
     }

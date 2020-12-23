@@ -71,5 +71,3 @@ actix_derive = { path = "actix-derive" }
 
 # FIXME: Remove override.
 actix-rt = { git = "https://github.com/fakeshadow/actix-net", branch = "mio-0.7.3" }
-tokio = { git = "https://github.com/tokio-rs/tokio.git" }
-tokio-util = { git = "https://github.com/tokio-rs/tokio.git" }
