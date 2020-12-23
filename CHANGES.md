@@ -16,6 +16,7 @@
 * Use generic type instead of associate type for `EnvelopeProxy`. `SyncEnvelopeProxy` and `SyncContextEnvelope` are no 
   longer bound to Actor. [#445]
 * Re-export `actix_rt::main` macro as `actix::main` [#448]
+* Bump `crossbeam-channel` to `0.5`
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
