@@ -69,8 +69,8 @@ actor messages.</p>
 }
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">new</span>(<span class="string">&quot;example&quot;</span>);
-    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">MyActor</span>.<span class="ident">start</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">new</span>(<span class="string">&quot;example&quot;</span>);
+    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">sys</span>.<span class="ident">block_on</span>(<span class="ident">async</span> { <span class="ident">MyActor</span>.<span class="ident">start</span>() });
     <span class="ident">sys</span>.<span class="ident">run</span>();
  }</pre></div>
 </div><h3 id='method.add_message_stream' class='method'><code>fn <a href='#method.add_message_stream' class='fnname'>add_message_stream</a>&lt;S&gt;(&amp;mut self, fut: S) <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;S: <a class="trait" href="../actix/prelude/trait.Stream.html" title="trait actix::prelude::Stream">Stream</a> + 'static,<br>&nbsp;&nbsp;&nbsp;&nbsp;S::<a class="type" href="../actix/prelude/trait.Stream.html#associatedtype.Item" title="type actix::prelude::Stream::Item">Item</a>: <a class="trait" href="../actix/prelude/trait.Message.html" title="trait actix::prelude::Message">Message</a>,<br>&nbsp;&nbsp;&nbsp;&nbsp;A: <a class="trait" href="../actix/prelude/trait.Handler.html" title="trait actix::prelude::Handler">Handler</a>&lt;S::<a class="type" href="../actix/prelude/trait.Stream.html#associatedtype.Item" title="type actix::prelude::Stream::Item">Item</a>&gt;,&nbsp;</span></code></h3><div class='docblock'><p>Registers a stream with the context, ignoring errors.</p>

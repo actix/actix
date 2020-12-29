@@ -196,6 +196,8 @@
 <span id="193">193</span>
 <span id="194">194</span>
 <span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
 
@@ -332,12 +334,14 @@
     <span class="doccomment">///</span>
     <span class="doccomment">///     fn started(&amp;mut self, ctx: &amp;mut Self::Context) {</span>
     <span class="doccomment">///         ctx.set_mailbox_capacity(1);</span>
+    <span class="doccomment">///         System::current().stop();</span>
     <span class="doccomment">///     }</span>
     <span class="doccomment">/// }</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # fn main() {</span>
-    <span class="doccomment">/// # System::new(&quot;test&quot;);</span>
-    <span class="doccomment">/// let addr = MyActor.start();</span>
+    <span class="doccomment">/// # let mut sys = System::new(&quot;test&quot;);</span>
+    <span class="doccomment">/// let addr = sys.block_on(async { MyActor.start() });</span>
+    <span class="doccomment">/// sys.run();</span>
     <span class="doccomment">/// # }</span>
     <span class="doccomment">/// ```</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_mailbox_capacity</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">cap</span>: <span class="ident">usize</span>) {

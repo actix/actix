@@ -56,8 +56,8 @@ allows to handle <code>Stream</code> in similar way as normal actor messages.</p
 }
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">new</span>(<span class="string">&quot;example&quot;</span>);
-    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">MyActor</span>.<span class="ident">start</span>();
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">new</span>(<span class="string">&quot;example&quot;</span>);
+    <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">sys</span>.<span class="ident">block_on</span>(<span class="ident">async</span> { <span class="ident">MyActor</span>.<span class="ident">start</span>() });
     <span class="ident">sys</span>.<span class="ident">run</span>();
 }</pre></div>
 </div></div><span class='loading-content'>Loading content...</span><h2 id='implementors' class='small-section-header'>Implementors<a href='#implementors' class='anchor'></a></h2><div class='item-list' id='implementors-list'></div><span class='loading-content'>Loading content...</span><script type="text/javascript" src="../implementors/actix/trait.StreamHandler.js" async></script></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../";window.currentCrate = "actix";</script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>

@@ -223,9 +223,9 @@
 <span class="doccomment">/// }</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// fn main() {</span>
-<span class="doccomment">///     let sys = System::new(&quot;example&quot;);</span>
+<span class="doccomment">///     let mut sys = System::new(&quot;example&quot;);</span>
 <span class="doccomment">///</span>
-<span class="doccomment">///     let addr = actix::Supervisor::start(|_| MyActor);</span>
+<span class="doccomment">///     let addr = sys.block_on(async { actix::Supervisor::start(|_| MyActor) });</span>
 <span class="doccomment">///     addr.do_send(Die);</span>
 <span class="doccomment">///</span>
 <span class="doccomment">///     sys.run();</span>
