@@ -341,8 +341,8 @@ where
     /// }
     ///
     /// fn main() {
-    ///     let sys = System::new("example");
-    ///     let addr = MyActor.start();
+    ///     let mut sys = System::new("example");
+    ///     let addr = sys.block_on(async { MyActor.start() });
     ///     sys.run();
     ///  }
     /// ```
