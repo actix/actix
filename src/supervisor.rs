@@ -57,9 +57,9 @@ use crate::mailbox::DEFAULT_CAPACITY;
 /// }
 ///
 /// fn main() {
-///     let sys = System::new("example");
+///     let mut sys = System::new("example");
 ///
-///     let addr = actix::Supervisor::start(|_| MyActor);
+///     let addr = sys.block_on(async { actix::Supervisor::start(|_| MyActor) });
 ///     addr.do_send(Die);
 ///
 ///     sys.run();

@@ -86,9 +86,9 @@ impl Actor for MyActor {
 }
 
 fn main() {
-    let system = System::new("test");
+    let mut system = System::new("test");
 
-    let addr = MyActor.start();
+    let addr = system.block_on(async { MyActor.start() });
 
     system.run();
 }
@@ -201,29 +201,31 @@ impl Handler<Ping> for Game {
 }
 
 fn main() {
-    let system = System::new("test");
+    let mut system = System::new("test");
 
     // To get a Recipient object, we need to use a different builder method
     // which will allow postponing actor creation
-    let addr = Game::create(|ctx| {
-        // now we can get an address of the first actor and create the second actor
-        let addr = ctx.address();
-        let addr2 = Game {
-            counter: 0,
-            name: String::from("Game 2"),
-            addr: addr.recipient(),
-        }
-        .start();
-
-        // let's start pings
-        addr2.do_send(Ping { id: 10 });
-
-        // now we can finally create first actor
-        Game {
-            counter: 0,
-            name: String::from("Game 1"),
-            addr: addr2.recipient(),
-        }
+    let addr = system.block_on(async {
+        Game::create(|ctx| {
+                // now we can get an address of the first actor and create the second actor
+                let addr = ctx.address();
+                let addr2 = Game {
+                    counter: 0,
+                    name: String::from("Game 2"),
+                    addr: addr.recipient(),
+                }
+                .start();
+        
+                // let's start pings
+                addr2.do_send(Ping { id: 10 });
+        
+                // now we can finally create first actor
+                Game {
+                    counter: 0,
+                    name: String::from("Game 1"),
+                    addr: addr2.recipient(),
+                }
+            });
     });
 
     system.run();
