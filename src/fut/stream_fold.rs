@@ -1,4 +1,3 @@
-use std::mem;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -20,9 +19,11 @@ where
     #[pin]
     stream: S,
     f: F,
+    #[pin]
     state: State<T, Fut::Future>,
 }
 
+#[pin_project(project = FoldStateProj)]
 #[derive(Debug)]
 enum State<T, F>
 where
@@ -32,10 +33,10 @@ where
     Empty,
 
     /// Ready to process the next stream item; current accumulator is the `T`
-    Ready(T),
+    Ready(Option<T>),
 
     /// Working on a future the process the previous stream item
-    Processing(F),
+    Processing(#[pin] F),
 }
 
 pub fn new<S, F, Fut, T>(stream: S, f: F, t: T) -> StreamFold<S, F, Fut, T>
@@ -47,53 +48,53 @@ where
     StreamFold {
         stream,
         f,
-        state: State::Ready(t),
+        state: State::Ready(Some(t)),
     }
 }
 
 impl<S, F, Fut, T> ActorFuture for StreamFold<S, F, Fut, T>
 where
-    S: ActorStream + Unpin,
+    S: ActorStream,
     F: FnMut(T, S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> Fut,
     Fut: IntoActorFuture<Output = T, Actor = S::Actor>,
-    Fut::Future: ActorFuture + Unpin,
+    Fut::Future: ActorFuture,
 {
     type Output = T;
     type Actor = S::Actor;
 
     fn poll(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<T> {
-        let mut this = self.get_mut();
         loop {
-            match mem::replace(&mut this.state, State::Empty) {
-                State::Empty => panic!("cannot poll Fold twice"),
-                State::Ready(state) => {
-                    match Pin::new(&mut this.stream).poll_next(act, ctx, task) {
+            let this = self.as_mut().project();
+            match this.state.project() {
+                FoldStateProj::Ready(state) => {
+                    match this.stream.poll_next(act, ctx, task) {
                         Poll::Ready(Some(e)) => {
-                            let future = (this.f)(state, e, act, ctx);
+                            let future = (this.f)(state.take().unwrap(), e, act, ctx);
                             let future = future.into_future();
-                            this.state = State::Processing(future);
+                            self.as_mut().project().state.set(State::Processing(future));
                         }
-                        Poll::Ready(None) => return Poll::Ready(state),
-                        Poll::Pending => {
-                            this.state = State::Ready(state);
-                            return Poll::Pending;
+                        Poll::Ready(None) => {
+                            return {
+                                let state = state.take().unwrap();
+                                self.project().state.set(State::Empty);
+                                Poll::Ready(state)
+                            }
                         }
+                        Poll::Pending => return Poll::Pending,
                     }
                 }
-                State::Processing(mut fut) => {
-                    match Pin::new(&mut fut).poll(act, ctx, task) {
-                        Poll::Ready(state) => this.state = State::Ready(state),
-                        Poll::Pending => {
-                            this.state = State::Processing(fut);
-                            return Poll::Pending;
-                        }
+                FoldStateProj::Processing(fut) => match fut.poll(act, ctx, task) {
+                    Poll::Ready(state) => {
+                        self.as_mut().project().state.set(State::Ready(Some(state)))
                     }
-                }
+                    Poll::Pending => return Poll::Pending,
+                },
+                FoldStateProj::Empty => panic!("cannot poll Fold twice"),
             }
         }
     }

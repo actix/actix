@@ -19,11 +19,6 @@ struct MySink {
 impl Sink<Bytes> for MySink {
     type Error = ();
 
-    fn start_send(self: Pin<&mut Self>, bytes: Bytes) -> Result<(), Self::Error> {
-        self.get_mut().queue.push(bytes);
-        Ok(())
-    }
-
     fn poll_ready(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -49,6 +44,11 @@ impl Sink<Bytes> for MySink {
             cx.waker().wake_by_ref();
             Poll::Pending
         }
+    }
+
+    fn start_send(self: Pin<&mut Self>, bytes: Bytes) -> Result<(), Self::Error> {
+        self.get_mut().queue.push(bytes);
+        Ok(())
     }
 
     fn poll_flush(

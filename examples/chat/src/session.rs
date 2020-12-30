@@ -1,8 +1,9 @@
 //! `ClientSession` is an actor, it manages peer TCP connection and
 //! proxies commands from peer to `ChatServer`.
 use std::io;
+use std::time::Duration;
 
-use actix::clock::{Duration, Instant};
+use actix::clock::Instant;
 use actix::prelude::*;
 
 use tokio::io::WriteHalf;

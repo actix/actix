@@ -9,34 +9,27 @@ use crate::fut::{ActorFuture, ActorStream};
 /// when stream completes.
 ///
 /// This structure is produced by the `ActorStream::finish` method.
-#[derive(Debug)]
 #[must_use = "streams do nothing unless polled"]
-pub struct StreamFinish<S: ActorStream + Unpin>(S);
+#[pin_project::pin_project]
+#[derive(Debug)]
+pub struct StreamFinish<S: ActorStream>(#[pin] S);
 
-pub fn new<S>(s: S) -> StreamFinish<S>
-where
-    S: ActorStream + Unpin,
-{
+pub fn new<S: ActorStream>(s: S) -> StreamFinish<S> {
     StreamFinish(s)
 }
 
-impl<S: ActorStream> ActorFuture for StreamFinish<S>
-where
-    S: ActorStream + Unpin,
-    Self: Unpin,
-{
+impl<S: ActorStream> ActorFuture for StreamFinish<S> {
     type Output = ();
     type Actor = S::Actor;
 
     fn poll(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         act: &mut S::Actor,
         ctx: &mut <S::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<()> {
-        let this = self.get_mut();
         loop {
-            match Pin::new(&mut this.0).poll_next(act, ctx, task) {
+            match self.as_mut().project().0.poll_next(act, ctx, task) {
                 Poll::Pending => return Poll::Pending,
                 Poll::Ready(None) => return Poll::Ready(()),
                 Poll::Ready(Some(_)) => (),

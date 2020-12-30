@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use actix::prelude::*;
-use tokio::time::{delay_for, Duration};
+use tokio::time::{sleep, Duration};
 
 struct Die;
 
@@ -54,7 +54,7 @@ fn test_supervisor_restart() {
         *addr2.lock().unwrap() = Some(addr);
 
         actix::spawn(async move {
-            delay_for(Duration::new(0, 100_000)).await;
+            sleep(Duration::new(0, 100_000)).await;
             System::current().stop();
         });
     })

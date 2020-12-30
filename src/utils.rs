@@ -6,7 +6,7 @@ use std::time::Duration;
 use futures_channel::oneshot;
 
 use crate::actor::Actor;
-use crate::clock::{interval_at, Delay, Instant, Interval};
+use crate::clock::{interval_at, Instant, Interval, Sleep};
 use crate::fut::{ActorFuture, ActorStream};
 
 pub struct Condition<T>
@@ -80,12 +80,14 @@ where
 /// # }
 
 #[must_use = "future do nothing unless polled"]
+#[pin_project::pin_project]
 pub struct TimerFunc<A>
 where
     A: Actor,
 {
     f: Option<Box<dyn TimerFuncBox<A>>>,
-    timeout: Delay,
+    #[pin]
+    timeout: Sleep,
 }
 
 impl<A> TimerFunc<A>
@@ -99,7 +101,7 @@ where
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: tokio::time::delay_for(timeout),
+            timeout: tokio::time::sleep(timeout),
         }
     }
 }
@@ -128,8 +130,8 @@ where
         ctx: &mut <Self::Actor as Actor>::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
-        let this = self.get_mut();
-        match Pin::new(&mut this.timeout).poll(task) {
+        let this = self.project();
+        match this.timeout.poll(task) {
             Poll::Ready(_) => {
                 if let Some(f) = this.f.take() {
                     f.call(act, ctx);
