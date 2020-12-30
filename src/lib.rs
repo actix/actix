@@ -42,6 +42,8 @@
 #![allow(clippy::needless_doctest_main)]
 #![deny(nonstandard_style, rust_2018_idioms)]
 #![warn(deprecated_in_future, trivial_casts, trivial_numeric_casts)]
+// TODO: temporary allow deprecated until resolver actor is removed.
+#![allow(deprecated)]
 
 #[doc(hidden)]
 #[cfg(feature = "derive")]
