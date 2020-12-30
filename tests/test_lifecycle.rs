@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 use actix::prelude::*;
 use futures_channel::oneshot::{channel, Sender};
 use futures_util::future::FutureExt;
-use tokio::time::{delay_for, Duration};
+use tokio::time::{sleep, Duration};
 
 struct MyActor {
     started: Arc<AtomicBool>,
@@ -122,9 +122,9 @@ fn test_stop_after_drop_address() {
         .start();
 
         actix_rt::spawn(async move {
-            delay_for(Duration::new(0, 100)).await;
+            sleep(Duration::new(0, 100)).await;
             drop(addr);
-            delay_for(Duration::new(0, 10_000)).await;
+            sleep(Duration::new(0, 10_000)).await;
             System::current().stop();
         });
     })
@@ -155,7 +155,7 @@ fn test_stop_after_drop_sync_address() {
         .start();
 
         actix_rt::spawn(async move {
-            delay_for(Duration::new(0, 100)).await;
+            sleep(Duration::new(0, 100)).await;
             drop(addr);
             System::current().stop();
         });
@@ -190,13 +190,13 @@ fn test_stop_after_drop_sync_actor() {
         });
 
         actix_rt::spawn(async move {
-            delay_for(Duration::from_secs(2)).await;
+            sleep(Duration::from_secs(2)).await;
             assert!(started2.load(Ordering::Relaxed), "Not started");
             assert!(!stopping2.load(Ordering::Relaxed), "Stopping");
             assert!(!stopped2.load(Ordering::Relaxed), "Stopped");
             drop(addr);
 
-            delay_for(Duration::from_secs(2)).await;
+            sleep(Duration::from_secs(2)).await;
             System::current().stop();
         });
     })
@@ -227,7 +227,7 @@ fn test_stop() {
         .start();
 
         actix_rt::spawn(async move {
-            delay_for(Duration::new(0, 100)).await;
+            sleep(Duration::new(0, 100)).await;
             System::current().stop();
         });
     })
@@ -258,7 +258,7 @@ fn test_stop_restore_after_stopping() {
         .start();
 
         actix_rt::spawn(async move {
-            delay_for(Duration::new(0, 100)).await;
+            sleep(Duration::new(0, 100)).await;
             System::current().stop();
         });
     })

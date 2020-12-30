@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 use actix::prelude::*;
-use tokio::time::{delay_for, Duration};
+use tokio::time::{sleep, Duration};
 
 #[derive(Debug)]
 struct Ping(usize);
@@ -196,7 +196,7 @@ impl Handler<Ping> for TimeoutActor {
     type Result = ();
 
     fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
-        delay_for(Duration::new(0, 5_000_000))
+        sleep(Duration::new(0, 5_000_000))
             .into_actor(self)
             .wait(ctx);
     }

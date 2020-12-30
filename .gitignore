@@ -10,3 +10,4 @@ __pycache__
 *~
 target/
 examples/chat/target/
+.idea

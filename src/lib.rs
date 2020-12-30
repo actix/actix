@@ -42,6 +42,8 @@
 #![allow(clippy::needless_doctest_main)]
 #![deny(nonstandard_style, rust_2018_idioms)]
 #![warn(deprecated_in_future, trivial_casts, trivial_numeric_casts)]
+// TODO: temporary allow deprecated until resolver actor is removed.
+#![allow(deprecated)]
 
 #[doc(hidden)]
 #[cfg(feature = "derive")]
@@ -174,11 +176,11 @@ pub mod dev {
 ///
 /// ```
 /// use std::time::{Duration, Instant};
-/// use tokio::time::delay_for;
+/// use tokio::time::sleep;
 ///
 /// fn main() {
 ///   actix::run(async move {
-///       delay_for(Duration::from_millis(100)).await;
+///       sleep(Duration::from_millis(100)).await;
 ///       actix::System::current().stop();
 ///   });
 /// }

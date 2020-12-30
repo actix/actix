@@ -1,13 +1,9 @@
-//! A configurable source of time.
+//! Utilities for tracking time.
 //!
-//! This module provides an API to get the current instant in such a way that
-//! the source of time may be configured. This allows mocking out the source of
-//! time in tests.
+//! This module provides a number of types for executing code after a set period of time.
 //!
-//! See [Module `tokio_timer::clock`] for full documentation.
+//! See [Module `tokio::time`] for full documentation.
 //!
-//! [Module `tokio_timer::clock`]: https://docs.rs/tokio-timer/latest/tokio_timer/clock/index.html
+//! [Module `tokio::time`]: https://docs.rs/tokio/1.0.1/tokio/time/index.html
 
-pub use tokio::time::{
-    delay_for, delay_until, interval_at, Delay, Duration, Instant, Interval,
-};
+pub use actix_rt::time::*;
