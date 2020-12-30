@@ -1,7 +1,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::Duration;
 
-use actix::clock::{sleep, Duration};
+use actix::clock::sleep;
 use actix::prelude::*;
 use futures_util::future::FutureExt;
 

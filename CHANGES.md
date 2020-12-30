@@ -22,6 +22,8 @@
 * Update `tokio-util` tp `0.6`.
 * Rename `actix::clock::{delay_for, delay_until, Delay}` to `{sleep, sleep_until, Sleep}`
 * Remove all `Unpin` requirement from `ActorStream`.
+* Remove `actix::clock::Duration` type. It's a re-export of `std::time::Duration` and use 
+  the Duration type in std lib is suggested.
 * Update examples and tests according to the change of `actix-rt`. 
   `Arbiter::spawn` and `actix_rt::spawn` would panic outside the context of `actix::System`. They must be call
   inside `System::run`,`SystemRunner::run` or `SystemRunner::block_on`.

@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - 1.44.0 # MSRV
+          - 1.46.0 # MSRV
           - stable
           - nightly
 

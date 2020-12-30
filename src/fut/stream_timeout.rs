@@ -1,9 +1,10 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+use std::time::Duration;
 
 use crate::actor::Actor;
-use crate::clock::{self, Duration, Sleep};
+use crate::clock::{self, Sleep};
 use crate::fut::ActorStream;
 
 /// Future for the `timeout` combinator, interrupts computations if it takes
