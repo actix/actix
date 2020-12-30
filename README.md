@@ -7,7 +7,7 @@
 
 [![crates.io](https://meritbadge.herokuapp.com/actix)](https://crates.io/crates/actix)
 [![Documentation](https://docs.rs/actix/badge.svg)](https://docs.rs/actix)
-[![Version](https://img.shields.io/badge/rustc-1.40+-ab6000.svg)](https://blog.rust-lang.org/2019/12/19/Rust-1.40.0.html)
+[![Version](https://img.shields.io/badge/rustc-1.46+-ab6000.svg)](https://blog.rust-lang.org/2019/12/19/Rust-1.46.0.html)
 <br />
 ![License](https://img.shields.io/crates/l/actix.svg)
 [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix)
