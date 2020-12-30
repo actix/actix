@@ -36,7 +36,7 @@
 - Uses [futures](https://crates.io/crates/futures) for asynchronous message handling
 - Actor supervision
 - Typed messages (No `Any` type)
-- Runs on stable Rust 1.40+
+- Runs on stable Rust 1.46+
 
 ## Usage
 
