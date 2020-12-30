@@ -710,7 +710,7 @@
 <span class="doccomment">/// even if there are multiple `Msg` sent to `MyActor`.</span>
 <span class="doccomment">/// ```rust, no_run</span>
 <span class="doccomment">/// # use actix::prelude::*;</span>
-<span class="doccomment">/// # use actix::clock::delay_for;</span>
+<span class="doccomment">/// # use actix::clock::sleep;</span>
 <span class="doccomment">/// # use std::time::Duration;</span>
 <span class="doccomment">/// #</span>
 <span class="doccomment">/// # #[derive(Message)]</span>
@@ -734,7 +734,7 @@
 <span class="doccomment">///                     this.0 = 30;</span>
 <span class="doccomment">///                 })</span>
 <span class="doccomment">///                 .then(|_, this, _| {</span>
-<span class="doccomment">///                     delay_for(Duration::from_secs(3)).into_actor(this)</span>
+<span class="doccomment">///                     sleep(Duration::from_secs(3)).into_actor(this)</span>
 <span class="doccomment">///                 })</span>
 <span class="doccomment">///                 .map(|_, this, _| {</span>
 <span class="doccomment">///                     this.0 -= 1;</span>

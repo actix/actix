@@ -206,10 +206,6 @@
 <span id="203">203</span>
 <span id="204">204</span>
 <span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span>;
@@ -221,7 +217,7 @@
 <span class="kw">use</span> <span class="ident">pin_project</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">AsyncContext</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::<span class="ident">Delay</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::<span class="ident">Sleep</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">handler</span>::{<span class="ident">Handler</span>, <span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
 
@@ -261,21 +257,17 @@
     }
 }
 
+<span class="attribute">#[<span class="ident">pin_project</span>::<span class="ident">pin_project</span>]</span>
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorDelayedMessageItem</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Actor</span>,
     <span class="ident">M</span>: <span class="ident">Message</span>,
 {
     <span class="ident">msg</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">timeout</span>: <span class="ident">Delay</span>,
+    <span class="attribute">#[<span class="ident">pin</span>]</span>
+    <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
     <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
     <span class="ident">m</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-}
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Unpin</span> <span class="kw">for</span> <span class="ident">ActorDelayedMessageItem</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
-{
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">ActorDelayedMessageItem</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
@@ -286,7 +278,7 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">timeout</span>: <span class="ident">Duration</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">msg</span>: <span class="prelude-val">Some</span>(<span class="ident">msg</span>),
-            <span class="ident">timeout</span>: <span class="ident">tokio</span>::<span class="ident">time</span>::<span class="ident">delay_for</span>(<span class="ident">timeout</span>),
+            <span class="ident">timeout</span>: <span class="ident">tokio</span>::<span class="ident">time</span>::<span class="ident">sleep</span>(<span class="ident">timeout</span>),
             <span class="ident">act</span>: <span class="ident">PhantomData</span>,
             <span class="ident">m</span>: <span class="ident">PhantomData</span>,
         }
@@ -308,8 +300,8 @@
         <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">task</span>::<span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
-        <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">timeout</span>).<span class="ident">poll</span>(<span class="ident">task</span>));
+        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
+        <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">timeout</span>.<span class="ident">poll</span>(<span class="ident">task</span>));
         <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">A</span>::<span class="ident">handle</span>(<span class="ident">act</span>, <span class="ident">this</span>.<span class="ident">msg</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>(), <span class="ident">ctx</span>);
         <span class="ident">fut</span>.<span class="ident">handle</span>::<span class="op">&lt;</span>()<span class="op">&gt;</span>(<span class="ident">ctx</span>, <span class="prelude-val">None</span>);
         <span class="ident">Poll</span>::<span class="ident">Ready</span>(())

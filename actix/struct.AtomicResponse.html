@@ -28,7 +28,7 @@ even if there are multiple <code>Msg</code> sent to <code>MyActor</code>.</p>
                     <span class="ident">this</span>.<span class="number">0</span> <span class="op">=</span> <span class="number">30</span>;
                 })
                 .<span class="ident">then</span>(<span class="op">|</span><span class="kw">_</span>, <span class="ident">this</span>, <span class="kw">_</span><span class="op">|</span> {
-                    <span class="ident">delay_for</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">3</span>)).<span class="ident">into_actor</span>(<span class="ident">this</span>)
+                    <span class="ident">sleep</span>(<span class="ident">Duration</span>::<span class="ident">from_secs</span>(<span class="number">3</span>)).<span class="ident">into_actor</span>(<span class="ident">this</span>)
                 })
                 .<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span>, <span class="ident">this</span>, <span class="kw">_</span><span class="op">|</span> {
                     <span class="ident">this</span>.<span class="number">0</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;

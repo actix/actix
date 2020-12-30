@@ -209,6 +209,8 @@
 <span id="206">206</span>
 <span id="207">207</span>
 <span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Actix is an actor framework.</span>
 <span class="doccomment">//!</span>
@@ -254,6 +256,8 @@
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">needless_doctest_main</span>)]</span>
 <span class="attribute">#![<span class="ident">deny</span>(<span class="ident">nonstandard_style</span>, <span class="ident">rust_2018_idioms</span>)]</span>
 <span class="attribute">#![<span class="ident">warn</span>(<span class="ident">deprecated_in_future</span>, <span class="ident">trivial_casts</span>, <span class="ident">trivial_numeric_casts</span>)]</span>
+<span class="comment">// TODO: temporary allow deprecated until resolver actor is removed.</span>
+<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">deprecated</span>)]</span>
 
 <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>)]</span>
@@ -386,11 +390,11 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// ```</span>
 <span class="doccomment">/// use std::time::{Duration, Instant};</span>
-<span class="doccomment">/// use tokio::time::delay_for;</span>
+<span class="doccomment">/// use tokio::time::sleep;</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// fn main() {</span>
 <span class="doccomment">///   actix::run(async move {</span>
-<span class="doccomment">///       delay_for(Duration::from_millis(100)).await;</span>
+<span class="doccomment">///       sleep(Duration::from_millis(100)).await;</span>
 <span class="doccomment">///       actix::System::current().stop();</span>
 <span class="doccomment">///   });</span>
 <span class="doccomment">/// }</span>

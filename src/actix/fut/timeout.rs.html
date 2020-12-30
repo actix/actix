@@ -70,7 +70,7 @@
 <span class="kw">use</span> <span class="ident">pin_project</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::{<span class="ident">delay_for</span>, <span class="ident">Delay</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::{<span class="ident">sleep</span>, <span class="ident">Sleep</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
 
 <span class="doccomment">/// Future for the `timeout` combinator, interrupts computations if it takes</span>
@@ -87,7 +87,7 @@
     <span class="attribute">#[<span class="ident">pin</span>]</span>
     <span class="ident">fut</span>: <span class="ident">F</span>,
     <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">timeout</span>: <span class="ident">Delay</span>,
+    <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
 }
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">future</span>: <span class="ident">F</span>, <span class="ident">timeout</span>: <span class="ident">Duration</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Timeout</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
@@ -96,7 +96,7 @@
 {
     <span class="ident">Timeout</span> {
         <span class="ident">fut</span>: <span class="ident">future</span>,
-        <span class="ident">timeout</span>: <span class="ident">delay_for</span>(<span class="ident">timeout</span>),
+        <span class="ident">timeout</span>: <span class="ident">sleep</span>(<span class="ident">timeout</span>),
     }
 }
 
