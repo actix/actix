@@ -51,7 +51,7 @@ impl<A, B, T> Either<(A, T), (B, T)> {
     /// Factor out a homogeneous type from an either of pairs.
     ///
     /// Here, the homogeneous type is the second element of the pairs.
-    pub fn factor_second(self) -> (Either<A, B>, T) {
+    pub fn factor_right(self) -> (Either<A, B>, T) {
         match self {
             Either::Left { left: (left, x) } => (Either::Left { left }, x),
             Either::Right { right: (right, x) } => (Either::Right { right }, x),
