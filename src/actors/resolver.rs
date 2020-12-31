@@ -221,8 +221,8 @@ impl Handler<Connect> for Resolver {
                 self.resolver.as_ref().unwrap(),
             )
             .then(move |addrs, act, _| match addrs {
-                Ok(a) => Either::Left(TcpConnector::with_timeout(a, timeout)),
-                Err(e) => Either::Right(async move { Err(e) }.into_actor(act)),
+                Ok(a) => Either::left(TcpConnector::with_timeout(a, timeout)),
+                Err(e) => Either::right(async move { Err(e) }.into_actor(act)),
             }),
         )
     }
@@ -365,14 +365,15 @@ impl ActorFuture for ResolveFut {
     }
 }
 
-/// A TCP stream connector.
-#[allow(clippy::type_complexity)]
-#[pin_project::pin_project]
-pub struct TcpConnector {
-    addrs: VecDeque<SocketAddr>,
-    #[pin]
-    timeout: Sleep,
-    stream: Option<Pin<Box<dyn Future<Output = Result<TcpStream, io::Error>>>>>,
+pin_project_lite::pin_project! {
+    /// A TCP stream connector.
+    #[allow(clippy::type_complexity)]
+    pub struct TcpConnector {
+        addrs: VecDeque<SocketAddr>,
+        #[pin]
+        timeout: Sleep,
+        stream: Option<Pin<Box<dyn Future<Output = Result<TcpStream, io::Error>>>>>,
+    }
 }
 
 impl TcpConnector {

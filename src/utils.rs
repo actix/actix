@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
-use futures_channel::oneshot;
+use tokio::sync::oneshot;
 
 use crate::actor::Actor;
 use crate::clock::{interval_at, Instant, Interval, Sleep};
@@ -44,50 +44,50 @@ where
     }
 }
 
-/// An `ActorFuture` that runs a function in the actor's context after a specified amount of time.
-///
-/// Unless you specifically need access to the future, use [`Context::run_later`] instead.
-///
-/// [`Context::run_later`]: ../prelude/trait.AsyncContext.html#method.run_later
-///
-/// ```rust
-/// # use std::io;
-/// use std::time::Duration;
-/// use actix::prelude::*;
-/// use actix::utils::TimerFunc;
-///
-/// struct MyActor;
-///
-/// impl MyActor {
-///     fn stop(&mut self, context: &mut Context<Self>) {
-///         System::current().stop();
-///     }
-/// }
-///
-/// impl Actor for MyActor {
-///    type Context = Context<Self>;
-///
-///    fn started(&mut self, context: &mut Context<Self>) {
-///        // spawn a delayed future into our context
-///        TimerFunc::new(Duration::from_millis(100), Self::stop)
-///            .spawn(context);
-///    }
-/// }
-/// # fn main() {
-/// #    let mut sys = System::new("example");
-/// #    let addr = sys.block_on(async { MyActor.start() });
-/// #    sys.run();
-/// # }
-
-#[must_use = "future do nothing unless polled"]
-#[pin_project::pin_project]
-pub struct TimerFunc<A>
-where
-    A: Actor,
-{
-    f: Option<Box<dyn TimerFuncBox<A>>>,
-    #[pin]
-    timeout: Sleep,
+pin_project_lite::pin_project! {
+    /// An `ActorFuture` that runs a function in the actor's context after a specified amount of time.
+    ///
+    /// Unless you specifically need access to the future, use [`Context::run_later`] instead.
+    ///
+    /// [`Context::run_later`]: ../prelude/trait.AsyncContext.html#method.run_later
+    ///
+    /// ```rust
+    /// # use std::io;
+    /// use std::time::Duration;
+    /// use actix::prelude::*;
+    /// use actix::utils::TimerFunc;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl MyActor {
+    ///     fn stop(&mut self, context: &mut Context<Self>) {
+    ///         System::current().stop();
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    ///
+    ///    fn started(&mut self, context: &mut Context<Self>) {
+    ///        // spawn a delayed future into our context
+    ///        TimerFunc::new(Duration::from_millis(100), Self::stop)
+    ///            .spawn(context);
+    ///    }
+    /// }
+    /// # fn main() {
+    /// #    let mut sys = System::new("example");
+    /// #    let addr = sys.block_on(async { MyActor.start() });
+    /// #    sys.run();
+    /// # }
+    #[must_use = "future do nothing unless polled"]
+    pub struct TimerFunc<A>
+    where
+        A: Actor,
+    {
+        f: Option<Box<dyn TimerFuncBox<A>>>,
+        #[pin]
+        timeout: Sleep,
+    }
 }
 
 impl<A> TimerFunc<A>

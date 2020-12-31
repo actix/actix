@@ -3,12 +3,12 @@ use std::marker::PhantomData;
 use std::ops::DerefMut;
 use std::pin::Pin;
 use std::rc::Rc;
+use std::task::{Context, Poll};
 use std::{collections::VecDeque, io, task};
 
 use bitflags::bitflags;
 use bytes::BytesMut;
-use futures_util::sink::Sink;
-use futures_util::task::{Context, Poll};
+use futures_sink::Sink;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio_util::codec::Encoder;
 

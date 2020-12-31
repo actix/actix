@@ -7,22 +7,23 @@ use crate::actor::Actor;
 use crate::clock::{self, Sleep};
 use crate::fut::ActorStream;
 
-/// Future for the `timeout` combinator, interrupts computations if it takes
-/// more than `timeout`.
-///
-/// This is created by the `ActorFuture::timeout()` method.
-#[pin_project::pin_project]
-#[derive(Debug)]
-#[must_use = "streams do nothing unless polled"]
-pub struct StreamTimeout<S>
-where
-    S: ActorStream,
-{
-    #[pin]
-    stream: S,
-    dur: Duration,
-    #[pin]
-    timeout: Option<Sleep>,
+pin_project_lite::pin_project! {
+    /// Future for the `timeout` combinator, interrupts computations if it takes
+    /// more than `timeout`.
+    ///
+    /// This is created by the `ActorFuture::timeout()` method.
+    #[derive(Debug)]
+    #[must_use = "streams do nothing unless polled"]
+    pub struct StreamTimeout<S>
+    where
+        S: ActorStream,
+    {
+        #[pin]
+        stream: S,
+        dur: Duration,
+        #[pin]
+        timeout: Option<Sleep>,
+    }
 }
 
 pub fn new<S>(stream: S, timeout: Duration) -> StreamTimeout<S>

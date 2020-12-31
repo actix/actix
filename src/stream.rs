@@ -2,9 +2,8 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures_util::stream::Stream;
+use futures_core::stream::Stream;
 use log::error;
-use pin_project::pin_project;
 
 use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use crate::fut::ActorFuture;
@@ -92,13 +91,14 @@ where
     }
 }
 
-#[pin_project]
-pub(crate) struct ActorStream<A, M, S> {
-    #[pin]
-    stream: S,
-    started: bool,
-    act: PhantomData<A>,
-    msg: PhantomData<M>,
+pin_project_lite::pin_project! {
+    pub(crate) struct ActorStream<A, M, S> {
+        #[pin]
+        stream: S,
+        started: bool,
+        act: PhantomData<A>,
+        msg: PhantomData<M>,
+    }
 }
 
 impl<A, M, S> ActorStream<A, M, S> {

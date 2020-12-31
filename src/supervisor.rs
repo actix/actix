@@ -1,9 +1,8 @@
+use std::future::Future;
 use std::pin::Pin;
 use std::task::{self, Poll};
 
 use actix_rt::Arbiter;
-use futures_util::future::Future;
-use pin_project::pin_project;
 
 use crate::actor::{Actor, AsyncContext, Supervised};
 use crate::address::{channel, Addr};
@@ -11,68 +10,70 @@ use crate::context::Context;
 use crate::contextimpl::ContextFut;
 use crate::mailbox::DEFAULT_CAPACITY;
 
-/// Actor supervisor
-///
-/// A Supervisor manages incoming messages for an actor. In case of actor failure,
-/// the supervisor creates a new execution context and restarts the actor's lifecycle.
-/// A Supervisor does not re-create their actor, it just calls the `restarting()`
-/// method.
-///
-/// Supervisors have the same lifecycle as actors. If all addresses to
-/// a supervisor gets dropped and its actor does not execute anything, the supervisor
-/// terminates.
-///
-/// Supervisors can not guarantee that their actors successfully processes incoming
-/// messages. If the actor fails during message processing, the message can not be
-/// recovered. The sender would receive an `Err(Cancelled)` error in this situation.
-///
-/// ## Example
-///
-/// ```rust
-/// # use actix::prelude::*;
-/// #[derive(Message)]
-/// #[rtype(result = "()")]
-/// struct Die;
-///
-/// struct MyActor;
-///
-/// impl Actor for MyActor {
-///     type Context = Context<Self>;
-/// }
-///
-/// // To use actor with supervisor actor has to implement `Supervised` trait
-/// impl actix::Supervised for MyActor {
-///     fn restarting(&mut self, ctx: &mut Context<MyActor>) {
-///         println!("restarting");
-///     }
-/// }
-///
-/// impl Handler<Die> for MyActor {
-///     type Result = ();
-///
-///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
-///         ctx.stop();
-/// #       System::current().stop();
-///     }
-/// }
-///
-/// fn main() {
-///     let mut sys = System::new("example");
-///
-///     let addr = sys.block_on(async { actix::Supervisor::start(|_| MyActor) });
-///     addr.do_send(Die);
-///
-///     sys.run();
-/// }
-/// ```
-#[pin_project]
-#[derive(Debug)]
-pub struct Supervisor<A>
-where
-    A: Supervised + Actor<Context = Context<A>>,
-{
-    #[pin]
-    fut: ContextFut<A, Context<A>>,
+pin_project_lite::pin_project! {
+    /// Actor supervisor
+    ///
+    /// A Supervisor manages incoming messages for an actor. In case of actor failure,
+    /// the supervisor creates a new execution context and restarts the actor's lifecycle.
+    /// A Supervisor does not re-create their actor, it just calls the `restarting()`
+    /// method.
+    ///
+    /// Supervisors have the same lifecycle as actors. If all addresses to
+    /// a supervisor gets dropped and its actor does not execute anything, the supervisor
+    /// terminates.
+    ///
+    /// Supervisors can not guarantee that their actors successfully processes incoming
+    /// messages. If the actor fails during message processing, the message can not be
+    /// recovered. The sender would receive an `Err(Cancelled)` error in this situation.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// # use actix::prelude::*;
+    /// #[derive(Message)]
+    /// #[rtype(result = "()")]
+    /// struct Die;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl Actor for MyActor {
+    ///     type Context = Context<Self>;
+    /// }
+    ///
+    /// // To use actor with supervisor actor has to implement `Supervised` trait
+    /// impl actix::Supervised for MyActor {
+    ///     fn restarting(&mut self, ctx: &mut Context<MyActor>) {
+    ///         println!("restarting");
+    ///     }
+    /// }
+    ///
+    /// impl Handler<Die> for MyActor {
+    ///     type Result = ();
+    ///
+    ///     fn handle(&mut self, _: Die, ctx: &mut Context<MyActor>) {
+    ///         ctx.stop();
+    /// #       System::current().stop();
+    ///     }
+    /// }
+    ///
+    /// fn main() {
+    ///     let mut sys = System::new("example");
+    ///
+    ///     let addr = sys.block_on(async { actix::Supervisor::start(|_| MyActor) });
+    ///     addr.do_send(Die);
+    ///
+    ///     sys.run();
+    /// }
+    /// ```
+    #[derive(Debug)]
+    pub struct Supervisor<A>
+    where
+        A: Supervised,
+        A: Actor<Context = Context<A>>
+    {
+        #[pin]
+        fut: ContextFut<A, Context<A>>,
+    }
 }
 
 impl<A> Supervisor<A>

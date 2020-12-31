@@ -6,6 +6,7 @@
 //! Actor type A and B, sharing the same thread pool. You need to create two
 //! SyncArbiters and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
+use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::task::Poll;
@@ -13,10 +14,9 @@ use std::{task, thread};
 
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
-use futures_channel::oneshot::Sender as SyncSender;
-use futures_util::{future::Future, stream::StreamExt};
+use futures_core::stream::Stream;
 use log::warn;
-use pin_project::pin_project;
+use tokio::sync::oneshot::Sender as SyncSender;
 
 use crate::actor::{Actor, ActorContext, ActorState, Running};
 use crate::address::channel;
@@ -93,7 +93,6 @@ use crate::handler::{Handler, Message, MessageResponse};
 ///     });
 /// }
 /// ```
-#[pin_project]
 pub struct SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
@@ -154,9 +153,9 @@ where
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        let this = self.project();
+        let this = self.get_mut();
         loop {
-            match this.msgs.poll_next_unpin(cx) {
+            match Pin::new(&mut this.msgs).poll_next(cx) {
                 Poll::Ready(Some(msg)) => {
                     if let Some(ref queue) = this.queue {
                         assert!(queue.send(msg).is_ok());
@@ -172,7 +171,7 @@ where
             Poll::Pending
         } else {
             // stop sync arbiters
-            *this.queue = None;
+            this.queue = None;
             Poll::Ready(())
         }
     }
@@ -345,7 +344,7 @@ where
 {
     fn handle(&mut self, act: &mut A, ctx: &mut A::Context) {
         let tx = self.tx.take();
-        if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
+        if tx.is_some() && tx.as_ref().unwrap().is_closed() {
             return;
         }
 
@@ -357,7 +356,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use futures_channel::oneshot;
+    use tokio::sync::oneshot;
 
     use crate::prelude::*;
 

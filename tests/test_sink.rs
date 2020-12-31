@@ -4,8 +4,8 @@ use std::task::{Context, Poll};
 use actix::io::SinkWrite;
 use actix::prelude::*;
 use bytes::{Buf, Bytes};
-use futures_channel::mpsc;
-use futures_util::{sink::Sink, stream::StreamExt};
+use futures_sink::Sink;
+use tokio::sync::mpsc;
 
 type ByteSender = mpsc::UnboundedSender<u8>;
 
@@ -31,7 +31,7 @@ impl Sink<Bytes> for MySink {
                 return Poll::Ready(Err(()));
             }
 
-            this.sender.unbounded_send(bytes[0]).unwrap();
+            this.sender.send(bytes[0]).unwrap();
             bytes.advance(1);
             if bytes.is_empty() {
                 this.queue.remove(0);
@@ -63,6 +63,39 @@ impl Sink<Bytes> for MySink {
         cx: &mut Context,
     ) -> Poll<Result<(), Self::Error>> {
         self.poll_ready(cx)
+    }
+}
+
+struct SinkUnboundedSender {
+    tx: mpsc::UnboundedSender<Bytes>,
+}
+
+impl Sink<Bytes> for SinkUnboundedSender {
+    type Error = mpsc::error::SendError<Bytes>;
+
+    fn poll_ready(
+        self: Pin<&mut Self>,
+        _: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn start_send(self: Pin<&mut Self>, t: Bytes) -> Result<(), Self::Error> {
+        mpsc::UnboundedSender::send(&self.get_mut().tx, t)
+    }
+
+    fn poll_flush(
+        self: Pin<&mut Self>,
+        _: &mut Context<'_>,
+    ) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(
+        self: Pin<&mut Self>,
+        _: &mut Context,
+    ) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
     }
 }
 
@@ -101,7 +134,7 @@ impl Handler<Data> for MyActor {
 
 #[actix_rt::test]
 async fn test_send_1() {
-    let (sender, receiver) = mpsc::unbounded();
+    let (sender, mut receiver) = mpsc::unbounded_channel();
 
     actix_rt::spawn(async move {
         let addr = MyActor::create(move |ctxt| {
@@ -122,13 +155,17 @@ async fn test_send_1() {
         addr.do_send(data);
     });
 
-    let res = receiver.collect::<Vec<u8>>().await;
+    let mut res = Vec::new();
+    while let Some(r) = receiver.recv().await {
+        res.push(r);
+    }
+
     assert_eq!(b"Hello", &res[..]);
 }
 
 #[actix_rt::test]
 async fn test_send_2() {
-    let (sender, receiver) = mpsc::unbounded();
+    let (sender, mut receiver) = mpsc::unbounded_channel();
 
     actix_rt::spawn(async move {
         let addr = MyActor::create(move |ctxt| {
@@ -156,13 +193,17 @@ async fn test_send_2() {
         addr.do_send(data);
     });
 
-    let res = receiver.collect::<Vec<u8>>().await;
+    let mut res = Vec::new();
+    while let Some(r) = receiver.recv().await {
+        res.push(r);
+    }
+
     assert_eq!(b"Hello world", &res[..]);
 }
 
 #[actix_rt::test]
 async fn test_send_error() {
-    let (sender, receiver) = mpsc::unbounded();
+    let (sender, mut receiver) = mpsc::unbounded_channel();
     actix_rt::spawn(async move {
         let addr = MyActor::create(move |ctxt| {
             let sink = MySink {
@@ -182,21 +223,23 @@ async fn test_send_error() {
         addr.do_send(data);
     });
 
-    let res = receiver.collect::<Vec<u8>>().await;
+    let mut res = Vec::new();
+    while let Some(r) = receiver.recv().await {
+        res.push(r);
+    }
+
     assert_eq!(b"Hello ", &res[..]);
 }
 
-type BytesSender = mpsc::UnboundedSender<Bytes>;
-
 struct AnotherActor {
-    sink: SinkWrite<Bytes, BytesSender>,
+    sink: SinkWrite<Bytes, SinkUnboundedSender>,
 }
 
 impl Actor for AnotherActor {
     type Context = actix::Context<Self>;
 }
 
-impl actix::io::WriteHandler<mpsc::SendError> for AnotherActor {
+impl<T> actix::io::WriteHandler<mpsc::error::SendError<T>> for AnotherActor {
     fn finished(&mut self, _ctxt: &mut Self::Context) {
         System::current().stop();
     }
@@ -215,13 +258,13 @@ impl Handler<Data> for AnotherActor {
 
 #[actix_rt::test]
 async fn test_send_bytes() {
-    let (sender, mut receiver) = mpsc::unbounded();
+    let (sender, mut receiver) = mpsc::unbounded_channel();
     let bytes = Bytes::from_static(b"Hello");
     let expected_bytes = bytes.clone();
 
     actix_rt::spawn(async move {
         let addr = AnotherActor::create(move |ctxt| AnotherActor {
-            sink: SinkWrite::new(sender, ctxt),
+            sink: SinkWrite::new(SinkUnboundedSender { tx: sender }, ctxt),
         });
 
         let data = Data { bytes, last: true };
@@ -229,6 +272,6 @@ async fn test_send_bytes() {
         addr.do_send(data);
     });
 
-    let res = receiver.next().await.unwrap();
+    let res = receiver.recv().await.unwrap();
     assert_eq!(expected_bytes, res);
 }
