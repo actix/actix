@@ -469,15 +469,22 @@
 <span id="466">466</span>
 <span id="467">467</span>
 <span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Custom `Future` implementation with `Actix` support</span>
 
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span>;
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 
-<span class="kw">use</span> <span class="ident">futures_util</span>::{<span class="ident">future</span>::<span class="ident">Future</span>, <span class="ident">stream</span>::<span class="ident">Stream</span>};
-<span class="kw">use</span> <span class="ident">pin_project</span>::<span class="ident">pin_project</span>;
+<span class="kw">use</span> <span class="ident">futures_core</span>::<span class="ident">stream</span>::<span class="ident">Stream</span>;
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">mod</span> <span class="ident">chain</span>;
 <span class="kw">mod</span> <span class="ident">either</span>;
@@ -507,7 +514,6 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::<span class="ident">timeout</span>::<span class="ident">Timeout</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 
 <span class="doccomment">/// Trait for types which are a placeholder of a value that may become</span>
 <span class="doccomment">/// available at some later point in time.</span>
@@ -827,14 +833,15 @@
     }
 }
 
-<span class="attribute">#[<span class="ident">pin_project</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Future</span>,
-{
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">fut</span>: <span class="ident">F</span>,
-    <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="ident">F</span>: <span class="ident">Future</span>,
+    {
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">fut</span>: <span class="ident">F</span>,
+        <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+    }
 }
 
 <span class="doccomment">/// Converts normal future into `ActorFuture`, allowing its processing to</span>
@@ -901,15 +908,18 @@
         <span class="ident">wrap_stream</span>(<span class="self">self</span>)
     }
 }
-<span class="attribute">#[<span class="ident">pin_project</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Stream</span>,
-{
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">st</span>: <span class="ident">S</span>,
-    <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+
+<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="ident">S</span>: <span class="ident">Stream</span>,
+    {
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">st</span>: <span class="ident">S</span>,
+        <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+    }
 }
+
 <span class="doccomment">/// Converts normal stream into `ActorStream`</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wrap_stream</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>(<span class="ident">s</span>: <span class="ident">S</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
 <span class="kw">where</span>

@@ -122,7 +122,6 @@
 <span id="119">119</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Definition of the `Result` (immediately finished) combinator</span>
-<span class="kw">use</span> <span class="ident">pin_project</span>::<span class="ident">pin_project</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>;
@@ -134,7 +133,6 @@
 <span class="doccomment">/// A future representing a value that is immediately ready.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Created by the `result` function.</span>
-<span class="attribute">#[<span class="ident">pin_project</span>]</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless polled&quot;</span>]</span>
 <span class="comment">// TODO: rename this to `Result` on the next major version</span>
@@ -142,6 +140,8 @@
     <span class="ident">inner</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span><span class="op">&gt;</span>,
     <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 }
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">Unpin</span> <span class="kw">for</span> <span class="ident">FutureResult</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span> {}
 
 <span class="doccomment">/// Creates a new &quot;leaf future&quot; which will resolve with the given result.</span>
 <span class="doccomment">///</span>
@@ -227,7 +227,7 @@
         <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">task</span>::<span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="ident">Poll</span>::<span class="ident">Ready</span>(
-            <span class="self">self</span>.<span class="ident">project</span>()
+            <span class="self">self</span>.<span class="ident">get_mut</span>()
                 .<span class="ident">inner</span>
                 .<span class="ident">take</span>()
                 .<span class="ident">expect</span>(<span class="string">&quot;cannot poll Result twice&quot;</span>),

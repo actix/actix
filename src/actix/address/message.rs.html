@@ -197,15 +197,17 @@
 <span id="194">194</span>
 <span id="195">195</span>
 <span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 
-<span class="kw">use</span> <span class="ident">futures_channel</span>::<span class="ident">oneshot</span>;
-
-<span class="kw">use</span> <span class="ident">pin_project</span>::<span class="ident">pin_project</span>;
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
+<span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">sync</span>::<span class="ident">oneshot</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::<span class="ident">Sleep</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">handler</span>::{<span class="ident">Handler</span>, <span class="ident">Message</span>};
@@ -213,20 +215,21 @@
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">channel</span>::{<span class="ident">AddressSender</span>, <span class="ident">Sender</span>};
 <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">MailboxError</span>, <span class="ident">SendError</span>, <span class="ident">ToEnvelope</span>};
 
-<span class="doccomment">/// A `Future` which represents an asynchronous message sending</span>
-<span class="doccomment">/// process.</span>
-<span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;You have to wait on request otherwise the Message wont be delivered&quot;</span>]</span>
-<span class="attribute">#[<span class="ident">pin_project</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
-{
-    <span class="ident">rx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">info</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>, <span class="ident">M</span>)<span class="op">&gt;</span>,
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">timeout</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Sleep</span><span class="op">&gt;</span>,
+<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="doccomment">/// A `Future` which represents an asynchronous message sending</span>
+    <span class="doccomment">/// process.</span>
+    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;You have to wait on request otherwise the Message wont be delivered&quot;</span>]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
+        <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
+        <span class="ident">M</span>: <span class="ident">Message</span>,
+    {
+        <span class="ident">rx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">info</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>, <span class="ident">M</span>)<span class="op">&gt;</span>,
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">timeout</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Sleep</span><span class="op">&gt;</span>,
+    }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
@@ -309,18 +312,21 @@
     }
 }
 
-<span class="doccomment">/// A `Future` which represents an asynchronous message sending process.</span>
-<span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;future do nothing unless polled&quot;</span>]</span>
-<span class="attribute">#[<span class="ident">pin_project</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RecipientRequest</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-    <span class="ident">M</span>::<span class="prelude-ty">Result</span>: <span class="ident">Send</span>,
-{
-    <span class="ident">rx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">info</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Box</span><span class="op">&lt;</span><span class="ident">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="ident">M</span>)<span class="op">&gt;</span>,
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">timeout</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Sleep</span><span class="op">&gt;</span>,
+<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="doccomment">/// A `Future` which represents an asynchronous message sending process.</span>
+    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;future do nothing unless polled&quot;</span>]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RecipientRequest</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="ident">M</span>: <span class="ident">Message</span>,
+        <span class="ident">M</span>: <span class="ident">Send</span>,
+        <span class="ident">M</span>: <span class="lifetime">&#39;static</span>,
+        <span class="ident">M</span>::<span class="prelude-ty">Result</span>: <span class="ident">Send</span>,
+    {
+        <span class="ident">rx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">oneshot</span>::<span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="ident">info</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="ident">Box</span><span class="op">&lt;</span><span class="ident">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="ident">M</span>)<span class="op">&gt;</span>,
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">timeout</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Sleep</span><span class="op">&gt;</span>,
+    }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">RecipientRequest</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
@@ -384,7 +390,7 @@
         }
 
         <span class="kw">if</span> <span class="ident">this</span>.<span class="ident">rx</span>.<span class="ident">is_some</span>() {
-            <span class="kw">match</span> <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">rx</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>()).<span class="ident">poll</span>(<span class="ident">cx</span>) {
+            <span class="kw">match</span> <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="ident">this</span>.<span class="ident">rx</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>()).<span class="ident">poll</span>(<span class="ident">cx</span>) {
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Ok</span>(<span class="ident">i</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Ok</span>(<span class="ident">i</span>)),
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="kw">_</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">MailboxError</span>::<span class="ident">Closed</span>)),
                 <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="self">self</span>.<span class="ident">poll_timeout</span>(<span class="ident">cx</span>),

@@ -141,15 +141,10 @@
 <span id="138">138</span>
 <span id="139">139</span>
 <span id="140">140</span>
-<span id="141">141</span>
-<span id="142">142</span>
-<span id="143">143</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">FromStr</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">io</span>, <span class="ident">net</span>, <span class="ident">thread</span>};
-
-<span class="kw">use</span> <span class="ident">futures_util</span>::<span class="ident">future</span>::<span class="ident">FutureExt</span>;
 
 <span class="kw">use</span> <span class="ident">actix</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">io</span>::<span class="ident">WriteHalf</span>;
@@ -164,8 +159,9 @@
 
     <span class="comment">// Connect to server</span>
     <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">net</span>::<span class="ident">SocketAddr</span>::<span class="ident">from_str</span>(<span class="string">&quot;127.0.0.1:12345&quot;</span>).<span class="ident">unwrap</span>();
-    <span class="ident">Arbiter</span>::<span class="ident">spawn</span>(<span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="ident">addr</span>).<span class="ident">then</span>(<span class="op">|</span><span class="ident">stream</span><span class="op">|</span> {
-        <span class="kw">let</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">stream</span>.<span class="ident">unwrap</span>();
+    <span class="ident">Arbiter</span>::<span class="ident">spawn</span>(<span class="ident">async</span> <span class="kw">move</span> {
+        <span class="kw">let</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="ident">addr</span>).<span class="ident">await</span>.<span class="ident">unwrap</span>();
+
         <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">ChatClient</span>::<span class="ident">create</span>(<span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> {
             <span class="kw">let</span> (<span class="ident">r</span>, <span class="ident">w</span>) <span class="op">=</span> <span class="ident">tokio</span>::<span class="ident">io</span>::<span class="ident">split</span>(<span class="ident">stream</span>);
             <span class="ident">ctx</span>.<span class="ident">add_stream</span>(<span class="ident">FramedRead</span>::<span class="ident">new</span>(<span class="ident">r</span>, <span class="ident">codec</span>::<span class="ident">ClientChatCodec</span>));
@@ -184,9 +180,7 @@
 
             <span class="ident">addr</span>.<span class="ident">do_send</span>(<span class="ident">ClientCommand</span>(<span class="ident">cmd</span>));
         });
-
-        <span class="ident">async</span> {}
-    }));
+    });
 
     <span class="ident">tokio</span>::<span class="ident">signal</span>::<span class="ident">ctrl_c</span>().<span class="ident">await</span>.<span class="ident">unwrap</span>();
     <span class="macro">println</span><span class="macro">!</span>(<span class="string">&quot;Ctrl-C received, shutting down&quot;</span>);

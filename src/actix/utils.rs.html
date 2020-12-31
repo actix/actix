@@ -241,7 +241,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 
-<span class="kw">use</span> <span class="ident">futures_channel</span>::<span class="ident">oneshot</span>;
+<span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">sync</span>::<span class="ident">oneshot</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::{<span class="ident">interval_at</span>, <span class="ident">Instant</span>, <span class="ident">Interval</span>, <span class="ident">Sleep</span>};
@@ -282,50 +282,50 @@
     }
 }
 
-<span class="doccomment">/// An `ActorFuture` that runs a function in the actor&#39;s context after a specified amount of time.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Unless you specifically need access to the future, use [`Context::run_later`] instead.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`Context::run_later`]: ../prelude/trait.AsyncContext.html#method.run_later</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```rust</span>
-<span class="doccomment">/// # use std::io;</span>
-<span class="doccomment">/// use std::time::Duration;</span>
-<span class="doccomment">/// use actix::prelude::*;</span>
-<span class="doccomment">/// use actix::utils::TimerFunc;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct MyActor;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl MyActor {</span>
-<span class="doccomment">///     fn stop(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
-<span class="doccomment">///         System::current().stop();</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Actor for MyActor {</span>
-<span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///    fn started(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
-<span class="doccomment">///        // spawn a delayed future into our context</span>
-<span class="doccomment">///        TimerFunc::new(Duration::from_millis(100), Self::stop)</span>
-<span class="doccomment">///            .spawn(context);</span>
-<span class="doccomment">///    }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// # fn main() {</span>
-<span class="doccomment">/// #    let mut sys = System::new(&quot;example&quot;);</span>
-<span class="doccomment">/// #    let addr = sys.block_on(async { MyActor.start() });</span>
-<span class="doccomment">/// #    sys.run();</span>
-<span class="doccomment">/// # }</span>
-
-<span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;future do nothing unless polled&quot;</span>]</span>
-<span class="attribute">#[<span class="ident">pin_project</span>::<span class="ident">pin_project</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TimerFunc</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-{
-    <span class="ident">f</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">dyn</span> <span class="ident">TimerFuncBox</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
+<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="doccomment">/// An `ActorFuture` that runs a function in the actor&#39;s context after a specified amount of time.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Unless you specifically need access to the future, use [`Context::run_later`] instead.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`Context::run_later`]: ../prelude/trait.AsyncContext.html#method.run_later</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```rust</span>
+    <span class="doccomment">/// # use std::io;</span>
+    <span class="doccomment">/// use std::time::Duration;</span>
+    <span class="doccomment">/// use actix::prelude::*;</span>
+    <span class="doccomment">/// use actix::utils::TimerFunc;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// struct MyActor;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// impl MyActor {</span>
+    <span class="doccomment">///     fn stop(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
+    <span class="doccomment">///         System::current().stop();</span>
+    <span class="doccomment">///     }</span>
+    <span class="doccomment">/// }</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// impl Actor for MyActor {</span>
+    <span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">///    fn started(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
+    <span class="doccomment">///        // spawn a delayed future into our context</span>
+    <span class="doccomment">///        TimerFunc::new(Duration::from_millis(100), Self::stop)</span>
+    <span class="doccomment">///            .spawn(context);</span>
+    <span class="doccomment">///    }</span>
+    <span class="doccomment">/// }</span>
+    <span class="doccomment">/// # fn main() {</span>
+    <span class="doccomment">/// #    let mut sys = System::new(&quot;example&quot;);</span>
+    <span class="doccomment">/// #    let addr = sys.block_on(async { MyActor.start() });</span>
+    <span class="doccomment">/// #    sys.run();</span>
+    <span class="doccomment">/// # }</span>
+    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;future do nothing unless polled&quot;</span>]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TimerFunc</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="ident">A</span>: <span class="ident">Actor</span>,
+    {
+        <span class="ident">f</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">dyn</span> <span class="ident">TimerFuncBox</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
+    }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">TimerFunc</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>

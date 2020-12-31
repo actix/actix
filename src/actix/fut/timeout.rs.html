@@ -60,34 +60,32 @@
 <span id="57">57</span>
 <span id="58">58</span>
 <span id="59">59</span>
-<span id="60">60</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 
-<span class="kw">use</span> <span class="ident">pin_project</span>::<span class="ident">pin_project</span>;
-
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::{<span class="ident">sleep</span>, <span class="ident">Sleep</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
 
-<span class="doccomment">/// Future for the `timeout` combinator, interrupts computations if it takes</span>
-<span class="doccomment">/// more than `timeout`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is created by the `ActorFuture::timeout()` method.</span>
-<span class="attribute">#[<span class="ident">pin_project</span>]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless polled&quot;</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Timeout</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">ActorFuture</span>,
-{
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">fut</span>: <span class="ident">F</span>,
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
+<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="doccomment">/// Future for the `timeout` combinator, interrupts computations if it takes</span>
+    <span class="doccomment">/// more than `timeout`.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// This is created by the `ActorFuture::timeout()` method.</span>
+    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
+    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless polled&quot;</span>]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Timeout</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="ident">F</span>: <span class="ident">ActorFuture</span>,
+    {
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">fut</span>: <span class="ident">F</span>,
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
+    }
 }
 
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">future</span>: <span class="ident">F</span>, <span class="ident">timeout</span>: <span class="ident">Duration</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Timeout</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>

@@ -428,6 +428,7 @@
 <span id="425">425</span>
 <span id="426">426</span>
 <span id="427">427</span>
+<span id="428">428</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! DNS resolver and connector utility actor</span>
 <span class="doccomment">//!</span>
@@ -652,8 +653,8 @@
                 <span class="self">self</span>.<span class="ident">resolver</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
             )
             .<span class="ident">then</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">addrs</span>, <span class="ident">act</span>, <span class="kw">_</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">addrs</span> {
-                <span class="prelude-val">Ok</span>(<span class="ident">a</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Either</span>::<span class="ident">Left</span>(<span class="ident">TcpConnector</span>::<span class="ident">with_timeout</span>(<span class="ident">a</span>, <span class="ident">timeout</span>)),
-                <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Either</span>::<span class="ident">Right</span>(<span class="ident">async</span> <span class="kw">move</span> { <span class="prelude-val">Err</span>(<span class="ident">e</span>) }.<span class="ident">into_actor</span>(<span class="ident">act</span>)),
+                <span class="prelude-val">Ok</span>(<span class="ident">a</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Either</span>::<span class="ident">left</span>(<span class="ident">TcpConnector</span>::<span class="ident">with_timeout</span>(<span class="ident">a</span>, <span class="ident">timeout</span>)),
+                <span class="prelude-val">Err</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Either</span>::<span class="ident">right</span>(<span class="ident">async</span> <span class="kw">move</span> { <span class="prelude-val">Err</span>(<span class="ident">e</span>) }.<span class="ident">into_actor</span>(<span class="ident">act</span>)),
             }),
         )
     }
@@ -796,14 +797,15 @@
     }
 }
 
-<span class="doccomment">/// A TCP stream connector.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">type_complexity</span>)]</span>
-<span class="attribute">#[<span class="ident">pin_project</span>::<span class="ident">pin_project</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TcpConnector</span> {
-    <span class="ident">addrs</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">SocketAddr</span><span class="op">&gt;</span>,
-    <span class="attribute">#[<span class="ident">pin</span>]</span>
-    <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
-    <span class="ident">stream</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">TcpStream</span>, <span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="doccomment">/// A TCP stream connector.</span>
+    <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">type_complexity</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TcpConnector</span> {
+        <span class="ident">addrs</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">SocketAddr</span><span class="op">&gt;</span>,
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
+        <span class="ident">stream</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="ident">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">TcpStream</span>, <span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    }
 }
 
 <span class="kw">impl</span> <span class="ident">TcpConnector</span> {
