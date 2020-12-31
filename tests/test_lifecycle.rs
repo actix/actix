@@ -4,8 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use actix::prelude::*;
-use futures_channel::oneshot::{channel, Sender};
-use futures_util::future::FutureExt;
+use tokio::sync::oneshot::{channel, Sender};
 use tokio::time::{sleep, Duration};
 
 struct MyActor {
@@ -29,7 +28,12 @@ impl Actor for MyActor {
         if self.restore_after_stop {
             let (tx, rx) = channel();
             self.temp = Some(tx);
-            ctx.spawn(rx.map(|_| ()).into_actor(self));
+            ctx.spawn(
+                async move {
+                    let _ = rx.await;
+                }
+                .into_actor(self),
+            );
             Running::Continue
         } else {
             Running::Stop

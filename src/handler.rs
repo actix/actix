@@ -3,7 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
-use futures_channel::oneshot::Sender as SyncSender;
+use tokio::sync::oneshot::Sender as SyncSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
@@ -275,7 +275,7 @@ where
     M::Result: Send,
 {
     fn is_canceled(&self) -> bool {
-        SyncSender::is_canceled(self)
+        SyncSender::is_closed(self)
     }
 
     fn send(self, response: M::Result) {

@@ -1,21 +1,24 @@
 use std::pin::Pin;
-
-use futures_util::task::{Context, Poll};
+use std::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream};
 
-/// A combinator used to convert stream into a future, future resolves
-/// when stream completes.
-///
-/// This structure is produced by the `ActorStream::finish` method.
-#[must_use = "streams do nothing unless polled"]
-#[pin_project::pin_project]
-#[derive(Debug)]
-pub struct StreamFinish<S: ActorStream>(#[pin] S);
+pin_project_lite::pin_project! {
+    /// A combinator used to convert stream into a future, future resolves
+    /// when stream completes.
+    ///
+    /// This structure is produced by the `ActorStream::finish` method.
+    #[must_use = "streams do nothing unless polled"]
+    #[derive(Debug)]
+    pub struct StreamFinish<S: ActorStream> {
+        #[pin]
+        stream: S
+    }
+}
 
-pub fn new<S: ActorStream>(s: S) -> StreamFinish<S> {
-    StreamFinish(s)
+pub fn new<S: ActorStream>(stream: S) -> StreamFinish<S> {
+    StreamFinish { stream }
 }
 
 impl<S: ActorStream> ActorFuture for StreamFinish<S> {
@@ -29,7 +32,7 @@ impl<S: ActorStream> ActorFuture for StreamFinish<S> {
         task: &mut Context<'_>,
     ) -> Poll<()> {
         loop {
-            match self.as_mut().project().0.poll_next(act, ctx, task) {
+            match self.as_mut().project().stream.poll_next(act, ctx, task) {
                 Poll::Pending => return Poll::Pending,
                 Poll::Ready(None) => return Poll::Ready(()),
                 Poll::Ready(Some(_)) => (),

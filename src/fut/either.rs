@@ -3,27 +3,46 @@ use std::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
-use pin_project::pin_project;
 
-/// Combines two different futures yielding the same item and error
-/// types into a single type.
-#[pin_project(project = EitherProj)]
-#[derive(Debug)]
-pub enum Either<A, B> {
-    /// First branch of the type
-    Left(#[pin] A),
-    /// Second branch of the type
-    Right(#[pin] B),
+pin_project_lite::pin_project! {
+    /// Combines two different futures yielding the same item and error
+    /// types into a single type.
+    #[project = EitherProj]
+    #[derive(Debug)]
+    pub enum Either<A, B> {
+        /// First branch of the type
+        Left {
+            #[pin]
+            left: A
+        },
+        /// Second branch of the type
+        Right {
+            #[pin]
+            right: B
+        },
+    }
+}
+
+impl<A, B> Either<A, B> {
+    /// construct first branch of the type
+    pub fn left(left: A) -> Self {
+        Self::Left { left }
+    }
+
+    /// construct second branch of the type
+    pub fn right(right: B) -> Self {
+        Self::Right { right }
+    }
 }
 
 impl<A, B, T> Either<(T, A), (T, B)> {
     /// Factor out a homogeneous type from an either of pairs.
     ///
     /// Here, the homogeneous type is the first element of the pairs.
-    pub fn factor_first(self) -> (T, Either<A, B>) {
+    pub fn factor_left(self) -> (T, Either<A, B>) {
         match self {
-            Either::Left((x, a)) => (x, Either::Left(a)),
-            Either::Right((x, b)) => (x, Either::Right(b)),
+            Either::Left { left: (x, left) } => (x, Either::Left { left }),
+            Either::Right { right: (x, right) } => (x, Either::Right { right }),
         }
     }
 }
@@ -32,10 +51,10 @@ impl<A, B, T> Either<(A, T), (B, T)> {
     /// Factor out a homogeneous type from an either of pairs.
     ///
     /// Here, the homogeneous type is the second element of the pairs.
-    pub fn factor_second(self) -> (Either<A, B>, T) {
+    pub fn factor_right(self) -> (Either<A, B>, T) {
         match self {
-            Either::Left((a, x)) => (Either::Left(a), x),
-            Either::Right((b, x)) => (Either::Right(b), x),
+            Either::Left { left: (left, x) } => (Either::Left { left }, x),
+            Either::Right { right: (right, x) } => (Either::Right { right }, x),
         }
     }
 }
@@ -44,8 +63,8 @@ impl<T> Either<T, T> {
     /// Extract the value of an either over two equivalent types.
     pub fn into_inner(self) -> T {
         match self {
-            Either::Left(x) => x,
-            Either::Right(x) => x,
+            Either::Left { left } => left,
+            Either::Right { right } => right,
         }
     }
 }
@@ -65,8 +84,8 @@ where
         task: &mut Context<'_>,
     ) -> Poll<A::Output> {
         match self.project() {
-            EitherProj::Left(x) => x.poll(act, ctx, task),
-            EitherProj::Right(x) => x.poll(act, ctx, task),
+            EitherProj::Left { left } => left.poll(act, ctx, task),
+            EitherProj::Right { right } => right.poll(act, ctx, task),
         }
     }
 }

@@ -1,17 +1,25 @@
-use pin_project::pin_project;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
-#[pin_project(project = ChainProj)]
-#[must_use = "futures do nothing unless you `.await` or poll them"]
-#[derive(Debug)]
-pub enum Chain<A, B, C> {
-    First(#[pin] A, Option<C>),
-    Second(#[pin] B),
-    Empty,
+pin_project_lite::pin_project! {
+    #[project = ChainProj]
+    #[must_use = "futures do nothing unless you `.await` or poll them"]
+    #[derive(Debug)]
+    pub enum Chain<A, B, C> {
+        First {
+            #[pin]
+            fut1: A,
+            data: Option<C>
+        },
+        Second {
+            #[pin]
+            fut2: B
+        },
+        Empty,
+    }
 }
 
 impl<A, B, C> Chain<A, B, C>
@@ -20,7 +28,10 @@ where
     B: ActorFuture<Actor = A::Actor>,
 {
     pub fn new(fut1: A, data: C) -> Chain<A, B, C> {
-        Chain::First(fut1, Some(data))
+        Chain::First {
+            fut1,
+            data: Some(data),
+        }
     }
 
     pub fn poll<F>(
@@ -38,14 +49,14 @@ where
         loop {
             let this = self.as_mut().project();
             let (output, data) = match this {
-                ChainProj::First(fut1, data) => {
+                ChainProj::First { fut1, data } => {
                     let output = match fut1.poll(srv, ctx, task) {
                         Poll::Ready(t) => t,
                         Poll::Pending => return Poll::Pending,
                     };
                     (output, data.take().unwrap())
                 }
-                ChainProj::Second(fut2) => {
+                ChainProj::Second { fut2 } => {
                     return fut2.poll(srv, ctx, task);
                 }
                 ChainProj::Empty => unreachable!(),
@@ -53,7 +64,7 @@ where
 
             self.set(Chain::Empty);
             let fut2 = (f.take().unwrap())(output, data, srv, ctx);
-            self.set(Chain::Second(fut2))
+            self.set(Chain::Second { fut2 })
         }
     }
 }

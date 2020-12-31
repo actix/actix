@@ -4,8 +4,7 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
-use futures_util::{ready, stream::Stream};
-use pin_project::pin_project;
+use futures_core::{ready, stream::Stream};
 
 use crate::actor::{Actor, ActorContext, AsyncContext};
 use crate::clock::Sleep;
@@ -48,17 +47,18 @@ where
     }
 }
 
-#[pin_project::pin_project]
-pub(crate) struct ActorDelayedMessageItem<A, M>
-where
-    A: Actor,
-    M: Message,
-{
-    msg: Option<M>,
-    #[pin]
-    timeout: Sleep,
-    act: PhantomData<A>,
-    m: PhantomData<M>,
+pin_project_lite::pin_project! {
+    pub(crate) struct ActorDelayedMessageItem<A, M>
+    where
+        A: Actor,
+        M: Message,
+    {
+        msg: Option<M>,
+        #[pin]
+        timeout: Sleep,
+        act: PhantomData<A>,
+        m: PhantomData<M>,
+    }
 }
 
 impl<A, M> ActorDelayedMessageItem<A, M>
@@ -145,16 +145,17 @@ where
     }
 }
 
-#[pin_project]
-pub(crate) struct ActorMessageStreamItem<A, M, S>
-where
-    A: Actor,
-    M: Message,
-{
-    #[pin]
-    stream: S,
-    act: PhantomData<A>,
-    msg: PhantomData<M>,
+pin_project_lite::pin_project! {
+    pub(crate) struct ActorMessageStreamItem<A, M, S>
+    where
+        A: Actor,
+        M: Message,
+    {
+        #[pin]
+        stream: S,
+        act: PhantomData<A>,
+        msg: PhantomData<M>,
+    }
 }
 
 impl<A, M, S> ActorMessageStreamItem<A, M, S>

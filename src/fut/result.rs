@@ -1,5 +1,4 @@
 //! Definition of the `Result` (immediately finished) combinator
-use pin_project::pin_project;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task;
@@ -11,7 +10,6 @@ use crate::fut::ActorFuture;
 /// A future representing a value that is immediately ready.
 ///
 /// Created by the `result` function.
-#[pin_project]
 #[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 // TODO: rename this to `Result` on the next major version
@@ -19,6 +17,8 @@ pub struct FutureResult<T, E, A> {
     inner: Option<Result<T, E>>,
     act: PhantomData<A>,
 }
+
+impl<T, E, A> Unpin for FutureResult<T, E, A> {}
 
 /// Creates a new "leaf future" which will resolve with the given result.
 ///
@@ -104,7 +104,7 @@ where
         _: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
         Poll::Ready(
-            self.project()
+            self.get_mut()
                 .inner
                 .take()
                 .expect("cannot poll Result twice"),

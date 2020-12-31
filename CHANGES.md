@@ -28,6 +28,9 @@
   `Arbiter::spawn` and `actix_rt::spawn` would panic outside the context of `actix::System`. They must be call
   inside `System::run`,`SystemRunner::run` or `SystemRunner::block_on`.
   More information can be found [here](https://github.com/actix/actix-net/issues/206#issuecomment-717769654) [#447]
+* `actix::fut::Either` is changed to enum with field name. `Either::left` and `Either::right` function can be used 
+  to construct without naming the field. [#453]
+* replace `pin_project` with `pin_project_lite` [#453] 
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
@@ -38,7 +41,7 @@
 [#445]: https://github.com/actix/actix/pull/445
 [#447]: https://github.com/actix/actix/pull/447
 [#448]: https://github.com/actix/actix/pull/448
-
+[#453]: https://github.com/actix/actix/pull/453
 
 ## 0.10.0 - 2020-09-10
 ### Changed

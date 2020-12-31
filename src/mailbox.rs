@@ -1,7 +1,8 @@
+use std::pin::Pin;
 use std::task::Poll;
 use std::{fmt, task};
 
-use futures_util::stream::StreamExt;
+use futures_core::stream::Stream;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::EnvelopeProxy;
@@ -95,7 +96,7 @@ where
                     return;
                 }
 
-                match self.msgs.poll_next_unpin(task) {
+                match Pin::new(&mut self.msgs).poll_next(task) {
                     Poll::Ready(Some(mut msg)) => {
                         not_ready = false;
                         msg.handle(act, ctx);

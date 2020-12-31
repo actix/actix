@@ -5,8 +5,9 @@ use std::sync::Arc;
 use std::task::{Context as StdContext, Poll};
 
 use actix::prelude::*;
-use futures_channel::mpsc::unbounded;
+use futures_core::stream::Stream;
 use futures_util::stream::once;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tokio::time::{interval_at, sleep, Duration, Instant};
 
 #[derive(Debug, PartialEq)]
@@ -16,6 +17,22 @@ enum Op {
     TimeoutStop,
     RunAfter,
     RunAfterStop,
+}
+
+struct StreamRx {
+    rx: UnboundedReceiver<Ping>,
+}
+
+impl Stream for StreamRx {
+    type Item = Ping;
+
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut StdContext<'_>,
+    ) -> Poll<Option<Self::Item>> {
+        let this = self.get_mut();
+        Pin::new(&mut this.rx).poll_recv(cx)
+    }
 }
 
 struct MyActor {
@@ -179,12 +196,13 @@ fn test_message_stream_wait_context() {
 
     System::run(move || {
         let _addr = ContextWait::create(move |ctx| {
-            let (tx, rx) = unbounded();
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
+            let (tx, rx) = unbounded_channel();
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
             let actor = ContextWait { cnt: m2 };
-            ctx.add_message_stream(rx);
+
+            ctx.add_message_stream(StreamRx { rx });
             actor
         });
     })
@@ -200,12 +218,12 @@ fn test_stream_wait_context() {
 
     System::run(move || {
         let _addr = ContextWait::create(move |ctx| {
-            let (tx, rx) = unbounded();
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
+            let (tx, rx) = unbounded_channel();
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
             let actor = ContextWait { cnt: m2 };
-            ctx.add_message_stream(rx);
+            ctx.add_message_stream(StreamRx { rx });
             actor
         });
     })
@@ -255,12 +273,12 @@ async fn test_message_stream_nowait_context() {
 
     actix_rt::spawn(async move {
         let _addr = ContextNoWait::create(move |ctx| {
-            let (tx, rx) = unbounded();
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
+            let (tx, rx) = unbounded_channel();
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
             let actor = ContextNoWait { cnt: m2 };
-            ctx.add_message_stream(rx);
+            ctx.add_message_stream(StreamRx { rx });
             actor
         });
     });
@@ -277,12 +295,12 @@ fn test_stream_nowait_context() {
 
     System::run(move || {
         let _addr = ContextNoWait::create(move |ctx| {
-            let (tx, rx) = unbounded();
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
-            let _ = tx.unbounded_send(Ping);
+            let (tx, rx) = unbounded_channel();
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
+            let _ = tx.send(Ping);
             let actor = ContextNoWait { cnt: m2 };
-            ctx.add_message_stream(rx);
+            ctx.add_message_stream(StreamRx { rx });
             actor
         });
 
