@@ -1,4 +1,4 @@
-use futures_channel::oneshot::Sender;
+use tokio::sync::oneshot::Sender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::context::Context;
@@ -72,7 +72,7 @@ where
 {
     fn handle(&mut self, act: &mut A, ctx: &mut <A as Actor>::Context) {
         let tx = self.tx.take();
-        if tx.is_some() && tx.as_ref().unwrap().is_canceled() {
+        if tx.is_some() && tx.as_ref().unwrap().is_closed() {
             return;
         }
 

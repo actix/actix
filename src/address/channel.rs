@@ -8,9 +8,9 @@ use std::task::Poll;
 use std::{fmt, task};
 use std::{thread, usize};
 
-use futures_channel::oneshot::{channel as sync_channel, Receiver};
-use futures_util::stream::Stream;
+use futures_core::stream::Stream;
 use parking_lot::Mutex;
+use tokio::sync::oneshot::{channel as sync_channel, Receiver};
 
 use crate::actor::Actor;
 use crate::handler::{Handler, Message};

@@ -1,26 +1,26 @@
 use std::pin::Pin;
 use std::task::{self, Poll};
 
-use pin_project::pin_project;
-
 use crate::actor::Actor;
 use crate::fut::chain::Chain;
 use crate::fut::{ActorFuture, IntoActorFuture};
 
-/// Future for the `then` combinator, chaining computations on the end of
-/// another future regardless of its outcome.
-///
-/// This is created by the `Future::then` method.
-#[pin_project]
-#[derive(Debug)]
-#[must_use = "futures do nothing unless polled"]
-pub struct Then<A, B, F: 'static>
-where
-    A: ActorFuture,
-    B: IntoActorFuture<Actor = A::Actor>,
-{
-    #[pin]
-    state: Chain<A, B::Future, F>,
+pin_project_lite::pin_project! {
+    /// Future for the `then` combinator, chaining computations on the end of
+    /// another future regardless of its outcome.
+    ///
+    /// This is created by the `Future::then` method.
+    #[derive(Debug)]
+    #[must_use = "futures do nothing unless polled"]
+    pub struct Then<A, B, F>
+    where
+        A: ActorFuture,
+        B: IntoActorFuture<Actor = A::Actor>,
+        F: 'static
+    {
+        #[pin]
+        state: Chain<A, B::Future, F>,
+    }
 }
 
 pub fn new<A, B, F: 'static>(future: A, f: F) -> Then<A, B, F>

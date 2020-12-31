@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use actix_rt::Arbiter;
-use futures_util::stream::Stream;
+use futures_core::stream::Stream;
 use log::error;
 
 use crate::address::{channel, Addr};

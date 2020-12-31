@@ -1,28 +1,27 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use pin_project::pin_project;
-
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 
-/// A stream combinator which chains a computation onto each item produced by a
-/// stream.
-///
-/// This structure is produced by the `ActorStream::then` method.
-#[pin_project]
-#[derive(Debug)]
-#[must_use = "streams do nothing unless polled"]
-pub struct StreamThen<S, F: 'static, U>
-where
-    U: IntoActorFuture,
-    S: ActorStream,
-{
-    #[pin]
-    stream: S,
-    #[pin]
-    future: Option<U::Future>,
-    f: F,
+pin_project_lite::pin_project! {
+    /// A stream combinator which chains a computation onto each item produced by a
+    /// stream.
+    ///
+    /// This structure is produced by the `ActorStream::then` method.
+    #[derive(Debug)]
+    #[must_use = "streams do nothing unless polled"]
+    pub struct StreamThen<S, F: 'static, U>
+    where
+        U: IntoActorFuture,
+        S: ActorStream,
+    {
+        #[pin]
+        stream: S,
+        #[pin]
+        future: Option<U::Future>,
+        f: F,
+    }
 }
 
 pub fn new<S, F: 'static, U>(stream: S, f: F) -> StreamThen<S, F, U>

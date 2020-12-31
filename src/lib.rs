@@ -133,7 +133,9 @@ pub mod prelude {
     pub use crate::io;
     pub use crate::utils::{Condition, IntervalFunc, TimerFunc};
 
-    pub use futures_util::{future::Future, stream::Stream};
+    // TODO: remove std re-export?
+    pub use futures_core::stream::Stream;
+    pub use std::future::Future;
 }
 
 pub mod dev {
@@ -192,7 +194,7 @@ pub mod dev {
 #[allow(clippy::unit_arg)]
 pub fn run<R>(f: R) -> std::io::Result<()>
 where
-    R: futures_util::future::Future<Output = ()> + 'static,
+    R: std::future::Future<Output = ()> + 'static,
 {
     Ok(actix_rt::System::new("Default").block_on(f))
 }
@@ -204,7 +206,7 @@ where
 /// This function panics if the actix system is not running.
 pub fn spawn<F>(f: F)
 where
-    F: futures_util::future::Future<Output = ()> + 'static,
+    F: std::future::Future<Output = ()> + 'static,
 {
     actix_rt::spawn(f);
 }
