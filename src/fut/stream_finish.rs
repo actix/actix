@@ -17,7 +17,7 @@ pin_project_lite::pin_project! {
     }
 }
 
-pub fn new(stream: impl ActorStream) -> StreamFinish<S> {
+pub fn new<S: ActorStream>(stream: S) -> StreamFinish<S> {
     StreamFinish { stream }
 }
 
