@@ -1,7 +1,8 @@
 use std::hash::{Hash, Hasher};
-use std::{error, fmt};
-
-use derive_more::Display;
+use std::{
+    error,
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
+};
 
 pub(crate) mod channel;
 mod envelope;
@@ -22,13 +23,26 @@ pub enum SendError<T> {
     Closed(T),
 }
 
-#[derive(Display, Clone, Copy)]
+#[derive(Clone, Copy)]
 /// The errors that can occur during the message delivery process.
 pub enum MailboxError {
-    #[display(fmt = "Mailbox has closed")]
     Closed,
-    #[display(fmt = "Message delivery timed out")]
     Timeout,
+}
+
+impl Debug for MailboxError {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
+        write!(fmt, "MailboxError({})", self)
+    }
+}
+
+impl Display for MailboxError {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            MailboxError::Closed => write!(fmt, "Mailbox has closed"),
+            MailboxError::Timeout => write!(fmt, "Message delivery timed out"),
+        }
+    }
 }
 
 impl error::Error for MailboxError {}
@@ -43,8 +57,8 @@ impl<T> SendError<T> {
 
 impl<T> error::Error for SendError<T> {}
 
-impl<T> fmt::Debug for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<T> Debug for SendError<T> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         match *self {
             SendError::Full(_) => write!(fmt, "SendError::Full(..)"),
             SendError::Closed(_) => write!(fmt, "SendError::Closed(..)"),
@@ -52,18 +66,12 @@ impl<T> fmt::Debug for SendError<T> {
     }
 }
 
-impl<T> fmt::Display for SendError<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl<T> Display for SendError<T> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         match *self {
             SendError::Full(_) => write!(fmt, "send failed because receiver is full"),
             SendError::Closed(_) => write!(fmt, "send failed because receiver is gone"),
         }
-    }
-}
-
-impl fmt::Debug for MailboxError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "MailboxError({})", self)
     }
 }
 
@@ -329,12 +337,12 @@ where
     }
 }
 
-impl<M> fmt::Debug for Recipient<M>
+impl<M> Debug for Recipient<M>
 where
     M: Message + Send,
     M::Result: Send,
 {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         write!(fmt, "Recipient {{ /* omitted */ }}")
     }
 }
@@ -348,12 +356,12 @@ where
     wtx: Box<dyn WeakSender<M> + Sync>,
 }
 
-impl<M> fmt::Debug for WeakRecipient<M>
+impl<M> Debug for WeakRecipient<M>
 where
     M: Message + Send,
     M::Result: Send,
 {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
         write!(fmt, "WeakRecipient {{ /* omitted */ }}")
     }
 }
