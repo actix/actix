@@ -1,8 +1,5 @@
 use std::hash::{Hash, Hasher};
-use std::{
-    error,
-    fmt,
-};
+use std::{error, fmt};
 
 pub(crate) mod channel;
 mod envelope;
