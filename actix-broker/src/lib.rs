@@ -1,4 +1,4 @@
-//! # Actix-Broker
+//! A message broker for the Actix actor framework.
 //!
 //! The `actix_broker` crate contains `SystemService` and `ArbiterService` Brokers that
 //! keep track of active subscriptions to different `Messages`. Broker services are

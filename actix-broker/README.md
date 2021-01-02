@@ -1,10 +1,12 @@
-# Actix-Broker
-[![crates.io](http://meritbadge.herokuapp.com/actix-broker)](https://crates.io/crates/actix-broker)
+# actix-broker
 
-A crate that adds a message broker to the [Actix](https://github.com/actix/actix) actor framework.
+> A message broker for the Actix actor framework.
 
-Subscribe to and issue Actix Messages easily in an asynchronous or synchronous manner.
+[![crates.io](https://img.shields.io/crates/v/actix-broker?label=latest)](https://crates.io/crates/actix-broker)
+[![Documentation](https://docs.rs/actix-broker/badge.svg?version=0.3.1)](https://docs.rs/actix-broker/0.3.1)
 
-[Documentation](https://docs.rs/actix-broker)
 
-Moved from [original repository](https://github.com/chris-ricketts/actix-broker).
+Subscribe to and issue Messages easily in an asynchronous or synchronous manner.
+
+
+Original code by @chris-ricketts. [Original repository.](https://github.com/chris-ricketts/actix-broker)
