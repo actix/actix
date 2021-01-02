@@ -1,0 +1,19 @@
+[package]
+name = "actix-broker"
+version = "0.3.1"
+authors = ["chris ricketts <chris.ricketts@steribar.com>"]
+description = "Message broker for the Actix actor framework"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Chris-Ricketts/actix-broker"
+readme = "README.md"
+keywords = ["actix", "message", "broker"]
+exclude = [".gitignore"]
+edition = "2018"
+
+[dependencies]
+actix = "0.10"
+fnv = "1.0.6"
+log = "0.4.5"
+
+[dev-dependencies]
+actix-web = "3"
