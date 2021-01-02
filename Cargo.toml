@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.10.0"
+version = "0.11.0-beta.1"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -44,10 +44,10 @@ futures-core = { version = "0.3.7", default-features = false }
 futures-sink = { version = "0.3.7", default-features = false }
 futures-task = { version = "0.3.7", default-features = false }
 log = "0.4"
-once_cell = "1.4"
+once_cell = "1.5"
 parking_lot = "0.11"
 pin-project-lite = "0.2"
-smallvec = "1.4"
+smallvec = "1.6"
 tokio = { version = "1", features = ["io-util", "sync"] }
 tokio-util = { version = "0.6", features = ["codec"] }
 

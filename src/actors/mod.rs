@@ -4,7 +4,7 @@ pub mod mocker;
 
 #[cfg(feature = "resolver")]
 #[deprecated(
-    since = "0.20.0",
-    note = "resolver actor is deprecated and possibly removed in future release."
+    since = "0.12.0",
+    note = "Resolver actor is deprecated and will be removed in a future release."
 )]
 pub mod resolver;

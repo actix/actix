@@ -2,7 +2,8 @@
 //!
 //! ## Example
 //! ```rust
-//! #[allow(deprecated)]
+//! # #![allow(deprecated)]
+//! #
 //! use actix::actors::resolver;
 //! use actix::prelude::*;
 //!

@@ -1,36 +1,43 @@
 # CHANGES
 
-## Unreleased - 2020-xx-xx
-### Fixed
-* Unified MessageResponse impl (remove separate Item/Error divide, force user to use Result)
-* Fix error for build with --no-default-features flag, add `sink` feature for futures-util dependency. [#427]
+## Unreleased - 2021-xx-xx
+
+
+## 0.11.0-beta.1 - 2021-01-01
+### Added
+* Re-export `actix_rt::main` macro as `actix::main`. [#448]
+* Added `actix::fut::Either::{left, right}()` variant constructors. [#453]
 
 ### Changed
 * The re-exported `actix-derive` macros are now conditionally included with the `derive` feature
   which is enabled by default but can be switched off to reduce dependencies. [#424]
 * The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a
   `Response` to be created with an `async` block [#421]
-* Update `pin-project` to 1.0. [#435]
 * Allow creating `WeakRecipient` from `WeakAddr`, similiar to `Recipient` from `Addr`. [#432]
-* Send `SyncArbiter` to current `System`'s `Arbiter` and run it as future there. Enabling nested `SyncArbiter`s [#439] 
-* Use generic type instead of associate type for `EnvelopeProxy`. `SyncEnvelopeProxy` and `SyncContextEnvelope` are no 
-  longer bound to Actor. [#445]
-* Re-export `actix_rt::main` macro as `actix::main` [#448]
-* Bump `crossbeam-channel` to `0.5`
-* Update `bytes` to `1`.
-* Update `tokio` to `1`.
-* Update `tokio-util` tp `0.6`.
-* Rename `actix::clock::{delay_for, delay_until, Delay}` to `{sleep, sleep_until, Sleep}`
-* Remove all `Unpin` requirement from `ActorStream`.
-* Remove `actix::clock::Duration` type. It's a re-export of `std::time::Duration` and use 
-  the Duration type in std lib is suggested.
-* Update examples and tests according to the change of `actix-rt`. 
-  `Arbiter::spawn` and `actix_rt::spawn` would panic outside the context of `actix::System`. They must be call
-  inside `System::run`,`SystemRunner::run` or `SystemRunner::block_on`.
-  More information can be found [here](https://github.com/actix/actix-net/issues/206#issuecomment-717769654) [#447]
-* `actix::fut::Either` is changed to enum with field name. `Either::left` and `Either::right` function can be used 
-  to construct without naming the field. [#453]
-* replace `pin_project` with `pin_project_lite` [#453] 
+* Send `SyncArbiter` to current `System`'s `Arbiter` and run it as future there.
+  Enables nested `SyncArbiter`s. [#439]
+* Use generic type instead of associate type for `EnvelopeProxy`. [#445]
+* `SyncEnvelopeProxy` and `SyncContextEnvelope` are no longer bound to an Actor. [#445]
+* Rename `actix::clock::{delay_for, delay_until, Delay}` to `{sleep, sleep_until, Sleep}`. [#443]
+* Remove all `Unpin` requirement from `ActorStream`. [#443]
+* Update examples and tests according to the change of `actix-rt`. `Arbiter::spawn` and
+  `actix_rt::spawn` now panic outside the context of `actix::System`. They must be called inside
+  `System::run`, `SystemRunner::run` or `SystemRunner::block_on`. More information can be
+  found [here](IC717769654). [#447]
+* `actix::fut::Either`'s internal variants' representation has changed to struct fields. [#453]
+* Replace `pin_project` with `pin_project_lite` [#453] 
+* Update `crossbeam-channel` to `0.5`
+* Update `bytes` to `1`. [#443]
+* Update `tokio` to `1`. [#443]
+* Update `tokio-util` tp `0.6`. [#443]
+
+### Fixed
+* Unified MessageResponse impl (combine separate Item/Error type, migrate to Item=Result). [#446]
+* Fix error for build with `--no-default-features` flag, add `sink` feature for
+  futures-util dependency. [#427]
+
+### Removed
+* Remove unnecessary `actix::clock::Duration` re-export of `std::time::Duration`. [#443]
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
@@ -38,10 +45,13 @@
 [#432]: https://github.com/actix/actix/pull/432
 [#435]: https://github.com/actix/actix/pull/435
 [#439]: https://github.com/actix/actix/pull/439
+[#443]: https://github.com/actix/actix/pull/443
 [#445]: https://github.com/actix/actix/pull/445
+[#446]: https://github.com/actix/actix/pull/446
 [#447]: https://github.com/actix/actix/pull/447
 [#448]: https://github.com/actix/actix/pull/448
 [#453]: https://github.com/actix/actix/pull/453
+[#IC717769654]: https://github.com/actix/actix-net/issues/206#issuecomment-717769654
 
 ## 0.10.0 - 2020-09-10
 ### Changed
