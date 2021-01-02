@@ -14,7 +14,7 @@ exclude = [".gitignore", ".cargo/config", ".github/**", "codecov.yml"]
 edition = "2018"
 
 [workspace]
-members = [".", "actix-derive", "examples/chat"]
+members = [".", "actix-broker", "actix-derive", "examples/chat"]
 
 [lib]
 name = "actix"
@@ -66,4 +66,5 @@ codegen-units = 1
 
 [patch.crates-io]
 actix = { path = "." }
+actix-broker = { path = "actix-broker" }
 actix_derive = { path = "actix-derive" }
