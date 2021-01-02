@@ -207,6 +207,7 @@
 <span id="204">204</span>
 <span id="205">205</span>
 <span id="206">206</span>
+<span id="207">207</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span>;
@@ -215,6 +216,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 
 <span class="kw">use</span> <span class="ident">futures_core</span>::{<span class="ident">ready</span>, <span class="ident">stream</span>::<span class="ident">Stream</span>};
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">AsyncContext</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::<span class="ident">Sleep</span>;
@@ -257,7 +259,7 @@
     }
 }
 
-<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorDelayedMessageItem</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">A</span>: <span class="ident">Actor</span>,
@@ -355,7 +357,7 @@
     }
 }
 
-<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorMessageStreamItem</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span>, <span class="ident">S</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">A</span>: <span class="ident">Actor</span>,

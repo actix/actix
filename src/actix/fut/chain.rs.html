@@ -71,14 +71,18 @@
 <span id="68">68</span>
 <span id="69">69</span>
 <span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
+
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
 
-<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="attribute">#[<span class="ident">project</span> <span class="op">=</span> <span class="ident">ChainProj</span>]</span>
     <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless you `.await` or poll them&quot;</span>]</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>

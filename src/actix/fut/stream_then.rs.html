@@ -80,14 +80,18 @@
 <span id="77">77</span>
 <span id="78">78</span>
 <span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
+
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStream</span>, <span class="ident">IntoActorFuture</span>};
 
-<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="doccomment">/// A stream combinator which chains a computation onto each item produced by a</span>
     <span class="doccomment">/// stream.</span>
     <span class="doccomment">///</span>

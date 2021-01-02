@@ -43,14 +43,18 @@
 <span id="40">40</span>
 <span id="41">41</span>
 <span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
+
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStream</span>};
 
-<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="doccomment">/// A combinator used to convert stream into a future, future resolves</span>
     <span class="doccomment">/// when stream completes.</span>
     <span class="doccomment">///</span>

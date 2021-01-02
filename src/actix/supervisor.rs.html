@@ -164,12 +164,14 @@
 <span id="161">161</span>
 <span id="162">162</span>
 <span id="163">163</span>
+<span id="164">164</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>};
 
 <span class="kw">use</span> <span class="ident">actix_rt</span>::<span class="ident">Arbiter</span>;
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">AsyncContext</span>, <span class="ident">Supervised</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::{<span class="ident">channel</span>, <span class="ident">Addr</span>};
@@ -177,7 +179,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">contextimpl</span>::<span class="ident">ContextFut</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">mailbox</span>::<span class="ident">DEFAULT_CAPACITY</span>;
 
-<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="doccomment">/// Actor supervisor</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// A Supervisor manages incoming messages for an actor. In case of actor failure,</span>

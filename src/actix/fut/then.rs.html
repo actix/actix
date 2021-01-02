@@ -58,15 +58,19 @@
 <span id="55">55</span>
 <span id="56">56</span>
 <span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>};
+
+<span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">chain</span>::<span class="ident">Chain</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">IntoActorFuture</span>};
 
-<span class="ident">pin_project_lite</span>::<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="doccomment">/// Future for the `then` combinator, chaining computations on the end of</span>
     <span class="doccomment">/// another future regardless of its outcome.</span>
     <span class="doccomment">///</span>
