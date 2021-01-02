@@ -1,10 +1,12 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use pin_project_lite::pin_project;
+
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
-pin_project_lite::pin_project! {
+pin_project! {
     #[project = ChainProj]
     #[must_use = "futures do nothing unless you `.await` or poll them"]
     #[derive(Debug)]

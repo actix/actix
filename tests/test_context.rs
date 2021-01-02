@@ -87,7 +87,7 @@ impl Handler<TimeoutMessage> for MyActor {
 
     fn handle(&mut self, _: TimeoutMessage, _: &mut Self::Context) {
         if self.op != Op::Timeout {
-            assert!(false, "should not happen {:?}", self.op);
+            panic!("should not happen {:?}", self.op);
         }
         System::current().stop();
     }

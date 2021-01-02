@@ -1,10 +1,12 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use pin_project_lite::pin_project;
+
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// Combines two different futures yielding the same item and error
     /// types into a single type.
     #[project = EitherProj]

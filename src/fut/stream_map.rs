@@ -1,10 +1,12 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use pin_project_lite::pin_project;
+
 use crate::actor::Actor;
 use crate::fut::ActorStream;
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// A stream combinator which will change the type of a stream from one
     /// type to another.
     ///

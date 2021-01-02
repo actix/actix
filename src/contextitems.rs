@@ -5,6 +5,7 @@ use std::task::{self, Poll};
 use std::time::Duration;
 
 use futures_core::{ready, stream::Stream};
+use pin_project_lite::pin_project;
 
 use crate::actor::{Actor, ActorContext, AsyncContext};
 use crate::clock::Sleep;
@@ -47,7 +48,7 @@ where
     }
 }
 
-pin_project_lite::pin_project! {
+pin_project! {
     pub(crate) struct ActorDelayedMessageItem<A, M>
     where
         A: Actor,
@@ -145,7 +146,7 @@ where
     }
 }
 
-pin_project_lite::pin_project! {
+pin_project! {
     pub(crate) struct ActorMessageStreamItem<A, M, S>
     where
         A: Actor,

@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures_core::stream::Stream;
+use pin_project_lite::pin_project;
 
 /// Helper trait that adds the helper method `finish()` to stream objects.
 #[doc(hidden)]
@@ -18,7 +19,7 @@ impl<S: Stream> FinishStream for S {
     }
 }
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// A combinator used to convert a stream into a future; the future
     /// resolves when the stream completes.
     ///
