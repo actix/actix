@@ -6,7 +6,6 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::hash::BuildHasherDefault;
 use std::marker::PhantomData;
-use std::mem;
 
 use crate::msgs::*;
 
@@ -93,7 +92,7 @@ impl<T> Broker<T> {
         let boxed = Box::new(msg);
         if let Some(pm) = self.msg_map.get_mut(&id) {
             trace!("Broker: Setting new message value for {:?}", id);
-            mem::replace(pm, boxed);
+            *pm = boxed;
             return;
         }
 
@@ -133,9 +132,7 @@ impl<T: 'static + Unpin, M: BrokerMsg> Handler<IssueAsync<M>> for Broker<T> {
         if let Some(mut subs) = self.take_subs::<M>() {
             subs.drain(..)
                 .filter_map(|(id, s)| {
-                    if id == msg.1 {
-                        Some((id, s))
-                    } else if s.do_send(msg.0.clone()).is_ok() {
+                    if id == msg.1 || s.do_send(msg.0.clone()).is_ok() {
                         Some((id, s))
                     } else {
                         None
