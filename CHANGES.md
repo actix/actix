@@ -39,7 +39,6 @@
 ### Removed
 * Remove unnecessary `actix::clock::Duration` re-export of `std::time::Duration`. [#443]
 
-
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
 [#427]: https://github.com/actix/actix/pull/427
