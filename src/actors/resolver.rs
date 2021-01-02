@@ -36,7 +36,6 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
-use derive_more::Display;
 use pin_project_lite::pin_project;
 use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
