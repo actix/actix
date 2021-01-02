@@ -28,6 +28,7 @@
 //! }
 //! ```
 use std::collections::VecDeque;
+use std::fmt;
 use std::future::Future;
 use std::io;
 use std::net::SocketAddr;
@@ -35,7 +36,6 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
-use derive_more::Display;
 use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::TokioAsyncResolver as AsyncResolver;
@@ -122,23 +122,34 @@ impl Message for ConnectAddr {
     type Result = Result<TcpStream, ResolverError>;
 }
 
-#[derive(Debug, Display)]
+#[derive(Debug)]
 pub enum ResolverError {
     /// Failed to resolve the hostname
-    #[display(fmt = "Failed resolving hostname: {}", _0)]
     Resolver(String),
 
     /// Address is invalid
-    #[display(fmt = "Invalid input: {}", _0)]
     InvalidInput(&'static str),
 
     /// Connecting took too long
-    #[display(fmt = "Timeout out while establishing connection")]
     Timeout,
 
     /// Connection io error
-    #[display(fmt = "{}", _0)]
     IoError(io::Error),
+}
+
+impl fmt::Display for ResolverError {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ResolverError::Resolver(s) => {
+                write!(fmt, "Failed resolving hostname: {}", s)
+            }
+            ResolverError::InvalidInput(s) => write!(fmt, "Invalid input: {}", s),
+            ResolverError::Timeout => {
+                write!(fmt, "Timeout out while establishing connection")
+            }
+            ResolverError::IoError(e) => write!(fmt, "{}", e),
+        }
+    }
 }
 
 pub struct Resolver {

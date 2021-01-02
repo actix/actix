@@ -1,8 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::{error, fmt};
 
-use derive_more::Display;
-
 pub(crate) mod channel;
 mod envelope;
 mod message;
@@ -22,13 +20,26 @@ pub enum SendError<T> {
     Closed(T),
 }
 
-#[derive(Display, Clone, Copy)]
+#[derive(Clone, Copy)]
 /// The errors that can occur during the message delivery process.
 pub enum MailboxError {
-    #[display(fmt = "Mailbox has closed")]
     Closed,
-    #[display(fmt = "Message delivery timed out")]
     Timeout,
+}
+
+impl fmt::Debug for MailboxError {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "MailboxError({})", self)
+    }
+}
+
+impl fmt::Display for MailboxError {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MailboxError::Closed => write!(fmt, "Mailbox has closed"),
+            MailboxError::Timeout => write!(fmt, "Message delivery timed out"),
+        }
+    }
 }
 
 impl error::Error for MailboxError {}
@@ -58,12 +69,6 @@ impl<T> fmt::Display for SendError<T> {
             SendError::Full(_) => write!(fmt, "send failed because receiver is full"),
             SendError::Closed(_) => write!(fmt, "send failed because receiver is gone"),
         }
-    }
-}
-
-impl fmt::Debug for MailboxError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "MailboxError({})", self)
     }
 }
 
