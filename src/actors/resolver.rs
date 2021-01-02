@@ -121,6 +121,7 @@ impl Message for ConnectAddr {
     type Result = Result<TcpStream, ResolverError>;
 }
 
+#[derive(Debug)]
 pub enum ResolverError {
     /// Failed to resolve the hostname
     Resolver(String),
@@ -133,17 +134,6 @@ pub enum ResolverError {
 
     /// Connection io error
     IoError(io::Error),
-}
-
-impl fmt::Debug for ResolverError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Resolver(s) => fmt.debug_tuple("Resolver").field(s).finish(),
-            Self::InvalidInput(s) => fmt.debug_tuple("InvalidInput").field(s).finish(),
-            Self::Timeout => fmt.debug_tuple("Timeout").finish(),
-            Self::IoError(e) => fmt.debug_tuple("IoError").field(e).finish(),
-        }
-    }
 }
 
 impl fmt::Display for ResolverError {
