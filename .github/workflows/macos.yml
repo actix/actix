@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - master
-      - "0.[0-9]+"
+      - '0.[0-9]+'
 
 jobs:
   build_and_test:
@@ -30,6 +30,13 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Generate Cargo.lock
+        uses: actions-rs/cargo@v1
+        with:
+          command: generate-lockfile
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v1.0.1
+
       - name: check build
         uses: actions-rs/cargo@v1
         with:
@@ -42,3 +49,8 @@ jobs:
         with:
           command: test
           args: --all --all-features --no-fail-fast -- --nocapture --skip=test_stream_timeout
+
+      - name: Clean caches
+        run: |
+          cargo install cargo-cache --no-default-features --features ci-autoclean
+          cargo-cache
