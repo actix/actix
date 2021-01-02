@@ -1,7 +1,3 @@
-extern crate actix;
-extern crate actix_broker;
-extern crate actix_web;
-
 use actix::prelude::*;
 use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
