@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 
 use actix_rt::Arbiter;
+use pin_project_lite::pin_project;
 
 use crate::actor::{Actor, AsyncContext, Supervised};
 use crate::address::{channel, Addr};
@@ -10,7 +11,7 @@ use crate::context::Context;
 use crate::contextimpl::ContextFut;
 use crate::mailbox::DEFAULT_CAPACITY;
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// Actor supervisor
     ///
     /// A Supervisor manages incoming messages for an actor. In case of actor failure,

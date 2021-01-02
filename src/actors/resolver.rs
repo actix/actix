@@ -36,6 +36,8 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
+use derive_more::Display;
+use pin_project_lite::pin_project;
 use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::TokioAsyncResolver as AsyncResolver;
@@ -377,7 +379,7 @@ impl ActorFuture for ResolveFut {
     }
 }
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// A TCP stream connector.
     #[allow(clippy::type_complexity)]
     pub struct TcpConnector {

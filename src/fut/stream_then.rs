@@ -1,10 +1,12 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use pin_project_lite::pin_project;
+
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// A stream combinator which chains a computation onto each item produced by a
     /// stream.
     ///

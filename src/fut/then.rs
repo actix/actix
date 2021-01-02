@@ -1,11 +1,13 @@
 use std::pin::Pin;
 use std::task::{self, Poll};
 
+use pin_project_lite::pin_project;
+
 use crate::actor::Actor;
 use crate::fut::chain::Chain;
 use crate::fut::{ActorFuture, IntoActorFuture};
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// Future for the `then` combinator, chaining computations on the end of
     /// another future regardless of its outcome.
     ///

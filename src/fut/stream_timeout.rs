@@ -3,11 +3,13 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
+use pin_project_lite::pin_project;
+
 use crate::actor::Actor;
 use crate::clock::{self, Sleep};
 use crate::fut::ActorStream;
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// Future for the `timeout` combinator, interrupts computations if it takes
     /// more than `timeout`.
     ///

@@ -1,10 +1,12 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use pin_project_lite::pin_project;
+
 use crate::actor::Actor;
 use crate::fut::{ActorFuture, ActorStream};
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// A combinator used to convert stream into a future, future resolves
     /// when stream completes.
     ///

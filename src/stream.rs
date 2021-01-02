@@ -4,6 +4,7 @@ use std::task::{Context, Poll};
 
 use futures_core::stream::Stream;
 use log::error;
+use pin_project_lite::pin_project;
 
 use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use crate::fut::ActorFuture;
@@ -91,7 +92,7 @@ where
     }
 }
 
-pin_project_lite::pin_project! {
+pin_project! {
     pub(crate) struct ActorStream<A, M, S> {
         #[pin]
         stream: S,

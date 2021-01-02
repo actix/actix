@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
+use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
 use crate::actor::Actor;
@@ -44,7 +45,7 @@ where
     }
 }
 
-pin_project_lite::pin_project! {
+pin_project! {
     /// An `ActorFuture` that runs a function in the actor's context after a specified amount of time.
     ///
     /// Unless you specifically need access to the future, use [`Context::run_later`] instead.
