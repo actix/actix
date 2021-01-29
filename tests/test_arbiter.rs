@@ -1,6 +1,7 @@
 use actix::prelude::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use tokio::sync::oneshot;
 
 #[derive(Debug)]
 struct Panic();
@@ -45,14 +46,21 @@ fn test_start_actor_message() {
     let count = Arc::new(AtomicUsize::new(0));
     let act_count = Arc::clone(&count);
 
-    System::run(move || {
-        let arbiter = Arbiter::new();
+    System::with_init(async move {
+        let arbiter = Worker::new();
 
         actix_rt::spawn(async move {
-            let res = arbiter.exec(|| MyActor(act_count).start()).await;
-            res.unwrap().do_send(Ping(1));
+            let (tx, rx) = oneshot::channel();
+
+            arbiter.spawn_fn(move || {
+                let addr = MyActor(act_count).start();
+                tx.send(addr).ok().unwrap();
+            });
+
+            rx.await.unwrap().do_send(Ping(1));
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 1);

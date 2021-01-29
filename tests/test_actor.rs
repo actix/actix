@@ -33,7 +33,7 @@ impl StreamHandler<Num> for MyActor {
     }
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_stream() {
     let count = Arc::new(AtomicUsize::new(0));
     let err = Arc::new(AtomicBool::new(false));
@@ -82,7 +82,7 @@ impl actix::Handler<Stop> for StopOnRequest {
     }
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_infinite_stream() {
     let count = Arc::new(AtomicUsize::new(0));
     let stopped = Arc::new(AtomicBool::new(false));
@@ -164,7 +164,7 @@ fn test_restart_sync_actor() {
     let stopped1 = Arc::clone(&stopped);
     let msgs1 = Arc::clone(&msgs);
 
-    System::run(move || {
+    System::with_init(async move {
         let addr = SyncArbiter::start(1, move || MySyncActor {
             started: Arc::clone(&started1),
             stopping: Arc::clone(&stopping1),
@@ -179,6 +179,7 @@ fn test_restart_sync_actor() {
             let _ = addr.send(Num(4)).await;
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(started.load(Ordering::Relaxed), 2);
@@ -229,9 +230,10 @@ fn test_run_interval() {
 
     let (sender, receiver) = sync::mpsc::channel();
     std::thread::spawn(move || {
-        System::run(move || {
+        System::with_init(async move {
             let _addr = IntervalActor::new(10, sender).start();
         })
+        .run()
         .unwrap();
     });
 

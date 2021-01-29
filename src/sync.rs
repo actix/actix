@@ -78,7 +78,7 @@ use crate::handler::{Handler, Message, MessageResponse};
 /// }
 ///
 /// fn main() {
-///     System::run(|| {
+///     System::with_init(async {
 ///         // Start the SyncArbiter with 2 threads, and receive the address of the Actor pool.
 ///         let addr = SyncArbiter::start(2, || SyncActor);
 ///
@@ -129,10 +129,10 @@ where
             });
         }
 
-        System::current().arbiter().send(Box::pin(Self {
+        System::current().worker().spawn(Self {
             queue: Some(sender),
             msgs: rx,
-        }));
+        });
 
         Addr::new(tx)
     }

@@ -46,7 +46,7 @@ fn test_supervisor_restart() {
     let addr = Arc::new(Mutex::new(None));
     let addr2 = Arc::clone(&addr);
 
-    System::run(move || {
+    System::with_init(async move {
         let addr =
             actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
         addr.do_send(Die);
@@ -58,6 +58,7 @@ fn test_supervisor_restart() {
             System::current().stop();
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(starts.load(Ordering::Relaxed), 3);

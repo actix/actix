@@ -435,7 +435,7 @@ mod tests {
         let count = Arc::new(AtomicUsize::new(0));
         let count2 = Arc::clone(&count);
 
-        System::run(move || {
+        System::with_init(async move {
             //Actor::started gets called after we relinquish
             //control to event loop so we just set it ourself.
             let addr = ActorWithSmallMailBox::create(|ctx| {
@@ -458,8 +458,9 @@ mod tests {
 
                 System::current().stop();
             };
-            Arbiter::spawn(fut);
+            actix_rt::spawn(fut);
         })
+        .run()
         .unwrap();
 
         assert_eq!(count.load(Ordering::Relaxed), 3);

@@ -3,9 +3,9 @@
 use actix::actors::resolver;
 use actix::prelude::*;
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_resolver() {
-    Arbiter::spawn(async {
+    actix_rt::spawn(async {
         let resolver = resolver::Resolver::from_registry();
         let _ = resolver
             .send(resolver::Resolve::host("localhost"))

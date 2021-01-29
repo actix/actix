@@ -95,15 +95,16 @@ impl Handler<TimeoutMessage> for MyActor {
 
 #[test]
 fn test_add_timeout() {
-    System::run(|| {
+    System::with_init(async {
         let _addr = MyActor { op: Op::Timeout }.start();
     })
+    .run()
     .unwrap();
 }
 
 #[test]
 fn test_add_timeout_cancel() {
-    System::run(|| {
+    System::with_init(async {
         let _addr = MyActor { op: Op::Cancel }.start();
 
         actix_rt::spawn(async move {
@@ -111,37 +112,41 @@ fn test_add_timeout_cancel() {
             System::current().stop();
         });
     })
+    .run()
     .unwrap();
 }
 
 #[test]
 // delayed notification should be dropped after context stop
 fn test_add_timeout_stop() {
-    System::run(|| {
+    System::with_init(async {
         let _addr = MyActor {
             op: Op::TimeoutStop,
         }
         .start();
     })
+    .run()
     .unwrap();
 }
 
 #[test]
 fn test_run_after() {
-    System::run(|| {
+    System::with_init(async {
         let _addr = MyActor { op: Op::RunAfter }.start();
     })
+    .run()
     .unwrap();
 }
 
 #[test]
 fn test_run_after_stop() {
-    System::run(|| {
+    System::with_init(async {
         let _addr = MyActor {
             op: Op::RunAfterStop,
         }
         .start();
     })
+    .run()
     .unwrap();
 }
 
@@ -178,12 +183,13 @@ fn test_wait_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let cnt = Arc::clone(&m);
 
-    System::run(move || {
+    System::with_init(async move {
         let addr = ContextWait { cnt }.start();
         addr.do_send(Ping);
         addr.do_send(Ping);
         addr.do_send(Ping);
     })
+    .run()
     .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
@@ -194,7 +200,7 @@ fn test_message_stream_wait_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    System::run(move || {
+    System::with_init(async move {
         let _addr = ContextWait::create(move |ctx| {
             let (tx, rx) = unbounded_channel();
             let _ = tx.send(Ping);
@@ -206,6 +212,7 @@ fn test_message_stream_wait_context() {
             actor
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
@@ -216,7 +223,7 @@ fn test_stream_wait_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    System::run(move || {
+    System::with_init(async move {
         let _addr = ContextWait::create(move |ctx| {
             let (tx, rx) = unbounded_channel();
             let _ = tx.send(Ping);
@@ -227,6 +234,7 @@ fn test_stream_wait_context() {
             actor
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 1);
@@ -249,7 +257,7 @@ impl Handler<Ping> for ContextNoWait {
     }
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_nowait_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let cnt = Arc::clone(&m);
@@ -266,7 +274,7 @@ async fn test_nowait_context() {
     assert_eq!(m.load(Ordering::Relaxed), 3);
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_message_stream_nowait_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
@@ -293,7 +301,7 @@ fn test_stream_nowait_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    System::run(move || {
+    System::with_init(async move {
         let _addr = ContextNoWait::create(move |ctx| {
             let (tx, rx) = unbounded_channel();
             let _ = tx.send(Ping);
@@ -309,6 +317,7 @@ fn test_stream_nowait_context() {
             System::current().stop();
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), 3);
@@ -319,7 +328,7 @@ fn test_notify() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    System::run(move || {
+    System::with_init(async move {
         let addr = ContextNoWait::create(move |ctx| {
             ctx.notify(Ping);
             ctx.notify(Ping);
@@ -334,6 +343,7 @@ fn test_notify() {
             System::current().stop();
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(m2.load(Ordering::Relaxed), 3);
@@ -360,7 +370,7 @@ fn test_current_context_handle() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    System::run(move || {
+    System::with_init(async move {
         let _addr = ContextHandle::create(move |ctx| {
             h2.store(
                 ContextHandle::add_stream(once(async { Ping }), ctx).into_usize(),
@@ -370,6 +380,7 @@ fn test_current_context_handle() {
             ContextHandle { h: m2 }
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
@@ -382,7 +393,7 @@ fn test_start_from_context() {
     let m = Arc::new(AtomicUsize::new(0));
     let m2 = Arc::clone(&m);
 
-    System::run(move || {
+    System::with_init(async move {
         let _addr = ContextHandle::create(move |ctx| {
             h2.store(
                 ctx.add_stream(once(async { Ping })).into_usize(),
@@ -391,6 +402,7 @@ fn test_start_from_context() {
             ContextHandle { h: m2 }
         });
     })
+    .run()
     .unwrap();
 
     assert_eq!(m.load(Ordering::Relaxed), h.load(Ordering::Relaxed));
@@ -418,7 +430,7 @@ impl StreamHandler<CancelPacket> for CancelHandler {
 
 #[test]
 fn test_cancel_handler() {
-    actix::System::run(|| {
+    actix::System::with_init(async {
         struct WtfStream {
             interval: tokio::time::Interval,
         }
@@ -443,6 +455,7 @@ fn test_cancel_handler() {
             }),
         });
     })
+    .run()
     .unwrap();
 }
 
@@ -475,7 +488,7 @@ impl Handler<CancelMessage> for CancelLater {
 
 #[test]
 fn test_cancel_completed_with_no_context_item() {
-    actix::System::run(|| {
+    actix::System::with_init(async {
         // first, spawn future that will complete immediately
         let addr = CancelLater { handle: None }.start();
 
@@ -492,5 +505,6 @@ fn test_cancel_completed_with_no_context_item() {
             System::current().stop();
         });
     })
+    .run()
     .unwrap();
 }

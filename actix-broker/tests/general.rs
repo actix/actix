@@ -53,7 +53,7 @@ impl Handler<TestMessageOne> for TestActorTwo {
 
 #[test]
 fn it_all_works() {
-    System::run(|| {
+    System::with_init(async {
         TestActorOne.start();
         TestActorTwo.start();
     })

@@ -28,7 +28,7 @@ impl Handler<Num> for MyActor {
     }
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_atomic_response() {
     let items = vec![Num(7), Num(6), Num(5), Num(4), Num(3), Num(2), Num(1)];
     let addr = MyActor(0).start();

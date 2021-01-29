@@ -63,7 +63,7 @@ fn print_usage_and_exit() -> ! {
 }
 
 fn main() -> std::io::Result<()> {
-    let system = System::new("ring");
+    let system = System::new();
 
     let args = env::args().collect::<Vec<_>>();
     if args.len() < 3 {
