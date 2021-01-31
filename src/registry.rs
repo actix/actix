@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::rc::Rc;
 
-use actix_rt::{System, WorkerHandle};
+use actix_rt::{ArbiterHandle, System};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
@@ -74,9 +74,9 @@ type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 ///
 /// fn main() {
 ///     // initialize system
-///     let code = System::with_init(async {
+///     let code = System::new().block_on(async {
 ///         // Start MyActor2 in new Arbiter
-///         Worker::new().spawn_fn(|| {
+///         Arbiter::new().spawn_fn(|| {
 ///             MyActor2.start();
 ///         });
 ///     });
@@ -213,7 +213,7 @@ impl Registry {
 ///
 /// fn main() {
 ///     // initialize system
-///     let code = System::with_init(async {
+///     let code = System::new().block_on(async {
 ///         // Start MyActor2
 ///         let addr = MyActor2.start();
 ///     });
@@ -221,7 +221,7 @@ impl Registry {
 /// ```
 #[derive(Debug)]
 pub struct SystemRegistry {
-    system: WorkerHandle,
+    system: ArbiterHandle,
     registry: HashMap<TypeId, Box<dyn Any + Send>>,
 }
 
@@ -232,7 +232,7 @@ static SREG: Lazy<Mutex<HashMap<usize, SystemRegistry>>> =
 #[allow(unused_variables)]
 pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     /// Construct and start system service
-    fn start_service(wrk: &WorkerHandle) -> Addr<Self> {
+    fn start_service(wrk: &ArbiterHandle) -> Addr<Self> {
         Supervisor::start_in_arbiter(wrk, |ctx| {
             let mut act = Self::default();
             act.service_started(ctx);
@@ -250,7 +250,7 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
         let mut sreg = SREG.lock();
         let reg = sreg
             .entry(sys.id())
-            .or_insert_with(|| SystemRegistry::new(sys.worker().clone()));
+            .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
 
         if let Some(addr) = reg.registry.get(&TypeId::of::<Self>()) {
             if let Some(addr) = addr.downcast_ref::<Addr<Self>>() {
@@ -258,7 +258,7 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
             }
         }
 
-        let addr = Self::start_service(System::current().worker());
+        let addr = Self::start_service(System::current().arbiter());
         reg.registry
             .insert(TypeId::of::<Self>(), Box::new(addr.clone()));
         addr
@@ -266,7 +266,7 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
 }
 
 impl SystemRegistry {
-    pub(crate) fn new(system: WorkerHandle) -> Self {
+    pub(crate) fn new(system: ArbiterHandle) -> Self {
         Self {
             system,
             registry: HashMap::default(),
@@ -310,7 +310,7 @@ impl SystemRegistry {
         let mut sreg = SREG.lock();
         let reg = sreg
             .entry(sys.id())
-            .or_insert_with(|| SystemRegistry::new(sys.worker().clone()));
+            .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
 
         if let Some(addr) = reg.registry.get(&TypeId::of::<A>()) {
             if addr.downcast_ref::<Addr<A>>().is_some() {

@@ -34,11 +34,12 @@ fn test_fut_timeout() {
     let timeout = Arc::new(AtomicBool::new(false));
     let timeout2 = Arc::clone(&timeout);
 
-    System::with_init(async {
+    let sys = System::new();
+    sys.block_on(async {
         let _addr = MyActor { timeout: timeout2 }.start();
-    })
-    .run()
-    .unwrap();
+    });
+
+    sys.run().unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }
@@ -83,11 +84,11 @@ fn test_stream_timeout() {
     let timeout = Arc::new(AtomicBool::new(false));
     let timeout2 = Arc::clone(&timeout);
 
-    System::with_init(async {
+    let sys = System::new();
+    sys.block_on(async {
         let _addr = MyStreamActor { timeout: timeout2 }.start();
-    })
-    .run()
-    .unwrap();
+    });
+    sys.run().unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
 }

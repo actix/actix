@@ -2,7 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{self, Poll};
 
-use actix_rt::WorkerHandle;
+use actix_rt::ArbiterHandle;
 use pin_project_lite::pin_project;
 
 use crate::actor::{Actor, AsyncContext, Supervised};
@@ -97,7 +97,7 @@ where
     ///
     /// # impl actix::Supervised for MyActor {}
     /// # fn main() {
-    /// #    System::with_init(async {
+    /// #    System::new().block_on(async {
     /// // Get `Addr` of a MyActor actor
     /// let addr = actix::Supervisor::start(|_| MyActor);
     /// #         System::current().stop();
@@ -121,7 +121,7 @@ where
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in_arbiter<F>(sys: &WorkerHandle, f: F) -> Addr<A>
+    pub fn start_in_arbiter<F>(sys: &ArbiterHandle, f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,

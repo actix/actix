@@ -73,7 +73,7 @@ pub mod utils;
 
 #[cfg(feature = "derive")]
 pub use actix_derive::{main, test};
-pub use actix_rt::{spawn, System, SystemRunner, Worker};
+pub use actix_rt::{spawn, Arbiter, System, SystemRunner};
 
 pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
@@ -108,7 +108,7 @@ pub mod prelude {
     #[cfg(feature = "derive")]
     pub use actix_derive::{Message, MessageResponse};
 
-    pub use actix_rt::{System, SystemRunner, Worker};
+    pub use actix_rt::{Arbiter, System, SystemRunner};
 
     pub use crate::actor::{
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,

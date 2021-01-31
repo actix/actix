@@ -46,8 +46,10 @@ fn test_start_actor_message() {
     let count = Arc::new(AtomicUsize::new(0));
     let act_count = Arc::clone(&count);
 
-    System::with_init(async move {
-        let arbiter = Worker::new();
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let arbiter = Arbiter::new();
 
         actix_rt::spawn(async move {
             let (tx, rx) = oneshot::channel();
@@ -59,9 +61,9 @@ fn test_start_actor_message() {
 
             rx.await.unwrap().do_send(Ping(1));
         });
-    })
-    .run()
-    .unwrap();
+    });
+
+    sys.run().unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }

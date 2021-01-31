@@ -33,7 +33,7 @@ derive = ["actix_derive"]
 mailbox_assert = []
 
 [dependencies]
-actix-rt = "2.0.0-beta.2"
+actix-rt = "2.0.0-beta.3"
 actix_derive = { version = "0.5", optional = true }
 
 bitflags = "1.2"
@@ -67,6 +67,3 @@ codegen-units = 1
 actix = { path = "." }
 actix-broker = { path = "actix-broker" }
 actix_derive = { path = "actix-derive" }
-
-actix-rt = { path = "../actix-net/actix-rt" }
-actix-macros = { path = "../actix-net/actix-macros" }

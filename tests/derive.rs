@@ -21,7 +21,7 @@ impl Handler<Empty> for EmptyActor {
 #[test]
 #[allow(clippy::unit_cmp)]
 fn response_derive_empty() {
-    System::with_init(async {
+    System::new().block_on(async {
         let addr = EmptyActor.start();
         let res = addr.send(Empty);
 
@@ -33,9 +33,7 @@ fn response_derive_empty() {
 
             System::current().stop();
         });
-    })
-    .run()
-    .unwrap();
+    });
 }
 
 #[derive(Message)]
@@ -62,7 +60,7 @@ impl Handler<SumResult> for SumResultActor {
 
 #[test]
 pub fn derive_result() {
-    System::with_init(async {
+    System::new().block_on(async {
         let addr = SumResultActor.start();
         let res = addr.send(SumResult(10, 5));
 
@@ -74,9 +72,7 @@ pub fn derive_result() {
 
             System::current().stop();
         });
-    })
-    .run()
-    .unwrap();
+    });
 }
 
 #[derive(Message)]
@@ -99,7 +95,7 @@ impl Handler<SumOne> for SumOneActor {
 
 #[test]
 pub fn response_derive_one() {
-    System::with_init(async {
+    System::new().block_on(async {
         let addr = SumOneActor.start();
         let res = addr.send(SumOne(10, 5));
 
@@ -111,9 +107,7 @@ pub fn response_derive_one() {
 
             System::current().stop();
         });
-    })
-    .run()
-    .unwrap();
+    });
 }
 
 #[derive(MessageResponse, PartialEq)]
@@ -139,7 +133,7 @@ impl Handler<MulOne> for MulOneActor {
 
 #[test]
 pub fn derive_response_one() {
-    System::with_init(async {
+    System::new().block_on(async {
         let addr = MulOneActor.start();
         let res = addr.send(MulOne(10, 5));
 
@@ -151,9 +145,7 @@ pub fn derive_response_one() {
 
             System::current().stop();
         });
-    })
-    .run()
-    .unwrap();
+    });
 }
 
 #[derive(MessageResponse, PartialEq)]
@@ -183,7 +175,7 @@ impl Handler<MulAnyOne> for MulAnyOneActor {
 
 #[test]
 pub fn derive_response_two() {
-    System::with_init(async {
+    System::new().block_on(async {
         let addr = MulAnyOneActor.start();
         let res = addr.send(MulAnyOne(10, 5));
 
@@ -195,7 +187,5 @@ pub fn derive_response_two() {
 
             System::current().stop();
         });
-    })
-    .run()
-    .unwrap();
+    });
 }

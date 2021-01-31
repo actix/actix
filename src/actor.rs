@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use actix_rt::WorkerHandle;
+use actix_rt::ArbiterHandle;
 use futures_core::stream::Stream;
 use log::error;
 
@@ -114,7 +114,7 @@ pub trait Actor: Sized + Unpin + 'static {
     ///
     /// fn main() {
     ///     // initialize system
-    ///     System::with_init(async {
+    ///     System::new().block_on(async {
     ///         let addr = MyActor.start(); // <- start actor and get its address
     /// #       System::current().stop();
     ///     });
@@ -140,7 +140,7 @@ pub trait Actor: Sized + Unpin + 'static {
     }
 
     /// Start new actor in arbiter's thread.
-    fn start_in_arbiter<F>(wrk: &WorkerHandle, f: F) -> Addr<Self>
+    fn start_in_arbiter<F>(wrk: &ArbiterHandle, f: F) -> Addr<Self>
     where
         Self: Actor<Context = Context<Self>>,
         F: FnOnce(&mut Context<Self>) -> Self + Send + 'static,
@@ -178,7 +178,7 @@ pub trait Actor: Sized + Unpin + 'static {
     ///
     /// fn main() {
     ///     // initialize system
-    ///     System::with_init(async {
+    ///     System::new().block_on(async {
     ///         let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
     /// #       System::current().stop();
     ///     });
@@ -387,7 +387,7 @@ where
     /// }
     ///
     /// fn main() {
-    ///    System::with_init(async {
+    ///    System::new().block_on(async {
     ///        let addr = MyActor.start();
     ///    });
     /// }

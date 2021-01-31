@@ -70,7 +70,8 @@ fn test_sync() {
     let counter_c = Arc::clone(&counter);
     let messages_c = Arc::clone(&messages);
 
-    System::with_init(async move {
+    let sys = System::new();
+    sys.block_on(async move {
         let addr = SyncArbiter::start(2, move || SyncActor {
             cond: Arc::clone(&cond_c),
             cond_l: Arc::clone(&cond_l_c),
@@ -86,9 +87,9 @@ fn test_sync() {
         for n in 5..10 {
             addr.do_send(Fibonacci(n));
         }
-    })
-    .run()
-    .unwrap();
+    });
+
+    sys.run().unwrap();
 
     assert_eq!(counter.load(Ordering::Relaxed), 2, "Not started");
     assert_eq!(
