@@ -45,10 +45,6 @@
 // TODO: temporary allow deprecated until resolver actor is removed.
 #![allow(deprecated)]
 
-#[doc(hidden)]
-#[cfg(feature = "derive")]
-pub use actix_derive::*;
-
 #[cfg(doctest)]
 doc_comment::doctest!("../README.md");
 
@@ -71,8 +67,8 @@ pub mod registry;
 pub mod sync;
 pub mod utils;
 
-#[cfg(feature = "derive")]
-pub use actix_derive::{main, test};
+#[cfg(feature = "macros")]
+pub use actix_derive::{main, test, Message, MessageResponse};
 pub use actix_rt::{spawn, Arbiter, System, SystemRunner};
 
 pub use crate::actor::{
@@ -105,7 +101,7 @@ pub mod prelude {
     //! ```
 
     #[doc(hidden)]
-    #[cfg(feature = "derive")]
+    #[cfg(feature = "macros")]
     pub use actix_derive::{Message, MessageResponse};
 
     pub use actix_rt::{Arbiter, System, SystemRunner};
