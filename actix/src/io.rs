@@ -300,17 +300,17 @@ where
 
 /// A wrapper for the `AsyncWrite` and `Encoder` types. The [`AsyncWrite`] will be flushed when this
 /// struct is dropped.
-pub struct FramedWrite<I, T: AsyncWrite + Unpin, U: Encoder<I>> {
+pub struct FramedWrite<T: AsyncWrite + Unpin, U, E: From<io::Error> = std::io::Error> {
     enc: U,
-    inner: UnsafeWriter<T, U::Error>,
+    inner: UnsafeWriter<T, E>,
 }
 
-impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
+impl<T: AsyncWrite + Unpin, U, E: From<io::Error>> FramedWrite<T, U, E> {
     pub fn new<A, C>(io: T, enc: U, ctx: &mut C) -> Self
     where
-        A: Actor<Context = C> + WriteHandler<U::Error>,
+        A: Actor<Context = C> + WriteHandler<E>,
         C: AsyncContext<A>,
-        U::Error: 'static,
+        E: 'static,
         T: Unpin + 'static,
     {
         let inner = UnsafeWriter(
@@ -336,9 +336,9 @@ impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
 
     pub fn from_buffer<A, C>(io: T, enc: U, buffer: BytesMut, ctx: &mut C) -> Self
     where
-        A: Actor<Context = C> + WriteHandler<U::Error>,
+        A: Actor<Context = C> + WriteHandler<E>,
         C: AsyncContext<A>,
-        U::Error: 'static,
+        E: 'static,
         T: Unpin + 'static,
     {
         let inner = UnsafeWriter(
@@ -382,7 +382,10 @@ impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
     }
 
     /// Writes an item to the sink.
-    pub fn write(&mut self, item: I) {
+    pub fn write<I>(&mut self, item: I)
+    where
+        U: Encoder<I, Error = E>,
+    {
         let mut inner = self.inner.0.borrow_mut();
         let _ = self.enc.encode(item, &mut inner.buffer).map_err(|e| {
             inner.error = Some(e);
@@ -396,9 +399,19 @@ impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
     pub fn handle(&self) -> SpawnHandle {
         self.inner.0.borrow().handle
     }
+
+    /// Returns a reference to the underlying encoder.
+    pub fn encoder(&self) -> &U {
+        &self.enc
+    }
+
+    /// Returns a mutable reference to the underlying encoder.
+    pub fn encoder_mut(&mut self) -> &mut U {
+        &mut self.enc
+    }
 }
 
-impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> Drop for FramedWrite<I, T, U> {
+impl<T: AsyncWrite + Unpin, U, E: From<io::Error>> Drop for FramedWrite<T, U, E> {
     fn drop(&mut self) {
         // Attempts to write any remaining bytes to the stream and flush it
         let mut async_writer = self.inner.1.borrow_mut();
