@@ -96,18 +96,18 @@ fn main() {
 
 Spawning a new actor is achieved via the `start` and `create` methods of
 the [Actor](https://actix.github.io/actix/actix/trait.Actor.html)
-trait. It provides several different ways of creating actors, for details check docs.
-You can implement `started`, `stopping` and `stopped` methods of the Actor trait.
-`started` gets called when actor starts and `stopping` when actor finishes.
-Check [API documentation](https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle)
+trait. It provides several different ways of creating actors; for details, check the docs.
+You can implement the `started`, `stopping` and `stopped` methods of the Actor trait.
+`started` gets called when the actor starts and `stopping` when the actor finishes.
+Check the [API documentation](https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle)
 for more information on the actor lifecycle.
 
 ### Handle Messages
 
 An Actor communicates with another Actor by sending messages. In actix all messages
-are typed. Let's define a simple `Sum` message with two `usize` parameters,
+are typed. Let's define a simple `Sum` message with two `usize` parameters
 and an actor which will accept this message and return the sum of those two numbers.
-Here we use the `#[actix::main]` as way start our `System`
+Here we use the `#[actix::main]` attribute as a way to start our `System`
 and drive our main `Future` so we can easily `.await` for the messages sent to the `Actor`.
 
 ```rust
@@ -147,12 +147,12 @@ async fn main() {
 ```
 
 All communications with actors go through an `Addr` object. You can `do_send` a message
-without waiting for a response, or `send` an actor with specific message. The `Message`
+without waiting for a response, or you can `send` an actor a specific message. The `Message`
 trait defines the result type for a message.
 
 ### Actor State And Subscription For Specific Messages
 
-You may have noticed that methods of `Actor` and `Handler` traits accept `&mut self`, so you are
+You may have noticed that the methods of the `Actor` and `Handler` traits accept `&mut self`, so you are
 welcome to store anything in an actor and mutate it whenever necessary.
 
 Address objects require an actor type, but if we just want to send a specific message to
