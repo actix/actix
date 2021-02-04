@@ -1,6 +1,12 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Changed
+* Update `actix-rt` to `v2.0.0`. [#461]
+* Feature `resolver` is no longer default. [#461]
+* Rename `derive` feature to `macros` since it now includes derive *and* attribute macros. [#461]
+
+[#421]: https://github.com/actix/actix/pull/421
 
 
 ## 0.11.0-beta.1 - 2021-01-01

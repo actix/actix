@@ -16,7 +16,7 @@ path = "src/client.rs"
 [dependencies]
 actix = { path = "../../" }
 actix_derive = "0.5"
-actix-rt = "2.0.0-beta.1"
+actix-rt = "2.0.0"
 
 async-stream = "0.3"
 bytes = "1"

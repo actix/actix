@@ -76,7 +76,7 @@ pin_project! {
     ///    }
     /// }
     /// # fn main() {
-    /// #    let mut sys = System::new("example");
+    /// #    let mut sys = System::new();
     /// #    let addr = sys.block_on(async { MyActor.start() });
     /// #    sys.run();
     /// # }
@@ -176,7 +176,7 @@ where
 ///    }
 /// }
 /// # fn main() {
-/// #    let mut sys = System::new("example");
+/// #    let mut sys = System::new();
 /// #    let addr = sys.block_on(async { MyActor.start() });
 /// #    sys.run();
 /// # }

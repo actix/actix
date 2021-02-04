@@ -67,7 +67,7 @@ struct MessageOne(String);
 struct MessageTwo(u8);
 
 fn main() {
-    let _ = System::run(|| {
+    let _ = System::new().block_on(async {
         ActorTwo.start();
         ActorThree.start();
         ActorOne.start();

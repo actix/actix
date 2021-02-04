@@ -2,7 +2,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{self, Poll};
 
-use actix_rt::Arbiter;
+use actix_rt::ArbiterHandle;
 use pin_project_lite::pin_project;
 
 use crate::actor::{Actor, AsyncContext, Supervised};
@@ -27,7 +27,7 @@ pin_project! {
     /// messages. If the actor fails during message processing, the message can not be
     /// recovered. The sender would receive an `Err(Cancelled)` error in this situation.
     ///
-    /// ## Example
+    /// # Examples
     ///
     /// ```rust
     /// # use actix::prelude::*;
@@ -58,7 +58,7 @@ pin_project! {
     /// }
     ///
     /// fn main() {
-    ///     let mut sys = System::new("example");
+    ///     let mut sys = System::new();
     ///
     ///     let addr = sys.block_on(async { actix::Supervisor::start(|_| MyActor) });
     ///     addr.do_send(Die);
@@ -97,7 +97,7 @@ where
     ///
     /// # impl actix::Supervised for MyActor {}
     /// # fn main() {
-    /// #    System::run(|| {
+    /// #    System::new().block_on(async {
     /// // Get `Addr` of a MyActor actor
     /// let addr = actix::Supervisor::start(|_| MyActor);
     /// #         System::current().stop();
@@ -121,14 +121,14 @@ where
     }
 
     /// Start new supervised actor in arbiter's thread.
-    pub fn start_in_arbiter<F>(sys: &Arbiter, f: F) -> Addr<A>
+    pub fn start_in_arbiter<F>(sys: &ArbiterHandle, f: F) -> Addr<A>
     where
         A: Actor<Context = Context<A>>,
         F: FnOnce(&mut Context<A>) -> A + Send + 'static,
     {
         let (tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
-        sys.exec_fn(move || {
+        sys.spawn_fn(move || {
             let mut ctx = Context::with_receiver(rx);
             let act = f(&mut ctx);
             let fut = ctx.into_future(act);

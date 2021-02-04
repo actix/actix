@@ -132,7 +132,7 @@ impl Handler<Data> for MyActor {
     }
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_send_1() {
     let (sender, mut receiver) = mpsc::unbounded_channel();
 
@@ -163,7 +163,7 @@ async fn test_send_1() {
     assert_eq!(b"Hello", &res[..]);
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_send_2() {
     let (sender, mut receiver) = mpsc::unbounded_channel();
 
@@ -201,7 +201,7 @@ async fn test_send_2() {
     assert_eq!(b"Hello world", &res[..]);
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_send_error() {
     let (sender, mut receiver) = mpsc::unbounded_channel();
     actix_rt::spawn(async move {
@@ -256,7 +256,7 @@ impl Handler<Data> for AnotherActor {
     }
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_send_bytes() {
     let (sender, mut receiver) = mpsc::unbounded_channel();
     let bytes = Bytes::from_static(b"Hello");

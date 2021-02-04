@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::rc::Rc;
 
-use actix_rt::{Arbiter, System};
+use actix_rt::{ArbiterHandle, System};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
@@ -28,7 +28,7 @@ type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 ///
 /// If an arbiter service is used outside of a running arbiter, it panics.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;
@@ -74,9 +74,9 @@ type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 ///
 /// fn main() {
 ///     // initialize system
-///     let code = System::run(|| {
+///     let code = System::new().block_on(async {
 ///         // Start MyActor2 in new Arbiter
-///         Arbiter::new().exec_fn(|| {
+///         Arbiter::new().spawn_fn(|| {
 ///             MyActor2.start();
 ///         });
 ///     });
@@ -168,7 +168,7 @@ impl Registry {
 /// System registry serves same purpose as [Registry](struct.Registry.html),
 /// except it is shared across all arbiters.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;
@@ -213,7 +213,7 @@ impl Registry {
 ///
 /// fn main() {
 ///     // initialize system
-///     let code = System::run(|| {
+///     let code = System::new().block_on(async {
 ///         // Start MyActor2
 ///         let addr = MyActor2.start();
 ///     });
@@ -221,7 +221,7 @@ impl Registry {
 /// ```
 #[derive(Debug)]
 pub struct SystemRegistry {
-    system: Arbiter,
+    system: ArbiterHandle,
     registry: HashMap<TypeId, Box<dyn Any + Send>>,
 }
 
@@ -232,8 +232,8 @@ static SREG: Lazy<Mutex<HashMap<usize, SystemRegistry>>> =
 #[allow(unused_variables)]
 pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
     /// Construct and start system service
-    fn start_service(sys: &Arbiter) -> Addr<Self> {
-        Supervisor::start_in_arbiter(sys, |ctx| {
+    fn start_service(wrk: &ArbiterHandle) -> Addr<Self> {
+        Supervisor::start_in_arbiter(wrk, |ctx| {
             let mut act = Self::default();
             act.service_started(ctx);
             act
@@ -245,28 +245,28 @@ pub trait SystemService: Actor<Context = Context<Self>> + Supervised + Default {
 
     /// Get actor's address from system registry
     fn from_registry() -> Addr<Self> {
-        System::with_current(|sys| {
-            let mut sreg = SREG.lock();
-            let reg = sreg
-                .entry(sys.id())
-                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
+        let sys = System::current();
 
-            if let Some(addr) = reg.registry.get(&TypeId::of::<Self>()) {
-                if let Some(addr) = addr.downcast_ref::<Addr<Self>>() {
-                    return addr.clone();
-                }
+        let mut sreg = SREG.lock();
+        let reg = sreg
+            .entry(sys.id())
+            .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
+
+        if let Some(addr) = reg.registry.get(&TypeId::of::<Self>()) {
+            if let Some(addr) = addr.downcast_ref::<Addr<Self>>() {
+                return addr.clone();
             }
+        }
 
-            let addr = Self::start_service(System::current().arbiter());
-            reg.registry
-                .insert(TypeId::of::<Self>(), Box::new(addr.clone()));
-            addr
-        })
+        let addr = Self::start_service(System::current().arbiter());
+        reg.registry
+            .insert(TypeId::of::<Self>(), Box::new(addr.clone()));
+        addr
     }
 }
 
 impl SystemRegistry {
-    pub(crate) fn new(system: Arbiter) -> Self {
+    pub(crate) fn new(system: ArbiterHandle) -> Self {
         Self {
             system,
             registry: HashMap::default(),
@@ -305,19 +305,19 @@ impl SystemRegistry {
 
     /// Add new actor to the registry by address, panic if actor is already running
     pub fn set<A: SystemService + Actor<Context = Context<A>>>(addr: Addr<A>) {
-        System::with_current(|sys| {
-            let mut sreg = SREG.lock();
-            let reg = sreg
-                .entry(sys.id())
-                .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
+        let sys = System::current();
 
-            if let Some(addr) = reg.registry.get(&TypeId::of::<A>()) {
-                if addr.downcast_ref::<Addr<A>>().is_some() {
-                    panic!("Actor already started");
-                }
+        let mut sreg = SREG.lock();
+        let reg = sreg
+            .entry(sys.id())
+            .or_insert_with(|| SystemRegistry::new(sys.arbiter().clone()));
+
+        if let Some(addr) = reg.registry.get(&TypeId::of::<A>()) {
+            if addr.downcast_ref::<Addr<A>>().is_some() {
+                panic!("Actor already started");
             }
+        }
 
-            reg.registry.insert(TypeId::of::<A>(), Box::new(addr));
-        })
+        reg.registry.insert(TypeId::of::<A>(), Box::new(addr));
     }
 }

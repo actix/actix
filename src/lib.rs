@@ -45,10 +45,6 @@
 // TODO: temporary allow deprecated until resolver actor is removed.
 #![allow(deprecated)]
 
-#[doc(hidden)]
-#[cfg(feature = "derive")]
-pub use actix_derive::*;
-
 #[cfg(doctest)]
 doc_comment::doctest!("../README.md");
 
@@ -71,8 +67,9 @@ pub mod registry;
 pub mod sync;
 pub mod utils;
 
-pub use actix_macros::main;
-pub use actix_rt::{Arbiter, System, SystemRunner};
+#[cfg(feature = "macros")]
+pub use actix_derive::{main, test, Message, MessageResponse};
+pub use actix_rt::{spawn, Arbiter, System, SystemRunner};
 
 pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
@@ -104,10 +101,9 @@ pub mod prelude {
     //! ```
 
     #[doc(hidden)]
-    #[cfg(feature = "derive")]
-    pub use actix_derive::*;
+    #[cfg(feature = "macros")]
+    pub use actix_derive::{Message, MessageResponse};
 
-    pub use actix_macros::main;
     pub use actix_rt::{Arbiter, System, SystemRunner};
 
     pub use crate::actor::{
@@ -196,17 +192,5 @@ pub fn run<R>(f: R) -> std::io::Result<()>
 where
     R: std::future::Future<Output = ()> + 'static,
 {
-    Ok(actix_rt::System::new("Default").block_on(f))
-}
-
-/// Spawns a future on the current arbiter.
-///
-/// # Panics
-///
-/// This function panics if the actix system is not running.
-pub fn spawn<F>(f: F)
-where
-    F: std::future::Future<Output = ()> + 'static,
-{
-    actix_rt::spawn(f);
+    Ok(actix_rt::System::new().block_on(f))
 }

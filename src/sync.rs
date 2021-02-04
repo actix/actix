@@ -35,7 +35,7 @@ use crate::handler::{Handler, Message, MessageResponse};
 /// Sync Actors have a different lifecycle compared to Actors on the System
 /// Arbiter. For more, see `SyncContext`.
 ///
-/// ## Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;
@@ -78,7 +78,7 @@ use crate::handler::{Handler, Message, MessageResponse};
 /// }
 ///
 /// fn main() {
-///     System::run(|| {
+///     System::new().block_on(async {
 ///         // Start the SyncArbiter with 2 threads, and receive the address of the Actor pool.
 ///         let addr = SyncArbiter::start(2, || SyncActor);
 ///
@@ -129,10 +129,10 @@ where
             });
         }
 
-        System::current().arbiter().send(Box::pin(Self {
+        System::current().arbiter().spawn(Self {
             queue: Some(sender),
             msgs: rx,
-        }));
+        });
 
         Addr::new(tx)
     }
@@ -196,7 +196,7 @@ where
 /// the Actor. Similar, returning `false` from `fn stopping` can not prevent
 /// the restart or termination of the Actor.
 ///
-/// ## Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;
@@ -400,12 +400,14 @@ mod tests {
         }
     }
 
-    #[actix_rt::test]
-    async fn nested_sync_arbiters() {
-        let addr = SyncArbiter::start(1, SyncActor1::run);
-        let (tx, rx) = oneshot::channel();
-        addr.send(Msg(tx)).await.unwrap();
-        assert_eq!(233u8, rx.await.unwrap());
-        System::current().stop();
+    #[test]
+    fn nested_sync_arbiters() {
+        System::new().block_on(async {
+            let addr = SyncArbiter::start(1, SyncActor1::run);
+            let (tx, rx) = oneshot::channel();
+            addr.send(Msg(tx)).await.unwrap();
+            assert_eq!(233u8, rx.await.unwrap());
+            System::current().stop();
+        })
     }
 }

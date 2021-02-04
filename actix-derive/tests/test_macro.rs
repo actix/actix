@@ -24,7 +24,7 @@ impl Handler<Sum> for Adder {
 
 #[test]
 fn test_message() {
-    System::new("actix-test-runtime").block_on(async {
+    System::new().block_on(async {
         let addr = Adder::start_default();
         let res = addr.send(Sum(3, 5)).await.unwrap();
         assert_eq!(res.0, 8);

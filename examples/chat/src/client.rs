@@ -15,7 +15,7 @@ async fn main() {
 
     // Connect to server
     let addr = net::SocketAddr::from_str("127.0.0.1:12345").unwrap();
-    Arbiter::spawn(async move {
+    actix_rt::spawn(async move {
         let stream = TcpStream::connect(addr).await.unwrap();
 
         let addr = ChatClient::create(|ctx| {

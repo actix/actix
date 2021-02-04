@@ -20,9 +20,9 @@ impl Actor for MyActor {
     }
 }
 
-#[actix_rt::test]
+#[actix::test]
 async fn test_connected() {
-    Arbiter::spawn(async move {
+    actix_rt::spawn(async move {
         let addr = MyActor::start(MyActor);
         sleep(Duration::from_millis(350)).await;
         drop(addr);
