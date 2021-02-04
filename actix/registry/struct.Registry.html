@@ -6,7 +6,7 @@
 <code>ArbiterService</code>, which is unique per arbiter, or a <code>SystemService</code>, which
 is unique per system.</p>
 <p>If an arbiter service is used outside of a running arbiter, it panics.</p>
-<h1 id="example" class="section-header"><a href="#example">Example</a></h1>
+<h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1>
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="kw">use</span> <span class="ident">actix</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 
@@ -50,9 +50,9 @@ is unique per system.</p>
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
     <span class="comment">// initialize system</span>
-    <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">run</span>(<span class="op">|</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">new</span>().<span class="ident">block_on</span>(<span class="ident">async</span> {
         <span class="comment">// Start MyActor2 in new Arbiter</span>
-        <span class="ident">Arbiter</span>::<span class="ident">new</span>().<span class="ident">exec_fn</span>(<span class="op">|</span><span class="op">|</span> {
+        <span class="ident">Arbiter</span>::<span class="ident">new</span>().<span class="ident">spawn_fn</span>(<span class="op">|</span><span class="op">|</span> {
             <span class="ident">MyActor2</span>.<span class="ident">start</span>();
         });
     });

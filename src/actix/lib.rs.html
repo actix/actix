@@ -197,22 +197,6 @@
 <span id="194">194</span>
 <span id="195">195</span>
 <span id="196">196</span>
-<span id="197">197</span>
-<span id="198">198</span>
-<span id="199">199</span>
-<span id="200">200</span>
-<span id="201">201</span>
-<span id="202">202</span>
-<span id="203">203</span>
-<span id="204">204</span>
-<span id="205">205</span>
-<span id="206">206</span>
-<span id="207">207</span>
-<span id="208">208</span>
-<span id="209">209</span>
-<span id="210">210</span>
-<span id="211">211</span>
-<span id="212">212</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Actix is an actor framework.</span>
 <span class="doccomment">//!</span>
@@ -261,10 +245,6 @@
 <span class="comment">// TODO: temporary allow deprecated until resolver actor is removed.</span>
 <span class="attribute">#![<span class="ident">allow</span>(<span class="ident">deprecated</span>)]</span>
 
-<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::<span class="kw-2">*</span>;
-
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doctest</span>)]</span>
 <span class="ident">doc_comment</span>::<span class="macro">doctest</span><span class="macro">!</span>(<span class="string">&quot;../README.md&quot;</span>);
 
@@ -287,8 +267,9 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">sync</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">utils</span>;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_macros</span>::<span class="ident">main</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">Arbiter</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;macros&quot;</span>)]</span>
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::{<span class="ident">main</span>, <span class="ident">test</span>, <span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">spawn</span>, <span class="ident">Arbiter</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{
     <span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">Running</span>, <span class="ident">SpawnHandle</span>, <span class="ident">Supervised</span>,
@@ -320,10 +301,9 @@
     <span class="doccomment">//! ```</span>
 
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;derive&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::<span class="kw-2">*</span>;
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;macros&quot;</span>)]</span>
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::{<span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_macros</span>::<span class="ident">main</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">Arbiter</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
 
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{
@@ -412,19 +392,7 @@
 <span class="kw">where</span>
     <span class="ident">R</span>: <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
 {
-    <span class="prelude-val">Ok</span>(<span class="ident">actix_rt</span>::<span class="ident">System</span>::<span class="ident">new</span>(<span class="string">&quot;Default&quot;</span>).<span class="ident">block_on</span>(<span class="ident">f</span>))
-}
-
-<span class="doccomment">/// Spawns a future on the current arbiter.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Panics</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This function panics if the actix system is not running.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">spawn</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">F</span>)
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-{
-    <span class="ident">actix_rt</span>::<span class="ident">spawn</span>(<span class="ident">f</span>);
+    <span class="prelude-val">Ok</span>(<span class="ident">actix_rt</span>::<span class="ident">System</span>::<span class="ident">new</span>().<span class="ident">block_on</span>(<span class="ident">f</span>))
 }
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "actix";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

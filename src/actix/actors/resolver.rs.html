@@ -445,7 +445,7 @@
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! DNS resolver and connector utility actor</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! ## Example</span>
+<span class="doccomment">//! # Examples</span>
 <span class="doccomment">//! ```rust</span>
 <span class="doccomment">//! # #![allow(deprecated)]</span>
 <span class="doccomment">//! #</span>
@@ -454,7 +454,7 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! #[actix::main]</span>
 <span class="doccomment">//! async fn main() {</span>
-<span class="doccomment">//!     Arbiter::spawn(async {</span>
+<span class="doccomment">//!     actix::spawn(async {</span>
 <span class="doccomment">//!         let resolver = resolver::Resolver::from_registry();</span>
 <span class="doccomment">//!         let addrs = resolver</span>
 <span class="doccomment">//!             .send(resolver::Resolve::host(&quot;localhost&quot;))</span>

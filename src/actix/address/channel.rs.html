@@ -1026,6 +1026,7 @@
 <span id="1023">1023</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)</span>
+
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">atomic</span>::<span class="ident">Ordering</span>::{<span class="ident">Relaxed</span>, <span class="ident">SeqCst</span>};
@@ -1998,17 +1999,17 @@
 
     <span class="attribute">#[<span class="ident">test</span>]</span>
     <span class="kw">fn</span> <span class="ident">test_cap</span>() {
-        <span class="ident">System</span>::<span class="ident">run</span>(<span class="op">|</span><span class="op">|</span> {
+        <span class="ident">System</span>::<span class="ident">new</span>().<span class="ident">block_on</span>(<span class="ident">async</span> {
             <span class="kw">let</span> (<span class="ident">s1</span>, <span class="kw-2">mut</span> <span class="ident">recv</span>) <span class="op">=</span> <span class="ident">channel</span>::<span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>(<span class="number">1</span>);
             <span class="kw">let</span> <span class="ident">s2</span> <span class="op">=</span> <span class="ident">recv</span>.<span class="ident">sender</span>();
 
             <span class="kw">let</span> <span class="ident">arb</span> <span class="op">=</span> <span class="ident">Arbiter</span>::<span class="ident">new</span>();
-            <span class="ident">arb</span>.<span class="ident">exec_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+            <span class="ident">arb</span>.<span class="ident">spawn_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
                 <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">s1</span>.<span class="ident">send</span>(<span class="ident">Ping</span>);
             });
             <span class="ident">thread</span>::<span class="ident">sleep</span>(<span class="ident">time</span>::<span class="ident">Duration</span>::<span class="ident">from_millis</span>(<span class="number">100</span>));
             <span class="kw">let</span> <span class="ident">arb2</span> <span class="op">=</span> <span class="ident">Arbiter</span>::<span class="ident">new</span>();
-            <span class="ident">arb2</span>.<span class="ident">exec_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
+            <span class="ident">arb2</span>.<span class="ident">spawn_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
                 <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">s2</span>.<span class="ident">send</span>(<span class="ident">Ping</span>);
                 <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">s2</span>.<span class="ident">send</span>(<span class="ident">Ping</span>);
             });
@@ -2044,8 +2045,7 @@
             <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">p</span>.<span class="ident">is_none</span>());
 
             <span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">stop</span>();
-        })
-        .<span class="ident">unwrap</span>();
+        });
     }
 }
 </pre></div>

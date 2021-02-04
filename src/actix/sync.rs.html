@@ -412,6 +412,8 @@
 <span id="409">409</span>
 <span id="410">410</span>
 <span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Sync Actors support</span>
 <span class="doccomment">//!</span>
@@ -450,7 +452,7 @@
 <span class="doccomment">/// Sync Actors have a different lifecycle compared to Actors on the System</span>
 <span class="doccomment">/// Arbiter. For more, see `SyncContext`.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// ## Example</span>
+<span class="doccomment">/// # Examples</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ```rust</span>
 <span class="doccomment">/// use actix::prelude::*;</span>
@@ -493,7 +495,7 @@
 <span class="doccomment">/// }</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// fn main() {</span>
-<span class="doccomment">///     System::run(|| {</span>
+<span class="doccomment">///     System::new().block_on(async {</span>
 <span class="doccomment">///         // Start the SyncArbiter with 2 threads, and receive the address of the Actor pool.</span>
 <span class="doccomment">///         let addr = SyncArbiter::start(2, || SyncActor);</span>
 <span class="doccomment">///</span>
@@ -544,10 +546,10 @@
             });
         }
 
-        <span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">arbiter</span>().<span class="ident">send</span>(<span class="ident">Box</span>::<span class="ident">pin</span>(<span class="self">Self</span> {
+        <span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">arbiter</span>().<span class="ident">spawn</span>(<span class="self">Self</span> {
             <span class="ident">queue</span>: <span class="prelude-val">Some</span>(<span class="ident">sender</span>),
             <span class="ident">msgs</span>: <span class="ident">rx</span>,
-        }));
+        });
 
         <span class="ident">Addr</span>::<span class="ident">new</span>(<span class="ident">tx</span>)
     }
@@ -611,7 +613,7 @@
 <span class="doccomment">/// the Actor. Similar, returning `false` from `fn stopping` can not prevent</span>
 <span class="doccomment">/// the restart or termination of the Actor.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// ## Example</span>
+<span class="doccomment">/// # Examples</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ```rust</span>
 <span class="doccomment">/// use actix::prelude::*;</span>
@@ -815,13 +817,15 @@
         }
     }
 
-    <span class="attribute">#[<span class="ident">actix_rt</span>::<span class="ident">test</span>]</span>
-    <span class="ident">async</span> <span class="kw">fn</span> <span class="ident">nested_sync_arbiters</span>() {
-        <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SyncArbiter</span>::<span class="ident">start</span>(<span class="number">1</span>, <span class="ident">SyncActor1</span>::<span class="ident">run</span>);
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">oneshot</span>::<span class="ident">channel</span>();
-        <span class="ident">addr</span>.<span class="ident">send</span>(<span class="ident">Msg</span>(<span class="ident">tx</span>)).<span class="ident">await</span>.<span class="ident">unwrap</span>();
-        <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="number">233u8</span>, <span class="ident">rx</span>.<span class="ident">await</span>.<span class="ident">unwrap</span>());
-        <span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">stop</span>();
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">nested_sync_arbiters</span>() {
+        <span class="ident">System</span>::<span class="ident">new</span>().<span class="ident">block_on</span>(<span class="ident">async</span> {
+            <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SyncArbiter</span>::<span class="ident">start</span>(<span class="number">1</span>, <span class="ident">SyncActor1</span>::<span class="ident">run</span>);
+            <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">oneshot</span>::<span class="ident">channel</span>();
+            <span class="ident">addr</span>.<span class="ident">send</span>(<span class="ident">Msg</span>(<span class="ident">tx</span>)).<span class="ident">await</span>.<span class="ident">unwrap</span>();
+            <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="number">233u8</span>, <span class="ident">rx</span>.<span class="ident">await</span>.<span class="ident">unwrap</span>());
+            <span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">stop</span>();
+        })
     }
 }
 </pre></div>

@@ -159,7 +159,7 @@
 
     <span class="comment">// Connect to server</span>
     <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">net</span>::<span class="ident">SocketAddr</span>::<span class="ident">from_str</span>(<span class="string">&quot;127.0.0.1:12345&quot;</span>).<span class="ident">unwrap</span>();
-    <span class="ident">Arbiter</span>::<span class="ident">spawn</span>(<span class="ident">async</span> <span class="kw">move</span> {
+    <span class="ident">actix_rt</span>::<span class="ident">spawn</span>(<span class="ident">async</span> <span class="kw">move</span> {
         <span class="kw">let</span> <span class="ident">stream</span> <span class="op">=</span> <span class="ident">TcpStream</span>::<span class="ident">connect</span>(<span class="ident">addr</span>).<span class="ident">await</span>.<span class="ident">unwrap</span>();
 
         <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">ChatClient</span>::<span class="ident">create</span>(<span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> {

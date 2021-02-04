@@ -4,7 +4,7 @@
                 <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../../src/actix/registry.rs.html#223-226" title="goto source code">[src]</a></span><span class="in-band">Struct <a href="../index.html">actix</a>::<wbr><a href="index.html">registry</a>::<wbr><a class="struct" href="">SystemRegistry</a></span></h1><div class="docblock type-decl hidden-by-usual-hider"><pre class="rust struct">pub struct SystemRegistry { /* fields omitted */ }</pre></div><div class="docblock"><p>System wide actors registry</p>
 <p>System registry serves same purpose as <a href="struct.Registry.html">Registry</a>,
 except it is shared across all arbiters.</p>
-<h1 id="example" class="section-header"><a href="#example">Example</a></h1>
+<h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1>
 <div class="example-wrap"><pre class="rust rust-example-rendered">
 <span class="kw">use</span> <span class="ident">actix</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 
@@ -47,7 +47,7 @@ except it is shared across all arbiters.</p>
 
 <span class="kw">fn</span> <span class="ident">main</span>() {
     <span class="comment">// initialize system</span>
-    <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">run</span>(<span class="op">|</span><span class="op">|</span> {
+    <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">new</span>().<span class="ident">block_on</span>(<span class="ident">async</span> {
         <span class="comment">// Start MyActor2</span>
         <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">MyActor2</span>.<span class="ident">start</span>();
     });
