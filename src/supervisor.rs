@@ -27,7 +27,7 @@ pin_project! {
     /// messages. If the actor fails during message processing, the message can not be
     /// recovered. The sender would receive an `Err(Cancelled)` error in this situation.
     ///
-    /// ## Example
+    /// # Examples
     ///
     /// ```rust
     /// # use actix::prelude::*;

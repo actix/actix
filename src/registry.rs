@@ -28,7 +28,7 @@ type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 ///
 /// If an arbiter service is used outside of a running arbiter, it panics.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;
@@ -168,7 +168,7 @@ impl Registry {
 /// System registry serves same purpose as [Registry](struct.Registry.html),
 /// except it is shared across all arbiters.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;

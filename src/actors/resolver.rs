@@ -1,6 +1,6 @@
 //! DNS resolver and connector utility actor
 //!
-//! ## Example
+//! # Examples
 //! ```rust
 //! # #![allow(deprecated)]
 //! #

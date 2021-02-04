@@ -25,10 +25,9 @@ pub fn message_response_derive_rtype(input: TokenStream) -> TokenStream {
 
 /// Marks async function to be executed by Actix system.
 ///
-/// ## Usage
-///
+/// # Examples
 /// ```
-/// #[actix_rt::main]
+/// #[actix::main]
 /// async fn main() {
 ///     println!("Hello world");
 /// }
@@ -66,8 +65,7 @@ pub fn main(_: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Marks async test function to be executed by Actix system.
 ///
-/// ## Usage
-///
+/// # Examples
 /// ```no_run
 /// #[actix::test]
 /// async fn my_test() {

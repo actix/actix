@@ -201,8 +201,11 @@ fn test_stop_after_drop_sync_actor() {
             drop(addr);
 
             sleep(Duration::from_secs(2)).await;
-            System::current().stop();
-        });
+        })
+        .await
+        .unwrap();
+
+        System::current().stop();
     });
 
     assert!(started.load(Ordering::Relaxed), "Not started");

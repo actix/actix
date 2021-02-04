@@ -35,7 +35,7 @@ use crate::handler::{Handler, Message, MessageResponse};
 /// Sync Actors have a different lifecycle compared to Actors on the System
 /// Arbiter. For more, see `SyncContext`.
 ///
-/// ## Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;
@@ -196,7 +196,7 @@ where
 /// the Actor. Similar, returning `false` from `fn stopping` can not prevent
 /// the restart or termination of the Actor.
 ///
-/// ## Example
+/// # Examples
 ///
 /// ```rust
 /// use actix::prelude::*;

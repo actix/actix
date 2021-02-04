@@ -53,10 +53,8 @@ impl Handler<TestMessageOne> for TestActorTwo {
 
 #[test]
 fn it_all_works() {
-    System::new()
-        .block_on(async {
-            TestActorOne.start();
-            TestActorTwo.start();
-        })
-        .unwrap();
+    System::new().block_on(async {
+        TestActorOne.start();
+        TestActorTwo.start();
+    })
 }
