@@ -44,9 +44,12 @@ pub fn main(_: TokenStream, item: TokenStream) -> TokenStream {
     let body = &input.block;
 
     if sig.asyncness.is_none() {
-        return syn::Error::new_spanned(sig.fn_token, "only async fn is supported")
-            .to_compile_error()
-            .into();
+        return syn::Error::new_spanned(
+            sig.fn_token,
+            "the async keyword is missing from the function declaration",
+        )
+        .to_compile_error()
+        .into();
     }
 
     sig.asyncness = None;
@@ -89,7 +92,7 @@ pub fn test(_: TokenStream, item: TokenStream) -> TokenStream {
     if sig.asyncness.is_none() {
         return syn::Error::new_spanned(
             input.sig.fn_token,
-            format!("only async fn is supported, {}", input.sig.ident),
+            "the async keyword is missing from the function declaration",
         )
         .to_compile_error()
         .into();
@@ -97,24 +100,19 @@ pub fn test(_: TokenStream, item: TokenStream) -> TokenStream {
 
     sig.asyncness = None;
 
-    let result = if has_test_attr {
-        quote! {
-            #(#attrs)*
-            #vis #sig {
-                actix::System::new()
-                    .block_on(async { #body })
-            }
-        }
+    let missing_test_attr = if has_test_attr {
+        quote!()
     } else {
-        quote! {
-            #[test]
-            #(#attrs)*
-            #vis #sig {
-                actix::System::new()
-                    .block_on(async { #body })
-            }
-        }
+        quote!(#[test])
     };
 
-    result.into()
+    (quote! {
+        #missing_test_attr
+        #(#attrs)*
+        #vis #sig {
+            actix::System::new()
+                .block_on(async { #body })
+        }
+    })
+    .into()
 }
