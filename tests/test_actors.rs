@@ -1,4 +1,5 @@
 #![allow(deprecated)]
+#![cfg(feature = "resolver")]
 
 use actix::actors::resolver;
 use actix::prelude::*;
