@@ -1,4 +1,5 @@
 //! This is copy of [sync/mpsc/](https://github.com/alexcrichton/futures-rs)
+
 use std::hash::{Hash, Hasher};
 use std::pin::Pin;
 use std::sync::atomic::Ordering::{Relaxed, SeqCst};
@@ -971,17 +972,17 @@ mod tests {
 
     #[test]
     fn test_cap() {
-        System::run(|| {
+        System::new().block_on(async {
             let (s1, mut recv) = channel::<Act>(1);
             let s2 = recv.sender();
 
             let arb = Arbiter::new();
-            arb.exec_fn(move || {
+            arb.spawn_fn(move || {
                 let _ = s1.send(Ping);
             });
             thread::sleep(time::Duration::from_millis(100));
             let arb2 = Arbiter::new();
-            arb2.exec_fn(move || {
+            arb2.spawn_fn(move || {
                 let _ = s2.send(Ping);
                 let _ = s2.send(Ping);
             });
@@ -1017,7 +1018,6 @@ mod tests {
             assert!(p.is_none());
 
             System::current().stop();
-        })
-        .unwrap();
+        });
     }
 }

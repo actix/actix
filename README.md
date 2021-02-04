@@ -53,7 +53,7 @@ In order to use actix you first need to create a `System`.
 
 ```rust,ignore
 fn main() {
-    let system = actix::System::new("test");
+    let system = actix::System::new();
 
     system.run();
 }
@@ -72,7 +72,7 @@ In order to define an actor you need to define a struct and have it implement
 the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
 
 ```rust
-use actix::{Actor, Addr, Arbiter, Context, System};
+use actix::{Actor, Addr, Context, System};
 
 struct MyActor;
 
@@ -86,7 +86,7 @@ impl Actor for MyActor {
 }
 
 fn main() {
-    let mut system = System::new("test");
+    let mut system = System::new();
 
     let addr = system.block_on(async { MyActor.start() });
 
@@ -201,7 +201,7 @@ impl Handler<Ping> for Game {
 }
 
 fn main() {
-    let mut system = System::new("test");
+    let mut system = System::new();
 
     // To get a Recipient object, we need to use a different builder method
     // which will allow postponing actor creation

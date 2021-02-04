@@ -1,6 +1,6 @@
 //! DNS resolver and connector utility actor
 //!
-//! ## Example
+//! # Examples
 //! ```rust
 //! # #![allow(deprecated)]
 //! #
@@ -9,7 +9,7 @@
 //!
 //! #[actix::main]
 //! async fn main() {
-//!     Arbiter::spawn(async {
+//!     actix::spawn(async {
 //!         let resolver = resolver::Resolver::from_registry();
 //!         let addrs = resolver
 //!             .send(resolver::Resolve::host("localhost"))

@@ -47,7 +47,8 @@ fn test_address() {
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
-    System::run(move || {
+    let sys = System::new();
+    sys.block_on(async move {
         let arbiter = Arbiter::new();
 
         let addr = MyActor(count2).start();
@@ -55,17 +56,18 @@ fn test_address() {
         let addr3 = addr.clone();
         addr.do_send(Ping(1));
 
-        arbiter.exec_fn(move || {
+        arbiter.spawn_fn(move || {
             addr3.do_send(Ping(2));
 
-            Arbiter::spawn(async move {
+            actix_rt::spawn(async move {
                 let _ = addr2.send(Ping(3)).await;
                 let _ = addr2.send(Ping(4)).await;
                 System::current().stop();
             });
         });
-    })
-    .unwrap();
+    });
+
+    sys.run().unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 4);
 }
@@ -100,10 +102,9 @@ impl Actor for WeakAddressRunner {
 
 #[test]
 fn test_weak_address() {
-    System::run(move || {
+    System::new().block_on(async move {
         WeakAddressRunner.start();
-    })
-    .unwrap();
+    });
 }
 
 struct WeakRecipientRunner;
@@ -143,10 +144,9 @@ impl Actor for WeakRecipientRunner {
 
 #[test]
 fn test_weak_recipient() {
-    System::run(move || {
+    System::new().block_on(async move {
         WeakRecipientRunner.start();
-    })
-    .unwrap();
+    });
 }
 
 #[test]
@@ -154,7 +154,8 @@ fn test_sync_recipient_call() {
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
-    System::run(move || {
+    let sys = System::new();
+    sys.block_on(async move {
         let addr = MyActor(count2).start();
         let addr2 = addr.clone().recipient();
         addr.do_send(Ping(0));
@@ -164,15 +165,16 @@ fn test_sync_recipient_call() {
             let _ = addr2.send(Ping(2)).await;
             System::current().stop();
         });
-    })
-    .unwrap();
+    });
+
+    sys.run().unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 3);
 }
 
 #[test]
 fn test_error_result() {
-    System::run(|| {
+    System::new().block_on(async {
         let addr = MyActor3.start();
 
         actix_rt::spawn(async move {
@@ -182,8 +184,7 @@ fn test_error_result() {
                 _ => panic!("Should not happen"),
             };
         });
-    })
-    .unwrap();
+    });
 }
 
 struct TimeoutActor;
@@ -207,7 +208,8 @@ fn test_message_timeout() {
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
-    System::run(move || {
+    let sys = System::new();
+    sys.block_on(async move {
         let addr = TimeoutActor.start();
 
         addr.do_send(Ping(0));
@@ -222,8 +224,9 @@ fn test_message_timeout() {
             }
             System::current().stop();
         });
-    })
-    .unwrap();
+    });
+
+    sys.run().unwrap();
 
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
@@ -259,11 +262,14 @@ fn test_call_message_timeout() {
     let count = Arc::new(AtomicUsize::new(0));
     let count2 = Arc::clone(&count);
 
-    System::run(move || {
+    let sys = System::new();
+    sys.block_on(async move {
         let addr = TimeoutActor.start();
         let _addr2 = TimeoutActor3(addr, count2).start();
-    })
-    .unwrap();
+    });
+
+    sys.run().unwrap();
+
     assert_eq!(count.load(Ordering::Relaxed), 1);
 }
 
@@ -272,7 +278,7 @@ fn test_address_eq() {
     let count0 = Arc::new(AtomicUsize::new(0));
     let count1 = Arc::clone(&count0);
 
-    System::run(move || {
+    System::new().block_on(async move {
         let addr0 = MyActor(count0).start();
         let addr01 = addr0.clone();
         let addr02 = addr01.clone();
@@ -285,8 +291,7 @@ fn test_address_eq() {
         assert!(addr0 != addr1);
 
         System::current().stop();
-    })
-    .unwrap();
+    });
 }
 
 #[test]
@@ -294,7 +299,7 @@ fn test_address_hash() {
     let count0 = Arc::new(AtomicUsize::new(0));
     let count1 = Arc::clone(&count0);
 
-    System::run(move || {
+    System::new().block_on(async move {
         let addr0 = MyActor(count0).start();
         let addr01 = addr0.clone();
 
@@ -319,8 +324,7 @@ fn test_address_hash() {
         assert!(addresses.contains(&addr1));
 
         System::current().stop();
-    })
-    .unwrap();
+    });
 }
 
 #[test]
@@ -328,7 +332,7 @@ fn test_recipient_eq() {
     let count0 = Arc::new(AtomicUsize::new(0));
     let count1 = Arc::clone(&count0);
 
-    System::run(move || {
+    System::new().block_on(async move {
         let addr0 = MyActor(count0).start();
         let recipient01 = addr0.clone().recipient::<Ping>();
         let recipient02 = addr0.recipient::<Ping>();
@@ -344,8 +348,7 @@ fn test_recipient_eq() {
         assert!(recipient01 != recipient11);
 
         System::current().stop();
-    })
-    .unwrap();
+    });
 }
 
 #[test]
@@ -353,7 +356,7 @@ fn test_recipient_hash() {
     let count0 = Arc::new(AtomicUsize::new(0));
     let count1 = Arc::clone(&count0);
 
-    System::run(move || {
+    System::new().block_on(async move {
         let addr0 = MyActor(count0).start();
         let recipient01 = addr0.clone().recipient::<Ping>();
         let recipient02 = addr0.recipient::<Ping>();
@@ -380,6 +383,5 @@ fn test_recipient_hash() {
         assert!(recipients.contains(&recipient11));
 
         System::current().stop();
-    })
-    .unwrap();
+    });
 }

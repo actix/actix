@@ -5,7 +5,7 @@
 //! automatically started when an actor uses functions from the `BrokerSubscribe` and
 //! `BrokerIssue` traits to either subscribe to or issue a message.
 //!
-//! ## Example
+//! # Examples
 //! ```rust,no_run
 //! # #[macro_use]
 //! # extern crate actix;

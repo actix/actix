@@ -5,7 +5,7 @@
 //! receive.
 //!
 //! Mocking is intended to be achieved by using a pattern similar to
-//! ```rust,ignore
+//! ```ignore
 //! #[cfg(not(test))]
 //! type DBClientAct = DBClientActor;
 //! #[cfg(test)]
