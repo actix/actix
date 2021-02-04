@@ -21,19 +21,19 @@ name = "actix"
 path = "src/lib.rs"
 
 [features]
-default = ["resolver", "macros"]
-
-# DNS resolver
-resolver = ["trust-dns-proto", "trust-dns-resolver"]
+default = ["macros"]
 
 # Re-exports derive macros from actix-derive and enables `#[actix::main]`.
 macros = ["actix_derive"]
+
+# DNS resolver
+resolver = ["trust-dns-proto", "trust-dns-resolver"]
 
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
 
 [dependencies]
-actix-rt = { version = "2.0.0-beta.3", default-features = false }
+actix-rt = { version = "2.0.0", default-features = false }
 actix_derive = { version = "0.5", optional = true }
 
 bitflags = "1.2"
