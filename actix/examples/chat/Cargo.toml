@@ -2,7 +2,6 @@
 name = "chat"
 version = "0.1.0"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
-workspace = "../../"
 edition = "2018"
 
 [[bin]]

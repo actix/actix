@@ -56,6 +56,7 @@ jobs:
         run: |
           which cargo-tarpaulin || cargo install cargo-tarpaulin
           cargo tarpaulin --out Xml -- --skip=test_stream_timeout --skip=test_message_timeout --skip=test_restart_sync_actor
+
       - name: Upload to Codecov
         if: matrix.version == 'stable' && github.ref == 'refs/heads/master'
         uses: codecov/codecov-action@v1
