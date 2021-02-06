@@ -102,7 +102,7 @@ where
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: tokio::time::sleep(timeout),
+            timeout: actix_rt::time::sleep(timeout),
         }
     }
 }

@@ -1,14 +1,14 @@
 #![allow(clippy::let_unit_value)]
-use std::pin::Pin;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::task::{Context as StdContext, Poll};
+use std::{pin::Pin, time::Duration};
 
 use actix::prelude::*;
+use actix_rt::time::{interval_at, sleep, Instant};
 use futures_core::stream::Stream;
 use futures_util::stream::once;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
-use tokio::time::{interval_at, sleep, Duration, Instant};
 
 #[derive(Debug, PartialEq)]
 enum Op {
@@ -429,7 +429,7 @@ impl StreamHandler<CancelPacket> for CancelHandler {
 fn test_cancel_handler() {
     actix::System::new().block_on(async {
         struct WtfStream {
-            interval: tokio::time::Interval,
+            interval: actix_rt::time::Interval,
         }
 
         impl Stream for WtfStream {

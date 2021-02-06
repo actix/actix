@@ -1,8 +1,11 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
+use std::{
+    sync::atomic::{AtomicUsize, Ordering},
+    time::Duration,
+};
 
 use actix::prelude::*;
-use tokio::time::{sleep, Duration};
+use actix_rt::time::sleep;
 
 struct Die;
 

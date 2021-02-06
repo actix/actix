@@ -53,7 +53,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(tokio::time::sleep(dur));
+        self.timeout = Some(actix_rt::time::sleep(dur));
         self
     }
 
@@ -144,7 +144,7 @@ where
 
     /// Set message delivery timeout
     pub fn timeout(mut self, dur: Duration) -> Self {
-        self.timeout = Some(tokio::time::sleep(dur));
+        self.timeout = Some(actix_rt::time::sleep(dur));
         self
     }
 

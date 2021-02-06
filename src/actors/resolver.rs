@@ -398,7 +398,7 @@ impl TcpConnector {
         TcpConnector {
             addrs,
             stream: None,
-            timeout: tokio::time::sleep(timeout),
+            timeout: actix_rt::time::sleep(timeout),
         }
     }
 }

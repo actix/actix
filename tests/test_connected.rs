@@ -1,6 +1,7 @@
-use actix::prelude::*;
 use std::time::Duration;
-use tokio::time::sleep;
+
+use actix::prelude::*;
+use actix_rt::time::sleep;
 
 struct MyActor;
 

@@ -1,11 +1,16 @@
 #![allow(clippy::let_unit_value)]
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
+    time::Duration,
+};
 
 use actix::prelude::*;
+use actix_rt::time::sleep;
 use tokio::sync::oneshot::{channel, Sender};
-use tokio::time::{sleep, Duration};
 
 struct MyActor {
     started: Arc<AtomicBool>,
