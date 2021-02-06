@@ -9,5 +9,5 @@ __pycache__
 *.sock
 *~
 target/
-examples/chat/target/
+actix/examples/chat/target/
 .idea
