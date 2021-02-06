@@ -3,6 +3,10 @@
 ## Unreleased - 2021-xx-xx
 
 
+## 0.6.0-beta.1 - 2021-02-06
+* Add `#[actix::main]` and `#[actix::test]` macros.
+
+
 ## 0.5.0 - 2019-10-27
 * Update syn & quote to 1.0
 

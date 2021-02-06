@@ -13,7 +13,7 @@ name = "client"
 path = "src/client.rs"
 
 [dependencies]
-actix = { path = "../../" }
+actix = "0.11.0-beta.2"
 actix_derive = "0.5"
 actix-rt = "2.0.0"
 
