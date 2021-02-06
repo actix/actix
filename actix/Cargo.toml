@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.11.0-beta.1"
+version = "0.11.0-beta.2"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
@@ -31,7 +31,7 @@ mailbox_assert = []
 
 [dependencies]
 actix-rt = { version = "2.0.0", default-features = false }
-actix_derive = { version = "0.5", optional = true }
+actix_derive = { version = "0.6.0-beta.1", optional = true }
 
 bitflags = "1.2"
 bytes = "1"
