@@ -70,7 +70,7 @@ where
     pub fn new(msg: M, timeout: Duration) -> Self {
         Self {
             msg: Some(msg),
-            timeout: tokio::time::sleep(timeout),
+            timeout: actix_rt::time::sleep(timeout),
             act: PhantomData,
             m: PhantomData,
         }

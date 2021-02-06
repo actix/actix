@@ -1,10 +1,10 @@
-use std::collections::HashSet;
 use std::mem::drop;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::{collections::HashSet, time::Duration};
 
 use actix::prelude::*;
-use tokio::time::{sleep, Duration};
+use actix_rt::time::sleep;
 
 #[derive(Debug)]
 struct Ping(usize);

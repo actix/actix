@@ -174,7 +174,7 @@ pub mod dev {
 ///
 /// ```
 /// use std::time::{Duration, Instant};
-/// use tokio::time::sleep;
+/// use actix_rt::time::sleep;
 ///
 /// fn main() {
 ///   actix::run(async move {

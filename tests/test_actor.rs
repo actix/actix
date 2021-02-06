@@ -1,9 +1,13 @@
-use std::sync;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::{
+    sync::{
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+        mpsc, Arc,
+    },
+    time::Duration,
+};
 
 use actix::prelude::*;
-use tokio::time::{sleep, Duration, Instant};
+use actix_rt::time::{sleep, Instant};
 
 #[derive(Clone, Debug)]
 struct Num(usize);
@@ -192,12 +196,12 @@ fn test_restart_sync_actor() {
 
 struct IntervalActor {
     elapses_left: usize,
-    sender: sync::mpsc::Sender<Instant>,
+    sender: mpsc::Sender<Instant>,
     instant: Option<Instant>,
 }
 
 impl IntervalActor {
-    pub fn new(elapses_left: usize, sender: sync::mpsc::Sender<Instant>) -> Self {
+    pub fn new(elapses_left: usize, sender: mpsc::Sender<Instant>) -> Self {
         Self {
             //We stop at 0, so add 1 to make number of intervals equal to elapses_left
             elapses_left: elapses_left + 1,
@@ -230,7 +234,7 @@ impl Actor for IntervalActor {
 fn test_run_interval() {
     const MAX_WAIT: Duration = Duration::from_millis(10_000);
 
-    let (sender, receiver) = sync::mpsc::channel();
+    let (sender, receiver) = mpsc::channel();
     std::thread::spawn(move || {
         let sys = System::new();
         sys.block_on(async move {
