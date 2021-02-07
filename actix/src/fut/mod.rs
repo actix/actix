@@ -149,11 +149,7 @@ pub trait ActorFuture {
     /// the resulting type.
     fn map<F, U>(self, f: F) -> Map<Self, F>
     where
-        F: FnOnce(
-            Self::Output,
-            &mut Self::Actor,
-            &mut <Self::Actor as Actor>::Context,
-        ) -> U,
+        F: FnOnce(Self::Output, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
         Self: Sized,
     {
         map::new(self, f)
@@ -163,11 +159,7 @@ pub trait ActorFuture {
     /// the future to the provided closure `f`.
     fn then<F, B>(self, f: F) -> Then<Self, B, F>
     where
-        F: FnOnce(
-            Self::Output,
-            &mut Self::Actor,
-            &mut <Self::Actor as Actor>::Context,
-        ) -> B,
+        F: FnOnce(Self::Output, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> B,
         B: IntoActorFuture<Actor = Self::Actor>,
         Self: Sized,
     {
@@ -205,11 +197,7 @@ pub trait ActorStream {
     /// Converts a stream of type `T` to a stream of type `U`.
     fn map<U, F>(self, f: F) -> StreamMap<Self, F>
     where
-        F: FnMut(
-            Self::Item,
-            &mut Self::Actor,
-            &mut <Self::Actor as Actor>::Context,
-        ) -> U,
+        F: FnMut(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
         Self: Sized,
     {
         stream_map::new(self, f)
@@ -219,11 +207,7 @@ pub trait ActorStream {
     /// item to the provided closure `f`.
     fn then<F, U>(self, f: F) -> StreamThen<Self, F, U>
     where
-        F: FnMut(
-            Self::Item,
-            &mut Self::Actor,
-            &mut <Self::Actor as Actor>::Context,
-        ) -> U,
+        F: FnMut(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
         U: IntoActorFuture<Actor = Self::Actor>,
         Self: Sized,
     {
@@ -234,12 +218,7 @@ pub trait ActorStream {
     /// values into one final result.
     fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut, T>
     where
-        F: FnMut(
-            T,
-            Self::Item,
-            &mut Self::Actor,
-            &mut <Self::Actor as Actor>::Context,
-        ) -> Fut,
+        F: FnMut(T, Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> Fut,
         Fut: IntoActorFuture<Actor = Self::Actor, Output = T>,
         Self: Sized,
     {

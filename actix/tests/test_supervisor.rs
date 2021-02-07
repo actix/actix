@@ -51,8 +51,7 @@ fn test_supervisor_restart() {
 
     let sys = System::new();
     sys.block_on(async move {
-        let addr =
-            actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
+        let addr = actix::Supervisor::start(move |_| MyActor(starts2, restarts2, messages2));
         addr.do_send(Die);
         addr.do_send(Die);
         *addr2.lock().unwrap() = Some(addr);

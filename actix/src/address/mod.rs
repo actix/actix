@@ -133,9 +133,7 @@ impl<A: Actor> Addr<A> {
     {
         match self.tx.send(msg) {
             Ok(rx) => Request::new(Some(rx), None),
-            Err(SendError::Full(msg)) => {
-                Request::new(None, Some((self.tx.clone(), msg)))
-            }
+            Err(SendError::Full(msg)) => Request::new(None, Some((self.tx.clone(), msg))),
             Err(SendError::Closed(_)) => Request::new(None, None),
         }
     }

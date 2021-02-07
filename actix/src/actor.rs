@@ -6,9 +6,7 @@ use log::error;
 
 use crate::address::{channel, Addr};
 use crate::context::Context;
-use crate::contextitems::{
-    ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem,
-};
+use crate::contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
 use crate::fut::{ActorFuture, ActorStream};
 use crate::handler::{Handler, Message};
 use crate::mailbox::DEFAULT_CAPACITY;

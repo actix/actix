@@ -91,9 +91,7 @@ where
                     *this.info = Some((sender, msg));
                     return Poll::Pending;
                 }
-                Err(SendError::Closed(_)) => {
-                    return Poll::Ready(Err(MailboxError::Closed))
-                }
+                Err(SendError::Closed(_)) => return Poll::Ready(Err(MailboxError::Closed)),
             }
         }
 
@@ -180,9 +178,7 @@ where
                     *this.info = Some((sender, msg));
                     return Poll::Pending;
                 }
-                Err(SendError::Closed(_)) => {
-                    return Poll::Ready(Err(MailboxError::Closed))
-                }
+                Err(SendError::Closed(_)) => return Poll::Ready(Err(MailboxError::Closed)),
             }
         }
 

@@ -12,9 +12,7 @@ use crate::clock::Sleep;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
 
-pub(crate) struct ActorWaitItem<A: Actor>(
-    Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>,
-);
+pub(crate) struct ActorWaitItem<A: Actor>(Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>);
 
 impl<A> ActorWaitItem<A>
 where

@@ -147,9 +147,7 @@ pub mod dev {
 
     pub use crate::prelude::*;
 
-    pub use crate::address::{
-        Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope,
-    };
+    pub use crate::address::{Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope};
     pub mod channel {
         pub use crate::address::channel::{channel, AddressReceiver, AddressSender};
     }

@@ -26,10 +26,7 @@ struct StreamRx {
 impl Stream for StreamRx {
     type Item = Ping;
 
-    fn poll_next(
-        self: Pin<&mut Self>,
-        cx: &mut StdContext<'_>,
-    ) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut StdContext<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
         Pin::new(&mut this.rx).poll_recv(cx)
     }

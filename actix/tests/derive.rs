@@ -49,11 +49,7 @@ impl Actor for SumResultActor {
 impl Handler<SumResult> for SumResultActor {
     type Result = Result<usize, ()>;
 
-    fn handle(
-        &mut self,
-        message: SumResult,
-        _context: &mut Context<Self>,
-    ) -> Self::Result {
+    fn handle(&mut self, message: SumResult, _context: &mut Context<Self>) -> Self::Result {
         Ok(message.0 + message.1)
     }
 }
@@ -164,11 +160,7 @@ impl Actor for MulAnyOneActor {
 impl Handler<MulAnyOne> for MulAnyOneActor {
     type Result = MulAny<usize>;
 
-    fn handle(
-        &mut self,
-        message: MulAnyOne,
-        _context: &mut Context<Self>,
-    ) -> Self::Result {
+    fn handle(&mut self, message: MulAnyOne, _context: &mut Context<Self>) -> Self::Result {
         MulAny(message.0 * message.1)
     }
 }

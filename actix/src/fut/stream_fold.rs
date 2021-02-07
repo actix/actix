@@ -79,23 +79,21 @@ where
         loop {
             let this = self.as_mut().project();
             match this.state.project() {
-                FoldStateProj::Ready { res } => {
-                    match this.stream.poll_next(act, ctx, task) {
-                        Poll::Ready(Some(e)) => {
-                            let future = (this.f)(res.take().unwrap(), e, act, ctx);
-                            let fut = future.into_future();
-                            self.as_mut().project().state.set(State::Processing { fut });
-                        }
-                        Poll::Ready(None) => {
-                            return {
-                                let res = res.take().unwrap();
-                                self.project().state.set(State::Empty);
-                                Poll::Ready(res)
-                            }
-                        }
-                        Poll::Pending => return Poll::Pending,
+                FoldStateProj::Ready { res } => match this.stream.poll_next(act, ctx, task) {
+                    Poll::Ready(Some(e)) => {
+                        let future = (this.f)(res.take().unwrap(), e, act, ctx);
+                        let fut = future.into_future();
+                        self.as_mut().project().state.set(State::Processing { fut });
                     }
-                }
+                    Poll::Ready(None) => {
+                        return {
+                            let res = res.take().unwrap();
+                            self.project().state.set(State::Empty);
+                            Poll::Ready(res)
+                        }
+                    }
+                    Poll::Pending => return Poll::Pending,
+                },
                 FoldStateProj::Processing { fut } => match fut.poll(act, ctx, task) {
                     Poll::Ready(state) => self
                         .as_mut()
