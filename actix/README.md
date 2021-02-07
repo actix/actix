@@ -204,10 +204,11 @@ fn main() {
         Game::create(|ctx| {
             // now we can get an address of the first actor and create the second actor
             let addr = ctx.address();
+
             let addr2 = Game {
                 counter: 0,
                 name: String::from("Game 2"),
-                addr: addr.recipient(),
+                recipient: addr.recipient(),
             }
             .start();
 
@@ -218,7 +219,7 @@ fn main() {
             Game {
                 counter: 0,
                 name: String::from("Game 1"),
-                addr: addr2.recipient(),
+                recipient: addr2.recipient(),
             }
         });
     });
