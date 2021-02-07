@@ -180,10 +180,7 @@ impl Actor for Resolver {
                     Ok(resolver) => Ok(resolver),
                     Err(err) => {
                         log::warn!("Can not create system dns resolver: {}", err);
-                        AsyncResolver::tokio(
-                            ResolverConfig::default(),
-                            ResolverOpts::default(),
-                        )
+                        AsyncResolver::tokio(ResolverConfig::default(), ResolverOpts::default())
                     }
                 },
             };
@@ -263,11 +260,7 @@ struct ResolveFut {
 }
 
 impl ResolveFut {
-    pub fn new<S: AsRef<str>>(
-        addr: S,
-        port: u16,
-        resolver: &AsyncResolver,
-    ) -> ResolveFut {
+    pub fn new<S: AsRef<str>>(addr: S, port: u16, resolver: &AsyncResolver) -> ResolveFut {
         // try to parse as a regular SocketAddr first
         if let Ok(addr) = addr.as_ref().parse() {
             let mut addrs = VecDeque::new();

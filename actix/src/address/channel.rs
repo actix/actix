@@ -426,11 +426,7 @@ impl<A: Actor> AddressSender<A> {
         self.maybe_parked.store(state.is_open, Relaxed);
     }
 
-    fn poll_unparked(
-        &self,
-        do_park: bool,
-        cx: Option<&mut task::Context<'_>>,
-    ) -> Poll<()> {
+    fn poll_unparked(&self, do_park: bool, cx: Option<&mut task::Context<'_>>) -> Poll<()> {
         // First check the `maybe_parked` variable. This avoids acquiring the
         // lock in most cases
         if self.maybe_parked.load(Relaxed) {
@@ -828,10 +824,7 @@ impl<A: Actor> AddressReceiver<A> {
 impl<A: Actor> Stream for AddressReceiver<A> {
     type Item = Envelope<A>;
 
-    fn poll_next(
-        self: Pin<&mut Self>,
-        cx: &mut task::Context<'_>,
-    ) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
         loop {
             // Try to read a message off of the message queue.

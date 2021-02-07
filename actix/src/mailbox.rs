@@ -78,12 +78,7 @@ where
         self.msgs.sender_producer()
     }
 
-    pub fn poll(
-        &mut self,
-        act: &mut A,
-        ctx: &mut A::Context,
-        task: &mut task::Context<'_>,
-    ) {
+    pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context, task: &mut task::Context<'_>) {
         #[cfg(feature = "mailbox_assert")]
         let mut n_polls = 0u16;
 

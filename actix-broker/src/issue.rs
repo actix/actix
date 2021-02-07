@@ -22,11 +22,7 @@ where
     /// Synchronously issue a message.
     /// This also causes the broker to synchronously forward those messages on to any subscribers
     /// before handling any other messages.
-    fn issue_sync<T: RegisteredBroker, M: BrokerMsg>(
-        &self,
-        msg: M,
-        ctx: &mut Self::Context,
-    ) {
+    fn issue_sync<T: RegisteredBroker, M: BrokerMsg>(&self, msg: M, ctx: &mut Self::Context) {
         let broker = T::get_broker();
         broker
             .send(IssueSync(msg, TypeId::of::<Self>()))

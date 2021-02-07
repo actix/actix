@@ -74,10 +74,7 @@ where
             flags: ContextFlags::RUNNING,
             wait: SmallVec::new(),
             items: SmallVec::new(),
-            handles: SmallVec::from_slice(&[
-                SpawnHandle::default(),
-                SpawnHandle::default(),
-            ]),
+            handles: SmallVec::from_slice(&[SpawnHandle::default(), SpawnHandle::default()]),
         }
     }
 
@@ -381,11 +378,7 @@ where
             let mut idx = 0;
             while idx < this.items.len() && !this.stopping() {
                 this.ctx.parts().handles[1] = this.items[idx].0;
-                match Pin::new(&mut this.items[idx].1).poll(
-                    &mut this.act,
-                    &mut this.ctx,
-                    cx,
-                ) {
+                match Pin::new(&mut this.items[idx].1).poll(&mut this.act, &mut this.ctx, cx) {
                     Poll::Pending => {
                         // check cancelled handles
                         if this.ctx.parts().handles.len() > 2 {
@@ -441,15 +434,13 @@ where
                 if !this.alive()
                     && Actor::stopping(&mut this.act, &mut this.ctx) == Running::Stop
                 {
-                    this.ctx.parts().flags =
-                        ContextFlags::STOPPED | ContextFlags::STARTED;
+                    this.ctx.parts().flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
                     return Poll::Ready(());
                 }
             } else if this.ctx.parts().flags.contains(ContextFlags::STOPPING) {
                 if Actor::stopping(&mut this.act, &mut this.ctx) == Running::Stop {
-                    this.ctx.parts().flags =
-                        ContextFlags::STOPPED | ContextFlags::STARTED;
+                    this.ctx.parts().flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
                     return Poll::Ready(());
                 } else {

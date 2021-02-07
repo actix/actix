@@ -115,11 +115,7 @@ impl Handler<ClientCommand> for ChatClient {
 
 /// Server communication
 impl StreamHandler<Result<codec::ChatResponse, io::Error>> for ChatClient {
-    fn handle(
-        &mut self,
-        msg: Result<codec::ChatResponse, io::Error>,
-        _: &mut Context<Self>,
-    ) {
+    fn handle(&mut self, msg: Result<codec::ChatResponse, io::Error>, _: &mut Context<Self>) {
         match msg {
             Ok(codec::ChatResponse::Message(ref msg)) => {
                 println!("message: {}", msg);
