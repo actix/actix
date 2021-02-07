@@ -435,13 +435,6 @@
 <span id="432">432</span>
 <span id="433">433</span>
 <span id="434">434</span>
-<span id="435">435</span>
-<span id="436">436</span>
-<span id="437">437</span>
-<span id="438">438</span>
-<span id="439">439</span>
-<span id="440">440</span>
-<span id="441">441</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! DNS resolver and connector utility actor</span>
 <span class="doccomment">//!</span>
@@ -625,10 +618,7 @@
                     <span class="prelude-val">Ok</span>(<span class="ident">resolver</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">resolver</span>),
                     <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> {
                         <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;Can not create system dns resolver: {}&quot;</span>, <span class="ident">err</span>);
-                        <span class="ident">AsyncResolver</span>::<span class="ident">tokio</span>(
-                            <span class="ident">ResolverConfig</span>::<span class="ident">default</span>(),
-                            <span class="ident">ResolverOpts</span>::<span class="ident">default</span>(),
-                        )
+                        <span class="ident">AsyncResolver</span>::<span class="ident">tokio</span>(<span class="ident">ResolverConfig</span>::<span class="ident">default</span>(), <span class="ident">ResolverOpts</span>::<span class="ident">default</span>())
                     }
                 },
             };
@@ -708,11 +698,7 @@
 }
 
 <span class="kw">impl</span> <span class="ident">ResolveFut</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(
-        <span class="ident">addr</span>: <span class="ident">S</span>,
-        <span class="ident">port</span>: <span class="ident">u16</span>,
-        <span class="ident">resolver</span>: <span class="kw-2">&amp;</span><span class="ident">AsyncResolver</span>,
-    ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ResolveFut</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">addr</span>: <span class="ident">S</span>, <span class="ident">port</span>: <span class="ident">u16</span>, <span class="ident">resolver</span>: <span class="kw-2">&amp;</span><span class="ident">AsyncResolver</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ResolveFut</span> {
         <span class="comment">// try to parse as a regular SocketAddr first</span>
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">as_ref</span>().<span class="ident">parse</span>() {
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">addrs</span> <span class="op">=</span> <span class="ident">VecDeque</span>::<span class="ident">new</span>();

@@ -195,8 +195,6 @@
 <span id="192">192</span>
 <span id="193">193</span>
 <span id="194">194</span>
-<span id="195">195</span>
-<span id="196">196</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Actix is an actor framework.</span>
 <span class="doccomment">//!</span>
@@ -347,9 +345,7 @@
 
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::{
-        <span class="ident">Envelope</span>, <span class="ident">EnvelopeProxy</span>, <span class="ident">RecipientRequest</span>, <span class="ident">Request</span>, <span class="ident">ToEnvelope</span>,
-    };
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::{<span class="ident">Envelope</span>, <span class="ident">EnvelopeProxy</span>, <span class="ident">RecipientRequest</span>, <span class="ident">Request</span>, <span class="ident">ToEnvelope</span>};
     <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">channel</span> {
         <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::<span class="ident">channel</span>::{<span class="ident">channel</span>, <span class="ident">AddressReceiver</span>, <span class="ident">AddressSender</span>};
     }

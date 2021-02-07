@@ -603,8 +603,6 @@
 <span id="600">600</span>
 <span id="601">601</span>
 <span id="602">602</span>
-<span id="603">603</span>
-<span id="604">604</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
@@ -1125,9 +1123,7 @@
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fmt</span> <span class="op">=</span> <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;ActorResponse&quot;</span>);
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
-            <span class="ident">ActorResponseTypeItem</span>::<span class="prelude-ty">Result</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">fmt</span>.<span class="ident">field</span>(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.<span class="ident">to_string</span>())
-            }
+            <span class="ident">ActorResponseTypeItem</span>::<span class="prelude-ty">Result</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">fmt</span>.<span class="ident">field</span>(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.<span class="ident">to_string</span>()),
             <span class="ident">ActorResponseTypeItem</span>::<span class="ident">Fut</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">fmt</span>.<span class="ident">field</span>(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Fut(_)&quot;</span>.<span class="ident">to_string</span>()),
         }
         .<span class="ident">finish</span>()

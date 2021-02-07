@@ -470,8 +470,6 @@
 <span id="467">467</span>
 <span id="468">468</span>
 <span id="469">469</span>
-<span id="470">470</span>
-<span id="471">471</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error</span>, <span class="ident">fmt</span>};
@@ -608,9 +606,7 @@
     {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">msg</span>) {
             <span class="prelude-val">Ok</span>(<span class="ident">rx</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Request</span>::<span class="ident">new</span>(<span class="prelude-val">Some</span>(<span class="ident">rx</span>), <span class="prelude-val">None</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">SendError</span>::<span class="ident">Full</span>(<span class="ident">msg</span>)) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">Request</span>::<span class="ident">new</span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">clone</span>(), <span class="ident">msg</span>)))
-            }
+            <span class="prelude-val">Err</span>(<span class="ident">SendError</span>::<span class="ident">Full</span>(<span class="ident">msg</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Request</span>::<span class="ident">new</span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">clone</span>(), <span class="ident">msg</span>))),
             <span class="prelude-val">Err</span>(<span class="ident">SendError</span>::<span class="ident">Closed</span>(<span class="kw">_</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Request</span>::<span class="ident">new</span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>),
         }
     }
