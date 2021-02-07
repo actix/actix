@@ -1,4 +1,0 @@
-(function() {var implementors = {};
-implementors["client"] = [{"text":"impl Handler&lt;ClientCommand&gt; for ChatClient","synthetic":false,"types":[]}];
-implementors["server"] = [{"text":"impl Handler&lt;Connect&gt; for ChatServer","synthetic":false,"types":[]},{"text":"impl Handler&lt;Disconnect&gt; for ChatServer","synthetic":false,"types":[]},{"text":"impl Handler&lt;Message&gt; for ChatServer","synthetic":false,"types":[]},{"text":"impl Handler&lt;ListRooms&gt; for ChatServer","synthetic":false,"types":[]},{"text":"impl Handler&lt;Join&gt; for ChatServer","synthetic":false,"types":[]},{"text":"impl Handler&lt;Message&gt; for ChatSession","synthetic":false,"types":[]},{"text":"impl Handler&lt;TcpConnect&gt; for Server","synthetic":false,"types":[]}];
-if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

@@ -1,1 +1,0 @@
-initSidebarItems({"struct":[["ChatSession","`ChatSession` actor is responsible for TCP peer communications."],["Message","Chat server sends this messages to session"]]});
