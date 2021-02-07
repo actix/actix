@@ -9,12 +9,10 @@
 //! messages.
 //!
 //! ## Other Documentation
-//!
 //! - [User Guide](https://actix.rs/book/actix/)
 //! - [Community Chat on Gitter](https://gitter.im/actix/actix)
 //!
 //! ## Features
-//!
 //! - Async/Sync actors
 //! - Actor communication in a local/thread context
 //! - Using Futures for asynchronous message handling
@@ -23,21 +21,7 @@
 //! - Runs on stable Rust 1.40+
 //!
 //! ## Package feature
-//!
 //! * `resolver` - enables DNS resolver actor; see [resolver](./actors/resolver/index.html) module
-//!
-//! ## Tokio runtime
-//!
-//! At the moment actix uses
-//! [`current_thread`](https://docs.rs/tokio/0.1.13/tokio/runtime/current_thread/index.html) runtime.
-//!
-//! While it provides minimum overhead, it has its own limits:
-//!
-//! - You cannot use Tokio's async file I/O, as it relies on blocking calls that are not available
-//! in `current_thread`
-//! - `Stdin`, `Stderr` and `Stdout` from `tokio::io` are the same as file I/O in that regard and
-//! cannot be used in asynchronous manner in actix.
-// It's pain for this crate and has false positives.
 
 #![allow(clippy::needless_doctest_main)]
 #![deny(nonstandard_style, rust_2018_idioms)]

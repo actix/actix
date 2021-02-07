@@ -3,13 +3,7 @@ members = [
     "actix",
     "actix-broker",
     "actix-derive",
-    "actix/examples/chat",
 ]
-
-# [profile.release]
-# lto = true
-# opt-level = 3
-# codegen-units = 1
 
 [patch.crates-io]
 actix = { path = "actix" }
