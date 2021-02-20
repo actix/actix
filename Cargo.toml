@@ -9,3 +9,8 @@ members = [
 actix = { path = "actix" }
 actix-broker = { path = "actix-broker" }
 actix_derive = { path = "actix-derive" }
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
