@@ -305,6 +305,8 @@ impl<A, M, I, E> MessageResponse<A, M> for Result<I, E>
 where
     A: Actor,
     M: Message<Result = Self>,
+    I: 'static,
+    E: 'static,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -317,6 +319,7 @@ impl<A, M, I> MessageResponse<A, M> for Arc<I>
 where
     A: Actor,
     M: Message<Result = Self>,
+    I: 'static,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -329,6 +332,7 @@ impl<A, M, I> MessageResponse<A, M> for Option<I>
 where
     A: Actor,
     M: Message<Result = Self>,
+    I: 'static,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
