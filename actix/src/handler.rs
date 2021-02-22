@@ -7,7 +7,6 @@ use tokio::sync::oneshot::Sender as SyncSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
-use crate::context::Context;
 use crate::fut::ActorFuture;
 
 /// Describes how to handle messages of a specific type.
@@ -40,19 +39,19 @@ pub trait Message {
 }
 
 /// Allow users to use `Arc<M>` as a message without having to re-impl `Message`
-impl<M, R: 'static> Message for Arc<M>
+impl<M> Message for Arc<M>
 where
-    M: Message<Result = R>,
+    M: Message,
 {
-    type Result = R;
+    type Result = M::Result;
 }
 
 /// Allow users to use `Box<M>` as a message without having to re-impl `Message`
-impl<M, R: 'static> Message for Box<M>
+impl<M> Message for Box<M>
 where
-    M: Message<Result = R>,
+    M: Message,
 {
-    type Result = R;
+    type Result = M::Result;
 }
 
 /// A helper type that implements the `MessageResponse` trait.
@@ -144,10 +143,10 @@ impl<A, T> AtomicResponse<A, T> {
     }
 }
 
-impl<A, M, T: 'static> MessageResponse<A, M> for AtomicResponse<A, T>
+impl<A, M> MessageResponse<A, M> for AtomicResponse<A, M::Result>
 where
     A: Actor,
-    M: Message<Result = T>,
+    M: Message,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
@@ -302,10 +301,12 @@ where
     }
 }
 
-impl<A, M, I: 'static, E: 'static> MessageResponse<A, M> for Result<I, E>
+impl<A, M, I, E> MessageResponse<A, M> for Result<I, E>
 where
     A: Actor,
     M: Message<Result = Self>,
+    I: 'static,
+    E: 'static,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -314,10 +315,11 @@ where
     }
 }
 
-impl<A, M, I: 'static> MessageResponse<A, M> for Arc<I>
+impl<A, M, I> MessageResponse<A, M> for Arc<I>
 where
     A: Actor,
-    M: Message<Result = Arc<I>>,
+    M: Message<Result = Self>,
+    I: 'static,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -326,10 +328,11 @@ where
     }
 }
 
-impl<A, M, I: 'static> MessageResponse<A, M> for Option<I>
+impl<A, M, I> MessageResponse<A, M> for Option<I>
 where
     A: Actor,
     M: Message<Result = Self>,
+    I: 'static,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -342,7 +345,7 @@ impl<A, M, B> MessageResponse<A, M> for Addr<B>
 where
     A: Actor,
     M: Message<Result = Self>,
-    B: Actor<Context = Context<B>>,
+    B: Actor,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
         if let Some(tx) = tx {
@@ -351,10 +354,10 @@ where
     }
 }
 
-impl<A, M, T: 'static> MessageResponse<A, M> for ResponseActFuture<A, T>
+impl<A, M> MessageResponse<A, M> for ResponseActFuture<A, M::Result>
 where
     A: Actor,
-    M: Message<Result = T>,
+    M: Message,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
@@ -422,11 +425,10 @@ where
 ///     }
 /// }
 /// ```
-impl<A, M, I: 'static> MessageResponse<A, M> for ResponseFuture<I>
+impl<A, M> MessageResponse<A, M> for ResponseFuture<M::Result>
 where
     A: Actor,
-    M::Result: Send,
-    M: Message<Result = I>,
+    M: Message,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
@@ -479,10 +481,10 @@ impl<I> Response<I> {
     }
 }
 
-impl<A, M, I: 'static> MessageResponse<A, M> for Response<I>
+impl<A, M> MessageResponse<A, M> for Response<M::Result>
 where
     A: Actor,
-    M: Message<Result = I>,
+    M: Message,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
@@ -543,10 +545,10 @@ impl<A: Actor, I> ActorResponse<A, I> {
     }
 }
 
-impl<A, M, I: 'static> MessageResponse<A, M> for ActorResponse<A, I>
+impl<A, M> MessageResponse<A, M> for ActorResponse<A, M::Result>
 where
     A: Actor,
-    M: Message<Result = I>,
+    M: Message,
     A::Context: AsyncContext<A>,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {

@@ -56,7 +56,6 @@ pin_project! {
         #[pin]
         timeout: Sleep,
         act: PhantomData<A>,
-        m: PhantomData<M>,
     }
 }
 
@@ -70,7 +69,6 @@ where
             msg: Some(msg),
             timeout: actix_rt::time::sleep(timeout),
             act: PhantomData,
-            m: PhantomData,
         }
     }
 }
@@ -122,11 +120,11 @@ where
     }
 }
 
-impl<A, M: 'static> ActorFuture for ActorMessageItem<A, M>
+impl<A, M> ActorFuture for ActorMessageItem<A, M>
 where
     A: Actor + Handler<M>,
     A::Context: AsyncContext<A>,
-    M: Message,
+    M: Message + 'static,
 {
     type Output = ();
     type Actor = A;
@@ -145,38 +143,34 @@ where
 }
 
 pin_project! {
-    pub(crate) struct ActorMessageStreamItem<A, M, S>
+    pub(crate) struct ActorMessageStreamItem<A, S>
     where
         A: Actor,
-        M: Message,
     {
         #[pin]
         stream: S,
         act: PhantomData<A>,
-        msg: PhantomData<M>,
     }
 }
 
-impl<A, M, S> ActorMessageStreamItem<A, M, S>
+impl<A, S> ActorMessageStreamItem<A, S>
 where
     A: Actor,
-    M: Message,
 {
     pub fn new(st: S) -> Self {
         Self {
             stream: st,
             act: PhantomData,
-            msg: PhantomData,
         }
     }
 }
 
-impl<A, M: 'static, S> ActorFuture for ActorMessageStreamItem<A, M, S>
+impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, S>
 where
     S: Stream<Item = M>,
     A: Actor + Handler<M>,
     A::Context: AsyncContext<A>,
-    M: Message,
+    M: Message + 'static,
 {
     type Output = ();
     type Actor = A;

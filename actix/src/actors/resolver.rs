@@ -141,13 +141,9 @@ pub enum ResolverError {
 impl fmt::Display for ResolverError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ResolverError::Resolver(s) => {
-                write!(fmt, "Failed resolving hostname: {}", s)
-            }
+            ResolverError::Resolver(s) => write!(fmt, "Failed resolving hostname: {}", s),
             ResolverError::InvalidInput(s) => write!(fmt, "Invalid input: {}", s),
-            ResolverError::Timeout => {
-                write!(fmt, "Timeout out while establishing connection")
-            }
+            ResolverError::Timeout => write!(fmt, "Timeout out while establishing connection"),
             ResolverError::IoError(e) => write!(fmt, "{}", e),
         }
     }
