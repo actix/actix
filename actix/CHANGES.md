@@ -1,6 +1,11 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Changed
+* Rework `ActorFuture` trait. [#465]
+* `actix::fut::{wrap_future, wrap_stream}` would need type annotation for Actor type. [#465]
+  
+[#465]: https://github.com/actix/actix/issues/465
 
 
 ## 0.11.0-beta.2 - 2021-02-06

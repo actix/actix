@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
@@ -12,7 +11,7 @@ use crate::clock::Sleep;
 use crate::fut::ActorFuture;
 use crate::handler::{Handler, Message, MessageResponse};
 
-pub(crate) struct ActorWaitItem<A: Actor>(Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>);
+pub(crate) struct ActorWaitItem<A: Actor>(Pin<Box<dyn ActorFuture<A, Output = ()>>>);
 
 impl<A> ActorWaitItem<A>
 where
@@ -22,7 +21,7 @@ where
     #[inline]
     pub fn new<F>(fut: F) -> Self
     where
-        F: ActorFuture<Output = (), Actor = A> + 'static,
+        F: ActorFuture<A, Output = ()> + 'static,
     {
         ActorWaitItem(Box::pin(fut))
     }
@@ -47,40 +46,29 @@ where
 }
 
 pin_project! {
-    pub(crate) struct ActorDelayedMessageItem<A, M>
-    where
-        A: Actor,
-        M: Message,
-    {
+    pub(crate) struct ActorDelayedMessageItem<M: Message>{
         msg: Option<M>,
         #[pin]
         timeout: Sleep,
-        act: PhantomData<A>,
     }
 }
 
-impl<A, M> ActorDelayedMessageItem<A, M>
-where
-    A: Actor,
-    M: Message,
-{
+impl<M: Message> ActorDelayedMessageItem<M> {
     pub fn new(msg: M, timeout: Duration) -> Self {
         Self {
             msg: Some(msg),
             timeout: actix_rt::time::sleep(timeout),
-            act: PhantomData,
         }
     }
 }
 
-impl<A, M> ActorFuture for ActorDelayedMessageItem<A, M>
+impl<A, M> ActorFuture<A> for ActorDelayedMessageItem<M>
 where
     A: Actor + Handler<M>,
     A::Context: AsyncContext<A>,
     M: Message + 'static,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,
@@ -96,38 +84,25 @@ where
     }
 }
 
-pub(crate) struct ActorMessageItem<A, M>
-where
-    A: Actor,
-    M: Message,
-{
+pub(crate) struct ActorMessageItem<M: Message> {
     msg: Option<M>,
-    act: PhantomData<A>,
 }
 
-impl<A: Actor, M: Message> Unpin for ActorMessageItem<A, M> {}
+impl<M: Message> Unpin for ActorMessageItem<M> {}
 
-impl<A, M> ActorMessageItem<A, M>
-where
-    A: Actor,
-    M: Message,
-{
+impl<M: Message> ActorMessageItem<M> {
     pub fn new(msg: M) -> Self {
-        Self {
-            msg: Some(msg),
-            act: PhantomData,
-        }
+        Self { msg: Some(msg) }
     }
 }
 
-impl<A, M> ActorFuture for ActorMessageItem<A, M>
+impl<A, M> ActorFuture<A> for ActorMessageItem<M>
 where
     A: Actor + Handler<M>,
     A::Context: AsyncContext<A>,
     M: Message + 'static,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,
@@ -143,37 +118,26 @@ where
 }
 
 pin_project! {
-    pub(crate) struct ActorMessageStreamItem<A, S>
-    where
-        A: Actor,
-    {
+    pub(crate) struct ActorMessageStreamItem<S>{
         #[pin]
         stream: S,
-        act: PhantomData<A>,
     }
 }
 
-impl<A, S> ActorMessageStreamItem<A, S>
-where
-    A: Actor,
-{
+impl<S> ActorMessageStreamItem<S> {
     pub fn new(st: S) -> Self {
-        Self {
-            stream: st,
-            act: PhantomData,
-        }
+        Self { stream: st }
     }
 }
 
-impl<A, M, S> ActorFuture for ActorMessageStreamItem<A, S>
+impl<A, S> ActorFuture<A> for ActorMessageStreamItem<S>
 where
-    S: Stream<Item = M>,
-    A: Actor + Handler<M>,
+    S: Stream,
+    A: Actor + Handler<S::Item>,
     A::Context: AsyncContext<A>,
-    M: Message + 'static,
+    S::Item: Message + 'static,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,

@@ -328,9 +328,9 @@ impl ResolveFut {
     }
 }
 
-impl ActorFuture for ResolveFut {
+impl ActorFuture<Resolver> for ResolveFut {
     type Output = Result<VecDeque<SocketAddr>, ResolverError>;
-    type Actor = Resolver;
+
     fn poll(
         mut self: Pin<&mut Self>,
         _: &mut Resolver,
@@ -392,9 +392,8 @@ impl TcpConnector {
     }
 }
 
-impl ActorFuture for TcpConnector {
+impl ActorFuture<Resolver> for TcpConnector {
     type Output = Result<TcpStream, ResolverError>;
-    type Actor = Resolver;
 
     fn poll(
         self: Pin<&mut Self>,

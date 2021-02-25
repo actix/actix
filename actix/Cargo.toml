@@ -39,6 +39,7 @@ crossbeam-channel = "0.5"
 futures-core = { version = "0.3.7", default-features = false }
 futures-sink = { version = "0.3.7", default-features = false }
 futures-task = { version = "0.3.7", default-features = false }
+futures-util = { version = "0.3.7", default-features = false }
 log = "0.4"
 once_cell = "1.5"
 parking_lot = "0.11"
