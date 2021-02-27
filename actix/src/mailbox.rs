@@ -85,7 +85,7 @@ where
                     #[cfg(feature = "mailbox_assert")]
                     {
                         n_polls += 1;
-                        /// Maximum number of consecutive polls in a loop is 256.
+                        // Maximum number of consecutive polls in a loop is 256.
                         assert!(n_polls < 256u16, "Too many messages are being processed. Use Self::Context::notify() instead of direct use of address");
                     }
                 }
