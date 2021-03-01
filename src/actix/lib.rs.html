@@ -235,7 +235,7 @@
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;macros&quot;</span>)]</span>
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::{<span class="ident">main</span>, <span class="ident">test</span>, <span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">spawn</span>, <span class="ident">Arbiter</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">spawn</span>, <span class="ident">Arbiter</span>, <span class="ident">ArbiterHandle</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{
     <span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">Running</span>, <span class="ident">SpawnHandle</span>, <span class="ident">Supervised</span>,
@@ -270,7 +270,7 @@
     <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;macros&quot;</span>)]</span>
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::{<span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">Arbiter</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">Arbiter</span>, <span class="ident">ArbiterHandle</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
 
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{
         <span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">Running</span>, <span class="ident">SpawnHandle</span>, <span class="ident">Supervised</span>,
