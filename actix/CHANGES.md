@@ -1,6 +1,10 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+* Remove `dev::ResponseChannel` trait [#472]
+* `dev::MessageResponse::handle` method does not need generic type [#472]
+
+[#472]: https://github.com/actix/actix/pull/472
 
 
 ## 0.11.0-beta.2 - 2021-02-06
