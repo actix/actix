@@ -162,14 +162,10 @@ where
 /// `ResponseAsync::atomic` would borrow `&mut Actor` and `&mut Actor::Context`.
 /// It would have exclusive access to them and block the actor until the future resolved.
 ///
-/// `ResponseAsync::concurrent` would borrow `& Actor` and `& Actor::Context`.
-/// It would have shared access to them and block the actor until all concurrent futures
-/// in Context queue resloved.
-///
 /// # Examples:
 /// ```rust, no_run
 /// # use actix::prelude::*;
-/// # use actix::clock::delay_for;
+/// # use actix::clock::sleep;
 /// # use std::time::Duration;
 /// #
 /// # #[derive(Message)]
@@ -187,94 +183,68 @@ where
 /// # }
 /// #
 /// impl Handler<Msg> for MyActor {
-///     type Result = ResponseAsync<usize>;
+///     type Result = ResponseAsync<Self, usize>;
 ///
 ///     fn handle(&mut self, msg: Msg, ctx: &mut Context<Self>) -> Self::Result {
 ///         ResponseAsync::atomic(self, ctx, |act, ctx| async move {
 ///             let msg = msg;
 ///             let ctx = ctx;
 ///             act.0 = 30;
-///             delay_for(Duration::from_millis(1)).await;
+///             sleep(Duration::from_millis(1)).await;
 ///             act.0 -= 1;
 ///             act.0
 ///         })
 ///     }
 /// }
-///
-/// impl Handler<Msg2> for MyActor {
-///     type Result = ResponseAsync<usize>;
-///
-///     fn handle(&mut self, msg: Msg2, ctx: &mut Context<Self>) -> Self::Result {
-///         ResponseAsync::concurrent(self, ctx, |act, ctx| async move {
-///             let msg = msg;
-///             let ctx = ctx;
-///             delay_for(Duration::from_millis(1)).await;
-///             act.0
-///         })
-///     }
-/// }
 /// ```
-pub enum ResponseAsync<T> {
-    Concurrent(ResponseFuture<T>),
-    Atomic(ResponseFuture<T>),
+pub enum ResponseAsync<A, T> {
+    #[doc(hidden)]
+    Concurrent(()),
+    Atomic(ResponseActFuture<A, T>),
 }
 
-impl<T: 'static> ResponseAsync<T> {
-    pub fn concurrent<'a, A, F, Fut>(act: &'a A, ctx: &'a A::Context, fut: F) -> Self
+impl<A, T> ResponseAsync<A, T>
+where
+    A: Actor,
+    A::Context: AsyncContext<A>,
+    T: 'static,
+{
+    pub fn atomic<'a, F, Fut>(act: &'a mut A, ctx: &'a mut A::Context, fut: F) -> Self
     where
-        A: Actor,
-        A::Context: AsyncContext<A>,
-        F: FnOnce(&'a A, &'a A::Context) -> Fut + 'static,
-        Fut: Future<Output = T> + 'a,
-    {
-        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut(act, ctx));
-        // SAFETY:
-        //
-        // Borrow & Actor and & Context<Actor> is unsafe by itself.
-        // A::Context is tasked with polling this future correctly.
-        ResponseAsync::Concurrent(unsafe { core::mem::transmute(fut) })
-    }
-
-    pub fn atomic<'a, A, F, Fut>(act: &'a mut A, ctx: &'a mut A::Context, fut: F) -> Self
-    where
-        A: Actor,
-        A::Context: AsyncContext<A>,
         F: FnOnce(&'a mut A, &'a mut A::Context) -> Fut + 'static,
         Fut: Future<Output = T> + 'a,
     {
-        let fut: Pin<Box<dyn Future<Output = T>>> = Box::pin(fut(act, ctx));
+        let fut: Pin<Box<dyn ActorFuture<Actor = A, Output = T>>> =
+            Box::pin(crate::fut::wrap_future::<_, A>(fut(act, ctx)));
         // SAFETY:
         //
         // Borrow &mut Actor and &mut Context<Actor> is safe because the actor would be
-        // blocked on this future until it's resolved.
+        // blocked on wait future until it's resolved.
         // This is achieved with Context::wait which give exclusive access to actor and context.
-        ResponseAsync::Atomic(unsafe { core::mem::transmute(fut) })
+        let fut = unsafe { core::mem::transmute(fut) };
+        ResponseAsync::Atomic(fut)
     }
 }
 
-impl<A, M, T: 'static> MessageResponse<A, M> for ResponseAsync<T>
+impl<A, M, T: 'static> MessageResponse<A, M> for ResponseAsync<A, T>
 where
     A: Actor,
-    M: Message<Result = T>,
     A::Context: AsyncContext<A>,
+    M: Message<Result = T>,
+    T: 'static,
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self {
             ResponseAsync::Atomic(fut) => {
-                ctx.wait(crate::fut::wrap_future(fut).map(move |res, _, _| {
+                ctx.wait(fut.map(move |res, _, _| {
                     if let Some(tx) = tx {
                         tx.send(res);
                     }
                 }));
             }
-            ResponseAsync::Concurrent(fut) => {
-                ctx.wait_concurrent(async {
-                    let res = fut.await;
-                    if let Some(tx) = tx {
-                        tx.send(res);
-                    }
-                });
-            }
+            ResponseAsync::Concurrent(_) => unimplemented!(
+                "concurrent message borrowing Actor/Context in async is not implemented"
+            ),
         }
     }
 }
