@@ -183,10 +183,10 @@ where
 /// # }
 /// #
 /// impl Handler<Msg> for MyActor {
-///     type Result = ResponseAsync<Self, usize>;
+///     type Result = AsyncResponse<Self, usize>;
 ///
 ///     fn handle(&mut self, msg: Msg, ctx: &mut Context<Self>) -> Self::Result {
-///         ResponseAsync::atomic(self, ctx, |act, ctx| async move {
+///         AsyncResponse::atomic(self, ctx, |act, ctx| async move {
 ///             let msg = msg;
 ///             let ctx = ctx;
 ///             act.0 = 30;
@@ -197,13 +197,13 @@ where
 ///     }
 /// }
 /// ```
-pub enum ResponseAsync<A, T> {
+pub enum AsyncResponse<A, T> {
     #[doc(hidden)]
     Concurrent(()),
     Atomic(ResponseActFuture<A, T>),
 }
 
-impl<A, T> ResponseAsync<A, T>
+impl<A, T> AsyncResponse<A, T>
 where
     A: Actor,
     A::Context: AsyncContext<A>,
@@ -222,11 +222,11 @@ where
         // blocked on wait future until it's resolved.
         // This is achieved with Context::wait which give exclusive access to actor and context.
         let fut = unsafe { core::mem::transmute(fut) };
-        ResponseAsync::Atomic(fut)
+        AsyncResponse::Atomic(fut)
     }
 }
 
-impl<A, M, T: 'static> MessageResponse<A, M> for ResponseAsync<A, T>
+impl<A, M, T: 'static> MessageResponse<A, M> for AsyncResponse<A, T>
 where
     A: Actor,
     A::Context: AsyncContext<A>,
@@ -235,14 +235,14 @@ where
 {
     fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
         match self {
-            ResponseAsync::Atomic(fut) => {
+            AsyncResponse::Atomic(fut) => {
                 ctx.wait(fut.map(move |res, _, _| {
                     if let Some(tx) = tx {
                         tx.send(res);
                     }
                 }));
             }
-            ResponseAsync::Concurrent(_) => unimplemented!(
+            AsyncResponse::Concurrent(_) => unimplemented!(
                 "concurrent message borrowing Actor/Context in async is not implemented"
             ),
         }

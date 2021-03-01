@@ -19,10 +19,10 @@ impl Actor for MyActor {
 }
 
 impl Handler<AsyncMsg> for MyActor {
-    type Result = ResponseAsync<Self, usize>;
+    type Result = AsyncResponse<Self, usize>;
 
     fn handle(&mut self, _: AsyncMsg, ctx: &mut Self::Context) -> Self::Result {
-        ResponseAsync::atomic(self, ctx, |act, _| async move {
+        AsyncResponse::atomic(self, ctx, |act, _| async move {
             for _ in 0..1000 {
                 // yield every step to give other task chance to run.
                 // this would test if we have exclusive access to the actor state.

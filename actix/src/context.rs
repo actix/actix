@@ -5,7 +5,6 @@ use crate::address::{Addr, AddressReceiver};
 use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
 use crate::fut::ActorFuture;
 use crate::mailbox::Mailbox;
-use std::future::Future;
 
 /// An actor execution context.
 pub struct Context<A>
@@ -48,26 +47,11 @@ where
     A: Actor<Context = Self>,
 {
     #[inline]
-    fn address(&self) -> Addr<A> {
-        self.parts.address()
-    }
-
-    #[inline]
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
         F: ActorFuture<Output = (), Actor = A> + 'static,
     {
         self.parts.spawn(fut)
-    }
-
-    #[doc(hidden)]
-    #[inline]
-    /// DO NOT use in public API.
-    fn wait_concurrent<F>(&mut self, fut: F)
-    where
-        F: Future<Output = ()> + 'static,
-    {
-        self.parts.wait_concurrent(fut)
     }
 
     #[inline]
@@ -86,6 +70,11 @@ where
     #[inline]
     fn cancel_future(&mut self, handle: SpawnHandle) -> bool {
         self.parts.cancel_future(handle)
+    }
+
+    #[inline]
+    fn address(&self) -> Addr<A> {
+        self.parts.address()
     }
 }
 
