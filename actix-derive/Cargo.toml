@@ -1,6 +1,6 @@
 [package]
 name = "actix_derive"
-version = "0.5.0"
+version = "0.6.0-beta.1"
 edition = "2018"
 authors = ["Callym <hi@callym.com>", "Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Derive macros for `actix` actors"
@@ -20,4 +20,4 @@ syn = { version = "1", features = ["full"] }
 proc-macro2 = "1"
 
 [dev-dependencies]
-actix = { version = "0.10", default-features = false }
+actix = { version = "0.11.0-beta.2", default-features = false }
