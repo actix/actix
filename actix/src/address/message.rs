@@ -67,8 +67,8 @@ where
 {
     type Output = Result<M::Result, MailboxError>;
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
-        let this = self.as_mut().project();
+    fn poll(self: Pin<&mut Self>, cx: &mut task::Context<'_>) -> Poll<Self::Output> {
+        let this = self.project();
 
         if let Some((sender, msg)) = this.info.take() {
             match sender.send(msg) {
@@ -83,8 +83,7 @@ where
 
         match this.rx {
             Some(rx) => match Pin::new(rx).poll(cx) {
-                Poll::Ready(Ok(i)) => Poll::Ready(Ok(i)),
-                Poll::Ready(Err(_)) => Poll::Ready(Err(MailboxError::Closed)),
+                Poll::Ready(res) => Poll::Ready(res.map_err(|_| MailboxError::Closed)),
                 Poll::Pending => match this.timeout.as_pin_mut() {
                     Some(timeout) => timeout.poll(cx).map(|_| Err(MailboxError::Timeout)),
                     None => Poll::Pending,
