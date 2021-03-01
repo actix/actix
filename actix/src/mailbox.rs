@@ -8,10 +8,6 @@ use crate::actor::{Actor, AsyncContext};
 use crate::address::EnvelopeProxy;
 use crate::address::{channel, Addr, AddressReceiver, AddressSenderProducer};
 
-#[cfg(feature = "mailbox_assert")]
-/// Maximum number of consecutive polls in a loop
-const MAX_SYNC_POLLS: u16 = 256;
-
 /// Default address channel capacity
 pub const DEFAULT_CAPACITY: usize = 16;
 
@@ -82,32 +78,18 @@ where
         #[cfg(feature = "mailbox_assert")]
         let mut n_polls = 0u16;
 
-        loop {
-            let mut not_ready = true;
-
-            // sync messages
-            loop {
-                if ctx.waiting() {
-                    return;
-                }
-
-                match Pin::new(&mut self.msgs).poll_next(task) {
-                    Poll::Ready(Some(mut msg)) => {
-                        not_ready = false;
-                        msg.handle(act, ctx);
+        while !ctx.waiting() {
+            match Pin::new(&mut self.msgs).poll_next(task) {
+                Poll::Ready(Some(mut msg)) => {
+                    msg.handle(act, ctx);
+                    #[cfg(feature = "mailbox_assert")]
+                    {
+                        n_polls += 1;
+                        // Maximum number of consecutive polls in a loop is 256.
+                        assert!(n_polls < 256u16, "Too many messages are being processed. Use Self::Context::notify() instead of direct use of address");
                     }
-                    Poll::Ready(None) | Poll::Pending => break,
                 }
-
-                #[cfg(feature = "mailbox_assert")]
-                {
-                    n_polls += 1;
-                    assert!(n_polls < MAX_SYNC_POLLS, "Too many messages are being processed. Use Self::Context::notify() instead of direct use of address");
-                }
-            }
-
-            if not_ready {
-                return;
+                Poll::Ready(None) | Poll::Pending => return,
             }
         }
     }
