@@ -16,9 +16,9 @@ pub fn expand(ast: &syn::DeriveInput) -> TokenStream {
 
     quote! {
         impl #impl_generics ::actix::dev::MessageResponse<_A, _M> for #name #ty_generics #where_clause {
-            fn handle<R: actix::dev::ResponseChannel<_M>>(self, _: &mut _A::Context, tx: Option<R>) {
+            fn handle(self, _: &mut _A::Context, tx: Option<::actix::dev::OneshotSender<Self>>) {
                 if let Some(tx) = tx {
-                    tx.send(self);
+                    let _ = tx.send(self);
                 }
             }
         }

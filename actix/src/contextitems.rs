@@ -91,7 +91,7 @@ where
         let this = self.project();
         ready!(this.timeout.poll(task));
         let fut = A::handle(act, this.msg.take().unwrap(), ctx);
-        fut.handle::<()>(ctx, None);
+        fut.handle(ctx, None);
         Poll::Ready(())
     }
 }
@@ -137,7 +137,7 @@ where
     ) -> Poll<Self::Output> {
         let this = self.get_mut();
         let fut = Handler::handle(act, this.msg.take().unwrap(), ctx);
-        fut.handle::<()>(ctx, None);
+        fut.handle(ctx, None);
         Poll::Ready(())
     }
 }
@@ -186,7 +186,7 @@ where
             match this.stream.as_mut().poll_next(task) {
                 Poll::Ready(Some(msg)) => {
                     let fut = Handler::handle(act, msg, ctx);
-                    fut.handle::<()>(ctx, None);
+                    fut.handle(ctx, None);
                     if ctx.waiting() {
                         return Poll::Pending;
                     }
