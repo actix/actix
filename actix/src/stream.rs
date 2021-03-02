@@ -138,10 +138,10 @@ where
 
             if ctx.waiting() {
                 return Poll::Pending;
-            // Yield after 16 consecutive polls on this stream and self wake up.
-            // This is to prevent starvation of other actor futures when this stream yield
-            // too many item in short period of time.
             } else if polled == 16 {
+                // Yield after 16 consecutive polls on this stream and self wake up.
+                // This is to prevent starvation of other actor futures when this stream yield
+                // too many item in short period of time.
                 task.waker().wake_by_ref();
                 return Poll::Pending;
             }
