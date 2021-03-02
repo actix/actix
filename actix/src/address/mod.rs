@@ -126,7 +126,7 @@ impl<A: Actor> Addr<A> {
     /// cancelled.
     pub fn send<M>(&self, msg: M) -> Request<A, M>
     where
-        M: Message + Send,
+        M: Message + Send + 'static,
         M::Result: Send,
         A: Handler<M>,
         A::Context: ToEnvelope<A, M>,
