@@ -179,6 +179,10 @@
 <span id="176">176</span>
 <span id="177">177</span>
 <span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Actix is an actor framework.</span>
 <span class="doccomment">//!</span>
@@ -242,7 +246,9 @@
 };
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::{<span class="ident">Addr</span>, <span class="ident">MailboxError</span>, <span class="ident">Recipient</span>, <span class="ident">WeakAddr</span>, <span class="ident">WeakRecipient</span>};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">context</span>::<span class="ident">Context</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStream</span>, <span class="ident">FinishStream</span>, <span class="ident">WrapFuture</span>, <span class="ident">WrapStream</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{
+    <span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">ActorStream</span>, <span class="ident">ActorStreamExt</span>, <span class="ident">WrapFuture</span>, <span class="ident">WrapStream</span>,
+};
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">handler</span>::{
     <span class="ident">ActorResponse</span>, <span class="ident">AtomicResponse</span>, <span class="ident">Handler</span>, <span class="ident">Message</span>, <span class="ident">MessageResult</span>, <span class="ident">Response</span>,
     <span class="ident">ResponseActFuture</span>, <span class="ident">ResponseFuture</span>,
@@ -279,7 +285,9 @@
         <span class="ident">Addr</span>, <span class="ident">MailboxError</span>, <span class="ident">Recipient</span>, <span class="ident">RecipientRequest</span>, <span class="ident">Request</span>, <span class="ident">SendError</span>,
     };
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">context</span>::{<span class="ident">Context</span>, <span class="ident">ContextFutureSpawner</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStream</span>, <span class="ident">WrapFuture</span>, <span class="ident">WrapStream</span>};
+    <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{
+        <span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">ActorStream</span>, <span class="ident">ActorStreamExt</span>, <span class="ident">WrapFuture</span>, <span class="ident">WrapStream</span>,
+    };
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">handler</span>::{
         <span class="ident">ActorResponse</span>, <span class="ident">AtomicResponse</span>, <span class="ident">Handler</span>, <span class="ident">Message</span>, <span class="ident">MessageResult</span>, <span class="ident">Response</span>,
         <span class="ident">ResponseActFuture</span>, <span class="ident">ResponseFuture</span>,

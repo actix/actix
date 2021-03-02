@@ -552,7 +552,7 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">AsyncContext</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::<span class="ident">Addr</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">LocalBoxActorFuture</span>};
 
 <span class="doccomment">/// Describes how to handle messages of a specific type.</span>
 <span class="doccomment">///</span>
@@ -746,7 +746,7 @@
 <span class="doccomment">///     }</span>
 <span class="doccomment">/// }</span>
 <span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ResponseActFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ResponseActFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">LocalBoxActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span>;
 
 <span class="doccomment">/// A specialized future for asynchronous message handling.</span>
 <span class="doccomment">///</span>
