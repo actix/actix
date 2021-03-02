@@ -58,7 +58,7 @@ where
         (**self).try_send(msg)
     }
 
-    fn send(&self, msg: M) -> Result<Receiver<<M as Message>::Result>, SendError<M>> {
+    fn send(&self, msg: M) -> Result<OneshotReceiver<<M as Message>::Result>, SendError<M>> {
         (**self).send(msg)
     }
 
