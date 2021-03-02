@@ -149,11 +149,16 @@
 <span id="146">146</span>
 <span id="147">147</span>
 <span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 
-<span class="kw">use</span> <span class="ident">futures_core</span>::<span class="ident">stream</span>::<span class="ident">Stream</span>;
+<span class="kw">use</span> <span class="ident">futures_core</span>::{<span class="ident">ready</span>, <span class="ident">stream</span>::<span class="ident">Stream</span>};
 <span class="kw">use</span> <span class="ident">log</span>::<span class="ident">error</span>;
 <span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 
@@ -281,21 +286,26 @@
             <span class="op">&lt;</span><span class="ident">A</span> <span class="kw">as</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span>::<span class="ident">started</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
         }
 
-        <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">task</span>) {
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">msg</span>)) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">A</span>::<span class="ident">handle</span>(<span class="ident">act</span>, <span class="ident">msg</span>, <span class="ident">ctx</span>);
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">ctx</span>.<span class="ident">waiting</span>() {
-                    <span class="comment">// Let the future&#39;s context know that this future might be polled right the way</span>
-                    <span class="ident">task</span>.<span class="ident">waker</span>().<span class="ident">wake_by_ref</span>();
-                }
-                <span class="ident">Poll</span>::<span class="ident">Pending</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">polled</span> <span class="op">=</span> <span class="number">0</span>;
+
+        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) <span class="op">=</span> <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">task</span>)) {
+            <span class="ident">A</span>::<span class="ident">handle</span>(<span class="ident">act</span>, <span class="ident">msg</span>, <span class="ident">ctx</span>);
+
+            <span class="ident">polled</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+
+            <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">waiting</span>() {
+                <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>;
+            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">polled</span> <span class="op">=</span><span class="op">=</span> <span class="number">16</span> {
+                <span class="comment">// Yield after 16 consecutive polls on this stream and self wake up.</span>
+                <span class="comment">// This is to prevent starvation of other actor futures when this stream yield</span>
+                <span class="comment">// too many item in short period of time.</span>
+                <span class="ident">task</span>.<span class="ident">waker</span>().<span class="ident">wake_by_ref</span>();
+                <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>;
             }
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">A</span>::<span class="ident">finished</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(())
-            }
-            <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
         }
+
+        <span class="ident">A</span>::<span class="ident">finished</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
+        <span class="ident">Poll</span>::<span class="ident">Ready</span>(())
     }
 }
 </pre></div>
