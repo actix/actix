@@ -545,73 +545,10 @@
 <span id="542">542</span>
 <span id="543">543</span>
 <span id="544">544</span>
-<span id="545">545</span>
-<span id="546">546</span>
-<span id="547">547</span>
-<span id="548">548</span>
-<span id="549">549</span>
-<span id="550">550</span>
-<span id="551">551</span>
-<span id="552">552</span>
-<span id="553">553</span>
-<span id="554">554</span>
-<span id="555">555</span>
-<span id="556">556</span>
-<span id="557">557</span>
-<span id="558">558</span>
-<span id="559">559</span>
-<span id="560">560</span>
-<span id="561">561</span>
-<span id="562">562</span>
-<span id="563">563</span>
-<span id="564">564</span>
-<span id="565">565</span>
-<span id="566">566</span>
-<span id="567">567</span>
-<span id="568">568</span>
-<span id="569">569</span>
-<span id="570">570</span>
-<span id="571">571</span>
-<span id="572">572</span>
-<span id="573">573</span>
-<span id="574">574</span>
-<span id="575">575</span>
-<span id="576">576</span>
-<span id="577">577</span>
-<span id="578">578</span>
-<span id="579">579</span>
-<span id="580">580</span>
-<span id="581">581</span>
-<span id="582">582</span>
-<span id="583">583</span>
-<span id="584">584</span>
-<span id="585">585</span>
-<span id="586">586</span>
-<span id="587">587</span>
-<span id="588">588</span>
-<span id="589">589</span>
-<span id="590">590</span>
-<span id="591">591</span>
-<span id="592">592</span>
-<span id="593">593</span>
-<span id="594">594</span>
-<span id="595">595</span>
-<span id="596">596</span>
-<span id="597">597</span>
-<span id="598">598</span>
-<span id="599">599</span>
-<span id="600">600</span>
-<span id="601">601</span>
-<span id="602">602</span>
-<span id="603">603</span>
-<span id="604">604</span>
 </pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
+<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fmt</span>, <span class="ident">future</span>::<span class="ident">Future</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>, <span class="ident">sync</span>::<span class="ident">Arc</span>};
 
-<span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">sync</span>::<span class="ident">oneshot</span>::<span class="ident">Sender</span> <span class="kw">as</span> <span class="ident">SyncSender</span>;
+<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">sync</span>::<span class="ident">oneshot</span>::<span class="ident">Sender</span> <span class="kw">as</span> <span class="ident">OneshotSender</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">AsyncContext</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::<span class="ident">Addr</span>;
@@ -757,12 +694,8 @@
     <span class="ident">M</span>: <span class="ident">Message</span>,
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="ident">ctx</span>.<span class="ident">wait</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>);
-            }
-        }));
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">ctx</span>.<span class="ident">wait</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>)));
     }
 }
 
@@ -849,13 +782,6 @@
 <span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ResponseFuture</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
-<span class="doccomment">/// A trait that defines a message response channel.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span>: <span class="lifetime">&#39;static</span> {
-    <span class="kw">fn</span> <span class="ident">is_canceled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span>;
-
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="ident">response</span>: <span class="ident">M</span>::<span class="prelude-ty">Result</span>);
-}
-
 <span class="doccomment">/// A trait which defines message responses.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// We offer implementation for some common language types, if you need</span>
@@ -874,27 +800,7 @@
 <span class="doccomment">/// - [AtomicResponse] should be used when the future returned needs exclusive</span>
 <span class="doccomment">///   access to  Actor&#39;s internal state or context.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>);
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SyncSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>::<span class="prelude-ty">Result</span>: <span class="ident">Send</span>,
-{
-    <span class="kw">fn</span> <span class="ident">is_canceled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="ident">SyncSender</span>::<span class="ident">is_closed</span>(<span class="self">self</span>)
-    }
-
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="ident">response</span>: <span class="ident">M</span>::<span class="prelude-ty">Result</span>) {
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">send</span>(<span class="self">self</span>, <span class="ident">response</span>);
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> () {
-    <span class="kw">fn</span> <span class="ident">is_canceled</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span> {
-        <span class="bool-val">true</span>
-    }
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="ident">M</span>::<span class="prelude-ty">Result</span>) {}
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>);
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MessageResult</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
@@ -902,10 +808,8 @@
     <span class="ident">A</span>: <span class="ident">Actor</span>,
     <span class="ident">M</span>: <span class="ident">Message</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-            <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>.<span class="number">0</span>);
-        }
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
@@ -916,10 +820,8 @@
     <span class="ident">I</span>: <span class="lifetime">&#39;static</span>,
     <span class="ident">E</span>: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-            <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>);
-        }
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
     }
 }
 
@@ -929,10 +831,8 @@
     <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
     <span class="ident">I</span>: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-            <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>);
-        }
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
     }
 }
 
@@ -942,10 +842,8 @@
     <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
     <span class="ident">I</span>: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-            <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>);
-        }
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
     }
 }
 
@@ -955,10 +853,8 @@
     <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
     <span class="ident">B</span>: <span class="ident">Actor</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-            <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>);
-        }
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
     }
 }
 
@@ -968,12 +864,8 @@
     <span class="ident">M</span>: <span class="ident">Message</span>,
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="self">self</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>);
-            }
-        }));
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="self">self</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>)));
     }
 }
 
@@ -1037,15 +929,9 @@
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Actor</span>,
     <span class="ident">M</span>: <span class="ident">Message</span>,
-    <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-        <span class="ident">actix_rt</span>::<span class="ident">spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="self">self</span>.<span class="kw">await</span>;
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>)
-            }
-        });
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+        <span class="ident">actix_rt</span>::<span class="ident">spawn</span>(<span class="kw">async</span> { <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>.<span class="kw">await</span>) });
     }
 }
 
@@ -1093,22 +979,13 @@
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Actor</span>,
     <span class="ident">M</span>: <span class="ident">Message</span>,
-    <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
             <span class="ident">ResponseTypeItem</span>::<span class="ident">Fut</span>(<span class="ident">fut</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="ident">actix_rt</span>::<span class="ident">spawn</span>(<span class="kw">async</span> <span class="kw">move</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">fut</span>.<span class="kw">await</span>);
-                    }
-                });
+                <span class="ident">actix_rt</span>::<span class="ident">spawn</span>(<span class="kw">async</span> { <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">fut</span>.<span class="kw">await</span>) });
             }
-            <span class="ident">ResponseTypeItem</span>::<span class="prelude-ty">Result</span>(<span class="ident">res</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>);
-                }
-            }
+            <span class="ident">ResponseTypeItem</span>::<span class="prelude-ty">Result</span>(<span class="ident">res</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>),
         }
     }
 }
@@ -1159,22 +1036,13 @@
     <span class="ident">M</span>: <span class="ident">Message</span>,
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
+    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span>::<span class="prelude-ty">Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
             <span class="ident">ActorResponseTypeItem</span>::<span class="ident">Fut</span>(<span class="ident">fut</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">fut</span>.<span class="ident">map</span>(<span class="kw">move</span> <span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>)
-                    }
-                });
-
+                <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">fut</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>));
                 <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">fut</span>);
             }
-            <span class="ident">ActorResponseTypeItem</span>::<span class="prelude-ty">Result</span>(<span class="ident">res</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>);
-                }
-            }
+            <span class="ident">ActorResponseTypeItem</span>::<span class="prelude-ty">Result</span>(<span class="ident">res</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>),
         }
     }
 }
@@ -1186,10 +1054,8 @@
             <span class="macro-nonterminal">A</span>: <span class="ident">Actor</span>,
             <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">type</span><span class="op">&gt;</span>,
         {
-            <span class="kw">fn</span> <span class="macro-nonterminal">handle</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">ResponseChannel</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>) {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="ident">tx</span> {
-                    <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>);
-                }
+            <span class="kw">fn</span> <span class="macro-nonterminal">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">type</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
+                <span class="macro-nonterminal">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
             }
         }
     };
@@ -1210,5 +1076,19 @@
 <span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">f64</span>);
 <span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">String</span>);
 <span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">bool</span>);
+
+<span class="comment">// Helper trait for send one shot message from Option&lt;Sender&gt; type.</span>
+<span class="comment">// None and error are ignored.</span>
+<span class="kw">trait</span> <span class="ident">OneshotSend</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>);
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">OneshotSend</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="self">self</span> {
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">msg</span>);
+        }
+    }
+}
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "actix";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
