@@ -17,7 +17,7 @@ use std::{
 
 use futures_core::{stream::Stream, task::__internal::AtomicWaker};
 use parking_lot::Mutex;
-use tokio::sync::oneshot::{channel as sync_channel, Receiver};
+use tokio::sync::oneshot::{channel as oneshot_channel, Receiver as OneshotReceiver};
 
 use crate::actor::Actor;
 use crate::handler::{Handler, Message};
@@ -35,7 +35,7 @@ where
 
     fn try_send(&self, msg: M) -> Result<(), SendError<M>>;
 
-    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>;
+    fn send(&self, msg: M) -> Result<OneshotReceiver<M::Result>, SendError<M>>;
 
     fn boxed(&self) -> Box<dyn Sender<M> + Sync>;
 
@@ -251,7 +251,7 @@ impl<A: Actor> AddressSender<A> {
     /// Attempts to send a message on this `Sender<A>` with blocking.
     ///
     /// This function must be called from inside of a task.
-    pub fn send<M>(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>>
+    pub fn send<M>(&self, msg: M) -> Result<OneshotReceiver<M::Result>, SendError<M>>
     where
         A: Handler<M>,
         A::Context: ToEnvelope<A, M>,
@@ -284,7 +284,7 @@ impl<A: Actor> AddressSender<A> {
         if park_self {
             self.park();
         }
-        let (tx, rx) = sync_channel();
+        let (tx, rx) = oneshot_channel();
         let env = <A::Context as ToEnvelope<A, M>>::pack(msg, Some(tx));
         self.queue_push_and_signal(env);
         Ok(rx)
@@ -444,7 +444,7 @@ where
     fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.try_send(msg, true)
     }
-    fn send(&self, msg: M) -> Result<Receiver<M::Result>, SendError<M>> {
+    fn send(&self, msg: M) -> Result<OneshotReceiver<M::Result>, SendError<M>> {
         self.send(msg)
     }
     fn boxed(&self) -> Box<dyn Sender<M> + Sync> {

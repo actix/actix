@@ -4,7 +4,17 @@
 ### Added
 * Added `actix::prelude::AsyncResponse` to use async/await syntax in actor handler [#449]
 
+### Changed
+* Rework `ActorFuture` trait. [#465]
+* `actix::fut::{wrap_future, wrap_stream}` would need type annotation for Actor type. [#465]
+
+### Removed
+* Remove `dev::ResponseChannel` trait [#472]
+* `dev::MessageResponse::handle` method does not need generic type [#472]
+
 [#449]: https://github.com/actix/actix/pull/449
+[#465]: https://github.com/actix/actix/issues/465
+[#472]: https://github.com/actix/actix/pull/472
 
 
 ## 0.11.0-beta.2 - 2021-02-06

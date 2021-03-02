@@ -12,25 +12,19 @@ pin_project! {
     /// This future is returned by the `ActorStream::fold` method.
     #[derive(Debug)]
     #[must_use = "streams do nothing unless polled"]
-    pub struct StreamFold<S, F, Fut, T>
-    where
-        Fut: IntoActorFuture,
-    {
+    pub struct StreamFold<S, F, Fut, T> {
         #[pin]
         stream: S,
         f: F,
         #[pin]
-        state: State<T, Fut::Future>,
+        state: State<T, Fut>,
     }
 }
 
 pin_project! {
     #[project = FoldStateProj]
     #[derive(Debug)]
-    enum State<T, F>
-    where
-        F: ActorFuture,
-    {
+    enum State<T, F> {
         /// Placeholder state when doing work
         Empty,
 
@@ -47,11 +41,12 @@ pin_project! {
     }
 }
 
-pub fn new<S, F, Fut, T>(stream: S, f: F, t: T) -> StreamFold<S, F, Fut, T>
+pub fn new<S, A, F, Fut, T>(stream: S, f: F, t: T) -> StreamFold<S, F, Fut::Future, T>
 where
-    S: ActorStream,
-    F: FnMut(T, S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> Fut,
-    Fut: IntoActorFuture<Output = T, Actor = S::Actor>,
+    S: ActorStream<A>,
+    A: Actor,
+    F: FnMut(T, S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: IntoActorFuture<A, Output = T>,
 {
     StreamFold {
         stream,
@@ -60,20 +55,20 @@ where
     }
 }
 
-impl<S, F, Fut, T> ActorFuture for StreamFold<S, F, Fut, T>
+impl<S, A, F, Fut, T> ActorFuture<A> for StreamFold<S, F, Fut::Future, T>
 where
-    S: ActorStream,
-    F: FnMut(T, S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> Fut,
-    Fut: IntoActorFuture<Output = T, Actor = S::Actor>,
-    Fut::Future: ActorFuture,
+    S: ActorStream<A>,
+    A: Actor,
+    F: FnMut(T, S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: IntoActorFuture<A, Output = T>,
+    Fut::Future: ActorFuture<A>,
 {
     type Output = T;
-    type Actor = S::Actor;
 
     fn poll(
         mut self: Pin<&mut Self>,
-        act: &mut S::Actor,
-        ctx: &mut <S::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<T> {
         loop {

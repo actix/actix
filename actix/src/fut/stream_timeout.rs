@@ -16,10 +16,7 @@ pin_project! {
     /// This is created by the `ActorFuture::timeout()` method.
     #[derive(Debug)]
     #[must_use = "streams do nothing unless polled"]
-    pub struct StreamTimeout<S>
-    where
-        S: ActorStream,
-    {
+    pub struct StreamTimeout<S> {
         #[pin]
         stream: S,
         dur: Duration,
@@ -28,9 +25,10 @@ pin_project! {
     }
 }
 
-pub fn new<S>(stream: S, timeout: Duration) -> StreamTimeout<S>
+pub fn new<S, A>(stream: S, timeout: Duration) -> StreamTimeout<S>
 where
-    S: ActorStream,
+    S: ActorStream<A>,
+    A: Actor,
 {
     StreamTimeout {
         stream,
@@ -39,17 +37,17 @@ where
     }
 }
 
-impl<S> ActorStream for StreamTimeout<S>
+impl<S, A> ActorStream<A> for StreamTimeout<S>
 where
-    S: ActorStream,
+    S: ActorStream<A>,
+    A: Actor,
 {
     type Item = Result<S::Item, ()>;
-    type Actor = S::Actor;
 
     fn poll_next(
         self: Pin<&mut Self>,
-        act: &mut S::Actor,
-        ctx: &mut <S::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Result<S::Item, ()>>> {
         let mut this = self.project();

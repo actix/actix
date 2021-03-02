@@ -136,7 +136,7 @@ pub mod dev {
         pub use crate::address::channel::{channel, AddressReceiver, AddressSender};
     }
     pub use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
-    pub use crate::handler::{MessageResponse, ResponseChannel};
+    pub use crate::handler::{MessageResponse, OneshotSender};
     pub use crate::mailbox::Mailbox;
     pub use crate::registry::{Registry, SystemRegistry};
 }
