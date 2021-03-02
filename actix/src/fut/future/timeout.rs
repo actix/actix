@@ -24,10 +24,12 @@ pin_project! {
     }
 }
 
-pub fn new<F>(future: F, timeout: Duration) -> Timeout<F> {
-    Timeout {
-        fut: future,
-        timeout: sleep(timeout),
+impl<F> Timeout<F> {
+    pub(super) fn new(future: F, timeout: Duration) -> Self {
+        Self {
+            fut: future,
+            timeout: sleep(timeout),
+        }
     }
 }
 
@@ -45,11 +47,9 @@ where
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.project();
-
-        if this.timeout.poll(task).is_ready() {
-            return Poll::Ready(Err(()));
+        match this.fut.poll(act, ctx, task) {
+            Poll::Ready(res) => Poll::Ready(Ok(res)),
+            Poll::Pending => this.timeout.poll(task).map(Err),
         }
-
-        this.fut.poll(act, ctx, task).map(Ok)
     }
 }
