@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures_core::stream::Stream;
+use futures_core::{ready, stream::Stream};
 use log::error;
 use pin_project_lite::pin_project;
 
@@ -129,20 +129,25 @@ where
             <A as StreamHandler<S::Item>>::started(act, ctx);
         }
 
-        match this.stream.as_mut().poll_next(task) {
-            Poll::Ready(Some(msg)) => {
-                A::handle(act, msg, ctx);
-                if !ctx.waiting() {
-                    // Let the future's context know that this future might be polled right the way
-                    task.waker().wake_by_ref();
-                }
-                Poll::Pending
+        let mut polled = 0;
+
+        while let Some(msg) = ready!(this.stream.as_mut().poll_next(task)) {
+            A::handle(act, msg, ctx);
+
+            polled += 1;
+
+            if ctx.waiting() {
+                return Poll::Pending;
+            // Yield after 16 consecutive polls on this stream and self wake up.
+            // This is to prevent starvation of other actor futures when this stream yield
+            // too many item in short period of time.
+            } else if polled == 16 {
+                task.waker().wake_by_ref();
+                return Poll::Pending;
             }
-            Poll::Ready(None) => {
-                A::finished(act, ctx);
-                Poll::Ready(())
-            }
-            Poll::Pending => Poll::Pending,
         }
+
+        A::finished(act, ctx);
+        Poll::Ready(())
     }
 }
