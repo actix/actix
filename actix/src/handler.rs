@@ -1,9 +1,6 @@
-use std::fmt;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
+use std::{fmt, future::Future, pin::Pin, sync::Arc};
 
-use tokio::sync::oneshot::Sender as SyncSender;
+pub use tokio::sync::oneshot::Sender as OneshotSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
@@ -149,12 +146,8 @@ where
     M: Message,
     A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.wait(self.0.map(move |res, _, _| {
-            if let Some(tx) = tx {
-                tx.send(res);
-            }
-        }));
+    fn handle(self, ctx: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
+        ctx.wait(self.0.map(|res, _, _| tx.send(res)));
     }
 }
 
@@ -241,13 +234,6 @@ pub type ResponseActFuture<A, I> = Pin<Box<dyn ActorFuture<Output = I, Actor = A
 /// ```
 pub type ResponseFuture<I> = Pin<Box<dyn Future<Output = I>>>;
 
-/// A trait that defines a message response channel.
-pub trait ResponseChannel<M: Message>: 'static {
-    fn is_canceled(&self) -> bool;
-
-    fn send(self, response: M::Result);
-}
-
 /// A trait which defines message responses.
 ///
 /// We offer implementation for some common language types, if you need
@@ -266,27 +252,7 @@ pub trait ResponseChannel<M: Message>: 'static {
 /// - [AtomicResponse] should be used when the future returned needs exclusive
 ///   access to  Actor's internal state or context.
 pub trait MessageResponse<A: Actor, M: Message> {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>);
-}
-
-impl<M: Message + 'static> ResponseChannel<M> for SyncSender<M::Result>
-where
-    M::Result: Send,
-{
-    fn is_canceled(&self) -> bool {
-        SyncSender::is_closed(self)
-    }
-
-    fn send(self, response: M::Result) {
-        let _ = Self::send(self, response);
-    }
-}
-
-impl<M: Message + 'static> ResponseChannel<M> for () {
-    fn is_canceled(&self) -> bool {
-        true
-    }
-    fn send(self, _: M::Result) {}
+    fn handle(self, ctx: &mut A::Context, tx: Option<OneshotSender<M::Result>>);
 }
 
 impl<A, M> MessageResponse<A, M> for MessageResult<M>
@@ -294,10 +260,8 @@ where
     A: Actor,
     M: Message,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        if let Some(tx) = tx {
-            tx.send(self.0);
-        }
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
+        tx.send(self.0)
     }
 }
 
@@ -308,10 +272,8 @@ where
     I: 'static,
     E: 'static,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        if let Some(tx) = tx {
-            tx.send(self);
-        }
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<Self>>) {
+        tx.send(self)
     }
 }
 
@@ -321,10 +283,8 @@ where
     M: Message<Result = Self>,
     I: 'static,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        if let Some(tx) = tx {
-            tx.send(self);
-        }
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<Self>>) {
+        tx.send(self)
     }
 }
 
@@ -334,10 +294,8 @@ where
     M: Message<Result = Self>,
     I: 'static,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        if let Some(tx) = tx {
-            tx.send(self);
-        }
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<Self>>) {
+        tx.send(self)
     }
 }
 
@@ -347,10 +305,8 @@ where
     M: Message<Result = Self>,
     B: Actor,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        if let Some(tx) = tx {
-            tx.send(self);
-        }
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<Self>>) {
+        tx.send(self)
     }
 }
 
@@ -360,12 +316,8 @@ where
     M: Message,
     A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
-        ctx.spawn(self.map(move |res, _, _| {
-            if let Some(tx) = tx {
-                tx.send(res);
-            }
-        }));
+    fn handle(self, ctx: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
+        ctx.spawn(self.map(|res, _, _| tx.send(res)));
     }
 }
 
@@ -429,15 +381,9 @@ impl<A, M> MessageResponse<A, M> for ResponseFuture<M::Result>
 where
     A: Actor,
     M: Message,
-    A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-        actix_rt::spawn(async move {
-            let res = self.await;
-            if let Some(tx) = tx {
-                tx.send(res)
-            }
-        });
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
+        actix_rt::spawn(async { tx.send(self.await) });
     }
 }
 
@@ -485,22 +431,13 @@ impl<A, M> MessageResponse<A, M> for Response<M::Result>
 where
     A: Actor,
     M: Message,
-    A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
         match self.item {
             ResponseTypeItem::Fut(fut) => {
-                actix_rt::spawn(async move {
-                    if let Some(tx) = tx {
-                        tx.send(fut.await);
-                    }
-                });
+                actix_rt::spawn(async { tx.send(fut.await) });
             }
-            ResponseTypeItem::Result(res) => {
-                if let Some(tx) = tx {
-                    tx.send(res);
-                }
-            }
+            ResponseTypeItem::Result(res) => tx.send(res),
         }
     }
 }
@@ -551,22 +488,13 @@ where
     M: Message,
     A::Context: AsyncContext<A>,
 {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+    fn handle(self, ctx: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
         match self.item {
             ActorResponseTypeItem::Fut(fut) => {
-                let fut = fut.map(move |res, _, _| {
-                    if let Some(tx) = tx {
-                        tx.send(res)
-                    }
-                });
-
+                let fut = fut.map(|res, _, _| tx.send(res));
                 ctx.spawn(fut);
             }
-            ActorResponseTypeItem::Result(res) => {
-                if let Some(tx) = tx {
-                    tx.send(res);
-                }
-            }
+            ActorResponseTypeItem::Result(res) => tx.send(res),
         }
     }
 }
@@ -578,10 +506,8 @@ macro_rules! SIMPLE_RESULT {
             A: Actor,
             M: Message<Result = $type>,
         {
-            fn handle<R: ResponseChannel<M>>(self, _: &mut A::Context, tx: Option<R>) {
-                if let Some(tx) = tx {
-                    tx.send(self);
-                }
+            fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<$type>>) {
+                tx.send(self)
             }
         }
     };
@@ -602,3 +528,17 @@ SIMPLE_RESULT!(f32);
 SIMPLE_RESULT!(f64);
 SIMPLE_RESULT!(String);
 SIMPLE_RESULT!(bool);
+
+// Helper trait for send one shot message from Option<Sender> type.
+// None and error are ignored.
+trait OneshotSend<M> {
+    fn send(self, msg: M);
+}
+
+impl<M> OneshotSend<M> for Option<OneshotSender<M>> {
+    fn send(self, msg: M) {
+        if let Some(tx) = self {
+            let _ = tx.send(msg);
+        }
+    }
+}
