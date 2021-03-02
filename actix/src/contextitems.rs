@@ -146,18 +146,15 @@ where
         task: &mut task::Context<'_>,
     ) -> Poll<Self::Output> {
         let mut this = self.project();
-        loop {
-            match this.stream.as_mut().poll_next(task) {
-                Poll::Ready(Some(msg)) => {
-                    let fut = Handler::handle(act, msg, ctx);
-                    fut.handle(ctx, None);
-                    if ctx.waiting() {
-                        return Poll::Pending;
-                    }
-                }
-                Poll::Ready(None) => return Poll::Ready(()),
-                Poll::Pending => return Poll::Pending,
+
+        while let Some(msg) = ready!(this.stream.as_mut().poll_next(task)) {
+            let fut = Handler::handle(act, msg, ctx);
+            fut.handle(ctx, None);
+            if ctx.waiting() {
+                return Poll::Pending;
             }
         }
+
+        Poll::Ready(())
     }
 }
