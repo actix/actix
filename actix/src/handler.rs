@@ -4,7 +4,7 @@ pub use tokio::sync::oneshot::Sender as OneshotSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
-use crate::fut::ActorFuture;
+use crate::fut::{ActorFuture, ActorFutureExt, LocalBoxActorFuture};
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -198,7 +198,7 @@ where
 ///     }
 /// }
 /// ```
-pub type ResponseActFuture<A, I> = Pin<Box<dyn ActorFuture<A, Output = I>>>;
+pub type ResponseActFuture<A, I> = LocalBoxActorFuture<A, I>;
 
 /// A specialized future for asynchronous message handling.
 ///

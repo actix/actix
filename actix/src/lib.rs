@@ -60,7 +60,9 @@ pub use crate::actor::{
 };
 pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr, WeakRecipient};
 pub use crate::context::Context;
-pub use crate::fut::{ActorFuture, ActorStream, FinishStream, WrapFuture, WrapStream};
+pub use crate::fut::{
+    ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, WrapFuture, WrapStream,
+};
 pub use crate::handler::{
     ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
     ResponseActFuture, ResponseFuture,
@@ -97,7 +99,9 @@ pub mod prelude {
         Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
     };
     pub use crate::context::{Context, ContextFutureSpawner};
-    pub use crate::fut::{ActorFuture, ActorStream, WrapFuture, WrapStream};
+    pub use crate::fut::{
+        ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, WrapFuture, WrapStream,
+    };
     pub use crate::handler::{
         ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
         ResponseActFuture, ResponseFuture,
