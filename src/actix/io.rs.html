@@ -562,17 +562,6 @@
 <span id="559">559</span>
 <span id="560">560</span>
 <span id="561">561</span>
-<span id="562">562</span>
-<span id="563">563</span>
-<span id="564">564</span>
-<span id="565">565</span>
-<span id="566">566</span>
-<span id="567">567</span>
-<span id="568">568</span>
-<span id="569">569</span>
-<span id="570">570</span>
-<span id="571">571</span>
-<span id="572">572</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cell</span>::<span class="ident">RefCell</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span>;
@@ -674,7 +663,6 @@
         );
         <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">WriterFut</span> {
             <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
-            <span class="ident">act</span>: <span class="ident">PhantomData</span>,
         });
 
         <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="self">Self</span> { <span class="ident">inner</span> };
@@ -716,16 +704,15 @@
     }
 }
 
-<span class="kw">struct</span> <span class="ident">WriterFut</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">struct</span> <span class="ident">WriterFut</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span>,
 {
-    <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
     <span class="ident">inner</span>: <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="lifetime">&#39;static</span>, <span class="ident">E</span>: <span class="lifetime">&#39;static</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">WriterFut</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="lifetime">&#39;static</span>, <span class="ident">E</span>: <span class="lifetime">&#39;static</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WriterFut</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span>,
@@ -733,7 +720,6 @@
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
@@ -774,7 +760,6 @@
                     <span class="kw">if</span> <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">inner</span>.<span class="ident">high</span> {
                         <span class="ident">ctx</span>.<span class="ident">wait</span>(<span class="ident">WriterDrain</span> {
                             <span class="ident">inner</span>: <span class="ident">this</span>.<span class="ident">inner</span>.<span class="ident">clone</span>(),
-                            <span class="ident">act</span>: <span class="ident">PhantomData</span>,
                         });
                     }
                     <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>;
@@ -816,16 +801,15 @@
     }
 }
 
-<span class="kw">struct</span> <span class="ident">WriterDrain</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">struct</span> <span class="ident">WriterDrain</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span>,
 {
-    <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
     <span class="ident">inner</span>: <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">WriterDrain</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WriterDrain</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io</span>::<span class="ident">Error</span><span class="op">&gt;</span>,
@@ -833,7 +817,6 @@
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
@@ -909,7 +892,6 @@
         );
         <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">WriterFut</span> {
             <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
-            <span class="ident">act</span>: <span class="ident">PhantomData</span>,
         });
 
         <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="self">Self</span> { <span class="ident">enc</span>, <span class="ident">inner</span> };
@@ -938,7 +920,6 @@
         );
         <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">WriterFut</span> {
             <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
-            <span class="ident">act</span>: <span class="ident">PhantomData</span>,
         });
 
         <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="self">Self</span> { <span class="ident">enc</span>, <span class="ident">inner</span> };
@@ -1017,7 +998,6 @@
 
         <span class="kw">let</span> <span class="ident">handle</span> <span class="op">=</span> <span class="ident">ctxt</span>.<span class="ident">spawn</span>(<span class="ident">SinkWriteFuture</span> {
             <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
-            <span class="ident">_actor</span>: <span class="ident">PhantomData</span>,
         });
 
         <span class="ident">inner</span>.<span class="ident">borrow_mut</span>().<span class="ident">handle</span> <span class="op">=</span> <span class="ident">handle</span>;
@@ -1074,19 +1054,17 @@
     <span class="ident">buffer</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">struct</span> <span class="ident">SinkWriteFuture</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="lifetime">&#39;static</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>, <span class="ident">A</span><span class="op">&gt;</span> {
+<span class="kw">struct</span> <span class="ident">SinkWriteFuture</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="lifetime">&#39;static</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span> {
     <span class="ident">inner</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">InnerSinkWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">_actor</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="lifetime">&#39;static</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">SinkWriteFuture</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="lifetime">&#39;static</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SinkWriteFuture</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span>,
     <span class="ident">A</span>: <span class="ident">Actor</span> <span class="op">+</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">S</span>::<span class="ident">Error</span><span class="op">&gt;</span>,
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,

@@ -449,10 +449,6 @@
 <span id="446">446</span>
 <span id="447">447</span>
 <span id="448">448</span>
-<span id="449">449</span>
-<span id="450">450</span>
-<span id="451">451</span>
-<span id="452">452</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Custom `Future` implementation with `Actix` support</span>
 
@@ -586,18 +582,15 @@
 <span class="doccomment">/// ```</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// See also [into_actor](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorFuture</span> {
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
     <span class="doccomment">/// The type of value that this future will resolved with if it is</span>
     <span class="doccomment">/// successful.</span>
     <span class="kw">type</span> <span class="ident">Output</span>;
 
-    <span class="doccomment">/// The actor within which this future runs</span>
-    <span class="kw">type</span> <span class="ident">Actor</span>: <span class="ident">Actor</span>;
-
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>,
+        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>,
+        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span>;
 
@@ -605,7 +598,7 @@
     <span class="doccomment">/// the resulting type.</span>
     <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">map</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -613,10 +606,10 @@
 
     <span class="doccomment">/// Chain on a computation for when a future finished, passing the result of</span>
     <span class="doccomment">/// the future to the provided closure `f`.</span>
-    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">B</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">B</span>, <span class="ident">F</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">B</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">B</span>, <span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">B</span>,
-        <span class="ident">B</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">Actor</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Actor</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">B</span>,
+        <span class="ident">B</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">then</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -636,24 +629,21 @@
 <span class="doccomment">/// A stream of values, not all of which may have been produced yet.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// This is similar to `futures_util::stream::Stream` trait, except it works with `Actor`</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorStream</span> {
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
     <span class="doccomment">/// The type of item this stream will yield on success.</span>
     <span class="kw">type</span> <span class="ident">Item</span>;
 
-    <span class="doccomment">/// The actor within which this stream runs.</span>
-    <span class="kw">type</span> <span class="ident">Actor</span>: <span class="ident">Actor</span>;
-
     <span class="kw">fn</span> <span class="ident">poll_next</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>,
+        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>,
+        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
     <span class="doccomment">/// Converts a stream of type `T` to a stream of type `U`.</span>
     <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">U</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StreamMap</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">stream_map</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -661,10 +651,10 @@
 
     <span class="doccomment">/// Chain on a computation for when a value is ready, passing the resulting</span>
     <span class="doccomment">/// item to the provided closure `f`.</span>
-    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StreamThen</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StreamThen</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">U</span>::<span class="ident">Future</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
-        <span class="ident">U</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">Actor</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Actor</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
+        <span class="ident">U</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">stream_then</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -672,10 +662,10 @@
 
     <span class="doccomment">/// Execute an accumulating computation over a stream, collecting all the</span>
     <span class="doccomment">/// values into one final result.</span>
-    <span class="kw">fn</span> <span class="ident">fold</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">init</span>: <span class="ident">T</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StreamFold</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">Fut</span>, <span class="ident">T</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">fold</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">T</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">init</span>: <span class="ident">T</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">StreamFold</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">Fut</span>::<span class="ident">Future</span>, <span class="ident">T</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">Actor</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Actor</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">T</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+        <span class="ident">Fut</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">stream_fold</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>, <span class="ident">init</span>)
@@ -704,55 +694,59 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// This trait is very similar to the `IntoIterator` trait and is intended to be</span>
 <span class="doccomment">/// used in a very similar fashion.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IntoActorFuture</span> {
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
     <span class="doccomment">/// The future that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Output</span>, <span class="ident">Actor</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Actor</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span>;
 
     <span class="doccomment">/// The item that the future may resolve with.</span>
     <span class="kw">type</span> <span class="ident">Output</span>;
-    <span class="doccomment">/// The actor within which this future runs</span>
-    <span class="kw">type</span> <span class="ident">Actor</span>: <span class="ident">Actor</span>;
 
     <span class="doccomment">/// Consumes this object and produces a future.</span>
     <span class="kw">fn</span> <span class="ident">into_future</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Future</span>;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&gt;</span> <span class="ident">IntoActorFuture</span> <span class="kw">for</span> <span class="ident">F</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span>
+<span class="kw">where</span>
+    <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sized</span>,
+    <span class="ident">A</span>: <span class="ident">Actor</span>,
+{
     <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">F</span>;
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Output</span>;
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Actor</span>;
 
     <span class="kw">fn</span> <span class="ident">into_future</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">F</span> {
         <span class="self">self</span>
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">ActorFuture</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
+<span class="kw">where</span>
+    <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span>,
+    <span class="ident">A</span>: <span class="ident">Actor</span>,
+{
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Output</span>;
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Actor</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>,
+        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>,
+        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">as_mut</span>()).<span class="ident">poll</span>(<span class="ident">srv</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">P</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">P</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">P</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">P</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">P</span>: <span class="ident">Unpin</span> <span class="op">+</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">DerefMut</span>,
-    <span class="op">&lt;</span><span class="ident">P</span> <span class="kw">as</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Deref</span><span class="op">&gt;</span>::<span class="ident">Target</span>: <span class="ident">ActorFuture</span>,
+    <span class="op">&lt;</span><span class="ident">P</span> <span class="kw">as</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Deref</span><span class="op">&gt;</span>::<span class="ident">Target</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+    <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">P</span> <span class="kw">as</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Deref</span><span class="op">&gt;</span>::<span class="ident">Target</span> <span class="kw">as</span> <span class="ident">ActorFuture</span><span class="op">&gt;</span>::<span class="ident">Output</span>;
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">P</span> <span class="kw">as</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Deref</span><span class="op">&gt;</span>::<span class="ident">Target</span> <span class="kw">as</span> <span class="ident">ActorFuture</span><span class="op">&gt;</span>::<span class="ident">Actor</span>;
+    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">P</span> <span class="kw">as</span> <span class="ident">std</span>::<span class="ident">ops</span>::<span class="ident">Deref</span><span class="op">&gt;</span>::<span class="ident">Target</span> <span class="kw">as</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>::<span class="ident">Output</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>,
+        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>,
+        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="ident">Pin</span>::<span class="ident">get_mut</span>(<span class="self">self</span>).<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">srv</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
@@ -765,7 +759,7 @@
     <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
     <span class="doccomment">/// The future that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Output</span>, <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span>;
 
     <span class="doccomment">/// The item that the future may resolve with.</span>
     <span class="kw">type</span> <span class="ident">Output</span>;
@@ -798,7 +792,7 @@
     {
         <span class="attribute">#[<span class="ident">pin</span>]</span>
         <span class="ident">fut</span>: <span class="ident">F</span>,
-        <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+        <span class="ident">_act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
     }
 }
 
@@ -813,22 +807,21 @@
 {
     <span class="ident">FutureWrap</span> {
         <span class="ident">fut</span>: <span class="ident">f</span>,
-        <span class="ident">act</span>: <span class="ident">PhantomData</span>,
+        <span class="ident">_act</span>: <span class="ident">PhantomData</span>,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">F</span>: <span class="ident">Future</span>,
     <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Output</span>;
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>,
+        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>,
+        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">project</span>().<span class="ident">fut</span>.<span class="ident">poll</span>(<span class="ident">task</span>)
@@ -841,7 +834,7 @@
     <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
     <span class="doccomment">/// The stream that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Stream</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Item</span>, <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span><span class="op">&gt;</span>;
+    <span class="kw">type</span> <span class="ident">Stream</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Item</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span>;
 
     <span class="doccomment">/// The item that the future may resolve with.</span>
     <span class="kw">type</span> <span class="ident">Item</span>;
@@ -874,7 +867,7 @@
     {
         <span class="attribute">#[<span class="ident">pin</span>]</span>
         <span class="ident">st</span>: <span class="ident">S</span>,
-        <span class="ident">act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+        <span class="ident">_act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
     }
 }
 
@@ -885,22 +878,21 @@
 {
     <span class="ident">StreamWrap</span> {
         <span class="ident">st</span>: <span class="ident">s</span>,
-        <span class="ident">act</span>: <span class="ident">PhantomData</span>,
+        <span class="ident">_act</span>: <span class="ident">PhantomData</span>,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorStream</span> <span class="kw">for</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">S</span>: <span class="ident">Stream</span>,
     <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
     <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">S</span>::<span class="ident">Item</span>;
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span>;
 
     <span class="kw">fn</span> <span class="ident">poll_next</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Actor</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>,
+        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>,
+        <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">project</span>().<span class="ident">st</span>.<span class="ident">poll_next</span>(<span class="ident">task</span>)

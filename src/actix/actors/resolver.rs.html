@@ -430,7 +430,6 @@
 <span id="427">427</span>
 <span id="428">428</span>
 <span id="429">429</span>
-<span id="430">430</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! DNS resolver and connector utility actor</span>
 <span class="doccomment">//!</span>
@@ -762,9 +761,9 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">ResolveFut</span> {
+<span class="kw">impl</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Resolver</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ResolveFut</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">SocketAddr</span><span class="op">&gt;</span>, <span class="ident">ResolverError</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">Resolver</span>;
+
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
         <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Resolver</span>,
@@ -826,9 +825,8 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ActorFuture</span> <span class="kw">for</span> <span class="ident">TcpConnector</span> {
+<span class="kw">impl</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Resolver</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">TcpConnector</span> {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">TcpStream</span>, <span class="ident">ResolverError</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Actor</span> <span class="op">=</span> <span class="ident">Resolver</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,

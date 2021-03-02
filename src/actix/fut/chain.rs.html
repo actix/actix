@@ -73,7 +73,12 @@
 <span id="70">70</span>
 <span id="71">71</span>
 <span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
 </pre><div class="example-wrap"><pre class="rust ">
+<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">marker</span>::<span class="ident">PhantomData</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 
@@ -86,11 +91,12 @@
     <span class="attribute">#[<span class="ident">project</span> <span class="op">=</span> <span class="ident">ChainProj</span>]</span>
     <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless you `.await` or poll them&quot;</span>]</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Chain</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Chain</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">Fn</span>, <span class="ident">Act</span><span class="op">&gt;</span> {
         <span class="ident">First</span> {
             <span class="attribute">#[<span class="ident">pin</span>]</span>
             <span class="ident">fut1</span>: <span class="ident">A</span>,
-            <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span>
+            <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Fn</span><span class="op">&gt;</span>,
+            <span class="ident">_act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
         },
         <span class="ident">Second</span> {
             <span class="attribute">#[<span class="ident">pin</span>]</span>
@@ -100,34 +106,36 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">C</span><span class="op">&gt;</span> <span class="ident">Chain</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">C</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">Fn</span>, <span class="ident">Act</span><span class="op">&gt;</span> <span class="ident">Chain</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">Fn</span>, <span class="ident">Act</span><span class="op">&gt;</span>
 <span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">ActorFuture</span>,
-    <span class="ident">B</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Actor</span> <span class="op">=</span> <span class="ident">A</span>::<span class="ident">Actor</span><span class="op">&gt;</span>,
+    <span class="ident">A</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
+    <span class="ident">B</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
+    <span class="ident">Act</span>: <span class="ident">Actor</span>,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">fut1</span>: <span class="ident">A</span>, <span class="ident">data</span>: <span class="ident">C</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Chain</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">C</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">fut1</span>: <span class="ident">A</span>, <span class="ident">data</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="ident">Chain</span>::<span class="ident">First</span> {
             <span class="ident">fut1</span>,
             <span class="ident">data</span>: <span class="prelude-val">Some</span>(<span class="ident">data</span>),
+            <span class="ident">_act</span>: <span class="ident">PhantomData</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">poll</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">poll</span><span class="op">&lt;</span><span class="ident">Fn1</span><span class="op">&gt;</span>(
         <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Actor</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="ident">A</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>,
+        <span class="ident">srv</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>,
+        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-        <span class="ident">f</span>: <span class="ident">F</span>,
+        <span class="ident">f</span>: <span class="ident">Fn1</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident">B</span>::<span class="ident">Output</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident">A</span>::<span class="ident">Output</span>, <span class="ident">C</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Actor</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="ident">A</span>::<span class="ident">Actor</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">B</span>,
+        <span class="ident">Fn1</span>: <span class="ident">FnOnce</span>(<span class="ident">A</span>::<span class="ident">Output</span>, <span class="ident">Fn</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">B</span>,
     {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">f</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">f</span>);
 
         <span class="kw">loop</span> {
             <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">as_mut</span>().<span class="ident">project</span>();
             <span class="kw">let</span> (<span class="ident">output</span>, <span class="ident">data</span>) <span class="op">=</span> <span class="kw">match</span> <span class="ident">this</span> {
-                <span class="ident">ChainProj</span>::<span class="ident">First</span> { <span class="ident">fut1</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> {
+                <span class="ident">ChainProj</span>::<span class="ident">First</span> { <span class="ident">fut1</span>, <span class="ident">data</span>, .. } <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">fut1</span>.<span class="ident">poll</span>(<span class="ident">srv</span>, <span class="ident">ctx</span>, <span class="ident">task</span>) {
                         <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="ident">t</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">t</span>,
                         <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
