@@ -25,10 +25,7 @@ bitflags! {
     }
 }
 
-type Item<A> = (
-    SpawnHandle,
-    Pin<Box<dyn ActorFuture<Output = (), Actor = A>>>,
-);
+type Item<A> = (SpawnHandle, Pin<Box<dyn ActorFuture<A, Output = ()>>>);
 
 pub trait AsyncContextParts<A>: ActorContext + AsyncContext<A>
 where
@@ -129,11 +126,11 @@ where
     /// Spawn new future to this context.
     pub fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
-        F: ActorFuture<Output = (), Actor = A> + 'static,
+        F: ActorFuture<A, Output = ()> + 'static,
     {
         let handle = self.handles[0].next();
         self.handles[0] = handle;
-        let fut: Box<dyn ActorFuture<Output = (), Actor = A>> = Box::new(fut);
+        let fut: Box<dyn ActorFuture<A, Output = ()>> = Box::new(fut);
         self.items.push((handle, Pin::from(fut)));
         handle
     }
@@ -144,7 +141,7 @@ where
     /// During wait period actor does not receive any messages.
     pub fn wait<F>(&mut self, f: F)
     where
-        F: ActorFuture<Output = (), Actor = A> + 'static,
+        F: ActorFuture<A, Output = ()> + 'static,
     {
         self.wait.push(ActorWaitItem::new(f));
     }

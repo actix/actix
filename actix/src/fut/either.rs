@@ -71,18 +71,18 @@ impl<T> Either<T, T> {
     }
 }
 
-impl<A, B> ActorFuture for Either<A, B>
+impl<A, Act, B> ActorFuture<Act> for Either<A, B>
 where
-    A: ActorFuture,
-    B: ActorFuture<Output = A::Output, Actor = A::Actor>,
+    Act: Actor,
+    A: ActorFuture<Act>,
+    B: ActorFuture<Act, Output = A::Output>,
 {
     type Output = A::Output;
-    type Actor = A::Actor;
 
     fn poll(
         self: Pin<&mut Self>,
-        act: &mut A::Actor,
-        ctx: &mut <A::Actor as Actor>::Context,
+        act: &mut Act,
+        ctx: &mut Act::Context,
         task: &mut Context<'_>,
     ) -> Poll<A::Output> {
         match self.project() {

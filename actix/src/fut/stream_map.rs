@@ -20,26 +20,27 @@ pin_project! {
     }
 }
 
-pub fn new<S, F, U>(stream: S, f: F) -> StreamMap<S, F>
+pub fn new<S, A, F, U>(stream: S, f: F) -> StreamMap<S, F>
 where
-    F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
-    S: ActorStream,
+    F: FnMut(S::Item, &mut A, &mut A::Context) -> U,
+    S: ActorStream<A>,
+    A: Actor,
 {
     StreamMap { stream, f }
 }
 
-impl<S, F, U> ActorStream for StreamMap<S, F>
+impl<S, A, F, U> ActorStream<A> for StreamMap<S, F>
 where
-    S: ActorStream,
-    F: FnMut(S::Item, &mut S::Actor, &mut <S::Actor as Actor>::Context) -> U,
+    S: ActorStream<A>,
+    A: Actor,
+    F: FnMut(S::Item, &mut A, &mut A::Context) -> U,
 {
     type Item = U;
-    type Actor = S::Actor;
 
     fn poll_next(
         self: Pin<&mut Self>,
-        act: &mut Self::Actor,
-        ctx: &mut <S::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<U>> {
         let this = self.project();

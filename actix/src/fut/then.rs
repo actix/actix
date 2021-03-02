@@ -14,40 +14,41 @@ pin_project! {
     /// This is created by the `Future::then` method.
     #[derive(Debug)]
     #[must_use = "futures do nothing unless polled"]
-    pub struct Then<A, B, F>
+    pub struct Then<A, B, Fn, Act>
     where
-        A: ActorFuture,
-        B: IntoActorFuture<Actor = A::Actor>,
-        F: 'static
+        A: ActorFuture<Act>,
+        B: IntoActorFuture<Act>,
+        Act: Actor,
     {
         #[pin]
-        state: Chain<A, B::Future, F>,
+        state: Chain<A, B::Future, Fn, Act>,
     }
 }
 
-pub fn new<A, B, F: 'static>(future: A, f: F) -> Then<A, B, F>
+pub fn new<A, B, Fn, Act>(future: A, f: Fn) -> Then<A, B, Fn, Act>
 where
-    A: ActorFuture,
-    B: IntoActorFuture<Actor = A::Actor>,
+    A: ActorFuture<Act>,
+    B: IntoActorFuture<Act>,
+    Act: Actor,
 {
     Then {
         state: Chain::new(future, f),
     }
 }
 
-impl<A, B, F> ActorFuture for Then<A, B, F>
+impl<A, B, Fn, Act> ActorFuture<Act> for Then<A, B, Fn, Act>
 where
-    A: ActorFuture,
-    B: IntoActorFuture<Actor = A::Actor>,
-    F: FnOnce(A::Output, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> B,
+    A: ActorFuture<Act>,
+    B: IntoActorFuture<Act>,
+    Fn: FnOnce(A::Output, &mut Act, &mut Act::Context) -> B,
+    Act: Actor,
 {
     type Output = B::Output;
-    type Actor = A::Actor;
 
     fn poll(
         self: Pin<&mut Self>,
-        act: &mut A::Actor,
-        ctx: &mut <A::Actor as Actor>::Context,
+        act: &mut Act,
+        ctx: &mut Act::Context,
         task: &mut task::Context<'_>,
     ) -> Poll<B::Output> {
         self.project()

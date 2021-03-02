@@ -98,7 +98,6 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
         );
         let h = ctx.spawn(WriterFut {
             inner: inner.clone(),
-            act: PhantomData,
         });
 
         let writer = Self { inner };
@@ -140,16 +139,15 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
     }
 }
 
-struct WriterFut<T, E, A>
+struct WriterFut<T, E>
 where
     T: AsyncWrite + Unpin,
     E: From<io::Error>,
 {
-    act: PhantomData<A>,
     inner: UnsafeWriter<T, E>,
 }
 
-impl<T: 'static, E: 'static, A> ActorFuture for WriterFut<T, E, A>
+impl<T: 'static, E: 'static, A> ActorFuture<A> for WriterFut<T, E>
 where
     T: AsyncWrite + Unpin,
     E: From<io::Error>,
@@ -157,7 +155,6 @@ where
     A::Context: AsyncContext<A>,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,
@@ -198,7 +195,6 @@ where
                     if inner.buffer.len() > inner.high {
                         ctx.wait(WriterDrain {
                             inner: this.inner.clone(),
-                            act: PhantomData,
                         });
                     }
                     return Poll::Pending;
@@ -240,16 +236,15 @@ where
     }
 }
 
-struct WriterDrain<T, E, A>
+struct WriterDrain<T, E>
 where
     T: AsyncWrite + Unpin,
     E: From<io::Error>,
 {
-    act: PhantomData<A>,
     inner: UnsafeWriter<T, E>,
 }
 
-impl<T, E, A> ActorFuture for WriterDrain<T, E, A>
+impl<T, E, A> ActorFuture<A> for WriterDrain<T, E>
 where
     T: AsyncWrite + Unpin,
     E: From<io::Error>,
@@ -257,7 +252,6 @@ where
     A::Context: AsyncContext<A>,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,
@@ -333,7 +327,6 @@ impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
         );
         let h = ctx.spawn(WriterFut {
             inner: inner.clone(),
-            act: PhantomData,
         });
 
         let writer = Self { enc, inner };
@@ -362,7 +355,6 @@ impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
         );
         let h = ctx.spawn(WriterFut {
             inner: inner.clone(),
-            act: PhantomData,
         });
 
         let writer = Self { enc, inner };
@@ -441,7 +433,6 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
 
         let handle = ctxt.spawn(SinkWriteFuture {
             inner: inner.clone(),
-            _actor: PhantomData,
         });
 
         inner.borrow_mut().handle = handle;
@@ -498,19 +489,17 @@ struct InnerSinkWrite<I, S: Sink<I>> {
     buffer: VecDeque<I>,
 }
 
-struct SinkWriteFuture<I: 'static, S: Sink<I>, A> {
+struct SinkWriteFuture<I: 'static, S: Sink<I>> {
     inner: Rc<RefCell<InnerSinkWrite<I, S>>>,
-    _actor: PhantomData<A>,
 }
 
-impl<I: 'static, S: Sink<I>, A> ActorFuture for SinkWriteFuture<I, S, A>
+impl<I: 'static, S: Sink<I>, A> ActorFuture<A> for SinkWriteFuture<I, S>
 where
     S: Sink<I> + Unpin,
     A: Actor + WriteHandler<S::Error>,
     A::Context: AsyncContext<A>,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,
