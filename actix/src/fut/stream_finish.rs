@@ -13,24 +13,27 @@ pin_project! {
     /// This structure is produced by the `ActorStream::finish` method.
     #[must_use = "streams do nothing unless polled"]
     #[derive(Debug)]
-    pub struct StreamFinish<S: ActorStream> {
+    pub struct StreamFinish<S> {
         #[pin]
         stream: S
     }
 }
 
-pub fn new<S: ActorStream>(stream: S) -> StreamFinish<S> {
+pub fn new<S>(stream: S) -> StreamFinish<S> {
     StreamFinish { stream }
 }
 
-impl<S: ActorStream> ActorFuture for StreamFinish<S> {
+impl<S, A> ActorFuture<A> for StreamFinish<S>
+where
+    S: ActorStream<A>,
+    A: Actor,
+{
     type Output = ();
-    type Actor = S::Actor;
 
     fn poll(
         mut self: Pin<&mut Self>,
-        act: &mut S::Actor,
-        ctx: &mut <S::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<()> {
         loop {

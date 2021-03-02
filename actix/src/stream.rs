@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -93,32 +92,29 @@ where
 }
 
 pin_project! {
-    pub(crate) struct ActorStream<A, S> {
+    pub(crate) struct ActorStream<S> {
         #[pin]
         stream: S,
         started: bool,
-        act: PhantomData<A>,
     }
 }
 
-impl<A, S> ActorStream<A, S> {
+impl<S> ActorStream<S> {
     pub fn new(fut: S) -> Self {
         Self {
             stream: fut,
             started: false,
-            act: PhantomData,
         }
     }
 }
 
-impl<A, S> ActorFuture for ActorStream<A, S>
+impl<A, S> ActorFuture<A> for ActorStream<S>
 where
     S: Stream,
     A: Actor + StreamHandler<S::Item>,
     A::Context: AsyncContext<A>,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,

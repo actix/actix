@@ -130,18 +130,15 @@ use crate::actor::Actor;
 /// ```
 ///
 /// See also [into_actor](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
-pub trait ActorFuture {
+pub trait ActorFuture<A: Actor> {
     /// The type of value that this future will resolved with if it is
     /// successful.
     type Output;
 
-    /// The actor within which this future runs
-    type Actor: Actor;
-
     fn poll(
         self: Pin<&mut Self>,
-        srv: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
+        srv: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output>;
 
@@ -149,7 +146,7 @@ pub trait ActorFuture {
     /// the resulting type.
     fn map<F, U>(self, f: F) -> Map<Self, F>
     where
-        F: FnOnce(Self::Output, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
+        F: FnOnce(Self::Output, &mut A, &mut A::Context) -> U,
         Self: Sized,
     {
         map::new(self, f)
@@ -157,10 +154,10 @@ pub trait ActorFuture {
 
     /// Chain on a computation for when a future finished, passing the result of
     /// the future to the provided closure `f`.
-    fn then<F, B>(self, f: F) -> Then<Self, B, F>
+    fn then<F, B>(self, f: F) -> Then<Self, B, F, A>
     where
-        F: FnOnce(Self::Output, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> B,
-        B: IntoActorFuture<Actor = Self::Actor>,
+        F: FnOnce(Self::Output, &mut A, &mut A::Context) -> B,
+        B: IntoActorFuture<A>,
         Self: Sized,
     {
         then::new(self, f)
@@ -180,24 +177,21 @@ pub trait ActorFuture {
 /// A stream of values, not all of which may have been produced yet.
 ///
 /// This is similar to `futures_util::stream::Stream` trait, except it works with `Actor`
-pub trait ActorStream {
+pub trait ActorStream<A: Actor> {
     /// The type of item this stream will yield on success.
     type Item;
 
-    /// The actor within which this stream runs.
-    type Actor: Actor;
-
     fn poll_next(
         self: Pin<&mut Self>,
-        srv: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
+        srv: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>>;
 
     /// Converts a stream of type `T` to a stream of type `U`.
     fn map<U, F>(self, f: F) -> StreamMap<Self, F>
     where
-        F: FnMut(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
+        F: FnMut(Self::Item, &mut A, &mut A::Context) -> U,
         Self: Sized,
     {
         stream_map::new(self, f)
@@ -205,10 +199,10 @@ pub trait ActorStream {
 
     /// Chain on a computation for when a value is ready, passing the resulting
     /// item to the provided closure `f`.
-    fn then<F, U>(self, f: F) -> StreamThen<Self, F, U>
+    fn then<F, U>(self, f: F) -> StreamThen<Self, F, U::Future>
     where
-        F: FnMut(Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> U,
-        U: IntoActorFuture<Actor = Self::Actor>,
+        F: FnMut(Self::Item, &mut A, &mut A::Context) -> U,
+        U: IntoActorFuture<A>,
         Self: Sized,
     {
         stream_then::new(self, f)
@@ -216,10 +210,10 @@ pub trait ActorStream {
 
     /// Execute an accumulating computation over a stream, collecting all the
     /// values into one final result.
-    fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut, T>
+    fn fold<F, T, Fut>(self, init: T, f: F) -> StreamFold<Self, F, Fut::Future, T>
     where
-        F: FnMut(T, Self::Item, &mut Self::Actor, &mut <Self::Actor as Actor>::Context) -> Fut,
-        Fut: IntoActorFuture<Actor = Self::Actor, Output = T>,
+        F: FnMut(T, Self::Item, &mut A, &mut A::Context) -> Fut,
+        Fut: IntoActorFuture<A, Output = T>,
         Self: Sized,
     {
         stream_fold::new(self, f, init)
@@ -248,55 +242,59 @@ pub trait ActorStream {
 ///
 /// This trait is very similar to the `IntoIterator` trait and is intended to be
 /// used in a very similar fashion.
-pub trait IntoActorFuture {
+pub trait IntoActorFuture<A: Actor> {
     /// The future that this type can be converted into.
-    type Future: ActorFuture<Output = Self::Output, Actor = Self::Actor>;
+    type Future: ActorFuture<A, Output = Self::Output>;
 
     /// The item that the future may resolve with.
     type Output;
-    /// The actor within which this future runs
-    type Actor: Actor;
 
     /// Consumes this object and produces a future.
     fn into_future(self) -> Self::Future;
 }
 
-impl<F: ActorFuture> IntoActorFuture for F {
+impl<F, A> IntoActorFuture<A> for F
+where
+    F: ActorFuture<A> + Sized,
+    A: Actor,
+{
     type Future = F;
     type Output = F::Output;
-    type Actor = F::Actor;
 
     fn into_future(self) -> F {
         self
     }
 }
 
-impl<F: ActorFuture + Unpin + ?Sized> ActorFuture for Box<F> {
+impl<F, A> ActorFuture<A> for Box<F>
+where
+    F: ActorFuture<A> + Unpin + ?Sized,
+    A: Actor,
+{
     type Output = F::Output;
-    type Actor = F::Actor;
 
     fn poll(
         mut self: Pin<&mut Self>,
-        srv: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
+        srv: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         Pin::new(&mut **self.as_mut()).poll(srv, ctx, task)
     }
 }
 
-impl<P> ActorFuture for Pin<P>
+impl<P, A> ActorFuture<A> for Pin<P>
 where
     P: Unpin + std::ops::DerefMut,
-    <P as std::ops::Deref>::Target: ActorFuture,
+    <P as std::ops::Deref>::Target: ActorFuture<A>,
+    A: Actor,
 {
-    type Output = <<P as std::ops::Deref>::Target as ActorFuture>::Output;
-    type Actor = <<P as std::ops::Deref>::Target as ActorFuture>::Actor;
+    type Output = <<P as std::ops::Deref>::Target as ActorFuture<A>>::Output;
 
     fn poll(
         self: Pin<&mut Self>,
-        srv: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
+        srv: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         Pin::get_mut(self).as_mut().poll(srv, ctx, task)
@@ -309,7 +307,7 @@ where
     A: Actor,
 {
     /// The future that this type can be converted into.
-    type Future: ActorFuture<Output = Self::Output, Actor = A>;
+    type Future: ActorFuture<A, Output = Self::Output>;
 
     /// The item that the future may resolve with.
     type Output;
@@ -342,7 +340,7 @@ pin_project! {
     {
         #[pin]
         fut: F,
-        act: PhantomData<A>,
+        _act: PhantomData<A>
     }
 }
 
@@ -357,22 +355,21 @@ where
 {
     FutureWrap {
         fut: f,
-        act: PhantomData,
+        _act: PhantomData,
     }
 }
 
-impl<F, A> ActorFuture for FutureWrap<F, A>
+impl<F, A> ActorFuture<A> for FutureWrap<F, A>
 where
     F: Future,
     A: Actor,
 {
     type Output = F::Output;
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,
-        _: &mut Self::Actor,
-        _: &mut <Self::Actor as Actor>::Context,
+        _: &mut A,
+        _: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         self.project().fut.poll(task)
@@ -385,7 +382,7 @@ where
     A: Actor,
 {
     /// The stream that this type can be converted into.
-    type Stream: ActorStream<Item = Self::Item, Actor = A>;
+    type Stream: ActorStream<A, Item = Self::Item>;
 
     /// The item that the future may resolve with.
     type Item;
@@ -418,7 +415,7 @@ pin_project! {
     {
         #[pin]
         st: S,
-        act: PhantomData<A>,
+        _act: PhantomData<A>
     }
 }
 
@@ -429,22 +426,21 @@ where
 {
     StreamWrap {
         st: s,
-        act: PhantomData,
+        _act: PhantomData,
     }
 }
 
-impl<S, A> ActorStream for StreamWrap<S, A>
+impl<S, A> ActorStream<A> for StreamWrap<S, A>
 where
     S: Stream,
     A: Actor,
 {
     type Item = S::Item;
-    type Actor = A;
 
     fn poll_next(
         self: Pin<&mut Self>,
-        _: &mut Self::Actor,
-        _: &mut <Self::Actor as Actor>::Context,
+        _: &mut A,
+        _: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         self.project().st.poll_next(task)
