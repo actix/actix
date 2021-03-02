@@ -1,6 +1,10 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Added
+* Added `actix::prelude::AsyncResponse` to use async/await syntax in actor handler [#449]
+
+[#449]: https://github.com/actix/actix/pull/449
 
 
 ## 0.11.0-beta.2 - 2021-02-06
