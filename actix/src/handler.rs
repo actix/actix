@@ -207,7 +207,7 @@ where
         F: FnOnce(&'a mut A, &'a mut A::Context) -> Fut + 'static,
         Fut: Future<Output = T> + 'a,
     {
-        let fut: Pin<Box<dyn ActorFuture<Actor = A, Output = T>>> =
+        let fut: Pin<Box<dyn ActorFuture<A, Output = T>>> =
             Box::pin(crate::fut::wrap_future::<_, A>(fut(act, ctx)));
         // SAFETY:
         //
@@ -226,14 +226,10 @@ where
     M: Message<Result = T>,
     T: 'static,
 {
-    fn handle<R: ResponseChannel<M>>(self, ctx: &mut A::Context, tx: Option<R>) {
+    fn handle(self, ctx: &mut A::Context, tx: Option<OneshotSender<M::Result>>) {
         match self {
             AsyncResponse::Atomic(fut) => {
-                ctx.wait(fut.map(move |res, _, _| {
-                    if let Some(tx) = tx {
-                        tx.send(res);
-                    }
-                }));
+                ctx.wait(fut.map(move |res, _, _| tx.send(res)));
             }
             AsyncResponse::Concurrent(_) => unimplemented!(
                 "concurrent message borrowing Actor/Context in async is not implemented"
