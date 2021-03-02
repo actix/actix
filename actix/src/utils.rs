@@ -81,20 +81,15 @@ pin_project! {
     /// #    sys.run();
     /// # }
     #[must_use = "future do nothing unless polled"]
-    pub struct TimerFunc<A>
-    where
-        A: Actor,
-    {
-        f: Option<Box<dyn TimerFuncBox<A>>>,
+    #[allow(clippy::type_complexity)]
+    pub struct TimerFunc<A: Actor> {
+        f: Option<Box<dyn FnOnce(&mut A, &mut A::Context)>>,
         #[pin]
         timeout: Sleep,
     }
 }
 
-impl<A> TimerFunc<A>
-where
-    A: Actor,
-{
+impl<A: Actor> TimerFunc<A> {
     /// Creates a new `TimerFunc` with the given duration.
     pub fn new<F>(timeout: Duration, f: F) -> TimerFunc<A>
     where
@@ -107,35 +102,23 @@ where
     }
 }
 
-trait TimerFuncBox<A: Actor>: 'static {
-    fn call(self: Box<Self>, _: &mut A, _: &mut A::Context);
-}
-
-impl<A: Actor, F: FnOnce(&mut A, &mut A::Context) + 'static> TimerFuncBox<A> for F {
-    #[allow(clippy::boxed_local)]
-    fn call(self: Box<Self>, act: &mut A, ctx: &mut A::Context) {
-        (*self)(act, ctx)
-    }
-}
-
-impl<A> ActorFuture for TimerFunc<A>
+impl<A> ActorFuture<A> for TimerFunc<A>
 where
     A: Actor,
 {
     type Output = ();
-    type Actor = A;
 
     fn poll(
         self: Pin<&mut Self>,
-        act: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.project();
         match this.timeout.poll(task) {
             Poll::Ready(_) => {
                 if let Some(f) = this.f.take() {
-                    f.call(act, ctx);
+                    f(act, ctx);
                 }
                 Poll::Ready(())
             }
@@ -183,7 +166,7 @@ where
 /// ```
 #[must_use = "future do nothing unless polled"]
 pub struct IntervalFunc<A: Actor> {
-    f: Box<dyn IntervalFuncBox<A>>,
+    f: Box<dyn FnMut(&mut A, &mut A::Context)>,
     interval: Interval,
 }
 
@@ -200,25 +183,13 @@ impl<A: Actor> IntervalFunc<A> {
     }
 }
 
-trait IntervalFuncBox<A: Actor>: 'static {
-    fn call(&mut self, _: &mut A, _: &mut A::Context);
-}
-
-impl<A: Actor, F: FnMut(&mut A, &mut A::Context) + 'static> IntervalFuncBox<A> for F {
-    #[allow(clippy::boxed_local)]
-    fn call(&mut self, act: &mut A, ctx: &mut A::Context) {
-        (*self)(act, ctx)
-    }
-}
-
-impl<A: Actor> ActorStream for IntervalFunc<A> {
+impl<A: Actor> ActorStream<A> for IntervalFunc<A> {
     type Item = ();
-    type Actor = A;
 
     fn poll_next(
         self: Pin<&mut Self>,
-        act: &mut Self::Actor,
-        ctx: &mut <Self::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>> {
         let this = self.get_mut();
@@ -226,7 +197,7 @@ impl<A: Actor> ActorStream for IntervalFunc<A> {
             match this.interval.poll_tick(task) {
                 Poll::Ready(_) => {
                     //Interval Stream cannot return None
-                    this.f.call(act, ctx);
+                    (this.f)(act, ctx);
                 }
                 Poll::Pending => return Poll::Pending,
             }

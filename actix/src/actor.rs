@@ -282,7 +282,7 @@ where
     /// during the actor's stopping stage.
     fn spawn<F>(&mut self, fut: F) -> SpawnHandle
     where
-        F: ActorFuture<Output = (), Actor = A> + 'static;
+        F: ActorFuture<A, Output = ()> + 'static;
 
     /// Spawns a future into the context, waiting for it to resolve.
     ///
@@ -290,7 +290,7 @@ where
     /// resolves.
     fn wait<F>(&mut self, fut: F)
     where
-        F: ActorFuture<Output = (), Actor = A> + 'static;
+        F: ActorFuture<A, Output = ()> + 'static;
 
     /// Checks if the context is paused (waiting for future completion or stopping).
     fn waiting(&self) -> bool;

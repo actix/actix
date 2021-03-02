@@ -12,34 +12,29 @@ pin_project! {
     /// This is created by the `ActorFuture::map` method
     #[derive(Debug)]
     #[must_use = "futures do nothing unless polled"]
-    pub struct Map<A, F>
-    where
-        A: ActorFuture,
-    {
+    pub struct Map<F, Fn> {
         #[pin]
-        future: A,
-        f: Option<F>,
+        future: F,
+        f: Option<Fn>,
     }
 }
 
-pub fn new<A, F>(future: A, f: F) -> Map<A, F>
-where
-    A: ActorFuture,
-{
+pub fn new<F, Fn>(future: F, f: Fn) -> Map<F, Fn> {
     Map { future, f: Some(f) }
 }
 
-impl<U, A, F> ActorFuture for Map<A, F>
+impl<U, F, A, Fn> ActorFuture<A> for Map<F, Fn>
 where
-    A: ActorFuture,
-    F: FnOnce(A::Output, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> U,
+    F: ActorFuture<A>,
+    A: Actor,
+    Fn: FnOnce(F::Output, &mut A, &mut A::Context) -> U,
 {
     type Output = U;
-    type Actor = A::Actor;
+
     fn poll(
         self: Pin<&mut Self>,
-        act: &mut Self::Actor,
-        ctx: &mut <A::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.project();

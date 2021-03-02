@@ -16,10 +16,7 @@ pin_project! {
     /// This is created by the `ActorFuture::timeout()` method.
     #[derive(Debug)]
     #[must_use = "futures do nothing unless polled"]
-    pub struct Timeout<F>
-    where
-        F: ActorFuture,
-    {
+    pub struct Timeout<F>{
         #[pin]
         fut: F,
         #[pin]
@@ -27,27 +24,24 @@ pin_project! {
     }
 }
 
-pub fn new<F>(future: F, timeout: Duration) -> Timeout<F>
-where
-    F: ActorFuture,
-{
+pub fn new<F>(future: F, timeout: Duration) -> Timeout<F> {
     Timeout {
         fut: future,
         timeout: sleep(timeout),
     }
 }
 
-impl<F> ActorFuture for Timeout<F>
+impl<F, A> ActorFuture<A> for Timeout<F>
 where
-    F: ActorFuture,
+    F: ActorFuture<A>,
+    A: Actor,
 {
     type Output = Result<F::Output, ()>;
-    type Actor = F::Actor;
 
     fn poll(
         self: Pin<&mut Self>,
-        act: &mut F::Actor,
-        ctx: &mut <F::Actor as Actor>::Context,
+        act: &mut A,
+        ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.project();

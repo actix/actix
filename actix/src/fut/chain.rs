@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -10,11 +11,12 @@ pin_project! {
     #[project = ChainProj]
     #[must_use = "futures do nothing unless you `.await` or poll them"]
     #[derive(Debug)]
-    pub enum Chain<A, B, C> {
+    pub enum Chain<A, B, Fn, Act> {
         First {
             #[pin]
             fut1: A,
-            data: Option<C>
+            data: Option<Fn>,
+            _act: PhantomData<Act>,
         },
         Second {
             #[pin]
@@ -24,34 +26,36 @@ pin_project! {
     }
 }
 
-impl<A, B, C> Chain<A, B, C>
+impl<A, B, Fn, Act> Chain<A, B, Fn, Act>
 where
-    A: ActorFuture,
-    B: ActorFuture<Actor = A::Actor>,
+    A: ActorFuture<Act>,
+    B: ActorFuture<Act>,
+    Act: Actor,
 {
-    pub fn new(fut1: A, data: C) -> Chain<A, B, C> {
+    pub fn new(fut1: A, data: Fn) -> Self {
         Chain::First {
             fut1,
             data: Some(data),
+            _act: PhantomData,
         }
     }
 
-    pub fn poll<F>(
+    pub fn poll<Fn1>(
         mut self: Pin<&mut Self>,
-        srv: &mut A::Actor,
-        ctx: &mut <A::Actor as Actor>::Context,
+        srv: &mut Act,
+        ctx: &mut Act::Context,
         task: &mut Context<'_>,
-        f: F,
+        f: Fn1,
     ) -> Poll<B::Output>
     where
-        F: FnOnce(A::Output, C, &mut A::Actor, &mut <A::Actor as Actor>::Context) -> B,
+        Fn1: FnOnce(A::Output, Fn, &mut Act, &mut Act::Context) -> B,
     {
         let mut f = Some(f);
 
         loop {
             let this = self.as_mut().project();
             let (output, data) = match this {
-                ChainProj::First { fut1, data } => {
+                ChainProj::First { fut1, data, .. } => {
                     let output = match fut1.poll(srv, ctx, task) {
                         Poll::Ready(t) => t,
                         Poll::Pending => return Poll::Pending,
