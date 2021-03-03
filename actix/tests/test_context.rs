@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 #![allow(clippy::let_unit_value)]
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;

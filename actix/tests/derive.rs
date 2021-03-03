@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 use std::ops::Mul;
 
 use actix::prelude::*;

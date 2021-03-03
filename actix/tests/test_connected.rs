@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 use std::time::Duration;
 
 use actix::prelude::*;

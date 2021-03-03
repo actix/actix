@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 use actix::clock::sleep;
 use actix::prelude::*;
 use futures_util::stream::StreamExt;
