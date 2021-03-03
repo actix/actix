@@ -1,6 +1,12 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Removed
+* Remove `fut::IntoActorFuture` trait. [#475]
+* Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
+* Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
+
+[#475]: https://github.com/actix/actix/pull/475
 
 
 ## 0.11.0-beta.3 - 2021-03-03
@@ -27,14 +33,10 @@
 
 ### Removed
 * Remove `dev::ResponseChannel` trait. [#472]
-* Remove `fut::IntoActorFuture` trait. [#475]
-* Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
-* Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
 
 [#465]: https://github.com/actix/actix/pull/465
 [#472]: https://github.com/actix/actix/pull/472
 [#474]: https://github.com/actix/actix/pull/474
-[#475]: https://github.com/actix/actix/pull/475
 
 
 ## 0.11.0-beta.2 - 2021-02-06
