@@ -20,7 +20,7 @@ path = "src/lib.rs"
 default = ["macros"]
 
 # Re-exports derive macros from actix-derive and enables `#[actix::main]`.
-macros = ["actix_derive"]
+macros = ["actix-derive"]
 
 # DNS resolver
 resolver = ["trust-dns-proto", "trust-dns-resolver"]
@@ -30,7 +30,7 @@ mailbox_assert = []
 
 [dependencies]
 actix-rt = { version = "2.0.0", default-features = false }
-actix_derive = { version = "0.6.0-beta.1", optional = true }
+actix-derive = { version = "0.6.0-beta.2", optional = true }
 
 bitflags = "1.2"
 bytes = "1"
