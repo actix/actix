@@ -54,7 +54,7 @@ where
 /// A helper type that implements the `MessageResponse` trait.
 ///
 /// # Examples
-/// ```rust, no_run
+/// ```no_run
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
@@ -96,7 +96,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 /// # Examples
 /// On the following example, the response to `Msg` would always be 29
 /// even if there are multiple `Msg` sent to `MyActor`.
-/// ```rust, no_run
+/// ```no_run
 /// # use actix::prelude::*;
 /// # use actix::clock::sleep;
 /// # use std::time::Duration;
@@ -167,7 +167,7 @@ where
 /// Check [AtomicResponse] if you need exclusive access over the actor.
 ///
 /// # Examples
-/// ```rust, no_run
+/// ```no_run
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
@@ -208,7 +208,7 @@ pub type ResponseActFuture<A, I> = LocalBoxActorFuture<A, I>;
 /// already been moved inside the future and it won't need Actor state to continue.
 ///
 /// # Examples
-/// ```rust, no_run
+/// ```no_run
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]

@@ -52,7 +52,7 @@ pin_project! {
     ///
     /// [`Context::run_later`]: ../prelude/trait.AsyncContext.html#method.run_later
     ///
-    /// ```rust
+    /// ```
     /// # use std::io;
     /// use std::time::Duration;
     /// use actix::prelude::*;
@@ -133,7 +133,7 @@ where
 ///
 /// [`Context::run_interval`]: ../prelude/trait.AsyncContext.html#method.run_interval
 ///
-/// ```rust
+/// ```
 /// # use std::io;
 /// use std::time::Duration;
 /// use actix::prelude::*;

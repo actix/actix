@@ -29,7 +29,7 @@ pin_project! {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # use actix::prelude::*;
     /// #[derive(Message)]
     /// #[rtype(result = "()")]
@@ -87,7 +87,7 @@ where
     /// `Addr<Syn, _>` of newly created actor, use explicitly `Addr<Syn,
     /// _>` type as type of a variable.
     ///
-    /// ```rust
+    /// ```
     /// # use actix::prelude::*;
     /// struct MyActor;
     ///

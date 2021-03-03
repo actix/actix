@@ -39,7 +39,7 @@ where
     /// This method register stream to an actor context and
     /// allows to handle `Stream` in similar way as normal actor messages.
     ///
-    /// ```rust
+    /// ```
     /// use actix::prelude::*;
     /// use futures_util::stream::once;
     ///
