@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 use std::{
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
