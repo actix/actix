@@ -1,14 +1,12 @@
-name: Upload documentation
+name: Upload Documentation
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.repository == 'actix/actix'
 
     steps:
       - uses: actions/checkout@v2
@@ -16,21 +14,21 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable-x86_64-unknown-linux-gnu
+          toolchain: nightly-x86_64-unknown-linux-gnu
           profile: minimal
           override: true
 
-      - name: check build
+      - name: Build Docs
         uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --no-deps --workspace --all-features
+          args: --workspace --all-features --no-deps
 
       - name: Tweak HTML
-        run: echo "<meta http-equiv=refresh content=0;url=os_balloon/index.html>" > target/doc/index.html
+        run: echo '<meta http-equiv="refresh" content="0;url=actix/index.html">' > target/doc/index.html
 
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@3.6.2
+        uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
