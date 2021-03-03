@@ -102,7 +102,7 @@ pub trait Actor: Sized + Unpin + 'static {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// use actix::*;
     ///
     /// struct MyActor;
@@ -164,7 +164,7 @@ pub trait Actor: Sized + Unpin + 'static {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// use actix::*;
     ///
     /// struct MyActor {
@@ -305,7 +305,7 @@ where
     /// This allows handling a `Stream` in a way similar to normal
     /// actor messages.
     ///
-    /// ```rust
+    /// ```
     /// # use std::io;
     /// use actix::prelude::*;
     /// use futures_util::stream::once;
@@ -356,7 +356,7 @@ where
     /// This method is similar to `add_stream` but it skips stream
     /// errors.
     ///
-    /// ```rust
+    /// ```
     /// use actix::prelude::*;
     /// use futures_util::stream::once;
     ///

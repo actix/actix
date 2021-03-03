@@ -32,7 +32,7 @@ mod timeout;
 /// Here is an example of a handler on a single actor, deferring work to another actor, and
 /// then updating the initiating actor's state:
 ///
-/// ```rust,no_run
+/// ```no_run
 /// use actix::prelude::*;
 ///
 /// // The response type returned by the actor future

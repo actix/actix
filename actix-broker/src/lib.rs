@@ -6,7 +6,7 @@
 //! `BrokerIssue` traits to either subscribe to or issue a message.
 //!
 //! # Examples
-//! ```rust,no_run
+//! ```no_run
 //! # #[macro_use]
 //! # extern crate actix;
 //! # extern crate actix_broker;

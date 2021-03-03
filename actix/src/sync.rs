@@ -37,7 +37,7 @@ use crate::handler::{Handler, Message, MessageResponse};
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```
 /// use actix::prelude::*;
 ///
 /// struct Fibonacci(pub u32);
@@ -198,7 +198,7 @@ where
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```
 /// use actix::prelude::*;
 ///
 /// # struct Fibonacci(pub u32);

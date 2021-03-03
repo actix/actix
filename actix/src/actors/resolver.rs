@@ -1,9 +1,8 @@
 //! DNS resolver and connector utility actor
 //!
 //! # Examples
-//! ```rust
+//! ```
 //! # #![allow(deprecated)]
-//! #
 //! use actix::actors::resolver;
 //! use actix::prelude::*;
 //!
