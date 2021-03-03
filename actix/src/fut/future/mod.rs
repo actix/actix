@@ -130,9 +130,9 @@ pub trait ActorFuture<A: Actor> {
 pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
     /// Map this future's result to a different type, returning a new future of
     /// the resulting type.
-    fn map<Fn, U>(self, f: Fn) -> Map<Self, Fn>
+    fn map<F, U>(self, f: F) -> Map<Self, F>
     where
-        Fn: FnOnce(Self::Output, &mut A, &mut A::Context) -> U,
+        F: FnOnce(Self::Output, &mut A, &mut A::Context) -> U,
         Self: Sized,
     {
         Map::new(self, f)
@@ -140,10 +140,10 @@ pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
 
     /// Chain on a computation for when a future finished, passing the result of
     /// the future to the provided closure `f`.
-    fn then<Fn, Fut>(self, f: Fn) -> Then<Self, Fut, Fn>
+    fn then<F, Fut>(self, f: F) -> Then<Self, Fut, F>
     where
-        Fn: FnOnce(Self::Output, &mut A, &mut A::Context) -> Fut,
-        Fut: IntoActorFuture<A>,
+        F: FnOnce(Self::Output, &mut A, &mut A::Context) -> Fut,
+        Fut: ActorFuture<A>,
         Self: Sized,
     {
         then::new(self, f)
@@ -169,34 +169,6 @@ where
 
 /// Type alias for a pinned box ActorFuture trait object.
 pub type LocalBoxActorFuture<A, I> = Pin<Box<dyn ActorFuture<A, Output = I>>>;
-
-/// Class of types which can be converted into an actor future.
-///
-/// This trait is very similar to the `IntoIterator` trait and is intended to be
-/// used in a very similar fashion.
-pub trait IntoActorFuture<A: Actor> {
-    /// The future that this type can be converted into.
-    type Future: ActorFuture<A, Output = Self::Output>;
-
-    /// The item that the future may resolve with.
-    type Output;
-
-    /// Consumes this object and produces a future.
-    fn into_future(self) -> Self::Future;
-}
-
-impl<F, A> IntoActorFuture<A> for F
-where
-    F: ActorFuture<A> + Sized,
-    A: Actor,
-{
-    type Future = F;
-    type Output = F::Output;
-
-    fn into_future(self) -> F {
-        self
-    }
-}
 
 impl<F, A> ActorFuture<A> for Box<F>
 where
@@ -239,10 +211,7 @@ where
     A: Actor,
 {
     /// The future that this type can be converted into.
-    type Future: ActorFuture<A, Output = Self::Output>;
-
-    /// The item that the future may resolve with.
-    type Output;
+    type Future: ActorFuture<A>;
 
     #[deprecated(since = "0.11.0", note = "Please use WrapFuture::into_actor")]
     #[doc(hidden)]
@@ -254,7 +223,6 @@ where
 
 impl<F: Future, A: Actor> WrapFuture<A> for F {
     type Future = FutureWrap<F, A>;
-    type Output = F::Output;
 
     #[doc(hidden)]
     fn actfuture(self) -> Self::Future {

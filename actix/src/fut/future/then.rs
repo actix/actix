@@ -5,7 +5,7 @@ use futures_core::ready;
 use pin_project_lite::pin_project;
 
 use crate::actor::Actor;
-use crate::fut::{ActorFuture, IntoActorFuture};
+use crate::fut::ActorFuture;
 
 pin_project! {
     /// Future for the `then` combinator, chaining computations on the end of
@@ -15,11 +15,11 @@ pin_project! {
     #[project = ThenProj]
     #[derive(Debug)]
     #[must_use = "futures do nothing unless polled"]
-    pub enum Then<A, B, Fn> {
+    pub enum Then<A, B, F> {
         First {
             #[pin]
             fut1: A,
-            data: Option<Fn>,
+            data: Option<F>,
         },
         Second {
             #[pin]
@@ -29,10 +29,10 @@ pin_project! {
     }
 }
 
-pub(super) fn new<A, B, Fn, Act>(future: A, f: Fn) -> Then<A, B, Fn>
+pub(super) fn new<A, B, F, Act>(future: A, f: F) -> Then<A, B, F>
 where
     A: ActorFuture<Act>,
-    B: IntoActorFuture<Act>,
+    B: ActorFuture<Act>,
     Act: Actor,
 {
     Then::First {
@@ -41,11 +41,11 @@ where
     }
 }
 
-impl<A, B, Fn, Act> ActorFuture<Act> for Then<A, B::Future, Fn>
+impl<A, B, F, Act> ActorFuture<Act> for Then<A, B, F>
 where
     A: ActorFuture<Act>,
-    B: IntoActorFuture<Act>,
-    Fn: FnOnce(A::Output, &mut Act, &mut Act::Context) -> B,
+    B: ActorFuture<Act>,
+    F: FnOnce(A::Output, &mut Act, &mut Act::Context) -> B,
     Act: Actor,
 {
     type Output = B::Output;
@@ -60,7 +60,7 @@ where
             ThenProj::First { fut1, data } => {
                 let output = ready!(fut1.poll(act, ctx, task));
                 let data = data.take().unwrap();
-                let fut2 = data(output, act, ctx).into_future();
+                let fut2 = data(output, act, ctx);
                 self.set(Then::Second { fut2 });
                 self.poll(act, ctx, task)
             }

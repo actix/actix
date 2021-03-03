@@ -20,9 +20,9 @@ pin_project! {
 
 pub(super) fn new<S, A, F, U>(stream: S, f: F) -> Map<S, F>
 where
-    F: FnMut(S::Item, &mut A, &mut A::Context) -> U,
     S: ActorStream<A>,
     A: Actor,
+    F: FnMut(S::Item, &mut A, &mut A::Context) -> U,
 {
     Map { stream, f }
 }
@@ -40,7 +40,7 @@ where
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut Context<'_>,
-    ) -> Poll<Option<U>> {
+    ) -> Poll<Option<Self::Item>> {
         let mut this = self.project();
         let res = ready!(this.stream.as_mut().poll_next(act, ctx, task));
         Poll::Ready(res.map(|x| (this.f)(x, act, ctx)))

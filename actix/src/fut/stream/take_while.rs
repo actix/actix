@@ -5,16 +5,16 @@ use futures_core::ready;
 use pin_project_lite::pin_project;
 
 use crate::actor::Actor;
-use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
+use crate::fut::{ActorFuture, ActorStream};
 
 pin_project! {
     /// Stream for the [`take_while`](super::ActorStreamExt::take_while) method.
     #[must_use = "streams do nothing unless polled"]
     #[derive(Debug)]
-    pub struct TakeWhile<S, I, Fut, Fn> {
+    pub struct TakeWhile<S, I, F, Fut> {
         #[pin]
         stream: S,
-        f: Fn,
+        f: F,
         #[pin]
         pending_fut: Option<Fut>,
         pending_item: Option<I>,
@@ -22,12 +22,12 @@ pin_project! {
     }
 }
 
-pub(super) fn new<S, A, Fut, Fn>(stream: S, f: Fn) -> TakeWhile<S, S::Item, Fut::Future, Fn>
+pub(super) fn new<S, A, F, Fut>(stream: S, f: F) -> TakeWhile<S, S::Item, F, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
-    Fut: IntoActorFuture<A, Output = bool>,
+    F: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: ActorFuture<A, Output = bool>,
 {
     TakeWhile {
         stream,
@@ -38,12 +38,12 @@ where
     }
 }
 
-impl<S, A, Fut, Fn> ActorStream<A> for TakeWhile<S, S::Item, Fut::Future, Fn>
+impl<S, A, F, Fut> ActorStream<A> for TakeWhile<S, S::Item, F, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
-    Fut: IntoActorFuture<A, Output = bool>,
+    F: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: ActorFuture<A, Output = bool>,
 {
     type Item = S::Item;
 
@@ -71,8 +71,7 @@ where
                     break None;
                 }
             } else if let Some(item) = ready!(this.stream.as_mut().poll_next(act, ctx, task)) {
-                this.pending_fut
-                    .set(Some((this.f)(&item, act, ctx).into_future()));
+                this.pending_fut.set(Some((this.f)(&item, act, ctx)));
                 *this.pending_item = Some(item);
             } else {
                 break None;
