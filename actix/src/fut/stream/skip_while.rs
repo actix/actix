@@ -5,7 +5,7 @@ use futures_core::ready;
 use pin_project_lite::pin_project;
 
 use crate::actor::Actor;
-use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
+use crate::fut::{ActorFuture, ActorStream};
 
 pin_project! {
     /// Stream for the [`skip_while`](super::ActorStreamExt::skip_while) method.
@@ -22,12 +22,12 @@ pin_project! {
     }
 }
 
-pub(super) fn new<S, A, Fn, Fut>(stream: S, f: Fn) -> SkipWhile<S, S::Item, Fn, Fut::Future>
+pub(super) fn new<S, A, Fn, Fut>(stream: S, f: Fn) -> SkipWhile<S, S::Item, Fn, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
     Fn: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
-    Fut: IntoActorFuture<A, Output = bool>,
+    Fut: ActorFuture<A, Output = bool>,
 {
     SkipWhile {
         stream,
@@ -38,12 +38,12 @@ where
     }
 }
 
-impl<S, A, Fn, Fut> ActorStream<A> for SkipWhile<S, S::Item, Fn, Fut::Future>
+impl<S, A, Fn, Fut> ActorStream<A> for SkipWhile<S, S::Item, Fn, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
     Fn: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
-    Fut: IntoActorFuture<A, Output = bool>,
+    Fut: ActorFuture<A, Output = bool>,
 {
     type Item = S::Item;
 
@@ -69,8 +69,7 @@ where
                     break item;
                 }
             } else if let Some(item) = ready!(this.stream.as_mut().poll_next(act, ctx, task)) {
-                this.pending_fut
-                    .set(Some((this.f)(&item, act, ctx).into_future()));
+                this.pending_fut.set(Some((this.f)(&item, act, ctx)));
                 *this.pending_item = Some(item);
             } else {
                 break None;

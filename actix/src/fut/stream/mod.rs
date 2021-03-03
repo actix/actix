@@ -19,7 +19,7 @@ pub use timeout::Timeout;
 
 use crate::actor::Actor;
 
-use super::future::IntoActorFuture;
+use super::future::ActorFuture;
 
 mod collect;
 mod finish;
@@ -73,10 +73,10 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     ///
     /// Note that this function consumes the stream passed into it and returns a
     /// wrapped version of it.
-    fn then<Fn, Fut>(self, f: Fn) -> Then<Self, Fn, Fut::Future>
+    fn then<Fn, Fut>(self, f: Fn) -> Then<Self, Fn, Fut>
     where
         Fn: FnMut(Self::Item, &mut A, &mut A::Context) -> Fut,
-        Fut: IntoActorFuture<A>,
+        Fut: ActorFuture<A>,
         Self: Sized,
     {
         then::new(self, f)
@@ -90,10 +90,10 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     /// this method and then is returned again by each execution of the closure.
     /// Once the entire stream has been exhausted the returned future will
     /// resolve to this value.
-    fn fold<Fn, Fut>(self, init: Fut::Output, f: Fn) -> Fold<Self, Fn, Fut::Future, Fut::Output>
+    fn fold<Fn, Fut>(self, init: Fut::Output, f: Fn) -> Fold<Self, Fn, Fut, Fut::Output>
     where
         Fn: FnMut(Fut::Output, Self::Item, &mut A, &mut A::Context) -> Fut,
-        Fut: IntoActorFuture<A>,
+        Fut: ActorFuture<A>,
         Self: Sized,
     {
         fold::new(self, f, init)
@@ -105,10 +105,10 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     /// This function, like `Iterator::take_while`, will take elements from the
     /// stream until the predicate `f` resolves to `false`. Once one element
     /// returns `false`, it will always return that the stream is done.
-    fn take_while<Fn, Fut>(self, f: Fn) -> TakeWhile<Self, Self::Item, Fut::Future, Fn>
+    fn take_while<Fn, Fut>(self, f: Fn) -> TakeWhile<Self, Self::Item, Fn, Fut>
     where
         Fn: FnMut(&Self::Item, &mut A, &mut A::Context) -> Fut,
-        Fut: IntoActorFuture<A, Output = bool>,
+        Fut: ActorFuture<A, Output = bool>,
         Self: Sized,
     {
         take_while::new(self, f)
@@ -121,10 +121,10 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     /// stream until the predicate `f` resolves to `false`. Once one element
     /// returns `false`, all future elements will be returned from the underlying
     /// stream.
-    fn skip_while<Fn, Fut>(self, f: Fn) -> SkipWhile<Self, Self::Item, Fn, Fut::Future>
+    fn skip_while<Fn, Fut>(self, f: Fn) -> SkipWhile<Self, Self::Item, Fn, Fut>
     where
         Fn: FnMut(&Self::Item, &mut A, &mut A::Context) -> Fut,
-        Fut: IntoActorFuture<A, Output = bool>,
+        Fut: ActorFuture<A, Output = bool>,
         Self: Sized,
     {
         skip_while::new(self, f)
@@ -174,10 +174,7 @@ where
     A: Actor,
 {
     /// The stream that this type can be converted into.
-    type Stream: ActorStream<A, Item = Self::Item>;
-
-    /// The item that the future may resolve with.
-    type Item;
+    type Stream: ActorStream<A>;
 
     #[deprecated(since = "0.11.0", note = "Please use WrapStream::into_actor")]
     #[doc(hidden)]
@@ -193,7 +190,6 @@ where
     A: Actor,
 {
     type Stream = StreamWrap<S, A>;
-    type Item = S::Item;
 
     #[doc(hidden)]
     fn actstream(self) -> Self::Stream {

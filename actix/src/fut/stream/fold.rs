@@ -5,32 +5,32 @@ use futures_core::ready;
 use pin_project_lite::pin_project;
 
 use crate::actor::Actor;
-use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
+use crate::fut::{ActorFuture, ActorStream};
 
 pin_project! {
     /// Stream for the [`fold`](super::ActorStreamExt::fold) method.
     #[derive(Debug)]
     #[must_use = "streams do nothing unless polled"]
-    pub struct Fold<S, F, Fut, T> {
+    pub struct Fold<S, Fn, Fut, T> {
         #[pin]
         stream: S,
-        f: F,
+        f: Fn,
         accum: Option<T>,
         #[pin]
         future: Option<Fut>,
     }
 }
 
-pub(super) fn new<S, A, F, Fut>(
+pub(super) fn new<S, A, Fn, Fut>(
     stream: S,
-    f: F,
+    f: Fn,
     t: Fut::Output,
-) -> Fold<S, F, Fut::Future, Fut::Output>
+) -> Fold<S, Fn, Fut, Fut::Output>
 where
     S: ActorStream<A>,
     A: Actor,
-    F: FnMut(Fut::Output, S::Item, &mut A, &mut A::Context) -> Fut,
-    Fut: IntoActorFuture<A>,
+    Fn: FnMut(Fut::Output, S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: ActorFuture<A>,
 {
     Fold {
         stream,
@@ -40,22 +40,21 @@ where
     }
 }
 
-impl<S, A, F, Fut, T> ActorFuture<A> for Fold<S, F, Fut::Future, T>
+impl<S, A, Fn, Fut> ActorFuture<A> for Fold<S, Fn, Fut, Fut::Output>
 where
     S: ActorStream<A>,
     A: Actor,
-    F: FnMut(T, S::Item, &mut A, &mut A::Context) -> Fut,
-    Fut: IntoActorFuture<A, Output = T>,
-    Fut::Future: ActorFuture<A>,
+    Fn: FnMut(Fut::Output, S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: ActorFuture<A>,
 {
-    type Output = T;
+    type Output = Fut::Output;
 
     fn poll(
         self: Pin<&mut Self>,
         act: &mut A,
         ctx: &mut A::Context,
         task: &mut Context<'_>,
-    ) -> Poll<T> {
+    ) -> Poll<Self::Output> {
         let mut this = self.project();
         Poll::Ready(loop {
             if let Some(fut) = this.future.as_mut().as_pin_mut() {
@@ -67,8 +66,7 @@ where
                 let res = ready!(this.stream.as_mut().poll_next(act, ctx, task));
                 let a = this.accum.take().unwrap();
                 if let Some(item) = res {
-                    this.future
-                        .set(Some((this.f)(a, item, act, ctx).into_future()));
+                    this.future.set(Some((this.f)(a, item, act, ctx)));
                 } else {
                     break a;
                 }

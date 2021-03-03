@@ -5,27 +5,27 @@ use futures_core::ready;
 use pin_project_lite::pin_project;
 
 use crate::actor::Actor;
-use crate::fut::{ActorFuture, ActorStream, IntoActorFuture};
+use crate::fut::{ActorFuture, ActorStream};
 
 pin_project! {
     /// Stream for the [`then`](super::ActorStreamExt::then) method.
     #[derive(Debug)]
     #[must_use = "streams do nothing unless polled"]
-    pub struct Then<S, Fn, F> {
+    pub struct Then<S, Fn, Fut> {
         #[pin]
         stream: S,
         #[pin]
-        future: Option<F>,
+        future: Option<Fut>,
         f: Fn,
     }
 }
 
-pub(super) fn new<S, A, Fn, F>(stream: S, f: Fn) -> Then<S, Fn, F::Future>
+pub(super) fn new<S, A, Fn, Fut>(stream: S, f: Fn) -> Then<S, Fn, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    F: IntoActorFuture<A>,
-    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> F,
+    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: ActorFuture<A>,
 {
     Then {
         stream,
@@ -34,14 +34,14 @@ where
     }
 }
 
-impl<S, A, Fn, F> ActorStream<A> for Then<S, Fn, F::Future>
+impl<S, A, Fn, Fut> ActorStream<A> for Then<S, Fn, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    F: IntoActorFuture<A>,
-    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> F,
+    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> Fut,
+    Fut: ActorFuture<A>,
 {
-    type Item = F::Output;
+    type Item = Fut::Output;
 
     fn poll_next(
         self: Pin<&mut Self>,
@@ -57,8 +57,7 @@ where
                 this.future.set(None);
                 break Some(item);
             } else if let Some(item) = ready!(this.stream.as_mut().poll_next(act, ctx, task)) {
-                this.future
-                    .set(Some((this.f)(item, act, ctx).into_future()));
+                this.future.set(Some((this.f)(item, act, ctx)));
             } else {
                 break None;
             }
