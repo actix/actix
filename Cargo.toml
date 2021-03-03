@@ -8,7 +8,7 @@ members = [
 [patch.crates-io]
 actix = { path = "actix" }
 actix-broker = { path = "actix-broker" }
-actix_derive = { path = "actix-derive" }
+actix-derive = { path = "actix-derive" }
 
 [profile.release]
 lto = true
