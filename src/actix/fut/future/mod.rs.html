@@ -281,38 +281,6 @@
 <span id="278">278</span>
 <span id="279">279</span>
 <span id="280">280</span>
-<span id="281">281</span>
-<span id="282">282</span>
-<span id="283">283</span>
-<span id="284">284</span>
-<span id="285">285</span>
-<span id="286">286</span>
-<span id="287">287</span>
-<span id="288">288</span>
-<span id="289">289</span>
-<span id="290">290</span>
-<span id="291">291</span>
-<span id="292">292</span>
-<span id="293">293</span>
-<span id="294">294</span>
-<span id="295">295</span>
-<span id="296">296</span>
-<span id="297">297</span>
-<span id="298">298</span>
-<span id="299">299</span>
-<span id="300">300</span>
-<span id="301">301</span>
-<span id="302">302</span>
-<span id="303">303</span>
-<span id="304">304</span>
-<span id="305">305</span>
-<span id="306">306</span>
-<span id="307">307</span>
-<span id="308">308</span>
-<span id="309">309</span>
-<span id="310">310</span>
-<span id="311">311</span>
-<span id="312">312</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">future</span>::<span class="ident">Future</span>,
@@ -446,9 +414,9 @@
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorFutureExt</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Map this future&#39;s result to a different type, returning a new future of</span>
     <span class="doccomment">/// the resulting type.</span>
-    <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">Fn</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fn</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Fn</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">Map</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -456,10 +424,10 @@
 
     <span class="doccomment">/// Chain on a computation for when a future finished, passing the result of</span>
     <span class="doccomment">/// the future to the provided closure `f`.</span>
-    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">Fn</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fut</span>, <span class="ident">Fn</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Fn</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="self">Self</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">then</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -485,34 +453,6 @@
 
 <span class="doccomment">/// Type alias for a pinned box ActorFuture trait object.</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">LocalBoxActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
-
-<span class="doccomment">/// Class of types which can be converted into an actor future.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This trait is very similar to the `IntoIterator` trait and is intended to be</span>
-<span class="doccomment">/// used in a very similar fashion.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The future that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span>;
-
-    <span class="doccomment">/// The item that the future may resolve with.</span>
-    <span class="kw">type</span> <span class="ident">Output</span>;
-
-    <span class="doccomment">/// Consumes this object and produces a future.</span>
-    <span class="kw">fn</span> <span class="ident">into_future</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Future</span>;
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sized</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-{
-    <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">F</span>;
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Output</span>;
-
-    <span class="kw">fn</span> <span class="ident">into_future</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">F</span> {
-        <span class="self">self</span>
-    }
-}
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
 <span class="kw">where</span>
@@ -555,10 +495,7 @@
     <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
     <span class="doccomment">/// The future that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span>;
-
-    <span class="doccomment">/// The item that the future may resolve with.</span>
-    <span class="kw">type</span> <span class="ident">Output</span>;
+    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>;
 
     <span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.11.0&quot;</span>, <span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Please use WrapFuture::into_actor&quot;</span>)]</span>
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
@@ -570,7 +507,6 @@
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Future</span>, <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">WrapFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span> {
     <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Output</span>;
 
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
     <span class="kw">fn</span> <span class="ident">actfuture</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Future</span> {

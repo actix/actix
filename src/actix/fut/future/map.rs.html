@@ -76,27 +76,27 @@
     <span class="attribute">#[<span class="ident">project_replace</span> <span class="op">=</span> <span class="ident">MapProjReplace</span>]</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
     <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless you `.await` or poll them&quot;</span>]</span>
-    <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">Fn</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span> {
         <span class="ident">Incomplete</span> {
             <span class="attribute">#[<span class="ident">pin</span>]</span>
             <span class="ident">future</span>: <span class="ident">Fut</span>,
-            <span class="ident">f</span>: <span class="ident">Fn</span>,
+            <span class="ident">f</span>: <span class="ident">F</span>,
         },
         <span class="ident">Complete</span>,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">Fn</span><span class="op">&gt;</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">Fn</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">future</span>: <span class="ident">Fut</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">future</span>: <span class="ident">Fut</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span>::<span class="ident">Incomplete</span> { <span class="ident">future</span>, <span class="ident">f</span> }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">U</span>, <span class="ident">Fut</span>, <span class="ident">A</span>, <span class="ident">Fn</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">Fn</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">U</span>, <span class="ident">Fut</span>, <span class="ident">A</span>, <span class="ident">F</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
     <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">Fn</span>: <span class="ident">FnOnce</span>(<span class="ident">Fut</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
+    <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident">Fut</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">U</span>;
 

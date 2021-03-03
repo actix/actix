@@ -67,7 +67,6 @@
 <span id="64">64</span>
 <span id="65">65</span>
 <span id="66">66</span>
-<span id="67">67</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
@@ -76,27 +75,27 @@
 <span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStream</span>, <span class="ident">IntoActorFuture</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStream</span>};
 
 <span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="doccomment">/// Stream for the [`then`](super::ActorStreamExt::then) method.</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
     <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;streams do nothing unless polled&quot;</span>]</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">Fn</span>, <span class="ident">F</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span> {
         <span class="attribute">#[<span class="ident">pin</span>]</span>
         <span class="ident">stream</span>: <span class="ident">S</span>,
         <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">future</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>,
-        <span class="ident">f</span>: <span class="ident">Fn</span>,
+        <span class="ident">future</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Fut</span><span class="op">&gt;</span>,
+        <span class="ident">f</span>: <span class="ident">F</span>,
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span>, <span class="ident">Fn</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">stream</span>: <span class="ident">S</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">Fn</span>, <span class="ident">F</span>::<span class="ident">Future</span><span class="op">&gt;</span>
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="ident">stream</span>: <span class="ident">S</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">S</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
     <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">F</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">Fn</span>: <span class="ident">FnMut</span>(<span class="ident">S</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">F</span>,
+    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">S</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+    <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
     <span class="ident">Then</span> {
         <span class="ident">stream</span>,
@@ -105,14 +104,14 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span>, <span class="ident">Fn</span>, <span class="ident">F</span><span class="op">&gt;</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">Fn</span>, <span class="ident">F</span>::<span class="ident">Future</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">S</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
     <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">F</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">Fn</span>: <span class="ident">FnMut</span>(<span class="ident">S</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">F</span>,
+    <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">S</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+    <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">F</span>::<span class="ident">Output</span>;
+    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">Fut</span>::<span class="ident">Output</span>;
 
     <span class="kw">fn</span> <span class="ident">poll_next</span>(
         <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
@@ -128,8 +127,7 @@
                 <span class="ident">this</span>.<span class="ident">future</span>.<span class="ident">set</span>(<span class="prelude-val">None</span>);
                 <span class="kw">break</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>);
             } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>) <span class="op">=</span> <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)) {
-                <span class="ident">this</span>.<span class="ident">future</span>
-                    .<span class="ident">set</span>(<span class="prelude-val">Some</span>((<span class="ident">this</span>.<span class="ident">f</span>)(<span class="ident">item</span>, <span class="ident">act</span>, <span class="ident">ctx</span>).<span class="ident">into_future</span>()));
+                <span class="ident">this</span>.<span class="ident">future</span>.<span class="ident">set</span>(<span class="prelude-val">Some</span>((<span class="ident">this</span>.<span class="ident">f</span>)(<span class="ident">item</span>, <span class="ident">act</span>, <span class="ident">ctx</span>)));
             } <span class="kw">else</span> {
                 <span class="kw">break</span> <span class="prelude-val">None</span>;
             }

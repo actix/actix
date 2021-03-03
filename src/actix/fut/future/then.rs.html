@@ -84,7 +84,7 @@
 <span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">IntoActorFuture</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
 
 <span class="macro">pin_project</span><span class="macro">!</span> {
     <span class="doccomment">/// Future for the `then` combinator, chaining computations on the end of</span>
@@ -94,11 +94,11 @@
     <span class="attribute">#[<span class="ident">project</span> <span class="op">=</span> <span class="ident">ThenProj</span>]</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
     <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless polled&quot;</span>]</span>
-    <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">Fn</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span><span class="op">&gt;</span> {
         <span class="ident">First</span> {
             <span class="attribute">#[<span class="ident">pin</span>]</span>
             <span class="ident">fut1</span>: <span class="ident">A</span>,
-            <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Fn</span><span class="op">&gt;</span>,
+            <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>,
         },
         <span class="ident">Second</span> {
             <span class="attribute">#[<span class="ident">pin</span>]</span>
@@ -108,10 +108,10 @@
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">Fn</span>, <span class="ident">Act</span><span class="op">&gt;</span>(<span class="ident">future</span>: <span class="ident">A</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">Fn</span><span class="op">&gt;</span>
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span>, <span class="ident">Act</span><span class="op">&gt;</span>(<span class="ident">future</span>: <span class="ident">A</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
-    <span class="ident">B</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
+    <span class="ident">B</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
     <span class="ident">Act</span>: <span class="ident">Actor</span>,
 {
     <span class="ident">Then</span>::<span class="ident">First</span> {
@@ -120,11 +120,11 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">Fn</span>, <span class="ident">Act</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>::<span class="ident">Future</span>, <span class="ident">Fn</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span>, <span class="ident">Act</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
-    <span class="ident">B</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
-    <span class="ident">Fn</span>: <span class="ident">FnOnce</span>(<span class="ident">A</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">B</span>,
+    <span class="ident">B</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
+    <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident">A</span>::<span class="ident">Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">B</span>,
     <span class="ident">Act</span>: <span class="ident">Actor</span>,
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">B</span>::<span class="ident">Output</span>;
@@ -139,7 +139,7 @@
             <span class="ident">ThenProj</span>::<span class="ident">First</span> { <span class="ident">fut1</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">fut1</span>.<span class="ident">poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>));
                 <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">fut2</span> <span class="op">=</span> <span class="ident">data</span>(<span class="ident">output</span>, <span class="ident">act</span>, <span class="ident">ctx</span>).<span class="ident">into_future</span>();
+                <span class="kw">let</span> <span class="ident">fut2</span> <span class="op">=</span> <span class="ident">data</span>(<span class="ident">output</span>, <span class="ident">act</span>, <span class="ident">ctx</span>);
                 <span class="self">self</span>.<span class="ident">set</span>(<span class="ident">Then</span>::<span class="ident">Second</span> { <span class="ident">fut2</span> });
                 <span class="self">self</span>.<span class="ident">poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
             }

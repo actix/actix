@@ -244,10 +244,6 @@
 <span id="241">241</span>
 <span id="242">242</span>
 <span id="243">243</span>
-<span id="244">244</span>
-<span id="245">245</span>
-<span id="246">246</span>
-<span id="247">247</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">marker</span>::<span class="ident">PhantomData</span>,
@@ -270,7 +266,7 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 
-<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">future</span>::<span class="ident">IntoActorFuture</span>;
+<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">future</span>::<span class="ident">ActorFuture</span>;
 
 <span class="kw">mod</span> <span class="ident">collect</span>;
 <span class="kw">mod</span> <span class="ident">finish</span>;
@@ -307,9 +303,9 @@
     <span class="doccomment">/// Note that this function consumes the stream passed into it and returns a</span>
     <span class="doccomment">/// wrapped version of it, similar to the existing `map` methods in the</span>
     <span class="doccomment">/// standard library.</span>
-    <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">Fn</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fn</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Map</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Fn</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">U</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">map</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -324,10 +320,10 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// Note that this function consumes the stream passed into it and returns a</span>
     <span class="doccomment">/// wrapped version of it.</span>
-    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">Fn</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fn</span>, <span class="ident">Fut</span>::<span class="ident">Future</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Fn</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">then</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -341,10 +337,10 @@
     <span class="doccomment">/// this method and then is returned again by each execution of the closure.</span>
     <span class="doccomment">/// Once the entire stream has been exhausted the returned future will</span>
     <span class="doccomment">/// resolve to this value.</span>
-    <span class="kw">fn</span> <span class="ident">fold</span><span class="op">&lt;</span><span class="ident">Fn</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">init</span>: <span class="ident">Fut</span>::<span class="ident">Output</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fold</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fn</span>, <span class="ident">Fut</span>::<span class="ident">Future</span>, <span class="ident">Fut</span>::<span class="ident">Output</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">fold</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">init</span>: <span class="ident">Fut</span>::<span class="ident">Output</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fold</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">Fut</span>, <span class="ident">Fut</span>::<span class="ident">Output</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Fn</span>: <span class="ident">FnMut</span>(<span class="ident">Fut</span>::<span class="ident">Output</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">Fut</span>::<span class="ident">Output</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">fold</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>, <span class="ident">init</span>)
@@ -356,10 +352,10 @@
     <span class="doccomment">/// This function, like `Iterator::take_while`, will take elements from the</span>
     <span class="doccomment">/// stream until the predicate `f` resolves to `false`. Once one element</span>
     <span class="doccomment">/// returns `false`, it will always return that the stream is done.</span>
-    <span class="kw">fn</span> <span class="ident">take_while</span><span class="op">&lt;</span><span class="ident">Fn</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">TakeWhile</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="ident">Fut</span>::<span class="ident">Future</span>, <span class="ident">Fn</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">take_while</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">TakeWhile</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Fn</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">bool</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">bool</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">take_while</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -372,10 +368,10 @@
     <span class="doccomment">/// stream until the predicate `f` resolves to `false`. Once one element</span>
     <span class="doccomment">/// returns `false`, all future elements will be returned from the underlying</span>
     <span class="doccomment">/// stream.</span>
-    <span class="kw">fn</span> <span class="ident">skip_while</span><span class="op">&lt;</span><span class="ident">Fn</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">Fn</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SkipWhile</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="ident">Fn</span>, <span class="ident">Fut</span>::<span class="ident">Future</span><span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">skip_while</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SkipWhile</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="self">Self</span>::<span class="ident">Item</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">Fn</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">IntoActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">bool</span><span class="op">&gt;</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="self">Self</span>::<span class="ident">Item</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Fut</span>,
+        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">bool</span><span class="op">&gt;</span>,
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">skip_while</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">f</span>)
@@ -425,10 +421,7 @@
     <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
     <span class="doccomment">/// The stream that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Stream</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Item</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span>;
-
-    <span class="doccomment">/// The item that the future may resolve with.</span>
-    <span class="kw">type</span> <span class="ident">Item</span>;
+    <span class="kw">type</span> <span class="ident">Stream</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>;
 
     <span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.11.0&quot;</span>, <span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Please use WrapStream::into_actor&quot;</span>)]</span>
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
@@ -444,7 +437,6 @@
     <span class="ident">A</span>: <span class="ident">Actor</span>,
 {
     <span class="kw">type</span> <span class="ident">Stream</span> <span class="op">=</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>;
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">S</span>::<span class="ident">Item</span>;
 
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
     <span class="kw">fn</span> <span class="ident">actstream</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="ident">Stream</span> {
