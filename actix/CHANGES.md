@@ -29,6 +29,7 @@
 * Remove `dev::ResponseChannel` trait. [#472]
 * Remove `fut::IntoActorFuture` trait. [#475]
 * Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
+* Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
 
 [#465]: https://github.com/actix/actix/pull/465
 [#472]: https://github.com/actix/actix/pull/472
