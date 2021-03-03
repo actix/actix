@@ -3,6 +3,10 @@
 ## Unreleased - 2021-xx-xx
 
 
+## 0.6.0-beta.2 - 2021-03-03
+* Bump actix dependency to v0.11.0-beta.3.
+
+
 ## 0.6.0-beta.1 - 2021-02-06
 * Add `#[actix::main]` and `#[actix::test]` macros.
 
