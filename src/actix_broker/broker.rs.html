@@ -194,7 +194,7 @@
 <span id="191">191</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">actix</span>::<span class="ident">prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">fnv</span>::<span class="ident">FnvHasher</span>;
+<span class="kw">use</span> <span class="ident">ahash</span>::<span class="ident">AHasher</span>;
 <span class="kw">use</span> <span class="ident">log</span>::<span class="ident">trace</span>;
 
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">any</span>::{<span class="ident">Any</span>, <span class="ident">TypeId</span>};
@@ -204,7 +204,7 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">msgs</span>::<span class="kw-2">*</span>;
 
-<span class="kw">type</span> <span class="ident">TypeMap</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TypeId</span>, <span class="ident">A</span>, <span class="ident">BuildHasherDefault</span><span class="op">&lt;</span><span class="ident">FnvHasher</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="kw">type</span> <span class="ident">TypeMap</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TypeId</span>, <span class="ident">A</span>, <span class="ident">BuildHasherDefault</span><span class="op">&lt;</span><span class="ident">AHasher</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Broker</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
