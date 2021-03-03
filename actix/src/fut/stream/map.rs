@@ -11,27 +11,27 @@ pin_project! {
     /// Stream for the [`map`](super::ActorStreamExt::map) method.
     #[derive(Debug)]
     #[must_use = "streams do nothing unless polled"]
-    pub struct Map<S, Fn> {
+    pub struct Map<S, F> {
         #[pin]
         stream: S,
-        f: Fn,
+        f: F,
     }
 }
 
-pub(super) fn new<S, A, Fn, U>(stream: S, f: Fn) -> Map<S, Fn>
+pub(super) fn new<S, A, F, U>(stream: S, f: F) -> Map<S, F>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> U,
+    F: FnMut(S::Item, &mut A, &mut A::Context) -> U,
 {
     Map { stream, f }
 }
 
-impl<S, A, Fn, U> ActorStream<A> for Map<S, Fn>
+impl<S, A, F, U> ActorStream<A> for Map<S, F>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> U,
+    F: FnMut(S::Item, &mut A, &mut A::Context) -> U,
 {
     type Item = U;
 

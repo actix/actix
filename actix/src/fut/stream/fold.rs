@@ -11,25 +11,21 @@ pin_project! {
     /// Stream for the [`fold`](super::ActorStreamExt::fold) method.
     #[derive(Debug)]
     #[must_use = "streams do nothing unless polled"]
-    pub struct Fold<S, Fn, Fut, T> {
+    pub struct Fold<S, F, Fut, T> {
         #[pin]
         stream: S,
-        f: Fn,
+        f: F,
         accum: Option<T>,
         #[pin]
         future: Option<Fut>,
     }
 }
 
-pub(super) fn new<S, A, Fn, Fut>(
-    stream: S,
-    f: Fn,
-    t: Fut::Output,
-) -> Fold<S, Fn, Fut, Fut::Output>
+pub(super) fn new<S, A, F, Fut>(stream: S, f: F, t: Fut::Output) -> Fold<S, F, Fut, Fut::Output>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(Fut::Output, S::Item, &mut A, &mut A::Context) -> Fut,
+    F: FnMut(Fut::Output, S::Item, &mut A, &mut A::Context) -> Fut,
     Fut: ActorFuture<A>,
 {
     Fold {
@@ -40,11 +36,11 @@ where
     }
 }
 
-impl<S, A, Fn, Fut> ActorFuture<A> for Fold<S, Fn, Fut, Fut::Output>
+impl<S, A, F, Fut> ActorFuture<A> for Fold<S, F, Fut, Fut::Output>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(Fut::Output, S::Item, &mut A, &mut A::Context) -> Fut,
+    F: FnMut(Fut::Output, S::Item, &mut A, &mut A::Context) -> Fut,
     Fut: ActorFuture<A>,
 {
     type Output = Fut::Output;

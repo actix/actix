@@ -13,27 +13,27 @@ pin_project! {
     #[project_replace = MapProjReplace]
     #[derive(Debug)]
     #[must_use = "futures do nothing unless you `.await` or poll them"]
-    pub enum Map<Fut, Fn> {
+    pub enum Map<Fut, F> {
         Incomplete {
             #[pin]
             future: Fut,
-            f: Fn,
+            f: F,
         },
         Complete,
     }
 }
 
-impl<Fut, Fn> Map<Fut, Fn> {
-    pub(super) fn new(future: Fut, f: Fn) -> Self {
+impl<Fut, F> Map<Fut, F> {
+    pub(super) fn new(future: Fut, f: F) -> Self {
         Self::Incomplete { future, f }
     }
 }
 
-impl<U, Fut, A, Fn> ActorFuture<A> for Map<Fut, Fn>
+impl<U, Fut, A, F> ActorFuture<A> for Map<Fut, F>
 where
     Fut: ActorFuture<A>,
     A: Actor,
-    Fn: FnOnce(Fut::Output, &mut A, &mut A::Context) -> U,
+    F: FnOnce(Fut::Output, &mut A, &mut A::Context) -> U,
 {
     type Output = U;
 

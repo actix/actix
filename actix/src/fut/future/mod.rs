@@ -130,9 +130,9 @@ pub trait ActorFuture<A: Actor> {
 pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
     /// Map this future's result to a different type, returning a new future of
     /// the resulting type.
-    fn map<Fn, U>(self, f: Fn) -> Map<Self, Fn>
+    fn map<F, U>(self, f: F) -> Map<Self, F>
     where
-        Fn: FnOnce(Self::Output, &mut A, &mut A::Context) -> U,
+        F: FnOnce(Self::Output, &mut A, &mut A::Context) -> U,
         Self: Sized,
     {
         Map::new(self, f)
@@ -140,9 +140,9 @@ pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
 
     /// Chain on a computation for when a future finished, passing the result of
     /// the future to the provided closure `f`.
-    fn then<Fn, Fut>(self, f: Fn) -> Then<Self, Fut, Fn>
+    fn then<F, Fut>(self, f: F) -> Then<Self, Fut, F>
     where
-        Fn: FnOnce(Self::Output, &mut A, &mut A::Context) -> Fut,
+        F: FnOnce(Self::Output, &mut A, &mut A::Context) -> Fut,
         Fut: ActorFuture<A>,
         Self: Sized,
     {

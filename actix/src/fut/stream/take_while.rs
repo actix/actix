@@ -11,10 +11,10 @@ pin_project! {
     /// Stream for the [`take_while`](super::ActorStreamExt::take_while) method.
     #[must_use = "streams do nothing unless polled"]
     #[derive(Debug)]
-    pub struct TakeWhile<S, I, Fn, Fut> {
+    pub struct TakeWhile<S, I, F, Fut> {
         #[pin]
         stream: S,
-        f: Fn,
+        f: F,
         #[pin]
         pending_fut: Option<Fut>,
         pending_item: Option<I>,
@@ -22,11 +22,11 @@ pin_project! {
     }
 }
 
-pub(super) fn new<S, A, Fn, Fut>(stream: S, f: Fn) -> TakeWhile<S, S::Item, Fn, Fut>
+pub(super) fn new<S, A, F, Fut>(stream: S, f: F) -> TakeWhile<S, S::Item, F, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
+    F: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
     Fut: ActorFuture<A, Output = bool>,
 {
     TakeWhile {
@@ -38,11 +38,11 @@ where
     }
 }
 
-impl<S, A, Fn, Fut> ActorStream<A> for TakeWhile<S, S::Item, Fn, Fut>
+impl<S, A, F, Fut> ActorStream<A> for TakeWhile<S, S::Item, F, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
+    F: FnMut(&S::Item, &mut A, &mut A::Context) -> Fut,
     Fut: ActorFuture<A, Output = bool>,
 {
     type Item = S::Item;

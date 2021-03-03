@@ -15,11 +15,11 @@ pin_project! {
     #[project = ThenProj]
     #[derive(Debug)]
     #[must_use = "futures do nothing unless polled"]
-    pub enum Then<A, B, Fn> {
+    pub enum Then<A, B, F> {
         First {
             #[pin]
             fut1: A,
-            data: Option<Fn>,
+            data: Option<F>,
         },
         Second {
             #[pin]
@@ -29,7 +29,7 @@ pin_project! {
     }
 }
 
-pub(super) fn new<A, B, Fn, Act>(future: A, f: Fn) -> Then<A, B, Fn>
+pub(super) fn new<A, B, F, Act>(future: A, f: F) -> Then<A, B, F>
 where
     A: ActorFuture<Act>,
     B: ActorFuture<Act>,
@@ -41,11 +41,11 @@ where
     }
 }
 
-impl<A, B, Fn, Act> ActorFuture<Act> for Then<A, B, Fn>
+impl<A, B, F, Act> ActorFuture<Act> for Then<A, B, F>
 where
     A: ActorFuture<Act>,
     B: ActorFuture<Act>,
-    Fn: FnOnce(A::Output, &mut Act, &mut Act::Context) -> B,
+    F: FnOnce(A::Output, &mut Act, &mut Act::Context) -> B,
     Act: Actor,
 {
     type Output = B::Output;

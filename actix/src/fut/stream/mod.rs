@@ -56,9 +56,9 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     /// Note that this function consumes the stream passed into it and returns a
     /// wrapped version of it, similar to the existing `map` methods in the
     /// standard library.
-    fn map<Fn, U>(self, f: Fn) -> Map<Self, Fn>
+    fn map<F, U>(self, f: F) -> Map<Self, F>
     where
-        Fn: FnMut(Self::Item, &mut A, &mut A::Context) -> U,
+        F: FnMut(Self::Item, &mut A, &mut A::Context) -> U,
         Self: Sized,
     {
         map::new(self, f)
@@ -73,9 +73,9 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     ///
     /// Note that this function consumes the stream passed into it and returns a
     /// wrapped version of it.
-    fn then<Fn, Fut>(self, f: Fn) -> Then<Self, Fn, Fut>
+    fn then<F, Fut>(self, f: F) -> Then<Self, F, Fut>
     where
-        Fn: FnMut(Self::Item, &mut A, &mut A::Context) -> Fut,
+        F: FnMut(Self::Item, &mut A, &mut A::Context) -> Fut,
         Fut: ActorFuture<A>,
         Self: Sized,
     {
@@ -90,9 +90,9 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     /// this method and then is returned again by each execution of the closure.
     /// Once the entire stream has been exhausted the returned future will
     /// resolve to this value.
-    fn fold<Fn, Fut>(self, init: Fut::Output, f: Fn) -> Fold<Self, Fn, Fut, Fut::Output>
+    fn fold<F, Fut>(self, init: Fut::Output, f: F) -> Fold<Self, F, Fut, Fut::Output>
     where
-        Fn: FnMut(Fut::Output, Self::Item, &mut A, &mut A::Context) -> Fut,
+        F: FnMut(Fut::Output, Self::Item, &mut A, &mut A::Context) -> Fut,
         Fut: ActorFuture<A>,
         Self: Sized,
     {
@@ -105,9 +105,9 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     /// This function, like `Iterator::take_while`, will take elements from the
     /// stream until the predicate `f` resolves to `false`. Once one element
     /// returns `false`, it will always return that the stream is done.
-    fn take_while<Fn, Fut>(self, f: Fn) -> TakeWhile<Self, Self::Item, Fn, Fut>
+    fn take_while<F, Fut>(self, f: F) -> TakeWhile<Self, Self::Item, F, Fut>
     where
-        Fn: FnMut(&Self::Item, &mut A, &mut A::Context) -> Fut,
+        F: FnMut(&Self::Item, &mut A, &mut A::Context) -> Fut,
         Fut: ActorFuture<A, Output = bool>,
         Self: Sized,
     {
@@ -121,9 +121,9 @@ pub trait ActorStreamExt<A: Actor>: ActorStream<A> {
     /// stream until the predicate `f` resolves to `false`. Once one element
     /// returns `false`, all future elements will be returned from the underlying
     /// stream.
-    fn skip_while<Fn, Fut>(self, f: Fn) -> SkipWhile<Self, Self::Item, Fn, Fut>
+    fn skip_while<F, Fut>(self, f: F) -> SkipWhile<Self, Self::Item, F, Fut>
     where
-        Fn: FnMut(&Self::Item, &mut A, &mut A::Context) -> Fut,
+        F: FnMut(&Self::Item, &mut A, &mut A::Context) -> Fut,
         Fut: ActorFuture<A, Output = bool>,
         Self: Sized,
     {

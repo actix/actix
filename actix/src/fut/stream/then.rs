@@ -11,20 +11,20 @@ pin_project! {
     /// Stream for the [`then`](super::ActorStreamExt::then) method.
     #[derive(Debug)]
     #[must_use = "streams do nothing unless polled"]
-    pub struct Then<S, Fn, Fut> {
+    pub struct Then<S, F, Fut> {
         #[pin]
         stream: S,
         #[pin]
         future: Option<Fut>,
-        f: Fn,
+        f: F,
     }
 }
 
-pub(super) fn new<S, A, Fn, Fut>(stream: S, f: Fn) -> Then<S, Fn, Fut>
+pub(super) fn new<S, A, F, Fut>(stream: S, f: F) -> Then<S, F, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> Fut,
+    F: FnMut(S::Item, &mut A, &mut A::Context) -> Fut,
     Fut: ActorFuture<A>,
 {
     Then {
@@ -34,11 +34,11 @@ where
     }
 }
 
-impl<S, A, Fn, Fut> ActorStream<A> for Then<S, Fn, Fut>
+impl<S, A, F, Fut> ActorStream<A> for Then<S, F, Fut>
 where
     S: ActorStream<A>,
     A: Actor,
-    Fn: FnMut(S::Item, &mut A, &mut A::Context) -> Fut,
+    F: FnMut(S::Item, &mut A, &mut A::Context) -> Fut,
     Fut: ActorFuture<A>,
 {
     type Item = Fut::Output;
