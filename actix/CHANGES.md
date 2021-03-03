@@ -1,14 +1,21 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+
+
+## 0.11.0-beta.3 - 2021-03-03
 ### Added
-* Added `actix::fut::{ActorFutureExt, ActorStreamExt}` traits for extension method for `ActorFuture` 
-  and `ActorStream` trait. This is aiming to have a similar traits set inline with `futures` crate. [#474]
+* Added `actix::fut::{ActorFutureExt, ActorStreamExt}` traits for extension method
+  for `ActorFuture` and `ActorStream` trait. This is aiming to have a similar traits set inline
+  with `futures` crate. [#474]
 * Added `ActorStreamExt::collect` method for collect an actor stream's items and output them as an
   actor future. [#474]
-* Added `ActorStreamExt::take_while` method to take an actor stream's items based on the closure output. [#474]
-* Added `ActorStreamExt::skip_while` method to skip an actor stream's items based on the closure output. [#474]
-* Added `actix::fut::LocalBoxActorFuture` type to keep inline with `futures::future::LocalBoxFuture` type. [#474]
+* Added `ActorStreamExt::take_while` method to take an actor stream's items based on the
+  closure output. [#474]
+* Added `ActorStreamExt::skip_while` method to skip an actor stream's items based on the
+  closure output. [#474]
+* Added `actix::fut::LocalBoxActorFuture` type to keep inline with the
+  `futures::future::LocalBoxFuture` type. [#474]
 
 ### Changed
 * Rework `ActorFuture` trait. [#465]
@@ -17,12 +24,11 @@
 * `actix::fut::{ok, err, result, FutureResult, Either}` are changed to re-export of 
   `futures::future::{ready, Ready, Either}` types. [#474]
 * `futures::future::{ok, err, ready, Ready, Either}` types impls `ActorFuture` trait by default. [#474]
-  
 
 ### Removed
 * Remove `dev::ResponseChannel` trait [#472]
 
-[#465]: https://github.com/actix/actix/issues/465
+[#465]: https://github.com/actix/actix/pull/465
 [#472]: https://github.com/actix/actix/pull/472
 [#474]: https://github.com/actix/actix/pull/474
 
