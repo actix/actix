@@ -11,7 +11,7 @@
 ## Documentation
 
 - [API Documentation](https://docs.rs/actix-derive)
-- [API Documentation (master branch)](https://actix.rs/actix/actix_derive)
+- [API Documentation (master branch)](https://actix.rs/actix/actix-derive)
 
 ## Usage
 

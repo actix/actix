@@ -14,11 +14,11 @@ impl Actor for MyActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         async {
-            sleep(Duration::new(0, 5_000_000)).await;
+            sleep(Duration::from_millis(20)).await;
             System::current().stop();
         }
         .into_actor(self)
-        .timeout(Duration::new(0, 100))
+        .timeout(Duration::from_millis(1))
         .map(|e, act, _| {
             if e == Err(()) {
                 act.timeout.store(true, Ordering::Relaxed);
