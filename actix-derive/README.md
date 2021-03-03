@@ -3,15 +3,15 @@
 > Derive macros for `actix` actors.
 
 [![crates.io](https://img.shields.io/crates/v/actix-derive?label=latest)](https://crates.io/crates/actix-derive)
-[![Documentation](https://docs.rs/actix-derive/badge.svg?version=0.11.0-beta.3)](https://docs.rs/actix-derive/0.11.0-beta.3)
+[![Documentation](https://docs.rs/actix-derive/badge.svg?version=0.6.0-beta.2)](https://docs.rs/actix-derive/0.6.0-beta.2)
 [![Version](https://img.shields.io/badge/rustc-1.46+-ab6000.svg)](https://blog.rust-lang.org/2019/12/19/Rust-1.46.0.html)
 ![License](https://img.shields.io/crates/l/actix-derive.svg)
-[![Dependency Status](https://deps.rs/crate/actix/0.11.0-beta.3/status.svg)](https://deps.rs/crate/actix/0.11.0-beta.3)
+[![Dependency Status](https://deps.rs/crate/actix/0.6.0-beta.2/status.svg)](https://deps.rs/crate/actix/0.6.0-beta.2)
 
 ## Documentation
 
 - [API Documentation](https://docs.rs/actix-derive)
-- [API Documentation (master branch)](https://actix.rs/actix/actix-derive)
+- [API Documentation (master branch)](https://actix.rs/actix/actix_derive)
 
 ## Usage
 

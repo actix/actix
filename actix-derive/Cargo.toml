@@ -1,5 +1,5 @@
 [package]
-name = "actix-derive"
+name = "actix_derive"
 version = "0.6.0-beta.2"
 edition = "2018"
 authors = [
@@ -9,7 +9,7 @@ authors = [
 description = "Derive macros for `actix` actors"
 readme = "README.md"
 keywords = ["actix", "actors", "derive", "macro"]
-repository = "https://github.com/actix/actix-derive"
+repository = "https://github.com/actix/actix"
 documentation = "https://docs.rs/actix-derive"
 license = "MIT OR Apache-2.0"
 
