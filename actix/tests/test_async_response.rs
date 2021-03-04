@@ -1,4 +1,8 @@
+use std::time::{Duration, Instant};
+
+use actix::clock::sleep;
 use actix::prelude::*;
+use futures_util::stream::StreamExt;
 
 struct AsyncMsg;
 
@@ -10,6 +14,25 @@ struct Msg;
 
 impl Message for Msg {
     type Result = usize;
+}
+
+#[derive(Clone, Copy)]
+struct Num(usize);
+
+impl Message for Num {
+    type Result = usize;
+}
+
+impl Handler<Num> for MyActor {
+    type Result = AsyncResponse<Self, usize>;
+
+    fn handle(&mut self, msg: Num, ctx: &mut Self::Context) -> Self::Result {
+        AsyncResponse::atomic(self, ctx, move |act, _| async move {
+            sleep(Duration::from_millis(msg.0 as u64)).await;
+            act.0 += msg.0;
+            act.0
+        })
+    }
 }
 
 struct MyActor(usize);
@@ -52,6 +75,23 @@ impl Handler<Msg> for MyActor {
 
 #[actix::test]
 async fn test_async_response() {
+    let addr = MyActor::start(MyActor(0));
+
+    let items = vec![Num(7), Num(6), Num(5), Num(4), Num(3), Num(2), Num(1)];
+    let fut = futures_util::stream::iter(items)
+        .map(|i| addr.send(i))
+        .buffer_unordered(7)
+        .fold(Vec::default(), |mut acc, res| {
+            acc.push(res.unwrap());
+            async { acc }
+        });
+
+    let start = Instant::now();
+    let result = fut.await;
+
+    assert!(Instant::now().duration_since(start).as_millis() >= 28);
+    assert_eq!(result, vec![7, 13, 18, 22, 25, 27, 28]);
+
     let addr = MyActor::start(MyActor(0));
 
     let msgs = (0..2000)
