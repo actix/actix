@@ -45,7 +45,6 @@ fn test_fut_timeout() {
 }
 
 struct MyStreamActor {
-    counter: usize,
     timeout: Arc<AtomicBool>,
 }
 
@@ -54,28 +53,38 @@ impl Actor for MyStreamActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let mut s = futures_util::stream::FuturesOrdered::new();
-        s.push(sleep(Duration::new(0, 5_000_000)));
-        s.push(sleep(Duration::new(0, 5_000_000)));
+        s.push(sleep(Duration::from_millis(20)));
+        s.push(sleep(Duration::from_millis(20)));
 
         s.into_actor(self)
-            .timeout(Duration::new(0, 1000))
+            .timeout(Duration::from_millis(1))
             .then(|res, act, _| {
                 // Additional waiting time to test `then` call as well
                 async move {
-                    sleep(Duration::from_millis(500)).await;
+                    sleep(Duration::from_millis(20)).await;
                     res
                 }
                 .into_actor(act)
             })
-            .map(|e, act, _| {
-                if let Err(()) = e {
-                    act.timeout.store(true, Ordering::Relaxed);
-                    System::current().stop();
-                }
+            .map(|res, act, _| {
+                assert!(
+                    res.is_err(),
+                    "MyStreamActor should return error when timed out"
+                );
+                act.timeout.store(true, Ordering::Relaxed);
+                System::current().stop();
             })
             .finish()
             .wait(ctx)
     }
+}
+
+struct MyStreamActor2 {
+    counter: usize,
+}
+
+impl Actor for MyStreamActor2 {
+    type Context = actix::Context<Self>;
 }
 
 struct TakeWhileMsg(usize);
@@ -84,7 +93,7 @@ impl Message for TakeWhileMsg {
     type Result = ();
 }
 
-impl Handler<TakeWhileMsg> for MyStreamActor {
+impl Handler<TakeWhileMsg> for MyStreamActor2 {
     type Result = ResponseActFuture<Self, ()>;
 
     fn handle(&mut self, msg: TakeWhileMsg, _: &mut Context<Self>) -> Self::Result {
@@ -115,7 +124,7 @@ impl Message for SkipWhileMsg {
     type Result = ();
 }
 
-impl Handler<SkipWhileMsg> for MyStreamActor {
+impl Handler<SkipWhileMsg> for MyStreamActor2 {
     type Result = ResponseActFuture<Self, ()>;
 
     fn handle(&mut self, msg: SkipWhileMsg, _: &mut Context<Self>) -> Self::Result {
@@ -149,7 +158,7 @@ impl Message for CollectMsg {
     type Result = Vec<usize>;
 }
 
-impl Handler<CollectMsg> for MyStreamActor {
+impl Handler<CollectMsg> for MyStreamActor2 {
     type Result = ResponseActFuture<Self, Vec<usize>>;
 
     fn handle(&mut self, msg: CollectMsg, _: &mut Context<Self>) -> Self::Result {
@@ -175,11 +184,7 @@ fn test_stream_timeout() {
 
     let sys = System::new();
     sys.block_on(async {
-        let _addr = MyStreamActor {
-            timeout: timeout2,
-            counter: 0,
-        }
-        .start();
+        let _addr = MyStreamActor { timeout: timeout2 }.start();
     });
     sys.run().unwrap();
 
@@ -189,11 +194,7 @@ fn test_stream_timeout() {
 #[test]
 fn test_stream_take_while() {
     System::new().block_on(async {
-        let addr = MyStreamActor {
-            timeout: Arc::new(AtomicBool::new(false)),
-            counter: 0,
-        }
-        .start();
+        let addr = MyStreamActor2 { counter: 0 }.start();
         addr.send(TakeWhileMsg(5)).await.unwrap();
     })
 }
@@ -201,11 +202,7 @@ fn test_stream_take_while() {
 #[test]
 fn test_stream_skip_while() {
     System::new().block_on(async {
-        let addr = MyStreamActor {
-            timeout: Arc::new(AtomicBool::new(false)),
-            counter: 0,
-        }
-        .start();
+        let addr = MyStreamActor2 { counter: 0 }.start();
         addr.send(SkipWhileMsg(5)).await.unwrap();
     })
 }
@@ -213,11 +210,7 @@ fn test_stream_skip_while() {
 #[test]
 fn test_stream_collect() {
     System::new().block_on(async {
-        let addr = MyStreamActor {
-            timeout: Arc::new(AtomicBool::new(false)),
-            counter: 0,
-        }
-        .start();
+        let addr = MyStreamActor2 { counter: 0 }.start();
         let res = addr.send(CollectMsg(3)).await.unwrap();
 
         assert_eq!(res, vec![1, 2, 3, 4, 5]);
