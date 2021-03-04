@@ -67,11 +67,13 @@ impl Actor for MyStreamActor {
                 }
                 .into_actor(act)
             })
-            .map(|e, act, _| {
-                if let Err(()) = e {
-                    act.timeout.store(true, Ordering::Relaxed);
-                    System::current().stop();
-                }
+            .map(|res, act, _| {
+                assert!(
+                    res.is_err(),
+                    "MyStreamActor should return error when timed out"
+                );
+                act.timeout.store(true, Ordering::Relaxed);
+                System::current().stop();
             })
             .finish()
             .wait(ctx)
