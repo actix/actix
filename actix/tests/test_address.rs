@@ -102,9 +102,13 @@ impl Actor for WeakAddressRunner {
 
 #[test]
 fn test_weak_address() {
-    System::new().block_on(async move {
+    let sys = System::new();
+
+    sys.block_on(async move {
         WeakAddressRunner.start();
     });
+
+    sys.run().unwrap();
 }
 
 struct WeakRecipientRunner;
