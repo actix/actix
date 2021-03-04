@@ -45,7 +45,6 @@ fn test_fut_timeout() {
 }
 
 struct MyStreamActor {
-    counter: usize,
     timeout: Arc<AtomicBool>,
 }
 
@@ -80,13 +79,21 @@ impl Actor for MyStreamActor {
     }
 }
 
+struct MyStreamActor2 {
+    counter: usize,
+}
+
+impl Actor for MyStreamActor2 {
+    type Context = actix::Context<Self>;
+}
+
 struct TakeWhileMsg(usize);
 
 impl Message for TakeWhileMsg {
     type Result = ();
 }
 
-impl Handler<TakeWhileMsg> for MyStreamActor {
+impl Handler<TakeWhileMsg> for MyStreamActor2 {
     type Result = ResponseActFuture<Self, ()>;
 
     fn handle(&mut self, msg: TakeWhileMsg, _: &mut Context<Self>) -> Self::Result {
@@ -117,7 +124,7 @@ impl Message for SkipWhileMsg {
     type Result = ();
 }
 
-impl Handler<SkipWhileMsg> for MyStreamActor {
+impl Handler<SkipWhileMsg> for MyStreamActor2 {
     type Result = ResponseActFuture<Self, ()>;
 
     fn handle(&mut self, msg: SkipWhileMsg, _: &mut Context<Self>) -> Self::Result {
@@ -151,7 +158,7 @@ impl Message for CollectMsg {
     type Result = Vec<usize>;
 }
 
-impl Handler<CollectMsg> for MyStreamActor {
+impl Handler<CollectMsg> for MyStreamActor2 {
     type Result = ResponseActFuture<Self, Vec<usize>>;
 
     fn handle(&mut self, msg: CollectMsg, _: &mut Context<Self>) -> Self::Result {
@@ -177,11 +184,7 @@ fn test_stream_timeout() {
 
     let sys = System::new();
     sys.block_on(async {
-        let _addr = MyStreamActor {
-            timeout: timeout2,
-            counter: 0,
-        }
-        .start();
+        let _addr = MyStreamActor { timeout: timeout2 }.start();
     });
     sys.run().unwrap();
 
@@ -191,11 +194,7 @@ fn test_stream_timeout() {
 #[test]
 fn test_stream_take_while() {
     System::new().block_on(async {
-        let addr = MyStreamActor {
-            timeout: Arc::new(AtomicBool::new(false)),
-            counter: 0,
-        }
-        .start();
+        let addr = MyStreamActor2 { counter: 0 }.start();
         addr.send(TakeWhileMsg(5)).await.unwrap();
     })
 }
@@ -203,11 +202,7 @@ fn test_stream_take_while() {
 #[test]
 fn test_stream_skip_while() {
     System::new().block_on(async {
-        let addr = MyStreamActor {
-            timeout: Arc::new(AtomicBool::new(false)),
-            counter: 0,
-        }
-        .start();
+        let addr = MyStreamActor2 { counter: 0 }.start();
         addr.send(SkipWhileMsg(5)).await.unwrap();
     })
 }
@@ -215,11 +210,7 @@ fn test_stream_skip_while() {
 #[test]
 fn test_stream_collect() {
     System::new().block_on(async {
-        let addr = MyStreamActor {
-            timeout: Arc::new(AtomicBool::new(false)),
-            counter: 0,
-        }
-        .start();
+        let addr = MyStreamActor2 { counter: 0 }.start();
         let res = addr.send(CollectMsg(3)).await.unwrap();
 
         assert_eq!(res, vec![1, 2, 3, 4, 5]);
