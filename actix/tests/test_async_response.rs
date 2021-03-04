@@ -73,45 +73,47 @@ impl Handler<Msg> for MyActor {
     }
 }
 
-#[actix::test]
-async fn test_async_response() {
-    let addr = MyActor::start(MyActor(0));
+#[test]
+fn test_async_response() {
+    actix::System::new().block_on(async {
+        let addr = MyActor::start(MyActor(0));
 
-    let items = vec![Num(7), Num(6), Num(5), Num(4), Num(3), Num(2), Num(1)];
-    let fut = futures_util::stream::iter(items)
-        .map(|i| addr.send(i))
-        .buffer_unordered(7)
-        .fold(Vec::default(), |mut acc, res| {
-            acc.push(res.unwrap());
-            async { acc }
+        let items = vec![Num(7), Num(6), Num(5), Num(4), Num(3), Num(2), Num(1)];
+        let fut = futures_util::stream::iter(items)
+            .map(|i| addr.send(i))
+            .buffer_unordered(7)
+            .fold(Vec::default(), |mut acc, res| {
+                acc.push(res.unwrap());
+                async { acc }
+            });
+
+        let start = Instant::now();
+        let result = fut.await;
+
+        assert!(Instant::now().duration_since(start).as_millis() >= 28);
+        assert_eq!(result, vec![7, 13, 18, 22, 25, 27, 28]);
+
+        let addr = MyActor::start(MyActor(0));
+
+        let msgs = (0..2000)
+            .map(|_| async {
+                let res = addr.send(Msg).await.unwrap();
+                actix_rt::task::yield_now().await;
+                assert_eq!(res, 0);
+            })
+            .collect::<Vec<_>>();
+
+        let addr1 = addr.clone();
+
+        let task = actix_rt::spawn(async move {
+            let res = addr1.send(AsyncMsg).await.unwrap();
+            assert_eq!(res, 1000);
         });
 
-    let start = Instant::now();
-    let result = fut.await;
+        for msg in msgs {
+            msg.await;
+        }
 
-    assert!(Instant::now().duration_since(start).as_millis() >= 28);
-    assert_eq!(result, vec![7, 13, 18, 22, 25, 27, 28]);
-
-    let addr = MyActor::start(MyActor(0));
-
-    let msgs = (0..2000)
-        .map(|_| async {
-            let res = addr.send(Msg).await.unwrap();
-            actix_rt::task::yield_now().await;
-            assert_eq!(res, 0);
-        })
-        .collect::<Vec<_>>();
-
-    let addr1 = addr.clone();
-
-    let task = actix_rt::spawn(async move {
-        let res = addr1.send(AsyncMsg).await.unwrap();
-        assert_eq!(res, 1000);
-    });
-
-    for msg in msgs {
-        msg.await;
-    }
-
-    let _ = task.await.unwrap();
+        let _ = task.await.unwrap();
+    })
 }
