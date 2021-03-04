@@ -54,15 +54,15 @@ impl Actor for MyStreamActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let mut s = futures_util::stream::FuturesOrdered::new();
-        s.push(sleep(Duration::new(0, 5_000_000)));
-        s.push(sleep(Duration::new(0, 5_000_000)));
+        s.push(sleep(Duration::from_millis(20)));
+        s.push(sleep(Duration::from_millis(20)));
 
         s.into_actor(self)
-            .timeout(Duration::new(0, 1000))
+            .timeout(Duration::from_millis(1))
             .then(|res, act, _| {
                 // Additional waiting time to test `then` call as well
                 async move {
-                    sleep(Duration::from_millis(500)).await;
+                    sleep(Duration::from_millis(20)).await;
                     res
                 }
                 .into_actor(act)
