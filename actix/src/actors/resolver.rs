@@ -1,9 +1,8 @@
 //! DNS resolver and connector utility actor
 //!
 //! # Examples
-//! ```rust
+//! ```
 //! # #![allow(deprecated)]
-//! #
 //! use actix::actors::resolver;
 //! use actix::prelude::*;
 //!
@@ -227,8 +226,8 @@ impl Handler<Connect> for Resolver {
                 self.resolver.as_ref().unwrap(),
             )
             .then(move |addrs, act, _| match addrs {
-                Ok(a) => Either::left(TcpConnector::with_timeout(a, timeout)),
-                Err(e) => Either::right(async move { Err(e) }.into_actor(act)),
+                Ok(a) => Either::Left(TcpConnector::with_timeout(a, timeout)),
+                Err(e) => Either::Right(async move { Err(e) }.into_actor(act)),
             }),
         )
     }

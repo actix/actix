@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use fnv::FnvHasher;
+use ahash::AHasher;
 use log::trace;
 
 use std::any::{Any, TypeId};
@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 
 use crate::msgs::*;
 
-type TypeMap<A> = HashMap<TypeId, A, BuildHasherDefault<FnvHasher>>;
+type TypeMap<A> = HashMap<TypeId, A, BuildHasherDefault<AHasher>>;
 
 #[derive(Default)]
 pub struct Broker<T> {

@@ -1,13 +1,12 @@
 [package]
 name = "actix"
-version = "0.11.0-beta.2"
+version = "0.11.0-beta.3"
 authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
 description = "Actor framework for Rust"
 readme = "README.md"
 keywords = ["actor", "futures", "actix", "async", "tokio"]
-homepage = "https://actix.rs"
-repository = "https://github.com/actix/actix.git"
-documentation = "https://docs.rs/actix/"
+repository = "https://github.com/actix/actix"
+documentation = "https://docs.rs/actix"
 categories = ["network-programming", "asynchronous"]
 license = "MIT OR Apache-2.0"
 exclude = [".gitignore", ".cargo/config", ".github/**", "codecov.yml"]
@@ -31,7 +30,7 @@ mailbox_assert = []
 
 [dependencies]
 actix-rt = { version = "2.0.0", default-features = false }
-actix_derive = { version = "0.6.0-beta.1", optional = true }
+actix_derive = { version = "0.6.0-beta.2", optional = true }
 
 bitflags = "1.2"
 bytes = "1"

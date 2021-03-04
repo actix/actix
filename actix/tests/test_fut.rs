@@ -14,11 +14,11 @@ impl Actor for MyActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         async {
-            sleep(Duration::new(0, 5_000_000)).await;
+            sleep(Duration::from_millis(20)).await;
             System::current().stop();
         }
         .into_actor(self)
-        .timeout(Duration::new(0, 100))
+        .timeout(Duration::from_millis(1))
         .map(|e, act, _| {
             if e == Err(()) {
                 act.timeout.store(true, Ordering::Relaxed);
@@ -53,29 +53,127 @@ impl Actor for MyStreamActor {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let mut s = futures_util::stream::FuturesOrdered::new();
-        s.push(sleep(Duration::new(0, 5_000_000)));
-        s.push(sleep(Duration::new(0, 5_000_000)));
+        s.push(sleep(Duration::from_millis(20)));
+        s.push(sleep(Duration::from_millis(20)));
 
         s.into_actor(self)
-            .timeout(Duration::new(0, 1000))
+            .timeout(Duration::from_millis(1))
             .then(|res, act, _| {
                 // Additional waiting time to test `then` call as well
-                Box::pin(
-                    async move {
-                        sleep(Duration::from_millis(500)).await;
-                        res
-                    }
-                    .into_actor(act),
-                )
-            })
-            .map(|e, act, _| {
-                if let Err(()) = e {
-                    act.timeout.store(true, Ordering::Relaxed);
-                    System::current().stop();
+                async move {
+                    sleep(Duration::from_millis(20)).await;
+                    res
                 }
+                .into_actor(act)
+            })
+            .map(|res, act, _| {
+                assert!(
+                    res.is_err(),
+                    "MyStreamActor should return error when timed out"
+                );
+                act.timeout.store(true, Ordering::Relaxed);
+                System::current().stop();
             })
             .finish()
             .wait(ctx)
+    }
+}
+
+struct MyStreamActor2 {
+    counter: usize,
+}
+
+impl Actor for MyStreamActor2 {
+    type Context = actix::Context<Self>;
+}
+
+struct TakeWhileMsg(usize);
+
+impl Message for TakeWhileMsg {
+    type Result = ();
+}
+
+impl Handler<TakeWhileMsg> for MyStreamActor2 {
+    type Result = ResponseActFuture<Self, ()>;
+
+    fn handle(&mut self, msg: TakeWhileMsg, _: &mut Context<Self>) -> Self::Result {
+        let num = msg.0;
+        Box::pin(
+            futures_util::stream::repeat(num)
+                .into_actor(self)
+                .take_while(move |n, act, ctx| {
+                    ctx.spawn(
+                        async {
+                            actix_rt::task::yield_now().await;
+                        }
+                        .into_actor(act),
+                    );
+                    assert_eq!(*n, num);
+                    assert!(act.counter < 10);
+                    act.counter += 1;
+                    futures_util::future::ready(act.counter < 10)
+                })
+                .finish(),
+        )
+    }
+}
+
+struct SkipWhileMsg(usize);
+
+impl Message for SkipWhileMsg {
+    type Result = ();
+}
+
+impl Handler<SkipWhileMsg> for MyStreamActor2 {
+    type Result = ResponseActFuture<Self, ()>;
+
+    fn handle(&mut self, msg: SkipWhileMsg, _: &mut Context<Self>) -> Self::Result {
+        let num = msg.0;
+        Box::pin(
+            futures_util::stream::repeat(num)
+                .into_actor(self)
+                .take_while(|_, act, _| {
+                    let cond = act.counter < 10;
+                    act.counter += 1;
+                    futures_util::future::ready(cond)
+                })
+                .skip_while(move |n, act, ctx| {
+                    let fut = async {
+                        actix_rt::task::yield_now().await;
+                    }
+                    .into_actor(act);
+                    ctx.spawn(fut);
+                    assert_eq!(*n, num);
+                    act.counter -= 1;
+                    futures_util::future::ready(act.counter > 0)
+                })
+                .finish(),
+        )
+    }
+}
+
+struct CollectMsg(usize);
+
+impl Message for CollectMsg {
+    type Result = Vec<usize>;
+}
+
+impl Handler<CollectMsg> for MyStreamActor2 {
+    type Result = ResponseActFuture<Self, Vec<usize>>;
+
+    fn handle(&mut self, msg: CollectMsg, _: &mut Context<Self>) -> Self::Result {
+        let num = msg.0;
+        Box::pin(
+            futures_util::stream::repeat(num)
+                .into_actor(self)
+                .take_while(|_, act, _| {
+                    let cond = act.counter < 5;
+                    act.counter += 1;
+                    futures_util::future::ready(cond)
+                })
+                .map(|_, act, _| act.counter)
+                .collect(),
+        )
     }
 }
 
@@ -91,4 +189,30 @@ fn test_stream_timeout() {
     sys.run().unwrap();
 
     assert!(timeout.load(Ordering::Relaxed), "Not timeout");
+}
+
+#[test]
+fn test_stream_take_while() {
+    System::new().block_on(async {
+        let addr = MyStreamActor2 { counter: 0 }.start();
+        addr.send(TakeWhileMsg(5)).await.unwrap();
+    })
+}
+
+#[test]
+fn test_stream_skip_while() {
+    System::new().block_on(async {
+        let addr = MyStreamActor2 { counter: 0 }.start();
+        addr.send(SkipWhileMsg(5)).await.unwrap();
+    })
+}
+
+#[test]
+fn test_stream_collect() {
+    System::new().block_on(async {
+        let addr = MyStreamActor2 { counter: 0 }.start();
+        let res = addr.send(CollectMsg(3)).await.unwrap();
+
+        assert_eq!(res, vec![1, 2, 3, 4, 5]);
+    })
 }

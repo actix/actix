@@ -1,3 +1,5 @@
+#![cfg(feature = "derive")]
+
 use std::pin::Pin;
 use std::task::{Context, Poll};
 

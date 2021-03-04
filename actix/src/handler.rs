@@ -4,7 +4,7 @@ pub use tokio::sync::oneshot::Sender as OneshotSender;
 
 use crate::actor::{Actor, AsyncContext};
 use crate::address::Addr;
-use crate::fut::ActorFuture;
+use crate::fut::{ActorFuture, ActorFutureExt, LocalBoxActorFuture};
 
 /// Describes how to handle messages of a specific type.
 ///
@@ -54,7 +54,7 @@ where
 /// A helper type that implements the `MessageResponse` trait.
 ///
 /// # Examples
-/// ```rust, no_run
+/// ```no_run
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
@@ -96,7 +96,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 /// # Examples
 /// On the following example, the response to `Msg` would always be 29
 /// even if there are multiple `Msg` sent to `MyActor`.
-/// ```rust, no_run
+/// ```no_run
 /// # use actix::prelude::*;
 /// # use actix::clock::sleep;
 /// # use std::time::Duration;
@@ -254,7 +254,7 @@ where
 /// Check [AtomicResponse] if you need exclusive access over the actor.
 ///
 /// # Examples
-/// ```rust, no_run
+/// ```no_run
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
@@ -285,7 +285,7 @@ where
 ///     }
 /// }
 /// ```
-pub type ResponseActFuture<A, I> = Pin<Box<dyn ActorFuture<A, Output = I>>>;
+pub type ResponseActFuture<A, I> = LocalBoxActorFuture<A, I>;
 
 /// A specialized future for asynchronous message handling.
 ///
@@ -295,7 +295,7 @@ pub type ResponseActFuture<A, I> = Pin<Box<dyn ActorFuture<A, Output = I>>>;
 /// already been moved inside the future and it won't need Actor state to continue.
 ///
 /// # Examples
-/// ```rust, no_run
+/// ```no_run
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]

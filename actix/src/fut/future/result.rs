@@ -1,13 +1,20 @@
 //! Definition of the `Result` (immediately finished) combinator
 
-use super::ready_fut::{ready, Ready};
+use std::future::Future;
+use std::pin::Pin;
+use std::task;
+use std::task::Poll;
+
+use crate::actor::Actor;
+use crate::fut::ActorFuture;
+
+// TODO: remove re-export and encourage direct usage of std and/or futures crate types.
+pub use futures_util::future::{ready, Ready};
 
 /// A future representing a value that is immediately ready.
 ///
 /// Created by the `result` function.
 #[must_use = "futures do nothing unless polled"]
-// TODO: rename this to `Result` on the next major version
-// TODO: use std::future::Ready when MSRV surpass 1.48
 pub type FutureResult<T, E> = Ready<Result<T, E>>;
 
 /// Creates a new "leaf future" which will resolve with the given result.
@@ -75,4 +82,21 @@ pub fn ok<T, E>(t: T) -> FutureResult<T, E> {
 /// ```
 pub fn err<T, E>(e: E) -> FutureResult<T, E> {
     ready(Err(e))
+}
+
+impl<T, A> ActorFuture<A> for Ready<T>
+where
+    A: Actor,
+{
+    type Output = T;
+
+    #[inline]
+    fn poll(
+        self: Pin<&mut Self>,
+        _: &mut A,
+        _: &mut A::Context,
+        cx: &mut task::Context<'_>,
+    ) -> Poll<Self::Output> {
+        Future::poll(self, cx)
+    }
 }
