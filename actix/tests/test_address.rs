@@ -201,9 +201,7 @@ impl Handler<Ping> for TimeoutActor {
     type Result = ();
 
     fn handle(&mut self, _: Ping, ctx: &mut Self::Context) {
-        sleep(Duration::new(0, 5_000_000))
-            .into_actor(self)
-            .wait(ctx);
+        sleep(Duration::from_millis(20)).into_actor(self).wait(ctx);
     }
 }
 
@@ -218,7 +216,7 @@ fn test_message_timeout() {
 
         addr.do_send(Ping(0));
         actix_rt::spawn(async move {
-            let res = addr.send(Ping(0)).timeout(Duration::new(0, 1_000)).await;
+            let res = addr.send(Ping(0)).timeout(Duration::from_millis(1)).await;
             match res {
                 Ok(_) => panic!("Should not happen"),
                 Err(MailboxError::Timeout) => {
