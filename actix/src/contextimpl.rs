@@ -223,6 +223,11 @@ where
             let waker = futures_task::noop_waker();
             let mut cx = std::task::Context::from_waker(&waker);
             let _ = Pin::new(self).poll(&mut cx);
+        } else {
+            // Drop all unfinished ActorWaitItem beforehand.
+            // handler::AsyncResponse may contain struct that reference actor and context
+            // on drop. This is to make sure their drop happen before A and A::Context
+            while self.wait.pop().is_some() {}
         }
     }
 }
