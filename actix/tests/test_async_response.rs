@@ -41,12 +41,8 @@ impl Actor for MyActor {
     type Context = Context<Self>;
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
-        if self.0 == 65535 {
-            self.0 += 1;
-            Running::Continue
-        } else {
-            Running::Stop
-        }
+        self.0 += 1;
+        Running::Continue
     }
 }
 
@@ -106,6 +102,22 @@ impl Handler<StopMsg> for MyActor {
 
             act.0
         })
+    }
+}
+
+struct StopMsgSync;
+
+impl Message for StopMsgSync {
+    type Result = usize;
+}
+
+impl Handler<StopMsgSync> for MyActor {
+    type Result = usize;
+
+    fn handle(&mut self, _: StopMsgSync, ctx: &mut Self::Context) -> Self::Result {
+        self.0 = 65535;
+        ctx.stop();
+        self.0
     }
 }
 
@@ -187,6 +199,26 @@ fn test_stop_context_with_msessage() {
         // run after PauseMsg is done handling.
         let res = addr.send(StopMsg { self_yield: false }).await.unwrap();
         assert_eq!(65535, res);
+
+        let _ = handle.await;
+    })
+}
+
+#[test]
+fn test_stop_context_with_msessage_sync() {
+    actix::System::new().block_on(async {
+        let addr = MyActor::start(MyActor(0));
+
+        let addr1 = addr.clone();
+        let handle = actix_rt::spawn(async move {
+            let _ = addr1.send(PauseMsg).await;
+        });
+
+        // extra message that try to stop the context would only be able to
+        // run after PauseMsg is done handling.
+        let res = addr.send(StopMsgSync).await.unwrap();
+
+        assert_eq!(res, 65535);
 
         let _ = handle.await;
     })
