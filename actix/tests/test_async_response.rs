@@ -39,6 +39,15 @@ struct MyActor(usize);
 
 impl Actor for MyActor {
     type Context = Context<Self>;
+
+    fn stopping(&mut self, _: &mut Self::Context) -> Running {
+        if self.0 == 65535 {
+            self.0 += 1;
+            Running::Continue
+        } else {
+            Running::Stop
+        }
+    }
 }
 
 impl Handler<AsyncMsg> for MyActor {
@@ -70,6 +79,52 @@ impl Handler<Msg> for MyActor {
 
     fn handle(&mut self, _: Msg, _: &mut Self::Context) -> Self::Result {
         self.0
+    }
+}
+
+struct StopMsg {
+    self_yield: bool,
+}
+
+impl Message for StopMsg {
+    type Result = usize;
+}
+
+impl Handler<StopMsg> for MyActor {
+    type Result = AsyncResponse<Self, usize>;
+
+    fn handle(&mut self, msg: StopMsg, ctx: &mut Self::Context) -> Self::Result {
+        AsyncResponse::atomic(self, ctx, |act, ctx| async move {
+            act.0 = 65535;
+            ctx.stop();
+
+            // yield to other task before resove the async block.
+            // this is to test self context stop followed by async tasks.
+            if msg.self_yield {
+                actix_rt::task::yield_now().await;
+            }
+
+            act.0
+        })
+    }
+}
+
+struct PauseMsg;
+
+impl Message for PauseMsg {
+    type Result = ();
+}
+
+impl Handler<PauseMsg> for MyActor {
+    type Result = AsyncResponse<Self, ()>;
+
+    fn handle(&mut self, _: PauseMsg, ctx: &mut Self::Context) -> Self::Result {
+        AsyncResponse::atomic(self, ctx, |act, _| async move {
+            // actor state would keep consistant between await point.
+            let state = act.0;
+            actix_rt::time::sleep(std::time::Duration::from_secs(3)).await;
+            assert_eq!(act.0, state);
+        })
     }
 }
 
@@ -115,5 +170,37 @@ fn test_async_response() {
         }
 
         let _ = task.await.unwrap();
+    })
+}
+
+#[test]
+fn test_stop_context_with_msessage() {
+    actix::System::new().block_on(async {
+        let addr = MyActor::start(MyActor(0));
+
+        let addr1 = addr.clone();
+        let handle = actix_rt::spawn(async move {
+            let _ = addr1.send(PauseMsg).await;
+        });
+
+        // extra message that try to stop the context would only be able to
+        // run after PauseMsg is done handling.
+        let res = addr.send(StopMsg { self_yield: false }).await.unwrap();
+        assert_eq!(65535, res);
+
+        let _ = handle.await;
+    })
+}
+
+#[test]
+fn test_self_context_stop() {
+    actix::System::new().block_on(async {
+        let addr = MyActor::start(MyActor(0));
+
+        let res = addr.send(StopMsg { self_yield: true }).await;
+
+        // Handler stop the context and await on async task afterward would fail.
+        // TODO: This is not a good beavior but an expected one for now.
+        assert!(res.is_err());
     })
 }
