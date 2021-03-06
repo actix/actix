@@ -248,3 +248,57 @@ fn test_self_context_stop() {
         assert!(res.is_err());
     })
 }
+
+#[test]
+fn test_drop_order() {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    struct MyActor(Rc<Cell<bool>>);
+
+    impl Actor for MyActor {
+        type Context = Context<Self>;
+    }
+
+    impl Drop for MyActor {
+        fn drop(&mut self) {
+            // my actor should drop after BorrowActor;
+            assert!(self.0.get())
+        }
+    }
+
+    struct BorrowActor<'a> {
+        actor_state: &'a MyActor,
+    }
+
+    impl Drop for BorrowActor<'_> {
+        fn drop(&mut self) {
+            // set flag to true on drop borrow actor.
+            self.actor_state.0.set(true);
+        }
+    }
+
+    impl Handler<Msg> for MyActor {
+        type Result = AsyncResponse<Self, usize>;
+
+        fn handle(&mut self, _: Msg, ctx: &mut Context<Self>) -> Self::Result {
+            AsyncResponse::atomic(self, ctx, |act, ctx| async move {
+                let _borrow = BorrowActor { actor_state: act };
+
+                ctx.stop();
+                actix_rt::task::yield_now().await;
+                123
+            })
+        }
+    }
+
+    actix::System::new().block_on(async {
+        let state = Rc::new(Cell::new(false));
+
+        let addr = MyActor(state.clone()).start();
+
+        let res = addr.send(Msg).await;
+
+        assert!(res.is_err());
+    })
+}
