@@ -134,7 +134,9 @@ impl Handler<PauseMsg> for MyActor {
         AsyncResponse::atomic(self, ctx, |act, _| async move {
             // actor state would keep consistant between await point.
             let state = act.0;
-            actix_rt::time::sleep(std::time::Duration::from_secs(3)).await;
+            actix_rt::task::yield_now().await;
+            actix_rt::time::sleep(std::time::Duration::from_secs(2)).await;
+            actix_rt::task::yield_now().await;
             assert_eq!(act.0, state);
         })
     }
@@ -193,6 +195,13 @@ fn test_stop_context_with_msessage() {
         let addr1 = addr.clone();
         let handle = actix_rt::spawn(async move {
             let _ = addr1.send(PauseMsg).await;
+            let _ = addr1.send(PauseMsg).await;
+        });
+
+        let addr1 = addr.clone();
+        let handle2 = actix_rt::spawn(async move {
+            let _ = addr1.send(PauseMsg).await;
+            let _ = addr1.send(PauseMsg).await;
         });
 
         // extra message that try to stop the context would only be able to
@@ -201,6 +210,7 @@ fn test_stop_context_with_msessage() {
         assert_eq!(65535, res);
 
         let _ = handle.await;
+        let _ = handle2.await;
     })
 }
 
@@ -211,6 +221,8 @@ fn test_stop_context_with_msessage_sync() {
 
         let addr1 = addr.clone();
         let handle = actix_rt::spawn(async move {
+            let _ = addr1.send(PauseMsg).await;
+            let _ = addr1.send(PauseMsg).await;
             let _ = addr1.send(PauseMsg).await;
         });
 
