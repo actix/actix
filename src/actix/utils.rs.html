@@ -207,19 +207,26 @@
 <span id="204">204</span>
 <span id="205">205</span>
 <span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
 
+<span class="kw">use</span> <span class="ident">futures_core</span>::<span class="ident">ready</span>;
 <span class="kw">use</span> <span class="ident">pin_project_lite</span>::<span class="ident">pin_project</span>;
 <span class="kw">use</span> <span class="ident">tokio</span>::<span class="ident">sync</span>::<span class="ident">oneshot</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::{<span class="ident">interval_at</span>, <span class="ident">Instant</span>, <span class="ident">Interval</span>, <span class="ident">Sleep</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::{<span class="ident">sleep</span>, <span class="ident">Sleep</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStream</span>};
 
+<span class="attribute">#[<span class="ident">deprecated</span>(
+    <span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.11.0&quot;</span>,
+    <span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Please use tokio::sync::oneshot::Sender instead.&quot;</span>
+)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Condition</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">T</span>: <span class="ident">Clone</span>,
@@ -307,7 +314,7 @@
     {
         <span class="ident">TimerFunc</span> {
             <span class="ident">f</span>: <span class="prelude-val">Some</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">f</span>)),
-            <span class="ident">timeout</span>: <span class="ident">actix_rt</span>::<span class="ident">time</span>::<span class="ident">sleep</span>(<span class="ident">timeout</span>),
+            <span class="ident">timeout</span>: <span class="ident">sleep</span>(<span class="ident">timeout</span>),
         }
     }
 }
@@ -325,70 +332,70 @@
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
-        <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">timeout</span>.<span class="ident">poll</span>(<span class="ident">task</span>) {
-            <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">f</span>) <span class="op">=</span> <span class="ident">this</span>.<span class="ident">f</span>.<span class="ident">take</span>() {
-                    <span class="ident">f</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
-                }
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(())
-            }
-            <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
-        }
+        <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">timeout</span>.<span class="ident">poll</span>(<span class="ident">task</span>));
+        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">f</span>.<span class="ident">take</span>().<span class="ident">expect</span>(<span class="string">&quot;TimerFunc polled after finish&quot;</span>);
+        <span class="ident">f</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
+        <span class="ident">Poll</span>::<span class="ident">Ready</span>(())
     }
 }
 
-<span class="doccomment">/// An `ActorStream` that periodically runs a function in the actor&#39;s context.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Unless you specifically need access to the future, use [`Context::run_interval`] instead.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`Context::run_interval`]: ../prelude/trait.AsyncContext.html#method.run_interval</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// # use std::io;</span>
-<span class="doccomment">/// use std::time::Duration;</span>
-<span class="doccomment">/// use actix::prelude::*;</span>
-<span class="doccomment">/// use actix::utils::IntervalFunc;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct MyActor;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl MyActor {</span>
-<span class="doccomment">///     fn tick(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
-<span class="doccomment">///         println!(&quot;tick&quot;);</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Actor for MyActor {</span>
-<span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///    fn started(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
-<span class="doccomment">///        // spawn an interval stream into our context</span>
-<span class="doccomment">///        IntervalFunc::new(Duration::from_millis(100), Self::tick)</span>
-<span class="doccomment">///            .finish()</span>
-<span class="doccomment">///            .spawn(context);</span>
-<span class="doccomment">/// #      context.run_later(Duration::from_millis(200), |_, _| System::current().stop());</span>
-<span class="doccomment">///    }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// # fn main() {</span>
-<span class="doccomment">/// #    let mut sys = System::new();</span>
-<span class="doccomment">/// #    let addr = sys.block_on(async { MyActor.start() });</span>
-<span class="doccomment">/// #    sys.run();</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;future do nothing unless polled&quot;</span>]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IntervalFunc</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="ident">f</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>)<span class="op">&gt;</span>,
-    <span class="ident">interval</span>: <span class="ident">Interval</span>,
+<span class="macro">pin_project</span><span class="macro">!</span> {
+    <span class="doccomment">/// An `ActorStream` that periodically runs a function in the actor&#39;s context.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Unless you specifically need access to the future, use [`Context::run_interval`] instead.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [`Context::run_interval`]: ../prelude/trait.AsyncContext.html#method.run_interval</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// # use std::io;</span>
+    <span class="doccomment">/// use std::time::Duration;</span>
+    <span class="doccomment">/// use actix::prelude::*;</span>
+    <span class="doccomment">/// use actix::utils::IntervalFunc;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// struct MyActor;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// impl MyActor {</span>
+    <span class="doccomment">///     fn tick(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
+    <span class="doccomment">///         println!(&quot;tick&quot;);</span>
+    <span class="doccomment">///     }</span>
+    <span class="doccomment">/// }</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// impl Actor for MyActor {</span>
+    <span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">///    fn started(&amp;mut self, context: &amp;mut Context&lt;Self&gt;) {</span>
+    <span class="doccomment">///        // spawn an interval stream into our context</span>
+    <span class="doccomment">///        IntervalFunc::new(Duration::from_millis(100), Self::tick)</span>
+    <span class="doccomment">///            .finish()</span>
+    <span class="doccomment">///            .spawn(context);</span>
+    <span class="doccomment">/// #      context.run_later(Duration::from_millis(200), |_, _| System::current().stop());</span>
+    <span class="doccomment">///    }</span>
+    <span class="doccomment">/// }</span>
+    <span class="doccomment">/// # fn main() {</span>
+    <span class="doccomment">/// #    let mut sys = System::new();</span>
+    <span class="doccomment">/// #    let addr = sys.block_on(async { MyActor.start() });</span>
+    <span class="doccomment">/// #    sys.run();</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">/// ```</span>
+    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;future do nothing unless polled&quot;</span>]</span>
+    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">IntervalFunc</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
+        <span class="ident">f</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>)<span class="op">&gt;</span>,
+        <span class="ident">dur</span>: <span class="ident">Duration</span>,
+        <span class="attribute">#[<span class="ident">pin</span>]</span>
+        <span class="ident">timer</span>: <span class="ident">Sleep</span>,
+    }
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">IntervalFunc</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
     <span class="doccomment">/// Creates a new `IntervalFunc` with the given interval duration.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">timeout</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">IntervalFunc</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">dur</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">IntervalFunc</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) <span class="op">+</span> <span class="lifetime">&#39;static</span>,
     {
         <span class="self">Self</span> {
             <span class="ident">f</span>: <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">f</span>),
-            <span class="ident">interval</span>: <span class="ident">interval_at</span>(<span class="ident">Instant</span>::<span class="ident">now</span>() <span class="op">+</span> <span class="ident">timeout</span>, <span class="ident">timeout</span>),
+            <span class="ident">dur</span>,
+            <span class="ident">timer</span>: <span class="ident">sleep</span>(<span class="ident">dur</span>),
         }
     }
 }
@@ -402,15 +409,12 @@
         <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>,
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
         <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">interval</span>.<span class="ident">poll_tick</span>(<span class="ident">task</span>) {
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="comment">//Interval Stream cannot return None</span>
-                    (<span class="ident">this</span>.<span class="ident">f</span>)(<span class="ident">act</span>, <span class="ident">ctx</span>);
-                }
-                <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
-            }
+            <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">timer</span>.<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">task</span>));
+            <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">timer</span>.<span class="ident">deadline</span>();
+            <span class="ident">this</span>.<span class="ident">timer</span>.<span class="ident">as_mut</span>().<span class="ident">reset</span>(<span class="ident">now</span> <span class="op">+</span> <span class="kw-2">*</span><span class="ident">this</span>.<span class="ident">dur</span>);
+            (<span class="ident">this</span>.<span class="ident">f</span>)(<span class="ident">act</span>, <span class="ident">ctx</span>);
         }
     }
 }
