@@ -282,14 +282,14 @@ where
     }
 }
 
-impl<A: Actor, M: Message + Send + 'static> Into<Recipient<M>> for Addr<A>
+impl<A: Actor, M: Message + Send + 'static> From<Addr<A>> for Recipient<M>
 where
     A: Handler<M>,
     M::Result: Send,
     A::Context: ToEnvelope<A, M>,
 {
-    fn into(self) -> Recipient<M> {
-        Recipient::new(Box::new(self.tx))
+    fn from(addr: Addr<A>) -> Self {
+        Recipient::new(Box::new(addr.tx))
     }
 }
 
@@ -376,25 +376,25 @@ where
     }
 }
 
-impl<A: Actor, M: Message + Send + 'static> Into<WeakRecipient<M>> for Addr<A>
+impl<A: Actor, M: Message + Send + 'static> From<Addr<A>> for WeakRecipient<M>
 where
     A: Handler<M>,
     M::Result: Send,
     A::Context: ToEnvelope<A, M>,
 {
-    fn into(self) -> WeakRecipient<M> {
-        self.downgrade().recipient()
+    fn from(addr: Addr<A>) -> WeakRecipient<M> {
+        addr.downgrade().recipient()
     }
 }
 
-impl<A: Actor, M: Message + Send + 'static> Into<WeakRecipient<M>> for WeakAddr<A>
+impl<A: Actor, M: Message + Send + 'static> From<WeakAddr<A>> for WeakRecipient<M>
 where
     A: Handler<M>,
     M::Result: Send,
     A::Context: ToEnvelope<A, M>,
 {
-    fn into(self) -> WeakRecipient<M> {
-        WeakRecipient::new(Box::new(self.wtx))
+    fn from(addr: WeakAddr<A>) -> WeakRecipient<M> {
+        WeakRecipient::new(Box::new(addr.wtx))
     }
 }
 
