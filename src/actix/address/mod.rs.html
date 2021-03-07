@@ -755,14 +755,14 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
     <span class="ident">M</span>::<span class="prelude-ty">Result</span>: <span class="ident">Send</span>,
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">Recipient</span>::<span class="ident">new</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="self">self</span>.<span class="ident">tx</span>))
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+        <span class="ident">Recipient</span>::<span class="ident">new</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">addr</span>.<span class="ident">tx</span>))
     }
 }
 
@@ -849,25 +849,25 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
     <span class="ident">M</span>::<span class="prelude-ty">Result</span>: <span class="ident">Send</span>,
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">downgrade</span>().<span class="ident">recipient</span>()
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
+        <span class="ident">addr</span>.<span class="ident">downgrade</span>().<span class="ident">recipient</span>()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
     <span class="ident">M</span>::<span class="prelude-ty">Result</span>: <span class="ident">Send</span>,
     <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
 {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">WeakRecipient</span>::<span class="ident">new</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="self">self</span>.<span class="ident">wtx</span>))
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
+        <span class="ident">WeakRecipient</span>::<span class="ident">new</span>(<span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">addr</span>.<span class="ident">wtx</span>))
     }
 }
 
