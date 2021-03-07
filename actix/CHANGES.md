@@ -8,9 +8,11 @@
 * Remove `fut::IntoActorFuture` trait. [#475]
 * Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
 * Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
+* Replace the `Into` implementation to `From<Addr>` for `Recipient` and `WeakRecipient`. [#479]
 
-[#475]: https://github.com/actix/actix/pull/475
 [#449]: https://github.com/actix/actix/pull/449
+[#475]: https://github.com/actix/actix/pull/475
+[#479]: https://github.com/actix/actix/pull/479
 
 
 ## 0.11.0-beta.3 - 2021-03-03
