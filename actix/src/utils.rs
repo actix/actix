@@ -3,13 +3,18 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Duration;
 
+use futures_core::ready;
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
 use crate::actor::Actor;
-use crate::clock::{interval_at, Instant, Interval, Sleep};
+use crate::clock::{sleep, Sleep};
 use crate::fut::{ActorFuture, ActorStream};
 
+#[deprecated(
+    since = "0.11.0",
+    note = "Please use tokio::sync::oneshot::Sender instead."
+)]
 pub struct Condition<T>
 where
     T: Clone,
@@ -97,7 +102,7 @@ impl<A: Actor> TimerFunc<A> {
     {
         TimerFunc {
             f: Some(Box::new(f)),
-            timeout: actix_rt::time::sleep(timeout),
+            timeout: sleep(timeout),
         }
     }
 }
@@ -115,70 +120,70 @@ where
         task: &mut Context<'_>,
     ) -> Poll<Self::Output> {
         let this = self.project();
-        match this.timeout.poll(task) {
-            Poll::Ready(_) => {
-                if let Some(f) = this.f.take() {
-                    f(act, ctx);
-                }
-                Poll::Ready(())
-            }
-            Poll::Pending => Poll::Pending,
-        }
+        ready!(this.timeout.poll(task));
+        let f = this.f.take().expect("TimerFunc polled after finish");
+        f(act, ctx);
+        Poll::Ready(())
     }
 }
 
-/// An `ActorStream` that periodically runs a function in the actor's context.
-///
-/// Unless you specifically need access to the future, use [`Context::run_interval`] instead.
-///
-/// [`Context::run_interval`]: ../prelude/trait.AsyncContext.html#method.run_interval
-///
-/// ```
-/// # use std::io;
-/// use std::time::Duration;
-/// use actix::prelude::*;
-/// use actix::utils::IntervalFunc;
-///
-/// struct MyActor;
-///
-/// impl MyActor {
-///     fn tick(&mut self, context: &mut Context<Self>) {
-///         println!("tick");
-///     }
-/// }
-///
-/// impl Actor for MyActor {
-///    type Context = Context<Self>;
-///
-///    fn started(&mut self, context: &mut Context<Self>) {
-///        // spawn an interval stream into our context
-///        IntervalFunc::new(Duration::from_millis(100), Self::tick)
-///            .finish()
-///            .spawn(context);
-/// #      context.run_later(Duration::from_millis(200), |_, _| System::current().stop());
-///    }
-/// }
-/// # fn main() {
-/// #    let mut sys = System::new();
-/// #    let addr = sys.block_on(async { MyActor.start() });
-/// #    sys.run();
-/// # }
-/// ```
-#[must_use = "future do nothing unless polled"]
-pub struct IntervalFunc<A: Actor> {
-    f: Box<dyn FnMut(&mut A, &mut A::Context)>,
-    interval: Interval,
+pin_project! {
+    /// An `ActorStream` that periodically runs a function in the actor's context.
+    ///
+    /// Unless you specifically need access to the future, use [`Context::run_interval`] instead.
+    ///
+    /// [`Context::run_interval`]: ../prelude/trait.AsyncContext.html#method.run_interval
+    ///
+    /// ```
+    /// # use std::io;
+    /// use std::time::Duration;
+    /// use actix::prelude::*;
+    /// use actix::utils::IntervalFunc;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl MyActor {
+    ///     fn tick(&mut self, context: &mut Context<Self>) {
+    ///         println!("tick");
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context<Self>;
+    ///
+    ///    fn started(&mut self, context: &mut Context<Self>) {
+    ///        // spawn an interval stream into our context
+    ///        IntervalFunc::new(Duration::from_millis(100), Self::tick)
+    ///            .finish()
+    ///            .spawn(context);
+    /// #      context.run_later(Duration::from_millis(200), |_, _| System::current().stop());
+    ///    }
+    /// }
+    /// # fn main() {
+    /// #    let mut sys = System::new();
+    /// #    let addr = sys.block_on(async { MyActor.start() });
+    /// #    sys.run();
+    /// # }
+    /// ```
+    #[must_use = "future do nothing unless polled"]
+    pub struct IntervalFunc<A: Actor> {
+        f: Box<dyn FnMut(&mut A, &mut A::Context)>,
+        dur: Duration,
+        #[pin]
+        timer: Sleep,
+    }
 }
 
 impl<A: Actor> IntervalFunc<A> {
     /// Creates a new `IntervalFunc` with the given interval duration.
-    pub fn new<F>(timeout: Duration, f: F) -> IntervalFunc<A>
+    pub fn new<F>(dur: Duration, f: F) -> IntervalFunc<A>
     where
         F: FnMut(&mut A, &mut A::Context) + 'static,
     {
         Self {
             f: Box::new(f),
-            interval: interval_at(Instant::now() + timeout, timeout),
+            dur,
+            timer: sleep(dur),
         }
     }
 }
@@ -192,15 +197,12 @@ impl<A: Actor> ActorStream<A> for IntervalFunc<A> {
         ctx: &mut A::Context,
         task: &mut Context<'_>,
     ) -> Poll<Option<Self::Item>> {
-        let this = self.get_mut();
+        let mut this = self.project();
         loop {
-            match this.interval.poll_tick(task) {
-                Poll::Ready(_) => {
-                    //Interval Stream cannot return None
-                    (this.f)(act, ctx);
-                }
-                Poll::Pending => return Poll::Pending,
-            }
+            ready!(this.timer.as_mut().poll(task));
+            let now = this.timer.deadline();
+            this.timer.as_mut().reset(now + *this.dur);
+            (this.f)(act, ctx);
         }
     }
 }
