@@ -457,6 +457,14 @@
 <span id="454">454</span>
 <span id="455">455</span>
 <span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
@@ -464,6 +472,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
 
 <span class="kw">use</span> <span class="ident">bitflags</span>::<span class="ident">bitflags</span>;
+<span class="kw">use</span> <span class="ident">futures_core</span>::<span class="ident">ready</span>;
 <span class="kw">use</span> <span class="ident">smallvec</span>::<span class="ident">SmallVec</span>;
 
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{
@@ -815,12 +824,8 @@
             <span class="comment">// and we always have to check most recent future</span>
             <span class="kw">while</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">is_empty</span>() <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">stopping</span>() {
                 <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>;
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>) <span class="op">=</span> <span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">last_mut</span>() {
-                    <span class="kw">match</span> <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="ident">item</span>).<span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">ctx</span>, <span class="ident">cx</span>) {
-                        <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> (),
-                        <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">Poll</span>::<span class="ident">Pending</span>,
-                    }
-                }
+                <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">last_mut</span>().<span class="ident">unwrap</span>();
+                <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">Pin</span>::<span class="ident">new</span>(<span class="ident">item</span>).<span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">ctx</span>, <span class="ident">cx</span>));
                 <span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">remove</span>(<span class="ident">idx</span>);
                 <span class="ident">this</span>.<span class="ident">merge</span>();
             }
@@ -837,6 +842,11 @@
                 <span class="ident">this</span>.<span class="ident">ctx</span>.<span class="ident">parts</span>().<span class="ident">handles</span>[<span class="number">1</span>] <span class="op">=</span> <span class="ident">this</span>.<span class="ident">items</span>[<span class="ident">idx</span>].<span class="number">0</span>;
                 <span class="kw">match</span> <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">items</span>[<span class="ident">idx</span>].<span class="number">1</span>).<span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">ctx</span>, <span class="ident">cx</span>) {
                     <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> {
+                        <span class="comment">// got new waiting item. merge</span>
+                        <span class="kw">if</span> <span class="ident">this</span>.<span class="ident">ctx</span>.<span class="ident">waiting</span>() {
+                            <span class="ident">this</span>.<span class="ident">merge</span>();
+                        }
+
                         <span class="comment">// check cancelled handles</span>
                         <span class="kw">if</span> <span class="ident">this</span>.<span class="ident">ctx</span>.<span class="ident">parts</span>().<span class="ident">handles</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="number">2</span> {
                             <span class="comment">// this code is not very efficient, relaying on fact that</span>
@@ -864,6 +874,12 @@
                     }
                     <span class="ident">Poll</span>::<span class="ident">Ready</span>(()) <span class="op">=</span><span class="op">&gt;</span> {
                         <span class="ident">this</span>.<span class="ident">items</span>.<span class="ident">swap_remove</span>(<span class="ident">idx</span>);
+
+                        <span class="comment">// got new waiting item. merge</span>
+                        <span class="kw">if</span> <span class="ident">this</span>.<span class="ident">ctx</span>.<span class="ident">waiting</span>() {
+                            <span class="ident">this</span>.<span class="ident">merge</span>();
+                        }
+
                         <span class="comment">// one of the items scheduled wait future</span>
                         <span class="kw">if</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">is_empty</span>() <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">stopping</span>() {
                             <span class="kw">continue</span> <span class="lifetime">&#39;outer</span>;
