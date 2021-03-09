@@ -4,6 +4,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use bitflags::bitflags;
+use futures_core::ready;
 use smallvec::SmallVec;
 
 use crate::actor::{
@@ -355,12 +356,8 @@ where
             // and we always have to check most recent future
             while !this.wait.is_empty() && !this.stopping() {
                 let idx = this.wait.len() - 1;
-                if let Some(item) = this.wait.last_mut() {
-                    match Pin::new(item).poll(&mut this.act, &mut this.ctx, cx) {
-                        Poll::Ready(_) => (),
-                        Poll::Pending => return Poll::Pending,
-                    }
-                }
+                let item = this.wait.last_mut().unwrap();
+                ready!(Pin::new(item).poll(&mut this.act, &mut this.ctx, cx));
                 this.wait.remove(idx);
                 this.merge();
             }
@@ -377,6 +374,11 @@ where
                 this.ctx.parts().handles[1] = this.items[idx].0;
                 match Pin::new(&mut this.items[idx].1).poll(&mut this.act, &mut this.ctx, cx) {
                     Poll::Pending => {
+                        // got new waiting item. merge
+                        if this.ctx.waiting() {
+                            this.merge();
+                        }
+
                         // check cancelled handles
                         if this.ctx.parts().handles.len() > 2 {
                             // this code is not very efficient, relaying on fact that
@@ -404,6 +406,12 @@ where
                     }
                     Poll::Ready(()) => {
                         this.items.swap_remove(idx);
+
+                        // got new waiting item. merge
+                        if this.ctx.waiting() {
+                            this.merge();
+                        }
+
                         // one of the items scheduled wait future
                         if !this.wait.is_empty() && !this.stopping() {
                             continue 'outer;
