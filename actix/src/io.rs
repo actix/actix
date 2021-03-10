@@ -1,13 +1,16 @@
-use std::cell::RefCell;
-use std::marker::PhantomData;
-use std::ops::DerefMut;
-use std::pin::Pin;
-use std::rc::Rc;
-use std::task::{Context, Poll};
-use std::{collections::VecDeque, io, task};
+use std::{
+    cell::RefCell,
+    collections::VecDeque,
+    io,
+    ops::DerefMut,
+    pin::Pin,
+    rc::Rc,
+    task::{Context, Poll, Waker},
+};
 
 use bitflags::bitflags;
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
+use futures_core::ready;
 use futures_sink::Sink;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tokio_util::codec::Encoder;
@@ -74,7 +77,7 @@ struct InnerWriter<E: From<io::Error>> {
     low: usize,
     high: usize,
     handle: SpawnHandle,
-    task: Option<task::Waker>,
+    task: Option<Waker>,
 }
 
 impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
@@ -129,7 +132,7 @@ impl<T: AsyncWrite, E: From<io::Error> + 'static> Writer<T, E> {
         let mut inner = self.inner.0.borrow_mut();
         inner.buffer.extend_from_slice(msg);
         if let Some(task) = inner.task.take() {
-            task.wake_by_ref();
+            task.wake();
         }
     }
 
@@ -172,26 +175,12 @@ where
         }
 
         let mut io = this.inner.1.borrow_mut();
+        let mut io = Pin::new(io.deref_mut());
         inner.task = None;
-        while !inner.buffer.is_empty() {
-            match Pin::new(io.deref_mut()).poll_write(task, &inner.buffer) {
-                Poll::Ready(Ok(n)) => {
-                    if n == 0
-                        && act.error(
-                            io::Error::new(
-                                io::ErrorKind::WriteZero,
-                                "failed to write frame to transport",
-                            )
-                            .into(),
-                            ctx,
-                        ) == Running::Stop
-                    {
-                        act.finished(ctx);
-                        return Poll::Ready(());
-                    }
-                    let _ = inner.buffer.split_to(n);
-                }
-                Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
+
+        if let Err(e) = ready!(poll_drain_buf(io.as_mut(), task, &mut inner.buffer)) {
+            match e.kind() {
+                io::ErrorKind::WouldBlock => {
                     if inner.buffer.len() > inner.high {
                         ctx.wait(WriterDrain {
                             inner: this.inner.clone(),
@@ -199,27 +188,24 @@ where
                     }
                     return Poll::Pending;
                 }
-                Poll::Ready(Err(e)) => {
+                _ => {
                     if act.error(e.into(), ctx) == Running::Stop {
                         act.finished(ctx);
                         return Poll::Ready(());
                     }
                 }
-                Poll::Pending => return Poll::Pending,
             }
         }
 
         // Try flushing the underlying IO
-        match Pin::new(io.deref_mut()).poll_flush(task) {
-            Poll::Ready(Ok(_)) => (),
-            Poll::Pending => return Poll::Pending,
-            Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
-                return Poll::Pending;
-            }
-            Poll::Ready(Err(e)) => {
-                if act.error(e.into(), ctx) == Running::Stop {
-                    act.finished(ctx);
-                    return Poll::Ready(());
+        if let Err(e) = ready!(io.poll_flush(task)) {
+            match e.kind() {
+                io::ErrorKind::WouldBlock => return Poll::Pending,
+                _ => {
+                    if act.error(e.into(), ctx) == Running::Stop {
+                        act.finished(ctx);
+                        return Poll::Ready(());
+                    }
                 }
             }
         }
@@ -265,36 +251,27 @@ where
             return Poll::Ready(());
         }
         let mut io = this.inner.1.borrow_mut();
-        while !inner.buffer.is_empty() {
-            match Pin::new(io.deref_mut()).poll_write(task, &inner.buffer) {
-                Poll::Ready(Ok(n)) => {
-                    if n == 0 {
-                        inner.error = Some(
-                            io::Error::new(
-                                io::ErrorKind::WriteZero,
-                                "failed to write frame to transport",
-                            )
-                            .into(),
-                        );
-                        return Poll::Ready(());
-                    }
-                    let _ = inner.buffer.split_to(n);
-                }
-                Poll::Ready(Err(ref e)) if e.kind() == io::ErrorKind::WouldBlock => {
-                    return if inner.buffer.len() < inner.low {
+
+        match ready!(poll_drain_buf(
+            Pin::new(io.deref_mut()),
+            task,
+            &mut inner.buffer,
+        )) {
+            Ok(_) => Poll::Ready(()),
+            Err(e) => match e.kind() {
+                io::ErrorKind::WouldBlock => {
+                    if inner.buffer.len() < inner.low {
                         Poll::Ready(())
                     } else {
                         Poll::Pending
-                    };
+                    }
                 }
-                Poll::Ready(Err(e)) => {
+                _ => {
                     inner.error = Some(e.into());
-                    return Poll::Ready(());
+                    Poll::Ready(())
                 }
-                Poll::Pending => return Poll::Pending,
-            }
+            },
         }
-        Poll::Ready(())
     }
 }
 
@@ -388,7 +365,7 @@ impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> FramedWrite<I, T, U> {
             inner.error = Some(e);
         });
         if let Some(task) = inner.task.take() {
-            task.wake_by_ref();
+            task.wake();
         }
     }
 
@@ -423,7 +400,6 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
         C: AsyncContext<A>,
     {
         let inner = Rc::new(RefCell::new(InnerSinkWrite {
-            _i: PhantomData,
             closing_flag: Flags::empty(),
             sink,
             task: None,
@@ -478,10 +454,9 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
 }
 
 struct InnerSinkWrite<I, S: Sink<I>> {
-    _i: PhantomData<I>,
     closing_flag: Flags,
     sink: S,
-    task: Option<task::Waker>,
+    task: Option<Waker>,
     handle: SpawnHandle,
 
     // buffer of items to be sent so that multiple
@@ -558,4 +533,13 @@ where
 
         Poll::Pending
     }
+}
+
+fn poll_drain_buf<Io: AsyncWrite, B: Buf>(
+    mut io: Pin<&mut Io>,
+    task: &mut Context<'_>,
+    buf: &mut B,
+) -> Poll<Result<(), io::Error>> {
+    while ready!(tokio_util::io::poll_write_buf(io.as_mut(), task, buf))? > 0 {}
+    Poll::Ready(Ok(()))
 }
