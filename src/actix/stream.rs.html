@@ -150,10 +150,6 @@
 <span id="147">147</span>
 <span id="148">148</span>
 <span id="149">149</span>
-<span id="150">150</span>
-<span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">pin</span>::<span class="ident">Pin</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
@@ -165,75 +161,71 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">SpawnHandle</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
 
-<span class="doccomment">/// Stream handler</span>
+<span class="doccomment">/// Stream handling for Actors.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// This is helper trait that allows to handle `Stream` in</span>
-<span class="doccomment">/// a similar way as normal actor messages.</span>
-<span class="doccomment">/// When stream resolves to a next item, `handle()` method of this trait</span>
-<span class="doccomment">/// get called. If stream produces error, `error()` method get called.</span>
-<span class="doccomment">/// Depends on result of the `error()` method, actor could continue to</span>
-<span class="doccomment">/// process stream items or stop stream processing.</span>
-<span class="doccomment">/// When stream completes, `finished()` method get called. By default</span>
-<span class="doccomment">/// `finished()` method stops actor execution.</span>
+<span class="doccomment">/// This is helper trait that allows handling [`Stream`]s in a similar way to normal actor messages.</span>
+<span class="doccomment">/// When stream resolves its next item, `handle()` is called with that item.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// When the stream completes, `finished()` is called. By default, it stops Actor execution.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// # Examples</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// use actix::prelude::*;</span>
+<span class="doccomment">/// use futures_util::stream::once;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// #[derive(Message)]</span>
+<span class="doccomment">/// #[rtype(result = &quot;()&quot;)]</span>
+<span class="doccomment">/// struct Ping;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// struct MyActor;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// impl StreamHandler&lt;Ping&gt; for MyActor {</span>
+<span class="doccomment">///     fn handle(&amp;mut self, item: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {</span>
+<span class="doccomment">///         println!(&quot;PING&quot;);</span>
+<span class="doccomment">///         System::current().stop()</span>
+<span class="doccomment">///     }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///     fn finished(&amp;mut self, ctx: &amp;mut Self::Context) {</span>
+<span class="doccomment">///         println!(&quot;finished&quot;);</span>
+<span class="doccomment">///     }</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// impl Actor for MyActor {</span>
+<span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">///    fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {</span>
+<span class="doccomment">///        Self::add_stream(once(async { Ping }), ctx);</span>
+<span class="doccomment">///    }</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// fn main() {</span>
+<span class="doccomment">///     let mut sys = System::new();</span>
+<span class="doccomment">///     let addr = sys.block_on(async { MyActor.start() });</span>
+<span class="doccomment">///     sys.run();</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">/// ```</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="self">Self</span>: <span class="ident">Actor</span>,
 {
-    <span class="doccomment">/// Method is called for every message received by this Actor</span>
+    <span class="doccomment">/// Called for every message emitted by the stream.</span>
     <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">I</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>);
 
-    <span class="doccomment">/// Method is called when stream get polled first time.</span>
+    <span class="doccomment">/// Called when stream emits first item.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Default implementation does nothing.</span>
     <span class="kw">fn</span> <span class="ident">started</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>) {}
 
-    <span class="doccomment">/// Method is called when stream finishes.</span>
+    <span class="doccomment">/// Called when stream finishes.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// By default this method stops actor execution.</span>
+    <span class="doccomment">/// Default implementation stops Actor execution.</span>
     <span class="kw">fn</span> <span class="ident">finished</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>) {
         <span class="ident">ctx</span>.<span class="ident">stop</span>()
     }
 
-    <span class="doccomment">/// This method register stream to an actor context and</span>
-    <span class="doccomment">/// allows to handle `Stream` in similar way as normal actor messages.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use actix::prelude::*;</span>
-    <span class="doccomment">/// use futures_util::stream::once;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// #[derive(Message)]</span>
-    <span class="doccomment">/// #[rtype(result = &quot;()&quot;)]</span>
-    <span class="doccomment">/// struct Ping;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// struct MyActor;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl StreamHandler&lt;Ping&gt; for MyActor {</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn handle(&amp;mut self, item: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {</span>
-    <span class="doccomment">///         println!(&quot;PING&quot;);</span>
-    <span class="doccomment">///         System::current().stop()</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn finished(&amp;mut self, ctx: &amp;mut Self::Context) {</span>
-    <span class="doccomment">///         println!(&quot;finished&quot;);</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///    fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {</span>
-    <span class="doccomment">///        // add stream</span>
-    <span class="doccomment">///        Self::add_stream(once(async { Ping }), ctx);</span>
-    <span class="doccomment">///    }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// fn main() {</span>
-    <span class="doccomment">///     let mut sys = System::new();</span>
-    <span class="doccomment">///     let addr = sys.block_on(async { MyActor.start() });</span>
-    <span class="doccomment">///     sys.run();</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">add_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">fut</span>: <span class="ident">S</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SpawnHandle</span>
+    <span class="doccomment">/// Register a Stream to the actor context.</span>
+    <span class="kw">fn</span> <span class="ident">add_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">stream</span>: <span class="ident">S</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span>::<span class="ident">Context</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">SpawnHandle</span>
     <span class="kw">where</span>
         <span class="ident">S</span>: <span class="ident">Stream</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
         <span class="self">Self</span>: <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S</span>::<span class="ident">Item</span><span class="op">&gt;</span>,
@@ -243,7 +235,7 @@
             <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;Context::add_stream called for stopped actor.&quot;</span>);
             <span class="ident">SpawnHandle</span>::<span class="ident">default</span>()
         } <span class="kw">else</span> {
-            <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">ActorStream</span>::<span class="ident">new</span>(<span class="ident">fut</span>))
+            <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">ActorStream</span>::<span class="ident">new</span>(<span class="ident">stream</span>))
         }
     }
 }
