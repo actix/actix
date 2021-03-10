@@ -57,12 +57,16 @@ futures-util = { version = "0.3.7", default-features = false, features = ["alloc
 
 [[example]]
 name = "fibonacci"
-required-features = ["derive"]
+required-features = ["macros"]
 
 [[example]]
 name = "ping"
-required-features = ["derive"]
+required-features = ["macros"]
 
 [[example]]
-name = "ping"
-required-features = ["derive"]
+name = "weak_addr"
+required-features = ["macros"]
+
+[[example]]
+name = "weak_recipient"
+required-features = ["macros"]
