@@ -82,7 +82,7 @@ where
             error!("Context::add_stream called for stopped actor.");
             SpawnHandle::default()
         } else {
-            ctx.spawn(ActorStream::new(fut))
+            ctx.spawn(ActorStream::new(stream))
         }
     }
 }
