@@ -54,3 +54,15 @@ trust-dns-resolver = { version = "0.20.0" , optional = true, default-features = 
 [dev-dependencies]
 doc-comment = "0.3"
 futures-util = { version = "0.3.7", default-features = false, features = ["alloc"] }
+
+[[example]]
+name = "fibonacci"
+required-features = ["derive"]
+
+[[example]]
+name = "ping"
+required-features = ["derive"]
+
+[[example]]
+name = "ping"
+required-features = ["derive"]

@@ -8,75 +8,71 @@ use pin_project_lite::pin_project;
 use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
 use crate::fut::ActorFuture;
 
-/// Stream handler
+/// Stream handling for Actors.
 ///
-/// This is helper trait that allows to handle `Stream` in
-/// a similar way as normal actor messages.
-/// When stream resolves to a next item, `handle()` method of this trait
-/// get called. If stream produces error, `error()` method get called.
-/// Depends on result of the `error()` method, actor could continue to
-/// process stream items or stop stream processing.
-/// When stream completes, `finished()` method get called. By default
-/// `finished()` method stops actor execution.
+/// This is helper trait that allows handling [`Stream`]s in a similar way to normal actor messages.
+/// When stream resolves its next item, `handle()` is called with that item.
+///
+/// When the stream completes, `finished()` is called. By default, it stops Actor execution.
+///
+/// # Examples
+/// ```
+/// use actix::prelude::*;
+/// use futures_util::stream::once;
+///
+/// #[derive(Message)]
+/// #[rtype(result = "()")]
+/// struct Ping;
+///
+/// struct MyActor;
+///
+/// impl StreamHandler<Ping> for MyActor {
+///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
+///         println!("PING");
+///         System::current().stop()
+///     }
+///
+///     fn finished(&mut self, ctx: &mut Self::Context) {
+///         println!("finished");
+///     }
+/// }
+///
+/// impl Actor for MyActor {
+///    type Context = Context<Self>;
+///
+///    fn started(&mut self, ctx: &mut Context<Self>) {
+///        Self::add_stream(once(async { Ping }), ctx);
+///    }
+/// }
+///
+/// fn main() {
+///     let mut sys = System::new();
+///     let addr = sys.block_on(async { MyActor.start() });
+///     sys.run();
+/// }
+/// ```
 #[allow(unused_variables)]
 pub trait StreamHandler<I>
 where
     Self: Actor,
 {
-    /// Method is called for every message received by this Actor
+    /// Called for every message emitted by the stream.
     fn handle(&mut self, item: I, ctx: &mut Self::Context);
 
-    /// Method is called when stream get polled first time.
+    /// Called when stream emits first item.
+    ///
+    /// Default implementation does nothing.
     fn started(&mut self, ctx: &mut Self::Context) {}
 
-    /// Method is called when stream finishes.
+    /// Called when stream finishes.
     ///
-    /// By default this method stops actor execution.
+    /// Default implementation stops Actor execution.
     fn finished(&mut self, ctx: &mut Self::Context) {
         ctx.stop()
     }
 
-    /// This method register stream to an actor context and
-    /// allows to handle `Stream` in similar way as normal actor messages.
-    ///
-    /// ```
-    /// use actix::prelude::*;
-    /// use futures_util::stream::once;
-    ///
-    /// #[derive(Message)]
-    /// #[rtype(result = "()")]
-    /// struct Ping;
-    ///
-    /// struct MyActor;
-    ///
-    /// impl StreamHandler<Ping> for MyActor {
-    ///
-    ///     fn handle(&mut self, item: Ping, ctx: &mut Context<MyActor>) {
-    ///         println!("PING");
-    ///         System::current().stop()
-    ///     }
-    ///
-    ///     fn finished(&mut self, ctx: &mut Self::Context) {
-    ///         println!("finished");
-    ///     }
-    /// }
-    ///
-    /// impl Actor for MyActor {
-    ///    type Context = Context<Self>;
-    ///
-    ///    fn started(&mut self, ctx: &mut Context<Self>) {
-    ///        // add stream
-    ///        Self::add_stream(once(async { Ping }), ctx);
-    ///    }
-    /// }
-    ///
-    /// fn main() {
-    ///     let mut sys = System::new();
-    ///     let addr = sys.block_on(async { MyActor.start() });
-    ///     sys.run();
-    /// }
-    /// ```
-    fn add_stream<S>(fut: S, ctx: &mut Self::Context) -> SpawnHandle
+    /// Register a Stream to the actor context.
+    fn add_stream<S>(stream: S, ctx: &mut Self::Context) -> SpawnHandle
     where
         S: Stream + 'static,
         Self: StreamHandler<S::Item>,
