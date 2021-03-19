@@ -289,7 +289,7 @@ mod future_cancellation_bug {
     }
 
     #[test]
-    fn future_cancellation_bug() {
+    fn not_present() {
         let sys = System::new();
         sys.block_on(async {
             let addr = TestActor.start();
