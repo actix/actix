@@ -1,7 +1,6 @@
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
-use std::collections::HashSet;
 use std::task::{Context, Poll};
 
 use bitflags::bitflags;
@@ -15,7 +14,6 @@ use crate::address::{Addr, AddressSenderProducer};
 use crate::contextitems::ActorWaitItem;
 use crate::fut::ActorFuture;
 use crate::mailbox::Mailbox;
-use futures_task::Spawn;
 
 bitflags! {
     /// internal context state
@@ -317,27 +315,26 @@ where
     }
 
     fn clean_canceled_handle(&mut self) {
-        fn clean<C>(items: &mut SmallVec<[Item<C>; 3]>, handles: &mut HashSet<SpawnHandle>) {
+        fn clean<C>(items: &mut SmallVec<[Item<C>; 3]>, handle: &SpawnHandle) -> bool {
             let mut idx = 0;
+            let mut removed = false;
             while idx < items.len() {
-                if handles.contains(&items[idx].0) {
-                    let (removed_handle, _) = items.swap_remove(idx);
-                    handles.remove(&removed_handle);
+                if &items[idx].0 == handle {
+                    items.swap_remove(idx);
+                    removed = true;
                 } else {
                     idx += 1;
                 }
             }
+            removed
         }
 
-        let handles_len = self.ctx.parts().handles.len();
-        if handles_len > 2 {
-            let mut handles = HashSet::with_capacity(handles_len - 2);
-            while self.ctx.parts().handles.len() > 2 {
-                handles.insert(self.ctx.parts().handles.pop().unwrap());
-            }
-            clean(&mut self.items, &mut handles);
-            if !handles.is_empty() {
-                clean(&mut self.ctx.parts().items, &mut handles);
+        while self.ctx.parts().handles.len() > 2 {
+            let handle = self.ctx.parts().handles.pop().unwrap();
+            if !clean(&mut self.items, &handle) {
+                // Try to remove Items associated with a popped SpawnHandle from
+                // the ContextParts in case if they are not merged into ContextFut
+                clean(&mut self.ctx.parts().items, &handle);
             }
         }
     }
