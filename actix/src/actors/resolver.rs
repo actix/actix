@@ -36,6 +36,7 @@ use std::pin::Pin;
 use std::task::{self, Poll};
 use std::time::Duration;
 
+use futures_util::future::Either;
 use pin_project_lite::pin_project;
 use tokio::net::TcpStream;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
@@ -44,7 +45,6 @@ use trust_dns_resolver::{error::ResolveError, lookup_ip::LookupIp};
 
 use crate::clock::Sleep;
 use crate::fut::ActorFuture;
-use crate::fut::Either;
 use crate::prelude::*;
 
 #[deprecated(since = "0.7.0", note = "please use `Resolver` instead")]
