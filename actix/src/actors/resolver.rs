@@ -149,6 +149,10 @@ impl fmt::Display for ResolverError {
     }
 }
 
+#[deprecated(
+    since = "0.11.0",
+    note = "Resolver actor is deprecated and will be removed in a future release."
+)]
 pub struct Resolver {
     resolver: Option<AsyncResolver>,
     cfg: Option<(ResolverConfig, ResolverOpts)>,
