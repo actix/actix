@@ -9,7 +9,6 @@ use std::{
 
 use pin_project_lite::pin_project;
 
-pub use either::Either;
 pub use map::Map;
 pub use then::Then;
 pub use timeout::Timeout;
