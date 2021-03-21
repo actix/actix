@@ -26,6 +26,7 @@
 //!     println!("RESULT: {:?}", addrs);
 //! }
 //! ```
+
 use std::collections::VecDeque;
 use std::fmt;
 use std::future::Future;

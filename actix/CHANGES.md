@@ -6,6 +6,10 @@
 * Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
 * Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
 * Replace the `Into` implementation to `From<Addr>` for `Recipient` and `WeakRecipient`. [#479]
+* Remove `prelude::Future` re-export from std.
+* Remove `fut::future::Either` re-export. Support for the enum re-exported from `futures_util` enum
+  still exists.
+* Remove `fut::future::FutureResult` type alias.
 
 [#475]: https://github.com/actix/actix/pull/475
 [#479]: https://github.com/actix/actix/pull/479
