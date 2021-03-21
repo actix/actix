@@ -3,7 +3,7 @@
 ## Unreleased - 2021-xx-xx
 
 
-## Unreleased - 2021-03-21
+## 0.11.0 - 2021-03-21
 ### Removed
 * Remove `fut::IntoActorFuture` trait. [#475]
 * Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
