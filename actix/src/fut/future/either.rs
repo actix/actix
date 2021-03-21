@@ -1,8 +1,7 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-// TODO: remove re-export and encourage direct usage of futures crate types.
-pub use futures_util::future::Either;
+use futures_util::future::Either;
 
 use crate::actor::Actor;
 use crate::fut::ActorFuture;
