@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Either","Combines two different futures, streams, or sinks having the same associated types into a single type."]],"mod":[["future",""],["stream",""]]});
+initSidebarItems({"fn":[["ready","Creates a future that is immediately ready with a value."]],"mod":[["future",""],["stream",""]],"struct":[["Ready","Future for the `ready` function."]]});

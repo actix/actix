@@ -18,8 +18,8 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">stream</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::<span class="ident">future</span>::{
-    <span class="ident">result</span>::<span class="kw-2">*</span>, <span class="ident">wrap_future</span>, <span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">Either</span>, <span class="ident">LocalBoxActorFuture</span>,
-    <span class="ident">WrapFuture</span>,
+    <span class="ident">result</span>::{<span class="ident">err</span>, <span class="ident">ok</span>, <span class="ident">ready</span>, <span class="ident">result</span>, <span class="ident">Ready</span>},
+    <span class="ident">wrap_future</span>, <span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">LocalBoxActorFuture</span>, <span class="ident">WrapFuture</span>,
 };
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::<span class="ident">stream</span>::{<span class="ident">wrap_stream</span>, <span class="ident">ActorStream</span>, <span class="ident">ActorStreamExt</span>, <span class="ident">WrapStream</span>};
 </pre></div>

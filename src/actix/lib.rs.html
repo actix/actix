@@ -182,7 +182,6 @@
 <span id="179">179</span>
 <span id="180">180</span>
 <span id="181">181</span>
-<span id="182">182</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Actix is an actor framework.</span>
 <span class="doccomment">//!</span>
@@ -303,9 +302,8 @@
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">io</span>;
     <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">utils</span>::{<span class="ident">Condition</span>, <span class="ident">IntervalFunc</span>, <span class="ident">TimerFunc</span>};
 
-    <span class="comment">// TODO: remove std re-export?</span>
+    <span class="comment">// TODO: remove Stream re-export when it reaches std</span>
     <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">futures_core</span>::<span class="ident">stream</span>::<span class="ident">Stream</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">future</span>::<span class="ident">Future</span>;
 }
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">dev</span> {
