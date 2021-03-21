@@ -1,21 +1,15 @@
 //! Definition of the `Result` (immediately finished) combinator
 
-use std::future::Future;
-use std::pin::Pin;
-use std::task;
-use std::task::Poll;
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{self, Poll},
+};
 
-use crate::actor::Actor;
-use crate::fut::ActorFuture;
+use crate::{actor::Actor, fut::ActorFuture};
 
 // TODO: remove re-export and encourage direct usage of std and/or futures crate types.
 pub use futures_util::future::{ready, Ready};
-
-/// A future representing a value that is immediately ready.
-///
-/// Created by the `result` function.
-#[must_use = "futures do nothing unless polled"]
-pub type FutureResult<T, E> = Ready<Result<T, E>>;
 
 /// Creates a new "leaf future" which will resolve with the given result.
 ///
@@ -36,7 +30,7 @@ pub type FutureResult<T, E> = Ready<Result<T, E>>;
 /// let future_of_1 = fut::result::<u32, u32>(Ok(1));
 /// let future_of_err_2 = fut::result::<u32, u32>(Err(2));
 /// ```
-pub fn result<T, E>(r: Result<T, E>) -> FutureResult<T, E> {
+pub fn result<T, E>(r: Result<T, E>) -> Ready<Result<T, E>> {
     ready(r)
 }
 
@@ -59,7 +53,7 @@ pub fn result<T, E>(r: Result<T, E>) -> FutureResult<T, E> {
 ///
 /// let future_of_1 = ok::<u32, u32>(1);
 /// ```
-pub fn ok<T, E>(t: T) -> FutureResult<T, E> {
+pub fn ok<T, E>(t: T) -> Ready<Result<T, E>> {
     ready(Ok(t))
 }
 
@@ -80,7 +74,7 @@ pub fn ok<T, E>(t: T) -> FutureResult<T, E> {
 ///
 /// let future_of_err_1 = fut::err::<u32, u32>(1);
 /// ```
-pub fn err<T, E>(e: E) -> FutureResult<T, E> {
+pub fn err<T, E>(e: E) -> Ready<Result<T, E>> {
     ready(Err(e))
 }
 
