@@ -1,6 +1,6 @@
 [package]
 name = "actix-broker"
-version = "0.4.0-beta.1"
+version = "0.4.0"
 edition = "2018"
 authors = [
     "Chris Ricketts <chris.ricketts@steribar.com>",
@@ -13,7 +13,7 @@ documentation = "https://docs.rs/actix-broker"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-actix = "0.11.0-beta.3"
+actix = "0.11.0"
 ahash = { version = "0.7", default-features = false }
 log = "0.4"
 

@@ -3,6 +3,10 @@
 ## Unreleased - 2021-xx-xx
 
 
+## 0.6.0 - 2021-03-21
+* No significant changes from v0.6.0-beta.2.
+
+
 ## 0.6.0-beta.2 - 2021-03-03
 * Bump actix dependency to v0.11.0-beta.3.
 
