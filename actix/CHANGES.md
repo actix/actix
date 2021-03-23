@@ -1,6 +1,8 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Added
+* Added `ActorFutureExt::and_then` combinator for chaining actor futures.
 
 
 ## 0.11.0 - 2021-03-21

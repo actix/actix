@@ -177,6 +177,35 @@ impl Handler<CollectMsg> for MyStreamActor2 {
     }
 }
 
+struct AndThenMsg;
+
+impl Message for AndThenMsg {
+    type Result = Result<usize, usize>;
+}
+
+impl Handler<AndThenMsg> for MyStreamActor2 {
+    type Result = ResponseActFuture<Self, Result<usize, usize>>;
+
+    fn handle(&mut self, _: AndThenMsg, _: &mut Context<Self>) -> Self::Result {
+        Box::pin(
+            async { Ok(996) }
+                .into_actor(self)
+                .and_then(|res, act, _| {
+                    assert_eq!(res, 996);
+                    async { Err::<usize, usize>(251) }.into_actor(act)
+                })
+                .and_then(|_, _, _| {
+                    assert_eq!(123, 321, "Code should not enter this block");
+                    fut::ready(Ok(333))
+                })
+                .map(|r, _, _| {
+                    assert_eq!(Err(251), r);
+                    r
+                }),
+        )
+    }
+}
+
 #[test]
 fn test_stream_timeout() {
     let timeout = Arc::new(AtomicBool::new(false));
@@ -214,5 +243,14 @@ fn test_stream_collect() {
         let res = addr.send(CollectMsg(3)).await.unwrap();
 
         assert_eq!(res, vec![1, 2, 3, 4, 5]);
+    })
+}
+
+#[test]
+fn test_fut_and_then() {
+    System::new().block_on(async {
+        let addr = MyStreamActor2 { counter: 0 }.start();
+        let res = addr.send(AndThenMsg).await.unwrap();
+        assert_eq!(res, Err(251));
     })
 }

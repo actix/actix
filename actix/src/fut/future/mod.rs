@@ -9,12 +9,14 @@ use std::{
 
 use pin_project_lite::pin_project;
 
+pub use and_then::AndThen;
 pub use map::Map;
 pub use then::Then;
 pub use timeout::Timeout;
 
 use crate::actor::Actor;
 
+mod and_then;
 mod either;
 mod map;
 pub mod result;
@@ -146,6 +148,19 @@ pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
         Self: Sized,
     {
         then::new(self, f)
+    }
+
+    /// Chain on a computation for when a future finished, passing the Ok part of
+    /// future's result to the provided closure `f` that output another future.
+    /// Both actor futures must output `Result<T, E>` type where `E` must be the
+    /// same type.
+    fn and_then<F, Fut, T, E>(self, f: F) -> AndThen<Self, Fut, F>
+    where
+        F: FnOnce(T, &mut A, &mut A::Context) -> Fut,
+        Fut: ActorFuture<A>,
+        Self: ActorFuture<A, Output = Result<T, E>> + Sized,
+    {
+        and_then::new(self, f)
     }
 
     /// Add timeout to futures chain.
