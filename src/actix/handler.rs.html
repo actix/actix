@@ -542,9 +542,6 @@
 <span id="539">539</span>
 <span id="540">540</span>
 <span id="541">541</span>
-<span id="542">542</span>
-<span id="543">543</span>
-<span id="544">544</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fmt</span>, <span class="ident">future</span>::<span class="ident">Future</span>, <span class="ident">pin</span>::<span class="ident">Pin</span>, <span class="ident">sync</span>::<span class="ident">Arc</span>};
 
@@ -701,18 +698,15 @@
 
 <span class="doccomment">/// A specialized actor future for asynchronous message handling.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// Intended be used when the future returned will,</span>
-<span class="doccomment">/// at some point, need to access Actor&#39;s internal state or context</span>
-<span class="doccomment">/// in order to finish.</span>
-<span class="doccomment">/// Check [ActorFuture] for available methods for accessing Actor&#39;s</span>
-<span class="doccomment">/// internal state.</span>
+<span class="doccomment">/// Intended be used when the future returned will, at some point, need to access Actor&#39;s internal</span>
+<span class="doccomment">/// state or context in order to finish. Check [ActorFuture] for available methods for accessing</span>
+<span class="doccomment">/// Actor&#39;s internal state.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// ## Note</span>
-<span class="doccomment">/// It&#39;s important to keep in mind that the provided `AsyncContext`,</span>
-<span class="doccomment">/// [Context], does not enforce the poll of any [ActorFuture] to be</span>
-<span class="doccomment">/// exclusive. Therefore, if other instances of [ActorFuture] are spawned</span>
-<span class="doccomment">/// into this Context **their execution won&#39;t necessarily be atomic**.</span>
-<span class="doccomment">/// Check [AtomicResponse] if you need exclusive access over the actor.</span>
+<span class="doccomment">/// # Note</span>
+<span class="doccomment">/// It&#39;s important to keep in mind that the provided [AsyncContext], does not enforce the poll of</span>
+<span class="doccomment">/// any [ActorFuture] to be exclusive. Therefore, if other instances of [ActorFuture] are spawned</span>
+<span class="doccomment">/// into this Context **their execution won&#39;t necessarily be atomic**. Check [AtomicResponse] if you</span>
+<span class="doccomment">/// need exclusive access over the actor.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # Examples</span>
 <span class="doccomment">/// ```no_run</span>
