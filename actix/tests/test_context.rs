@@ -500,3 +500,60 @@ fn test_cancel_completed_with_no_context_item() {
         });
     });
 }
+
+mod scheduled_task_is_cancelled_properly {
+    use tokio::sync::oneshot;
+    use tokio::task::yield_now;
+    use tokio::time::timeout;
+
+    use super::*;
+
+    struct TestActor;
+
+    impl Actor for TestActor {
+        type Context = Context<Self>;
+
+        fn started(&mut self, ctx: &mut Self::Context) {
+            ctx.spawn(yield_now().into_actor(self));
+        }
+    }
+
+    #[derive(Message)]
+    #[rtype(result = "()")]
+    struct Msg(Option<oneshot::Sender<()>>);
+
+    impl Drop for Msg {
+        fn drop(&mut self) {
+            self.0.take().unwrap().send(()).unwrap();
+        }
+    }
+
+    impl Handler<Msg> for TestActor {
+        type Result = ();
+
+        fn handle(&mut self, msg: Msg, ctx: &mut Self::Context) -> Self::Result {
+            let handle = ctx.run_later(Duration::from_millis(0), |_, _| {
+                let _msg = msg;
+                System::current().stop_with_code(1);
+                panic!("This closure must not be executed");
+            });
+            ctx.cancel_future(handle);
+        }
+    }
+
+    #[test]
+    fn cancels() {
+        let sys = System::new();
+        sys.block_on(async {
+            let addr = TestActor.start();
+            let (tx, rx) = oneshot::channel();
+            addr.do_send(Msg(Some(tx)));
+            timeout(Duration::from_millis(500), rx)
+                .await
+                .unwrap()
+                .unwrap();
+            System::current().stop();
+        });
+        sys.run().unwrap();
+    }
+}
