@@ -1,6 +1,10 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Fixed
+* Instant cancellation of a spawned `Future`. [#484]
+
+[#484]: https://github.com/actix/actix/pull/484
 
 
 ## 0.11.0 - 2021-03-21
