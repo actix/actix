@@ -1,8 +1,11 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+
+
+## 0.11.1 - 2021-03-23
 ### Fixed
-* Instant cancellation of a spawned `Future`. [#484]
+* Panics caused by instant cancellation of a spawned future. [#484]
 
 [#484]: https://github.com/actix/actix/pull/484
 
