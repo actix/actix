@@ -1,60 +1,14 @@
-[package]
-name = "actix"
-version = "0.10.0-alpha.3"
-authors = ["Nikolay Kim <fafhrd91@gmail.com>"]
-description = "Actor framework for Rust"
-readme = "README.md"
-keywords = ["actor", "futures", "actix", "async", "tokio"]
-homepage = "https://actix.rs"
-repository = "https://github.com/actix/actix.git"
-documentation = "https://docs.rs/actix/"
-categories = ["network-programming", "asynchronous"]
-license = "MIT OR Apache-2.0"
-exclude = [".gitignore", ".cargo/config", ".github/**", "codecov.yml"]
-edition = "2018"
-
-[lib]
-name = "actix"
-path = "src/lib.rs"
-
 [workspace]
-members = ["examples/chat"]
+members = [
+    "actix",
+    "actix-broker",
+    "actix-derive",
+]
 
-[features]
-default = ["resolver", "try_traits"]
-
-# dns resolver
-resolver = ["trust-dns-proto", "trust-dns-resolver"]
-
-# Adds assertion to prevent processing too many messages on event loop
-mailbox_assert = []
-
-# Adds ActorTryFuture and ActorTryFutureExt traits.
-try_traits = []
-
-[dependencies]
-actix-rt = "1.1"
-actix_derive = "0.5"
-bytes = "0.5.3"
-crossbeam-channel = "0.4"
-derive_more = "0.99.2"
-futures-channel = { version = "0.3.1", default-features = false }
-futures-util = { version = "0.3.1", default-features = false }
-log = "0.4"
-pin-project = "0.4.17"
-once_cell = "1.3"
-bitflags = "1.2"
-smallvec = "1.0"
-parking_lot = "0.11"
-tokio = { version = "0.2.6", default-features = false, features = ["rt-core", "rt-util", "io-driver", "io-util", "tcp", "uds", "udp", "time", "signal", "sync"] }
-tokio-util = { version = "0.3", features = ["full"] }
-
-# dns resolver
-trust-dns-proto = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime"] }
-trust-dns-resolver = { version = "0.19", optional = true, default-features = false, features = ["tokio-runtime", "system-config"] }
-
-[dev-dependencies]
-doc-comment = "0.3"
+[patch.crates-io]
+actix = { path = "actix" }
+actix-broker = { path = "actix-broker" }
+actix_derive = { path = "actix-derive" }
 
 [profile.release]
 lto = true

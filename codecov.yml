@@ -1,3 +1,5 @@
+comment: false
+
 coverage:
   status:
     project:
@@ -8,6 +10,7 @@ coverage:
         threshold: 100% # make CI green anyway
 
 ignore: # ignore codecoverage on following paths
-  - "tests"
-  - "examples"
   - ".github"
+  - "**/tests"
+  - "**/benches"
+  - "**/examples"

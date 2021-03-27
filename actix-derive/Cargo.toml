@@ -1,0 +1,25 @@
+[package]
+name = "actix_derive"
+version = "0.6.0"
+edition = "2018"
+authors = [
+    "Callym <hi@callym.com>",
+    "Nikolay Kim <fafhrd91@gmail.com>",
+]
+description = "Derive macros for `actix` actors"
+readme = "README.md"
+keywords = ["actix", "actors", "derive", "macro"]
+repository = "https://github.com/actix/actix"
+documentation = "https://docs.rs/actix-derive"
+license = "MIT OR Apache-2.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+syn = { version = "1", features = ["full"] }
+proc-macro2 = "1"
+
+[dev-dependencies]
+actix = { version = "0.11.0", default-features = false }
