@@ -11,7 +11,7 @@ pin_project! {
     /// Future for the `then` combinator, chaining computations on the end of
     /// another future regardless of its outcome.
     ///
-    /// This is created by the `Future::then` method.
+    /// This is created by the `ActorFuture::then` method.
     #[project = ThenProj]
     #[derive(Debug)]
     #[must_use = "futures do nothing unless polled"]
