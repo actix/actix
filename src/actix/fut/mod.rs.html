@@ -11,17 +11,21 @@
 <span id="8"> 8</span>
 <span id="9"> 9</span>
 <span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="doccomment">//! Custom `Future` and `Stream` implementation with `Actix` support</span>
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">future</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">stream</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">try_future</span>;
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::<span class="ident">future</span>::{
     <span class="ident">result</span>::{<span class="ident">err</span>, <span class="ident">ok</span>, <span class="ident">ready</span>, <span class="ident">result</span>, <span class="ident">Ready</span>},
     <span class="ident">wrap_future</span>, <span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">LocalBoxActorFuture</span>, <span class="ident">WrapFuture</span>,
 };
 <span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::<span class="ident">stream</span>::{<span class="ident">wrap_stream</span>, <span class="ident">ActorStream</span>, <span class="ident">ActorStreamExt</span>, <span class="ident">WrapStream</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="self">self</span>::<span class="ident">try_future</span>::{<span class="ident">ActorTryFuture</span>, <span class="ident">ActorTryFutureExt</span>};
 </pre></div>
 </section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix" data-search-js="../../../search-index.js"></div>
     <script src="../../../main.js"></script><script src="../../../source-script.js"></script><script src="../../../source-files.js"></script></body></html>
