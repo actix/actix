@@ -315,15 +315,30 @@ where
     }
 
     fn clean_canceled_handle(&mut self) {
-        while self.ctx.parts().handles.len() > 2 {
-            let handle = self.ctx.parts().handles.pop().unwrap();
+        fn remove_item_by_handle<C>(
+            items: &mut SmallVec<[Item<C>; 3]>,
+            handle: &SpawnHandle,
+        ) -> bool {
             let mut idx = 0;
-            while idx < self.items.len() {
-                if self.items[idx].0 == handle {
-                    self.items.swap_remove(idx);
+            let mut removed = false;
+            while idx < items.len() {
+                if &items[idx].0 == handle {
+                    items.swap_remove(idx);
+                    removed = true;
                 } else {
                     idx += 1;
                 }
+            }
+            removed
+        }
+
+        while self.ctx.parts().handles.len() > 2 {
+            let handle = self.ctx.parts().handles.pop().unwrap();
+            // remove item from ContextFut.items in case associated item is already merged
+            if !remove_item_by_handle(&mut self.items, &handle) {
+                // item is not merged into ContextFut.items yet,
+                // so it should be in ContextParts.items
+                remove_item_by_handle(&mut self.ctx.parts().items, &handle);
             }
         }
     }

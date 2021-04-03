@@ -1,14 +1,33 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Added
+* Add `fut::try_future::ActorTryFuture`. [#419]
+* Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419] 
+
+[#419]: https://github.com/actix/actix/pull/419
+
+
+## 0.11.1 - 2021-03-23
+### Fixed
+* Panics caused by instant cancellation of a spawned future. [#484]
+
+[#484]: https://github.com/actix/actix/pull/484
+
+
+## 0.11.0 - 2021-03-21
 ### Removed
 * Remove `fut::IntoActorFuture` trait. [#475]
 * Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
 * Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
-* Replace the `Into` implementation to `From<Addr>` for `Recipient` and `WeakRecipient`. [#479]
+* Remove `prelude::Future` re-export from std. [#482]
+* Remove `fut::future::Either` re-export. Support for the enum re-exported from `futures_util` enum
+  still exists. [#482]
+* Remove `fut::future::FutureResult` type alias. [#482]
 
 [#475]: https://github.com/actix/actix/pull/475
 [#479]: https://github.com/actix/actix/pull/479
+[#482]: https://github.com/actix/actix/pull/482
 
 
 ## 0.11.0-beta.3 - 2021-03-03

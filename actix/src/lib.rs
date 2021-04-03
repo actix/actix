@@ -61,7 +61,8 @@ pub use crate::actor::{
 pub use crate::address::{Addr, MailboxError, Recipient, WeakAddr, WeakRecipient};
 pub use crate::context::Context;
 pub use crate::fut::{
-    ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, WrapFuture, WrapStream,
+    ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
+    ActorTryFutureExt, WrapFuture, WrapStream,
 };
 pub use crate::handler::{
     ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
@@ -100,7 +101,8 @@ pub mod prelude {
     };
     pub use crate::context::{Context, ContextFutureSpawner};
     pub use crate::fut::{
-        ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, WrapFuture, WrapStream,
+        ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
+        ActorTryFutureExt, WrapFuture, WrapStream,
     };
     pub use crate::handler::{
         ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
@@ -117,9 +119,8 @@ pub mod prelude {
     pub use crate::io;
     pub use crate::utils::{Condition, IntervalFunc, TimerFunc};
 
-    // TODO: remove std re-export?
+    // TODO: remove Stream re-export when it reaches std
     pub use futures_core::stream::Stream;
-    pub use std::future::Future;
 }
 
 pub mod dev {

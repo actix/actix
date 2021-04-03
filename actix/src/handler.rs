@@ -153,18 +153,15 @@ where
 
 /// A specialized actor future for asynchronous message handling.
 ///
-/// Intended be used when the future returned will,
-/// at some point, need to access Actor's internal state or context
-/// in order to finish.
-/// Check [ActorFuture] for available methods for accessing Actor's
-/// internal state.
+/// Intended be used when the future returned will, at some point, need to access Actor's internal
+/// state or context in order to finish. Check [ActorFuture] for available methods for accessing
+/// Actor's internal state.
 ///
-/// ## Note
-/// It's important to keep in mind that the provided `AsyncContext`,
-/// [Context], does not enforce the poll of any [ActorFuture] to be
-/// exclusive. Therefore, if other instances of [ActorFuture] are spawned
-/// into this Context **their execution won't necessarily be atomic**.
-/// Check [AtomicResponse] if you need exclusive access over the actor.
+/// # Note
+/// It's important to keep in mind that the provided [AsyncContext], does not enforce the poll of
+/// any [ActorFuture] to be exclusive. Therefore, if other instances of [ActorFuture] are spawned
+/// into this Context **their execution won't necessarily be atomic**. Check [AtomicResponse] if you
+/// need exclusive access over the actor.
 ///
 /// # Examples
 /// ```no_run
