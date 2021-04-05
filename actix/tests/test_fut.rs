@@ -177,6 +177,39 @@ impl Handler<CollectMsg> for MyStreamActor2 {
     }
 }
 
+struct TryFutureMsg(usize);
+
+impl Message for TryFutureMsg {
+    type Result = Result<isize, u32>;
+}
+
+impl Handler<TryFutureMsg> for MyStreamActor2 {
+    type Result = ResponseActFuture<Self, Result<isize, u32>>;
+
+    fn handle(&mut self, msg: TryFutureMsg, _: &mut Context<Self>) -> Self::Result {
+        let num = msg.0;
+        Box::pin(
+            async move {
+                assert_eq!(num, 5);
+                Ok::<usize, usize>(num * 2)
+            }
+            .into_actor(self)
+            .map_ok(|res, _, _| {
+                assert_eq!(10usize, res);
+                res as isize
+            })
+            .and_then(|res, _, _| {
+                assert_eq!(10isize, res);
+                fut::err::<isize, usize>(996)
+            })
+            .map_err(|e, _, _| {
+                assert_eq!(996usize, e);
+                e as u32
+            }),
+        )
+    }
+}
+
 #[test]
 fn test_stream_timeout() {
     let timeout = Arc::new(AtomicBool::new(false));
@@ -214,5 +247,14 @@ fn test_stream_collect() {
         let res = addr.send(CollectMsg(3)).await.unwrap();
 
         assert_eq!(res, vec![1, 2, 3, 4, 5]);
+    })
+}
+
+#[test]
+fn test_try_future() {
+    System::new().block_on(async {
+        let addr = MyStreamActor2 { counter: 0 }.start();
+        let res = addr.send(TryFutureMsg(5)).await.unwrap();
+        assert_eq!(res.err().unwrap(), 996u32);
     })
 }

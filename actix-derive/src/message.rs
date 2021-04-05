@@ -59,7 +59,7 @@ fn get_attribute_type_multiple(
             }
         })
         .ok_or_else(|| {
-            syn::Error::new(Span::call_site(), format!("Expect a attribute `{}`", name))
+            syn::Error::new(Span::call_site(), format!("Expect an attribute `{}`", name))
         })?;
 
     if let syn::Meta::List(ref list) = attr {
