@@ -5,7 +5,11 @@
 * Add `fut::try_future::ActorTryFuture`. [#419]
 * Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419] 
 
+### Changed
+- Make `Context::new` public. #[491]
+
 [#419]: https://github.com/actix/actix/pull/419
+[#491]: https://github.com/actix/actix/pull/491
 
 
 ## 0.11.1 - 2021-03-23
