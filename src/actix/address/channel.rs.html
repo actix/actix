@@ -1193,7 +1193,7 @@
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channel</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>(<span class="ident">buffer</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> (<span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>, <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) {
     <span class="comment">// Check that the requested buffer size does not exceed the maximum buffer</span>
     <span class="comment">// size permitted by the system.</span>
-    <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">buffer</span> <span class="op">&lt;</span> <span class="ident">MAX_BUFFER</span>, <span class="string">&quot;requested buffer size too large&quot;</span>);
+    <span class="macro">assert!</span>(<span class="ident">buffer</span> <span class="op">&lt;</span> <span class="ident">MAX_BUFFER</span>, <span class="string">&quot;requested buffer size too large&quot;</span>);
 
     <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">Arc</span>::<span class="ident">new</span>(<span class="ident">Inner</span> {
         <span class="ident">buffer</span>: <span class="ident">AtomicUsize</span>::<span class="ident">new</span>(<span class="ident">buffer</span>),
@@ -1452,10 +1452,10 @@
         <span class="kw">loop</span> {
             <span class="comment">// If the maximum number of senders has been reached, then fail</span>
             <span class="kw">if</span> <span class="ident">curr</span> <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>() {
-                <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
             }
 
-            <span class="macro">debug_assert</span><span class="macro">!</span>(<span class="ident">curr</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>());
+            <span class="macro">debug_assert!</span>(<span class="ident">curr</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>());
 
             <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">+</span> <span class="number">1</span>;
             <span class="kw">let</span> <span class="ident">actual</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">compare_and_swap</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">SeqCst</span>);
@@ -1578,7 +1578,7 @@
         <span class="kw">loop</span> {
             <span class="comment">// If the maximum number of senders has been reached, then fail</span>
             <span class="kw">if</span> <span class="ident">curr</span> <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>() {
-                <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
             }
 
             <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">+</span> <span class="number">1</span>;
@@ -1639,7 +1639,7 @@
         <span class="kw">loop</span> {
             <span class="comment">// If the maximum number of senders has been reached, then fail</span>
             <span class="kw">if</span> <span class="ident">curr</span> <span class="op">=</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>() {
-                <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
+                <span class="macro">panic!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
             }
 
             <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">+</span> <span class="number">1</span>;
@@ -1860,7 +1860,7 @@
 
             <span class="ident">thread</span>::<span class="ident">sleep</span>(<span class="ident">time</span>::<span class="ident">Duration</span>::<span class="ident">from_millis</span>(<span class="number">100</span>));
             <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>));
-            <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">state</span>.<span class="ident">num_messages</span>, <span class="number">2</span>);
+            <span class="macro">assert_eq!</span>(<span class="ident">state</span>.<span class="ident">num_messages</span>, <span class="number">2</span>);
 
             <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="kw">loop</span> {
                 <span class="kw">match</span> <span class="kw">unsafe</span> { <span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop</span>() } {
@@ -1870,14 +1870,14 @@
                 }
             };
 
-            <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">p</span>.<span class="ident">is_some</span>());
+            <span class="macro">assert!</span>(<span class="ident">p</span>.<span class="ident">is_some</span>());
             <span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">push</span>(<span class="ident">p</span>.<span class="ident">unwrap</span>());
 
             <span class="ident">recv</span>.<span class="ident">set_capacity</span>(<span class="number">10</span>);
 
             <span class="ident">thread</span>::<span class="ident">sleep</span>(<span class="ident">time</span>::<span class="ident">Duration</span>::<span class="ident">from_millis</span>(<span class="number">100</span>));
             <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>));
-            <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">state</span>.<span class="ident">num_messages</span>, <span class="number">2</span>);
+            <span class="macro">assert_eq!</span>(<span class="ident">state</span>.<span class="ident">num_messages</span>, <span class="number">2</span>);
 
             <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="kw">loop</span> {
                 <span class="kw">match</span> <span class="kw">unsafe</span> { <span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop</span>() } {
@@ -1886,7 +1886,7 @@
                     <span class="ident">PopResult</span>::<span class="ident">Inconsistent</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">thread</span>::<span class="ident">yield_now</span>(),
                 }
             };
-            <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">p</span>.<span class="ident">is_none</span>());
+            <span class="macro">assert!</span>(<span class="ident">p</span>.<span class="ident">is_none</span>());
 
             <span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">stop</span>();
         });

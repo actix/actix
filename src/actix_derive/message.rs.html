@@ -120,7 +120,7 @@
                 <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">return</span> <span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(
                         <span class="ident">Span</span>::<span class="ident">call_site</span>(),
-                        <span class="macro">format</span><span class="macro">!</span>(
+                        <span class="macro">format!</span>(
                             <span class="string">&quot;#[{}(type)] takes 1 parameters, given {}&quot;</span>,
                             <span class="ident">MESSAGE_ATTR</span>,
                             <span class="ident">ty</span>.<span class="ident">len</span>()
@@ -138,9 +138,9 @@
 
     <span class="kw">let</span> <span class="ident">item_type</span> <span class="op">=</span> <span class="ident">item_type</span>
         .<span class="ident">map</span>(<span class="ident">ToTokens</span>::<span class="ident">into_token_stream</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">quote</span><span class="macro">!</span> { () });
+        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">quote!</span> { () });
 
-    <span class="macro">quote</span><span class="macro">!</span> {
+    <span class="macro">quote!</span> {
         <span class="kw">impl</span> #<span class="ident">impl_generics</span> ::<span class="ident">actix</span>::<span class="ident">Message</span> <span class="kw">for</span> #<span class="ident">name</span> #<span class="ident">ty_generics</span> #<span class="ident">where_clause</span> {
             <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> #<span class="ident">item_type</span>;
         }
@@ -168,7 +168,7 @@
             }
         })
         .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> {
-            <span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">Span</span>::<span class="ident">call_site</span>(), <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;Expect an attribute `{}`&quot;</span>, <span class="ident">name</span>))
+            <span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new</span>(<span class="ident">Span</span>::<span class="ident">call_site</span>(), <span class="macro">format!</span>(<span class="string">&quot;Expect an attribute `{}`&quot;</span>, <span class="ident">name</span>))
         })<span class="question-mark">?</span>;
 
     <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn</span>::<span class="ident">Meta</span>::<span class="ident">List</span>(<span class="kw-2">ref</span> <span class="ident">list</span>) <span class="op">=</span> <span class="ident">attr</span> {
@@ -180,7 +180,7 @@
     } <span class="kw">else</span> {
         <span class="prelude-val">Err</span>(<span class="ident">syn</span>::<span class="ident">Error</span>::<span class="ident">new_spanned</span>(
             <span class="ident">attr</span>,
-            <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;The correct syntax is #[{}(type, type, ...)]&quot;</span>, <span class="ident">name</span>),
+            <span class="macro">format!</span>(<span class="string">&quot;The correct syntax is #[{}(type, type, ...)]&quot;</span>, <span class="ident">name</span>),
         ))
     }
 }

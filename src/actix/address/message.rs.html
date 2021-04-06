@@ -115,7 +115,7 @@
 
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">RecipientRequest</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">MsgRequest</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="ident">M</span><span class="op">&gt;</span>;
 
-<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project!</span> {
     <span class="doccomment">/// A `Future` which represents an asynchronous message sending process.</span>
     <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;You have to wait on request otherwise the Message wont be delivered&quot;</span>]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MsgRequest</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">M</span><span class="op">&gt;</span>

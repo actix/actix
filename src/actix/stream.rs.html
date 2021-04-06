@@ -232,7 +232,7 @@
         <span class="self">Self</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>,
     {
         <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">state</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">ActorState</span>::<span class="ident">Stopped</span> {
-            <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;Context::add_stream called for stopped actor.&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">&quot;Context::add_stream called for stopped actor.&quot;</span>);
             <span class="ident">SpawnHandle</span>::<span class="ident">default</span>()
         } <span class="kw">else</span> {
             <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">ActorStream</span>::<span class="ident">new</span>(<span class="ident">stream</span>))
@@ -240,7 +240,7 @@
     }
 }
 
-<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project!</span> {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span> {
         <span class="attribute">#[<span class="ident">pin</span>]</span>
         <span class="ident">stream</span>: <span class="ident">S</span>,
@@ -280,7 +280,7 @@
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">polled</span> <span class="op">=</span> <span class="number">0</span>;
 
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) <span class="op">=</span> <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">task</span>)) {
+        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">task</span>)) {
             <span class="ident">A</span>::<span class="ident">handle</span>(<span class="ident">act</span>, <span class="ident">msg</span>, <span class="ident">ctx</span>);
 
             <span class="ident">polled</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;

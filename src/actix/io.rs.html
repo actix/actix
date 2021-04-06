@@ -606,7 +606,7 @@
     }
 }
 
-<span class="macro">bitflags</span><span class="macro">!</span> {
+<span class="macro">bitflags!</span> {
     <span class="kw">struct</span> <span class="ident">Flags</span>: <span class="ident">u8</span> {
         <span class="kw">const</span> <span class="ident">CLOSING</span> <span class="op">=</span> <span class="number">0b0000_0001</span>;
         <span class="kw">const</span> <span class="ident">CLOSED</span> <span class="op">=</span> <span class="number">0b0000_0010</span>;
@@ -1099,7 +1099,7 @@
                 <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> {}
             }
         } <span class="kw">else</span> {
-            <span class="macro">assert</span><span class="macro">!</span>(<span class="op">!</span><span class="ident">inner</span>.<span class="ident">closing_flag</span>.<span class="ident">contains</span>(<span class="ident">Flags</span>::<span class="ident">CLOSED</span>));
+            <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">inner</span>.<span class="ident">closing_flag</span>.<span class="ident">contains</span>(<span class="ident">Flags</span>::<span class="ident">CLOSED</span>));
             <span class="kw">match</span> <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">inner</span>.<span class="ident">sink</span>).<span class="ident">poll_close</span>(<span class="ident">cx</span>) {
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">if</span> <span class="ident">act</span>.<span class="ident">error</span>(<span class="ident">e</span>, <span class="ident">ctxt</span>) <span class="op">=</span><span class="op">=</span> <span class="ident">Running</span>::<span class="ident">Stop</span> {

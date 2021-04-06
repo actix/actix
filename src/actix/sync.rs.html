@@ -575,11 +575,11 @@
             <span class="kw">match</span> <span class="ident">Pin</span>::<span class="ident">new</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">msgs</span>).<span class="ident">poll_next</span>(<span class="ident">cx</span>) {
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">msg</span>)) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">queue</span>) <span class="op">=</span> <span class="ident">this</span>.<span class="ident">queue</span> {
-                        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">queue</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="ident">is_ok</span>());
+                        <span class="macro">assert!</span>(<span class="ident">queue</span>.<span class="ident">send</span>(<span class="ident">msg</span>).<span class="ident">is_ok</span>());
                     }
                 }
                 <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">break</span>,
-                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable</span><span class="macro">!</span>(),
+                <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable!</span>(),
             }
         }
 
@@ -681,7 +681,7 @@
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> {
                     <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">ActorState</span>::<span class="ident">Stopping</span>;
                     <span class="kw">if</span> <span class="ident">A</span>::<span class="ident">stopping</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">act</span>, <span class="self">self</span>) <span class="op">!</span><span class="op">=</span> <span class="ident">Running</span>::<span class="ident">Stop</span> {
-                        <span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;stopping method is not supported for sync actors&quot;</span>);
+                        <span class="macro">warn!</span>(<span class="string">&quot;stopping method is not supported for sync actors&quot;</span>);
                     }
                     <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">ActorState</span>::<span class="ident">Stopped</span>;
                     <span class="ident">A</span>::<span class="ident">stopped</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">act</span>, <span class="self">self</span>);
@@ -823,7 +823,7 @@
             <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SyncArbiter</span>::<span class="ident">start</span>(<span class="number">1</span>, <span class="ident">SyncActor1</span>::<span class="ident">run</span>);
             <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">oneshot</span>::<span class="ident">channel</span>();
             <span class="ident">addr</span>.<span class="ident">send</span>(<span class="ident">Msg</span>(<span class="ident">tx</span>)).<span class="kw">await</span>.<span class="ident">unwrap</span>();
-            <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="number">233u8</span>, <span class="ident">rx</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>());
+            <span class="macro">assert_eq!</span>(<span class="number">233u8</span>, <span class="ident">rx</span>.<span class="kw">await</span>.<span class="ident">unwrap</span>());
             <span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">stop</span>();
         })
     }

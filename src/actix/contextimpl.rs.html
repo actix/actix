@@ -498,7 +498,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">mailbox</span>::<span class="ident">Mailbox</span>;
 
-<span class="macro">bitflags</span><span class="macro">!</span> {
+<span class="macro">bitflags!</span> {
     <span class="doccomment">/// internal context state</span>
     <span class="kw">struct</span> <span class="ident">ContextFlags</span>: <span class="ident">u8</span> {
     <span class="kw">const</span> <span class="ident">STARTED</span> <span class="op">=</span>  <span class="number">0b0000_0001</span>;
@@ -692,7 +692,7 @@
     <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">C</span><span class="op">&gt;</span>,
 {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
-        <span class="macro">write</span><span class="macro">!</span>(<span class="ident">fmt</span>, <span class="string">&quot;ContextFut {{ /* omitted */ }}&quot;</span>)
+        <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;ContextFut {{ /* omitted */ }}&quot;</span>)
     }
 }
 
@@ -855,7 +855,7 @@
             <span class="kw">while</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">is_empty</span>() <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">stopping</span>() {
                 <span class="kw">let</span> <span class="ident">idx</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span>;
                 <span class="kw">let</span> <span class="ident">item</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">last_mut</span>().<span class="ident">unwrap</span>();
-                <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">Pin</span>::<span class="ident">new</span>(<span class="ident">item</span>).<span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">ctx</span>, <span class="ident">cx</span>));
+                <span class="macro">ready!</span>(<span class="ident">Pin</span>::<span class="ident">new</span>(<span class="ident">item</span>).<span class="ident">poll</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">this</span>.<span class="ident">ctx</span>, <span class="ident">cx</span>));
                 <span class="ident">this</span>.<span class="ident">wait</span>.<span class="ident">remove</span>(<span class="ident">idx</span>);
                 <span class="ident">this</span>.<span class="ident">merge</span>();
             }

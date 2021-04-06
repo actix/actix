@@ -1041,7 +1041,7 @@
     }
 }
 
-<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">SIMPLE_RESULT</span> {
+<span class="macro">macro_rules!</span> <span class="ident">SIMPLE_RESULT</span> {
     (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>) <span class="op">=</span><span class="op">&gt;</span> {
         <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="kw">type</span>
         <span class="kw">where</span>
@@ -1055,21 +1055,21 @@
     };
 }
 
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(());
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">u8</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">u16</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">u32</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">u64</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">usize</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">i8</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">i16</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">i32</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">i64</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">isize</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">f32</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">f64</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">String</span>);
-<span class="macro">SIMPLE_RESULT</span><span class="macro">!</span>(<span class="ident">bool</span>);
+<span class="macro">SIMPLE_RESULT!</span>(());
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u8</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u16</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u32</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u64</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">usize</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i8</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i16</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i32</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i64</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">isize</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">f32</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">f64</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">String</span>);
+<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">bool</span>);
 
 <span class="comment">// Helper trait for send one shot message from Option&lt;Sender&gt; type.</span>
 <span class="comment">// None and error are ignored.</span>

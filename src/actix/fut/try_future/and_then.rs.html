@@ -90,7 +90,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::<span class="ident">Actor</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::{<span class="ident">future</span>::<span class="ident">ActorFuture</span>, <span class="ident">try_future</span>::<span class="ident">ActorTryFuture</span>};
 
-<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project!</span> {
     <span class="doccomment">/// Future for the `and_then` combinator, chaining computations</span>
     <span class="doccomment">/// on the end of another actor future regardless of its outcome.</span>
     <span class="doccomment">///</span>
@@ -141,18 +141,18 @@
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">as_mut</span>().<span class="ident">project</span>() {
             <span class="ident">AndThenProj</span>::<span class="ident">First</span> { <span class="ident">fut1</span>, <span class="ident">data</span> } <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="ident">ok</span> <span class="op">=</span> <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">fut1</span>.<span class="ident">try_poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>))<span class="question-mark">?</span>;
+                <span class="kw">let</span> <span class="ident">ok</span> <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident">fut1</span>.<span class="ident">try_poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>))<span class="question-mark">?</span>;
                 <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
                 <span class="kw">let</span> <span class="ident">fut2</span> <span class="op">=</span> <span class="ident">data</span>(<span class="ident">ok</span>, <span class="ident">act</span>, <span class="ident">ctx</span>);
                 <span class="self">self</span>.<span class="ident">set</span>(<span class="ident">AndThen</span>::<span class="ident">Second</span> { <span class="ident">fut2</span> });
                 <span class="self">self</span>.<span class="ident">poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
             }
             <span class="ident">AndThenProj</span>::<span class="ident">Second</span> { <span class="ident">fut2</span> } <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">fut2</span>.<span class="ident">try_poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>));
+                <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident">fut2</span>.<span class="ident">try_poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>));
                 <span class="self">self</span>.<span class="ident">set</span>(<span class="ident">AndThen</span>::<span class="ident">Empty</span>);
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="ident">res</span>)
             }
-            <span class="ident">AndThenProj</span>::<span class="ident">Empty</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;ActorFuture polled after finish&quot;</span>),
+            <span class="ident">AndThenProj</span>::<span class="ident">Empty</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic!</span>(<span class="string">&quot;ActorFuture polled after finish&quot;</span>),
         }
     }
 }

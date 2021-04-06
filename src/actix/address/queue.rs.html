@@ -312,8 +312,8 @@
 
         <span class="kw">if</span> <span class="op">!</span><span class="ident">next</span>.<span class="ident">is_null</span>() {
             <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">tail</span>.<span class="ident">get</span>() <span class="op">=</span> <span class="ident">next</span>;
-            <span class="macro">assert</span><span class="macro">!</span>((<span class="kw-2">*</span><span class="ident">tail</span>).<span class="ident">value</span>.<span class="ident">is_none</span>());
-            <span class="macro">assert</span><span class="macro">!</span>((<span class="kw-2">*</span><span class="ident">next</span>).<span class="ident">value</span>.<span class="ident">is_some</span>());
+            <span class="macro">assert!</span>((<span class="kw-2">*</span><span class="ident">tail</span>).<span class="ident">value</span>.<span class="ident">is_none</span>());
+            <span class="macro">assert!</span>((<span class="kw-2">*</span><span class="ident">next</span>).<span class="ident">value</span>.<span class="ident">is_some</span>());
             <span class="kw">let</span> <span class="ident">ret</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="ident">next</span>).<span class="ident">value</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
             <span class="ident">drop</span>(<span class="ident">Box</span>::<span class="ident">from_raw</span>(<span class="ident">tail</span>));
             <span class="kw">return</span> <span class="ident">Data</span>(<span class="ident">ret</span>);

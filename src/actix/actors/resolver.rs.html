@@ -578,10 +578,10 @@
 <span class="kw">impl</span> <span class="ident">fmt</span>::<span class="ident">Display</span> <span class="kw">for</span> <span class="ident">ResolverError</span> {
     <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
         <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">ResolverError</span>::<span class="ident">Resolver</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write</span><span class="macro">!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Failed resolving hostname: {}&quot;</span>, <span class="ident">s</span>),
-            <span class="ident">ResolverError</span>::<span class="ident">InvalidInput</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write</span><span class="macro">!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Invalid input: {}&quot;</span>, <span class="ident">s</span>),
-            <span class="ident">ResolverError</span>::<span class="ident">Timeout</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write</span><span class="macro">!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Timeout out while establishing connection&quot;</span>),
-            <span class="ident">ResolverError</span>::<span class="ident">IoError</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write</span><span class="macro">!</span>(<span class="ident">fmt</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">e</span>),
+            <span class="ident">ResolverError</span>::<span class="ident">Resolver</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Failed resolving hostname: {}&quot;</span>, <span class="ident">s</span>),
+            <span class="ident">ResolverError</span>::<span class="ident">InvalidInput</span>(<span class="ident">s</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Invalid input: {}&quot;</span>, <span class="ident">s</span>),
+            <span class="ident">ResolverError</span>::<span class="ident">Timeout</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Timeout out while establishing connection&quot;</span>),
+            <span class="ident">ResolverError</span>::<span class="ident">IoError</span>(<span class="ident">e</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">e</span>),
         }
     }
 }
@@ -616,7 +616,7 @@
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">AsyncResolver</span>::<span class="ident">tokio_from_system_conf</span>() {
                     <span class="prelude-val">Ok</span>(<span class="ident">resolver</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Ok</span>(<span class="ident">resolver</span>),
                     <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="ident">log</span>::<span class="macro">warn</span><span class="macro">!</span>(<span class="string">&quot;Can not create system dns resolver: {}&quot;</span>, <span class="ident">err</span>);
+                        <span class="ident">log</span>::<span class="macro">warn!</span>(<span class="string">&quot;Can not create system dns resolver: {}&quot;</span>, <span class="ident">err</span>);
                         <span class="ident">AsyncResolver</span>::<span class="ident">tokio</span>(<span class="ident">ResolverConfig</span>::<span class="ident">default</span>(), <span class="ident">ResolverOpts</span>::<span class="ident">default</span>())
                     }
                 },
@@ -750,7 +750,7 @@
     }
 
     <span class="kw">fn</span> <span class="ident">parse</span>(<span class="ident">addr</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">port</span>: <span class="ident">u16</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">u16</span>), <span class="ident">ResolverError</span><span class="op">&gt;</span> {
-        <span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">try_opt</span> {
+        <span class="macro">macro_rules!</span> <span class="ident">try_opt</span> {
             (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">msg</span>:<span class="ident">expr</span>) <span class="op">=</span><span class="op">&gt;</span> {
                 <span class="kw">match</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span> {
                     <span class="prelude-val">Some</span>(<span class="ident">r</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">r</span>,
@@ -761,7 +761,7 @@
 
         <span class="comment">// split the string by &#39;:&#39; and convert the second part to u16</span>
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">parts_iter</span> <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">splitn</span>(<span class="number">2</span>, <span class="string">&#39;:&#39;</span>);
-        <span class="kw">let</span> <span class="ident">host</span> <span class="op">=</span> <span class="macro">try_opt</span><span class="macro">!</span>(<span class="ident">parts_iter</span>.<span class="ident">next</span>(), <span class="string">&quot;invalid socket address&quot;</span>);
+        <span class="kw">let</span> <span class="ident">host</span> <span class="op">=</span> <span class="macro">try_opt!</span>(<span class="ident">parts_iter</span>.<span class="ident">next</span>(), <span class="string">&quot;invalid socket address&quot;</span>);
         <span class="kw">let</span> <span class="ident">port_str</span> <span class="op">=</span> <span class="ident">parts_iter</span>.<span class="ident">next</span>().<span class="ident">unwrap_or</span>(<span class="string">&quot;&quot;</span>);
         <span class="kw">let</span> <span class="ident">port</span>: <span class="ident">u16</span> <span class="op">=</span> <span class="ident">port_str</span>.<span class="ident">parse</span>().<span class="ident">unwrap_or</span>(<span class="ident">port</span>);
 
@@ -801,14 +801,14 @@
                     }
                 }
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">err</span>)) <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">ResolverError</span>::<span class="ident">Resolver</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">err</span>))))
+                    <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">ResolverError</span>::<span class="ident">Resolver</span>(<span class="macro">format!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">err</span>))))
                 }
             }
         }
     }
 }
 
-<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project!</span> {
     <span class="doccomment">/// A TCP stream connector.</span>
     <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy</span>::<span class="ident">type_complexity</span>)]</span>
     <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TcpConnector</span> {

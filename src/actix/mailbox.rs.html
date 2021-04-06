@@ -186,7 +186,7 @@
                     {
                         <span class="ident">n_polls</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
                         <span class="comment">// Maximum number of consecutive polls in a loop is 256.</span>
-                        <span class="macro">assert</span><span class="macro">!</span>(<span class="ident">n_polls</span> <span class="op">&lt;</span> <span class="number">256u16</span>, <span class="string">&quot;Too many messages are being processed. Use Self::Context::notify() instead of direct use of address&quot;</span>);
+                        <span class="macro">assert!</span>(<span class="ident">n_polls</span> <span class="op">&lt;</span> <span class="number">256u16</span>, <span class="string">&quot;Too many messages are being processed. Use Self::Context::notify() instead of direct use of address&quot;</span>);
                     }
                 }
                 <span class="ident">Poll</span>::<span class="ident">Ready</span>(<span class="prelude-val">None</span>) <span class="op">|</span> <span class="ident">Poll</span>::<span class="ident">Pending</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span>,

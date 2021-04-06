@@ -262,7 +262,7 @@
     }
 }
 
-<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project!</span> {
     <span class="doccomment">/// An `ActorFuture` that runs a function in the actor&#39;s context after a specified amount of time.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Unless you specifically need access to the future, use [`Context::run_later`] instead.</span>
@@ -332,14 +332,14 @@
         <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Output</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
-        <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">timeout</span>.<span class="ident">poll</span>(<span class="ident">task</span>));
+        <span class="macro">ready!</span>(<span class="ident">this</span>.<span class="ident">timeout</span>.<span class="ident">poll</span>(<span class="ident">task</span>));
         <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">f</span>.<span class="ident">take</span>().<span class="ident">expect</span>(<span class="string">&quot;TimerFunc polled after finish&quot;</span>);
         <span class="ident">f</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
         <span class="ident">Poll</span>::<span class="ident">Ready</span>(())
     }
 }
 
-<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project!</span> {
     <span class="doccomment">/// An `ActorStream` that periodically runs a function in the actor&#39;s context.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Unless you specifically need access to the future, use [`Context::run_interval`] instead.</span>
@@ -411,7 +411,7 @@
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span>::<span class="ident">Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
         <span class="kw">loop</span> {
-            <span class="macro">ready</span><span class="macro">!</span>(<span class="ident">this</span>.<span class="ident">timer</span>.<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">task</span>));
+            <span class="macro">ready!</span>(<span class="ident">this</span>.<span class="ident">timer</span>.<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">task</span>));
             <span class="kw">let</span> <span class="ident">now</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">timer</span>.<span class="ident">deadline</span>();
             <span class="ident">this</span>.<span class="ident">timer</span>.<span class="ident">as_mut</span>().<span class="ident">reset</span>(<span class="ident">now</span> <span class="op">+</span> <span class="kw-2">*</span><span class="ident">this</span>.<span class="ident">dur</span>);
             (<span class="ident">this</span>.<span class="ident">f</span>)(<span class="ident">act</span>, <span class="ident">ctx</span>);

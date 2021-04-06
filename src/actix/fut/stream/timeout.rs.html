@@ -83,7 +83,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">clock</span>::{<span class="ident">sleep</span>, <span class="ident">Instant</span>, <span class="ident">Sleep</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorStream</span>;
 
-<span class="macro">pin_project</span><span class="macro">!</span> {
+<span class="macro">pin_project!</span> {
     <span class="doccomment">/// Stream for the [`timeout`](super::ActorStreamExt::timeout) method.</span>
     <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
     <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;streams do nothing unless polled&quot;</span>]</span>

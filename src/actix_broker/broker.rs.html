@@ -246,7 +246,7 @@
     <span class="kw">fn</span> <span class="ident">take_subs</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">TypeId</span>, <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>)<span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>();
         <span class="kw">let</span> <span class="ident">subs</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">sub_map</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>)<span class="question-mark">?</span>;
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Found subscription list for {:?}.&quot;</span>, <span class="ident">id</span>);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Found subscription list for {:?}.&quot;</span>, <span class="ident">id</span>);
         <span class="kw">let</span> <span class="ident">subs</span> <span class="op">=</span> <span class="ident">subs</span>
             .<span class="ident">drain</span>(..)
             .<span class="ident">filter_map</span>(<span class="op">|</span>(<span class="ident">id</span>, <span class="ident">s</span>)<span class="op">|</span> {
@@ -265,19 +265,19 @@
         <span class="kw">let</span> <span class="ident">msg_id</span> <span class="op">=</span> <span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>();
         <span class="kw">let</span> <span class="ident">boxed</span> <span class="op">=</span> <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">sub</span>);
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">subs</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">sub_map</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">msg_id</span>) {
-            <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Adding to {:?} subscription list.&quot;</span>, <span class="ident">msg_id</span>);
+            <span class="macro">trace!</span>(<span class="string">&quot;Broker: Adding to {:?} subscription list.&quot;</span>, <span class="ident">msg_id</span>);
             <span class="ident">subs</span>.<span class="ident">push</span>((<span class="ident">id</span>, <span class="ident">boxed</span>));
             <span class="kw">return</span>;
         }
 
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Creating {:?} subscription list.&quot;</span>, <span class="ident">msg_id</span>);
-        <span class="self">self</span>.<span class="ident">sub_map</span>.<span class="ident">insert</span>(<span class="ident">msg_id</span>, <span class="macro">vec</span><span class="macro">!</span>[(<span class="ident">id</span>, <span class="ident">boxed</span>)]);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Creating {:?} subscription list.&quot;</span>, <span class="ident">msg_id</span>);
+        <span class="self">self</span>.<span class="ident">sub_map</span>.<span class="ident">insert</span>(<span class="ident">msg_id</span>, <span class="macro">vec!</span>[(<span class="ident">id</span>, <span class="ident">boxed</span>)]);
     }
 
     <span class="kw">fn</span> <span class="ident">get_previous_msg</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>();
         <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">msg_map</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>)<span class="question-mark">?</span>;
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Previous message found for {:?}&quot;</span>, <span class="ident">id</span>);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Previous message found for {:?}&quot;</span>, <span class="ident">id</span>);
         <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="ident">msg</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>()<span class="question-mark">?</span>;
         <span class="prelude-val">Some</span>(<span class="ident">msg</span>.<span class="ident">clone</span>())
     }
@@ -286,12 +286,12 @@
         <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>();
         <span class="kw">let</span> <span class="ident">boxed</span> <span class="op">=</span> <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">msg</span>);
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">pm</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">msg_map</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>) {
-            <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Setting new message value for {:?}&quot;</span>, <span class="ident">id</span>);
+            <span class="macro">trace!</span>(<span class="string">&quot;Broker: Setting new message value for {:?}&quot;</span>, <span class="ident">id</span>);
             <span class="kw-2">*</span><span class="ident">pm</span> <span class="op">=</span> <span class="ident">boxed</span>;
             <span class="kw">return</span>;
         }
 
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Adding first message value for {:?}&quot;</span>, <span class="ident">id</span>);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Adding first message value for {:?}&quot;</span>, <span class="ident">id</span>);
         <span class="self">self</span>.<span class="ident">msg_map</span>.<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">boxed</span>);
     }
 }
@@ -300,7 +300,7 @@
     <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> ();
 
     <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">SubscribeAsync</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Received SubscribeAsync&quot;</span>);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Received SubscribeAsync&quot;</span>);
         <span class="self">self</span>.<span class="ident">add_sub</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">msg</span>.<span class="number">0</span>, <span class="ident">msg</span>.<span class="number">1</span>);
     }
 }
@@ -309,7 +309,7 @@
     <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>;
 
     <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">SubscribeSync</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span>::<span class="prelude-ty">Result</span> {
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Received SubscribeSync&quot;</span>);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Received SubscribeSync&quot;</span>);
         <span class="self">self</span>.<span class="ident">add_sub</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">msg</span>.<span class="number">0</span>, <span class="ident">msg</span>.<span class="number">1</span>);
         <span class="self">self</span>.<span class="ident">get_previous_msg</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>()
     }
@@ -319,7 +319,7 @@
     <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> ();
 
     <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">IssueAsync</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Received IssueAsync&quot;</span>);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Received IssueAsync&quot;</span>);
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">subs</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_subs</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>() {
             <span class="ident">subs</span>.<span class="ident">drain</span>(..)
                 .<span class="ident">filter_map</span>(<span class="op">|</span>(<span class="ident">id</span>, <span class="ident">s</span>)<span class="op">|</span> {
@@ -339,7 +339,7 @@
     <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> ();
 
     <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">IssueSync</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
-        <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;Broker: Received IssueSync&quot;</span>);
+        <span class="macro">trace!</span>(<span class="string">&quot;Broker: Received IssueSync&quot;</span>);
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">subs</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_subs</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>() {
             <span class="ident">subs</span>.<span class="ident">drain</span>(..).<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">id</span>, <span class="ident">s</span>)<span class="op">|</span> {
                 <span class="kw">if</span> <span class="ident">id</span> <span class="op">=</span><span class="op">=</span> <span class="ident">msg</span>.<span class="number">1</span> {

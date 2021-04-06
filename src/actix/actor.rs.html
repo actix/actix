@@ -885,7 +885,7 @@
         <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">S</span>::<span class="ident">Item</span><span class="op">&gt;</span>,
     {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">ActorState</span>::<span class="ident">Stopped</span> {
-            <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;Context::add_message_stream called for stopped actor.&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">&quot;Context::add_message_stream called for stopped actor.&quot;</span>);
         } <span class="kw">else</span> {
             <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">ActorMessageStreamItem</span>::<span class="ident">new</span>(<span class="ident">fut</span>));
         }
@@ -900,7 +900,7 @@
         <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
     {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">ActorState</span>::<span class="ident">Stopped</span> {
-            <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;Context::notify called for stopped actor.&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">&quot;Context::notify called for stopped actor.&quot;</span>);
         } <span class="kw">else</span> {
             <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">ActorMessageItem</span>::<span class="ident">new</span>(<span class="ident">msg</span>));
         }
@@ -919,7 +919,7 @@
         <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
     {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">ActorState</span>::<span class="ident">Stopped</span> {
-            <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;Context::notify_later called for stopped actor.&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">&quot;Context::notify_later called for stopped actor.&quot;</span>);
             <span class="ident">SpawnHandle</span>::<span class="ident">default</span>()
         } <span class="kw">else</span> {
             <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">ActorDelayedMessageItem</span>::<span class="ident">new</span>(<span class="ident">msg</span>, <span class="ident">after</span>))

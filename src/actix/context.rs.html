@@ -198,6 +198,40 @@
 <span id="195">195</span>
 <span id="196">196</span>
 <span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
 
@@ -283,8 +317,42 @@
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
 {
+    <span class="doccomment">/// Create a context without spawning it.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// The context can be spawned into an actor using its [`run`](`Context::run`) method.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// # use actix::prelude::*;</span>
+    <span class="doccomment">/// struct Actor1 {</span>
+    <span class="doccomment">///     actor2_addr: Addr&lt;Actor2&gt;,</span>
+    <span class="doccomment">/// }</span>
+    <span class="doccomment">/// # impl Actor for Actor1 {</span>
+    <span class="doccomment">/// #     type Context = Context&lt;Self&gt;;</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// struct Actor2 {</span>
+    <span class="doccomment">///     actor1_addr: Addr&lt;Actor1&gt;,</span>
+    <span class="doccomment">/// }</span>
+    <span class="doccomment">/// # impl Actor for Actor2 {</span>
+    <span class="doccomment">/// #     type Context = Context&lt;Self&gt;;</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # fn main() {</span>
+    <span class="doccomment">/// # let mut sys = System::new();</span>
+    <span class="doccomment">/// # System::new().block_on(async {</span>
+    <span class="doccomment">/// let ctx1 = Context::&lt;Actor1&gt;::new();</span>
+    <span class="doccomment">/// let ctx2 = Context::&lt;Actor2&gt;::new();</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let actor1 = Actor1 { actor2_addr: ctx2.address() };</span>
+    <span class="doccomment">/// let actor2 = Actor2 { actor1_addr: ctx1.address() };</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// ctx1.run(actor1);</span>
+    <span class="doccomment">/// ctx2.run(actor2);</span>
+    <span class="doccomment">/// # });</span>
+    <span class="doccomment">/// # }</span>
+    <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="ident">Mailbox</span>::<span class="ident">default</span>();
         <span class="self">Self</span> {
             <span class="ident">parts</span>: <span class="ident">ContextParts</span>::<span class="ident">new</span>(<span class="ident">mb</span>.<span class="ident">sender_producer</span>()),
