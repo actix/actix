@@ -2,13 +2,16 @@
 
 ## Unreleased - 2021-xx-xx
 ### Added
-* Added `actix::prelude::AsyncResponse` to use async/await syntax in actor handler [#449]
 * Add `fut::try_future::ActorTryFuture`. [#419]
 * Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419] 
 * Added `actix::prelude::AsyncResponse` to use async/await syntax in actor handler [#449]
 
+### Changed
+- Make `Context::new` public. [#491]
+
 [#419]: https://github.com/actix/actix/pull/419
 [#449]: https://github.com/actix/actix/pull/449
+[#491]: https://github.com/actix/actix/pull/491
 
 
 ## 0.11.1 - 2021-03-23

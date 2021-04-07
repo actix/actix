@@ -82,8 +82,42 @@ impl<A> Context<A>
 where
     A: Actor<Context = Self>,
 {
+    /// Create a context without spawning it.
+    ///
+    /// The context can be spawned into an actor using its [`run`](`Context::run`) method.
+    ///
+    /// ```
+    /// # use actix::prelude::*;
+    /// struct Actor1 {
+    ///     actor2_addr: Addr<Actor2>,
+    /// }
+    /// # impl Actor for Actor1 {
+    /// #     type Context = Context<Self>;
+    /// # }
+    ///
+    /// struct Actor2 {
+    ///     actor1_addr: Addr<Actor1>,
+    /// }
+    /// # impl Actor for Actor2 {
+    /// #     type Context = Context<Self>;
+    /// # }
+    ///
+    /// # fn main() {
+    /// # let mut sys = System::new();
+    /// # System::new().block_on(async {
+    /// let ctx1 = Context::<Actor1>::new();
+    /// let ctx2 = Context::<Actor2>::new();
+    ///
+    /// let actor1 = Actor1 { actor2_addr: ctx2.address() };
+    /// let actor2 = Actor2 { actor1_addr: ctx1.address() };
+    ///
+    /// ctx1.run(actor1);
+    /// ctx2.run(actor2);
+    /// # });
+    /// # }
+    /// ```
     #[inline]
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         let mb = Mailbox::default();
         Self {
             parts: ContextParts::new(mb.sender_producer()),
