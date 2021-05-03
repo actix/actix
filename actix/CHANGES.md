@@ -4,7 +4,7 @@
 ### Added
 * Add `fut::try_future::ActorTryFuture`. [#419]
 * Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419]
-* Add `fut::future::FutureExt::boxed_local` [#493] 
+* Add `fut::future::ActorFutureExt::boxed_local` [#493] 
 
 ### Changed
 - Make `Context::new` public. [#491]
