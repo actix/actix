@@ -157,6 +157,13 @@ pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
     {
         Timeout::new(self, timeout)
     }
+
+    fn boxed_local(self) -> LocalBoxActorFuture<A, Self::Output>
+    where
+        Self: Sized + 'static,
+    {
+        Box::pin(self)
+    }
 }
 
 impl<F, A> ActorFutureExt<A> for F
