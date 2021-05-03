@@ -100,11 +100,15 @@ where
     /// }
     /// # impl Actor for Actor2 {
     /// #     type Context = Context<Self>;
+    /// #
+    /// #     fn started(&mut self, _: &mut Self::Context) {
+    /// #         System::current().stop();
+    /// #     }        
     /// # }
     ///
     /// # fn main() {
-    /// # let mut sys = System::new();
-    /// # System::new().block_on(async {
+    /// # let sys = System::new();
+    /// # sys.block_on(async {
     /// let ctx1 = Context::<Actor1>::new();
     /// let ctx2 = Context::<Actor2>::new();
     ///
@@ -114,6 +118,7 @@ where
     /// ctx1.run(actor1);
     /// ctx2.run(actor2);
     /// # });
+    /// # sys.run().unwrap();
     /// # }
     /// ```
     #[inline]
