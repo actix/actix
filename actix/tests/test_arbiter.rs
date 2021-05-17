@@ -4,13 +4,6 @@ use std::sync::Arc;
 use tokio::sync::oneshot;
 
 #[derive(Debug)]
-struct Panic();
-
-impl Message for Panic {
-    type Result = ();
-}
-
-#[derive(Debug)]
 struct Ping(usize);
 
 impl Message for Ping {
@@ -30,14 +23,6 @@ impl Handler<Ping> for MyActor {
         self.0
             .store(self.0.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
         System::current().stop();
-    }
-}
-
-impl Handler<Panic> for MyActor {
-    type Result = ();
-
-    fn handle(&mut self, _: Panic, _: &mut actix::Context<MyActor>) {
-        panic!("Whoops!");
     }
 }
 
