@@ -53,7 +53,9 @@ async fn main() -> Result<(), Error> {
         LocalActor(Rc::new(stream))
     });
 
-    let ask = Ask { ask: String::from("Can I have this feature?")};
+    let ask = Ask {
+        ask: String::from("Can I have this feature?"),
+    };
 
     let answer = local_addr.send(ask).await??;
 
