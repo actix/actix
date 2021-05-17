@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/registry.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>registry.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
-                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button">?</button>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -320,26 +320,26 @@
 <span id="317">317</span>
 <span id="318">318</span>
 <span id="319">319</span>
-</pre><div class="example-wrap"><pre class="rust ">
+</pre><pre class="rust">
 <span class="doccomment">//! Actors registry</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! An Actor can register itself as a service. A Service can be defined as an</span>
 <span class="doccomment">//! `ArbiterService`, which is unique per arbiter, or a `SystemService`, which</span>
 <span class="doccomment">//! is unique per system.</span>
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">any</span>::{<span class="ident">Any</span>, <span class="ident">TypeId</span>};
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cell</span>::<span class="ident">RefCell</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">collections</span>::<span class="ident">HashMap</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">default</span>::<span class="ident">Default</span>;
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">rc</span>::<span class="ident">Rc</span>;
+<span class="kw">use</span> <span class="ident">std::any</span>::{<span class="ident">Any</span>, <span class="ident">TypeId</span>};
+<span class="kw">use</span> <span class="ident">std::cell::RefCell</span>;
+<span class="kw">use</span> <span class="ident">std::collections::HashMap</span>;
+<span class="kw">use</span> <span class="ident">std::default::Default</span>;
+<span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
 
 <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">ArbiterHandle</span>, <span class="ident">System</span>};
-<span class="kw">use</span> <span class="ident">once_cell</span>::<span class="ident">sync</span>::<span class="ident">Lazy</span>;
-<span class="kw">use</span> <span class="ident">parking_lot</span>::<span class="ident">Mutex</span>;
+<span class="kw">use</span> <span class="ident">once_cell::sync::Lazy</span>;
+<span class="kw">use</span> <span class="ident">parking_lot::Mutex</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">Supervised</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::<span class="ident">Addr</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">context</span>::<span class="ident">Context</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">supervisor</span>::<span class="ident">Supervisor</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::actor</span>::{<span class="ident">Actor</span>, <span class="ident">Supervised</span>};
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::address::Addr</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::context::Context</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::supervisor::Supervisor</span>;
 
 <span class="kw">type</span> <span class="ident">AnyMap</span> <span class="op">=</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">TypeId</span>, <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Any</span><span class="op">&gt;</span><span class="op">&gt;</span>;
 
@@ -413,7 +413,7 @@
 <span class="macro">thread_local!</span> {
     <span class="kw">static</span> <span class="ident">AREG</span>: <span class="ident">Registry</span> <span class="op">=</span> {
         <span class="ident">Registry</span> {
-            <span class="ident">registry</span>: <span class="ident">Rc</span>::<span class="ident">new</span>(<span class="ident">RefCell</span>::<span class="ident">new</span>(<span class="ident">AnyMap</span>::<span class="ident">new</span>()))
+            <span class="ident">registry</span>: <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">AnyMap::new</span>()))
         }
     };
 }
@@ -423,8 +423,8 @@
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ArbiterService</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Supervised</span> <span class="op">+</span> <span class="ident">Default</span> {
     <span class="doccomment">/// Construct and start arbiter service</span>
     <span class="kw">fn</span> <span class="ident">start_service</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="ident">Supervisor</span>::<span class="ident">start</span>(<span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">act</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">default</span>();
+        <span class="ident">Supervisor::start</span>(<span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">act</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::default</span>();
             <span class="ident">act</span>.<span class="ident">service_started</span>(<span class="ident">ctx</span>);
             <span class="ident">act</span>
         })
@@ -444,23 +444,23 @@
     <span class="doccomment">/// If actor is not registered, starts new actor and</span>
     <span class="doccomment">/// return address of newly created actor.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">ArbiterService</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>();
+        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>();
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">registry</span>.<span class="ident">borrow</span>().<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>) {
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>() {
                 <span class="kw">return</span> <span class="ident">addr</span>.<span class="ident">clone</span>();
             }
         }
-        <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">A</span>::<span class="ident">start_service</span>();
+        <span class="kw">let</span> <span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">A::start_service</span>();
 
         <span class="self">self</span>.<span class="ident">registry</span>
             .<span class="ident">borrow_mut</span>()
-            .<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()));
+            .<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">Box::new</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()));
         <span class="ident">addr</span>
     }
 
     <span class="doccomment">/// Check if actor is in registry, if so, return its address</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">query</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">ArbiterService</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>();
+        <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>();
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">registry</span>.<span class="ident">borrow</span>().<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>) {
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>() {
                 <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>.<span class="ident">clone</span>());
@@ -472,14 +472,14 @@
     <span class="doccomment">/// Add new actor to the registry by address, panic if actor is already running</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">ArbiterService</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) {
         <span class="ident">AREG</span>.<span class="ident">with</span>(<span class="op">|</span><span class="ident">reg</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>();
+            <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>();
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">borrow</span>().<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>) {
                 <span class="kw">if</span> <span class="ident">addr</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">is_some</span>() {
                     <span class="macro">panic!</span>(<span class="string">&quot;Actor already started&quot;</span>);
                 }
             }
 
-            <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">borrow_mut</span>().<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">addr</span>));
+            <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">borrow_mut</span>().<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">Box::new</span>(<span class="ident">addr</span>));
         })
     }
 }
@@ -547,15 +547,15 @@
 }
 
 <span class="kw">static</span> <span class="ident">SREG</span>: <span class="ident">Lazy</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">usize</span>, <span class="ident">SystemRegistry</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span>
-    <span class="ident">Lazy</span>::<span class="ident">new</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">Mutex</span>::<span class="ident">new</span>(<span class="ident">HashMap</span>::<span class="ident">new</span>()));
+    <span class="ident">Lazy::new</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">Mutex::new</span>(<span class="ident">HashMap::new</span>()));
 
 <span class="doccomment">/// Trait defines system&#39;s service.</span>
 <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">SystemService</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Supervised</span> <span class="op">+</span> <span class="ident">Default</span> {
     <span class="doccomment">/// Construct and start system service</span>
     <span class="kw">fn</span> <span class="ident">start_service</span>(<span class="ident">wrk</span>: <span class="kw-2">&amp;</span><span class="ident">ArbiterHandle</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="ident">Supervisor</span>::<span class="ident">start_in_arbiter</span>(<span class="ident">wrk</span>, <span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">act</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">default</span>();
+        <span class="ident">Supervisor::start_in_arbiter</span>(<span class="ident">wrk</span>, <span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">act</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::default</span>();
             <span class="ident">act</span>.<span class="ident">service_started</span>(<span class="ident">ctx</span>);
             <span class="ident">act</span>
         })
@@ -566,22 +566,22 @@
 
     <span class="doccomment">/// Get actor&#39;s address from system registry</span>
     <span class="kw">fn</span> <span class="ident">from_registry</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">current</span>();
+        <span class="kw">let</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System::current</span>();
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sreg</span> <span class="op">=</span> <span class="ident">SREG</span>.<span class="ident">lock</span>();
         <span class="kw">let</span> <span class="ident">reg</span> <span class="op">=</span> <span class="ident">sreg</span>
             .<span class="ident">entry</span>(<span class="ident">sys</span>.<span class="ident">id</span>())
-            .<span class="ident">or_insert_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">SystemRegistry</span>::<span class="ident">new</span>(<span class="ident">sys</span>.<span class="ident">arbiter</span>().<span class="ident">clone</span>()));
+            .<span class="ident">or_insert_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">SystemRegistry::new</span>(<span class="ident">sys</span>.<span class="ident">arbiter</span>().<span class="ident">clone</span>()));
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>()) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>()) {
             <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>() {
                 <span class="kw">return</span> <span class="ident">addr</span>.<span class="ident">clone</span>();
             }
         }
 
-        <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="self">Self</span>::<span class="ident">start_service</span>(<span class="ident">System</span>::<span class="ident">current</span>().<span class="ident">arbiter</span>());
+        <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="self">Self</span><span class="ident">::start_service</span>(<span class="ident">System::current</span>().<span class="ident">arbiter</span>());
         <span class="ident">reg</span>.<span class="ident">registry</span>
-            .<span class="ident">insert</span>(<span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>(), <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()));
+            .<span class="ident">insert</span>(<span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>(), <span class="ident">Box::new</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()));
         <span class="ident">addr</span>
     }
 }
@@ -590,29 +590,29 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">system</span>: <span class="ident">ArbiterHandle</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">system</span>,
-            <span class="ident">registry</span>: <span class="ident">HashMap</span>::<span class="ident">default</span>(),
+            <span class="ident">registry</span>: <span class="ident">HashMap::default</span>(),
         }
     }
 
     <span class="doccomment">/// Return address of the service. If service actor is not running</span>
     <span class="doccomment">/// it get started in the system.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">SystemService</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>()) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>()) {
             <span class="kw">match</span> <span class="ident">addr</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>() {
                 <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="ident">addr</span>.<span class="ident">clone</span>(),
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">panic!</span>(<span class="string">&quot;Got unknown value: {:?}&quot;</span>, <span class="ident">addr</span>),
             }
         }
 
-        <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">A</span>::<span class="ident">start_service</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">system</span>);
+        <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">A::start_service</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">system</span>);
         <span class="self">self</span>.<span class="ident">registry</span>
-            .<span class="ident">insert</span>(<span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>(), <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()));
+            .<span class="ident">insert</span>(<span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>(), <span class="ident">Box::new</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()));
         <span class="ident">addr</span>
     }
 
     <span class="doccomment">/// Check if actor is in registry, if so, return its address</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">query</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">SystemService</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>()) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>()) {
             <span class="kw">match</span> <span class="ident">addr</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>() {
                 <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>.<span class="ident">clone</span>()),
                 <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="kw">return</span> <span class="prelude-val">None</span>,
@@ -624,22 +624,22 @@
 
     <span class="doccomment">/// Add new actor to the registry by address, panic if actor is already running</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">SystemService</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System</span>::<span class="ident">current</span>();
+        <span class="kw">let</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System::current</span>();
 
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sreg</span> <span class="op">=</span> <span class="ident">SREG</span>.<span class="ident">lock</span>();
         <span class="kw">let</span> <span class="ident">reg</span> <span class="op">=</span> <span class="ident">sreg</span>
             .<span class="ident">entry</span>(<span class="ident">sys</span>.<span class="ident">id</span>())
-            .<span class="ident">or_insert_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">SystemRegistry</span>::<span class="ident">new</span>(<span class="ident">sys</span>.<span class="ident">arbiter</span>().<span class="ident">clone</span>()));
+            .<span class="ident">or_insert_with</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">SystemRegistry::new</span>(<span class="ident">sys</span>.<span class="ident">arbiter</span>().<span class="ident">clone</span>()));
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>()) {
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">addr</span>) <span class="op">=</span> <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>()) {
             <span class="kw">if</span> <span class="ident">addr</span>.<span class="ident">downcast_ref</span>::<span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">is_some</span>() {
                 <span class="macro">panic!</span>(<span class="string">&quot;Actor already started&quot;</span>);
             }
         }
 
-        <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">insert</span>(<span class="ident">TypeId</span>::<span class="ident">of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>(), <span class="ident">Box</span>::<span class="ident">new</span>(<span class="ident">addr</span>));
+        <span class="ident">reg</span>.<span class="ident">registry</span>.<span class="ident">insert</span>(<span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>(), <span class="ident">Box::new</span>(<span class="ident">addr</span>));
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-search-js="../../search-index.js"></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
     <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>

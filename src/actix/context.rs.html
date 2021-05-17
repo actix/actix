@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/context.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>context.rs - source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
 <link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
-<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
-                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../actix/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button">?</button>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -232,14 +232,19 @@
 <span id="229">229</span>
 <span id="230">230</span>
 <span id="231">231</span>
-</pre><div class="example-wrap"><pre class="rust ">
-<span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+</pre><pre class="rust">
+<span class="kw">use</span> <span class="ident">std::fmt</span>;
 
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">SpawnHandle</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">address</span>::{<span class="ident">Addr</span>, <span class="ident">AddressReceiver</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">contextimpl</span>::{<span class="ident">AsyncContextParts</span>, <span class="ident">ContextFut</span>, <span class="ident">ContextParts</span>};
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">fut</span>::<span class="ident">ActorFuture</span>;
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">mailbox</span>::<span class="ident">Mailbox</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">SpawnHandle</span>};
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::address</span>::{<span class="ident">Addr</span>, <span class="ident">AddressReceiver</span>};
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::contextimpl</span>::{<span class="ident">AsyncContextParts</span>, <span class="ident">ContextFut</span>, <span class="ident">ContextParts</span>};
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::fut::ActorFuture</span>;
+<span class="kw">use</span> <span class="kw">crate</span><span class="ident">::mailbox::Mailbox</span>;
 
 <span class="doccomment">/// An actor execution context.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
@@ -250,8 +255,8 @@
     <span class="ident">mb</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Mailbox</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="ident">Debug</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt</span>::<span class="ident">Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt</span>::<span class="prelude-ty">Result</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt::Result</span> {
         <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Context&quot;</span>)
             .<span class="ident">field</span>(<span class="string">&quot;parts&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">parts</span>)
             .<span class="ident">field</span>(<span class="string">&quot;mb&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">mb</span>)
@@ -335,11 +340,15 @@
     <span class="doccomment">/// }</span>
     <span class="doccomment">/// # impl Actor for Actor2 {</span>
     <span class="doccomment">/// #     type Context = Context&lt;Self&gt;;</span>
+    <span class="doccomment">/// #</span>
+    <span class="doccomment">/// #     fn started(&amp;mut self, _: &amp;mut Self::Context) {</span>
+    <span class="doccomment">/// #         System::current().stop();</span>
+    <span class="doccomment">/// #     }        </span>
     <span class="doccomment">/// # }</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # fn main() {</span>
-    <span class="doccomment">/// # let mut sys = System::new();</span>
-    <span class="doccomment">/// # System::new().block_on(async {</span>
+    <span class="doccomment">/// # let sys = System::new();</span>
+    <span class="doccomment">/// # sys.block_on(async {</span>
     <span class="doccomment">/// let ctx1 = Context::&lt;Actor1&gt;::new();</span>
     <span class="doccomment">/// let ctx2 = Context::&lt;Actor2&gt;::new();</span>
     <span class="doccomment">///</span>
@@ -349,22 +358,23 @@
     <span class="doccomment">/// ctx1.run(actor1);</span>
     <span class="doccomment">/// ctx2.run(actor2);</span>
     <span class="doccomment">/// # });</span>
+    <span class="doccomment">/// # sys.run().unwrap();</span>
     <span class="doccomment">/// # }</span>
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="ident">Mailbox</span>::<span class="ident">default</span>();
+        <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="ident">Mailbox::default</span>();
         <span class="self">Self</span> {
-            <span class="ident">parts</span>: <span class="ident">ContextParts</span>::<span class="ident">new</span>(<span class="ident">mb</span>.<span class="ident">sender_producer</span>()),
+            <span class="ident">parts</span>: <span class="ident">ContextParts::new</span>(<span class="ident">mb</span>.<span class="ident">sender_producer</span>()),
             <span class="ident">mb</span>: <span class="prelude-val">Some</span>(<span class="ident">mb</span>),
         }
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_receiver</span>(<span class="ident">rx</span>: <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="ident">Mailbox</span>::<span class="ident">new</span>(<span class="ident">rx</span>);
+        <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="ident">Mailbox::new</span>(<span class="ident">rx</span>);
         <span class="self">Self</span> {
-            <span class="ident">parts</span>: <span class="ident">ContextParts</span>::<span class="ident">new</span>(<span class="ident">mb</span>.<span class="ident">sender_producer</span>()),
+            <span class="ident">parts</span>: <span class="ident">ContextParts::new</span>(<span class="ident">mb</span>.<span class="ident">sender_producer</span>()),
             <span class="ident">mb</span>: <span class="prelude-val">Some</span>(<span class="ident">mb</span>),
         }
     }
@@ -373,13 +383,13 @@
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="self">self</span>, <span class="ident">act</span>: <span class="ident">A</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_future</span>(<span class="ident">act</span>);
         <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">fut</span>.<span class="ident">address</span>();
-        <span class="ident">actix_rt</span>::<span class="ident">spawn</span>(<span class="ident">fut</span>);
+        <span class="ident">actix_rt::spawn</span>(<span class="ident">fut</span>);
         <span class="ident">addr</span>
     }
 
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_future</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">act</span>: <span class="ident">A</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ContextFut</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="self">Self</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">mb</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
-        <span class="ident">ContextFut</span>::<span class="ident">new</span>(<span class="self">self</span>, <span class="ident">act</span>, <span class="ident">mb</span>)
+        <span class="ident">ContextFut::new</span>(<span class="self">self</span>, <span class="ident">act</span>, <span class="ident">mb</span>)
     }
 
     <span class="doccomment">/// Returns a handle to the running future.</span>
@@ -435,35 +445,35 @@
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ContextFutureSpawner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 {
     <span class="doccomment">/// Spawns the future into the given context.</span>
-    <span class="kw">fn</span> <span class="ident">spawn</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>);
+    <span class="kw">fn</span> <span class="ident">spawn</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A::Context</span>);
 
     <span class="doccomment">/// Spawns the future into the given context, waiting for it to</span>
     <span class="doccomment">/// resolve.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// This stops processing any incoming events until this future</span>
     <span class="doccomment">/// resolves.</span>
-    <span class="kw">fn</span> <span class="ident">wait</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>);
+    <span class="kw">fn</span> <span class="ident">wait</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A::Context</span>);
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ContextFutureSpawner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">T</span>
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">A</span>::<span class="ident">Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
     <span class="ident">T</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
 {
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">spawn</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) {
+    <span class="kw">fn</span> <span class="ident">spawn</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A::Context</span>) {
         <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="self">self</span>);
     }
 
     <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">wait</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>::<span class="ident">Context</span>) {
+    <span class="kw">fn</span> <span class="ident">wait</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A::Context</span>) {
         <span class="ident">ctx</span>.<span class="ident">wait</span>(<span class="self">self</span>);
     }
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-search-js="../../search-index.js"></div>
+</section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-search-index-js="../../search-index.js" data-search-js="../../search.js"></div>
     <script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script></body></html>
