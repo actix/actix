@@ -280,6 +280,16 @@
 <span id="277">277</span>
 <span id="278">278</span>
 <span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
 </pre><pre class="rust">
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">future::Future</span>,
@@ -439,6 +449,16 @@
         <span class="self">Self</span>: <span class="ident">Sized</span>,
     {
         <span class="ident">Timeout::new</span>(<span class="self">self</span>, <span class="ident">timeout</span>)
+    }
+
+    <span class="doccomment">/// Wrap the future in a Box, pinning it.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// A shortcut for wrapping in [`Box::pin`](std::boxed::Box::pin).</span>
+    <span class="kw">fn</span> <span class="ident">boxed_local</span>(<span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">LocalBoxActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="self">Self</span><span class="ident">::Output</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    {
+        <span class="ident">Box::pin</span>(<span class="self">self</span>)
     }
 }
 
