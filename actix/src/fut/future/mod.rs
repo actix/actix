@@ -160,7 +160,7 @@ pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
 
     /// Wrap the future in a Box, pinning it.
     ///
-    /// A shortcut for [`Box::pin`](std::boxed::Box::pin)
+    /// A shortcut for wrapping in [`Box::pin`](std::boxed::Box::pin).
     fn boxed_local(self) -> LocalBoxActorFuture<A, Self::Output>
     where
         Self: Sized + 'static,
