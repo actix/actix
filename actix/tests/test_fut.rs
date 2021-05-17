@@ -98,23 +98,22 @@ impl Handler<TakeWhileMsg> for MyStreamActor2 {
 
     fn handle(&mut self, msg: TakeWhileMsg, _: &mut Context<Self>) -> Self::Result {
         let num = msg.0;
-        Box::pin(
-            futures_util::stream::repeat(num)
-                .into_actor(self)
-                .take_while(move |n, act, ctx| {
-                    ctx.spawn(
-                        async {
-                            actix_rt::task::yield_now().await;
-                        }
-                        .into_actor(act),
-                    );
-                    assert_eq!(*n, num);
-                    assert!(act.counter < 10);
-                    act.counter += 1;
-                    futures_util::future::ready(act.counter < 10)
-                })
-                .finish(),
-        )
+        futures_util::stream::repeat(num)
+            .into_actor(self)
+            .take_while(move |n, act, ctx| {
+                ctx.spawn(
+                    async {
+                        actix_rt::task::yield_now().await;
+                    }
+                    .into_actor(act),
+                );
+                assert_eq!(*n, num);
+                assert!(act.counter < 10);
+                act.counter += 1;
+                futures_util::future::ready(act.counter < 10)
+            })
+            .finish()
+            .boxed_local()
     }
 }
 
@@ -129,26 +128,25 @@ impl Handler<SkipWhileMsg> for MyStreamActor2 {
 
     fn handle(&mut self, msg: SkipWhileMsg, _: &mut Context<Self>) -> Self::Result {
         let num = msg.0;
-        Box::pin(
-            futures_util::stream::repeat(num)
-                .into_actor(self)
-                .take_while(|_, act, _| {
-                    let cond = act.counter < 10;
-                    act.counter += 1;
-                    futures_util::future::ready(cond)
-                })
-                .skip_while(move |n, act, ctx| {
-                    let fut = async {
-                        actix_rt::task::yield_now().await;
-                    }
-                    .into_actor(act);
-                    ctx.spawn(fut);
-                    assert_eq!(*n, num);
-                    act.counter -= 1;
-                    futures_util::future::ready(act.counter > 0)
-                })
-                .finish(),
-        )
+        futures_util::stream::repeat(num)
+            .into_actor(self)
+            .take_while(|_, act, _| {
+                let cond = act.counter < 10;
+                act.counter += 1;
+                futures_util::future::ready(cond)
+            })
+            .skip_while(move |n, act, ctx| {
+                let fut = async {
+                    actix_rt::task::yield_now().await;
+                }
+                .into_actor(act);
+                ctx.spawn(fut);
+                assert_eq!(*n, num);
+                act.counter -= 1;
+                futures_util::future::ready(act.counter > 0)
+            })
+            .finish()
+            .boxed_local()
     }
 }
 
@@ -163,17 +161,16 @@ impl Handler<CollectMsg> for MyStreamActor2 {
 
     fn handle(&mut self, msg: CollectMsg, _: &mut Context<Self>) -> Self::Result {
         let num = msg.0;
-        Box::pin(
-            futures_util::stream::repeat(num)
-                .into_actor(self)
-                .take_while(|_, act, _| {
-                    let cond = act.counter < 5;
-                    act.counter += 1;
-                    futures_util::future::ready(cond)
-                })
-                .map(|_, act, _| act.counter)
-                .collect(),
-        )
+        futures_util::stream::repeat(num)
+            .into_actor(self)
+            .take_while(|_, act, _| {
+                let cond = act.counter < 5;
+                act.counter += 1;
+                futures_util::future::ready(cond)
+            })
+            .map(|_, act, _| act.counter)
+            .collect()
+            .boxed_local()
     }
 }
 
@@ -188,25 +185,24 @@ impl Handler<TryFutureMsg> for MyStreamActor2 {
 
     fn handle(&mut self, msg: TryFutureMsg, _: &mut Context<Self>) -> Self::Result {
         let num = msg.0;
-        Box::pin(
-            async move {
-                assert_eq!(num, 5);
-                Ok::<usize, usize>(num * 2)
-            }
-            .into_actor(self)
-            .map_ok(|res, _, _| {
-                assert_eq!(10usize, res);
-                res as isize
-            })
-            .and_then(|res, _, _| {
-                assert_eq!(10isize, res);
-                fut::err::<isize, usize>(996)
-            })
-            .map_err(|e, _, _| {
-                assert_eq!(996usize, e);
-                e as u32
-            }),
-        )
+        async move {
+            assert_eq!(num, 5);
+            Ok::<usize, usize>(num * 2)
+        }
+        .into_actor(self)
+        .map_ok(|res, _, _| {
+            assert_eq!(10usize, res);
+            res as isize
+        })
+        .and_then(|res, _, _| {
+            assert_eq!(10isize, res);
+            fut::err::<isize, usize>(996)
+        })
+        .map_err(|e, _, _| {
+            assert_eq!(996usize, e);
+            e as u32
+        })
+        .boxed_local()
     }
 }
 
