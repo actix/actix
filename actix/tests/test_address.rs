@@ -148,9 +148,13 @@ impl Actor for WeakRecipientRunner {
 
 #[test]
 fn test_weak_recipient() {
-    System::new().block_on(async move {
+    let sys = System::new();
+
+    sys.block_on(async move {
         WeakRecipientRunner.start();
     });
+
+    sys.run().unwrap();
 }
 
 #[test]
