@@ -72,7 +72,7 @@ impl Actor for RemoteActor {
     type Context = Context<Self>;
 }
 
-/// TcpListenerStream produces io::Result<TcpStream>) so the StreamHandler would
+/// TcpListenerStream produces io::Result<TcpStream> so the StreamHandler would
 /// handle the same type.
 impl StreamHandler<io::Result<TcpStream>> for RemoteActor {
     fn handle(&mut self, res: io::Result<TcpStream>, ctx: &mut Self::Context) {
@@ -86,14 +86,14 @@ impl StreamHandler<io::Result<TcpStream>> for RemoteActor {
                     // For example usage a fix sized buffer is used.
                     let mut buf = [0u8; 1024];
 
-                    // async tcp read/write.
+                    // async tcp read.
                     loop {
                         stream.readable().await?;
 
                         match stream.try_read(&mut buf) {
                             // on success try to deserialize read data to message.
                             Ok(n) => match bincode::deserialize::<Ask>(&buf) {
-                                // deserialzie success. return both stream and message.
+                                // deserialize success. return both stream and message.
                                 Ok(msg) => return Ok::<_, Error>((stream, msg)),
                                 Err(e) if n == 0 => return Err(e.into()),
                                 _ => continue,
@@ -113,7 +113,7 @@ impl StreamHandler<io::Result<TcpStream>> for RemoteActor {
                     // and_then combinator would ask for another actor future that share the same
                     // result type as previous actor future(async/await block).
                     async move {
-                        // Ask message is sent to self but it can be any actors runs on reomte
+                        // Ask message is sent to self but it can be any actors runs on remote
                         // actor's process.
                         let answer = addr.send(ask).await??;
                         // serialize answer.
@@ -140,6 +140,7 @@ impl StreamHandler<io::Result<TcpStream>> for RemoteActor {
                 // It would ask for another output type of future. In this case it's () as
                 // spawned actor future tasks must output () at last.
                 .map(|res, _act, _ctx| {
+                    // At this point this async task is end and tcp connection is closed.
                     if let Err(e) = res {
                         println!("{:?}", e)
                     }
@@ -192,40 +193,39 @@ impl Handler<Ask> for LocalActor {
         // use read or write part of the IO separately and not blocking one another.
         let stream = self.0.clone();
 
-        Box::pin(
-            async move {
-                // serialize ask message.
-                let buf = bincode::serialize(&msg)?;
+        async move {
+            // serialize ask message.
+            let buf = bincode::serialize(&msg)?;
 
-                // async write ask to remote actor.
-                let mut written = 0;
-                let total = buf.len();
-                while written < total {
-                    stream.writable().await?;
-                    match stream.try_write(&buf[written..]) {
-                        Ok(n) => written += n,
-                        Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => continue,
-                        Err(e) => return Err(e.into()),
-                    }
-                }
-
-                // async read until answer message is back.
-                let mut buf = [0u8; 1024];
-                loop {
-                    stream.readable().await?;
-                    match stream.try_read(&mut buf) {
-                        Ok(n) => match bincode::deserialize::<Answer>(&buf) {
-                            Ok(msg) => return Ok(msg),
-                            Err(e) if n == 0 => return Err(e.into()),
-                            Err(_) => continue,
-                        },
-                        Err(e) if e.kind() == io::ErrorKind::WouldBlock => continue,
-                        Err(e) => return Err(e.into()),
-                    }
+            // async write ask to remote actor.
+            let mut written = 0;
+            let total = buf.len();
+            while written < total {
+                stream.writable().await?;
+                match stream.try_write(&buf[written..]) {
+                    Ok(n) => written += n,
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => continue,
+                    Err(e) => return Err(e.into()),
                 }
             }
-            .into_actor(self),
-        )
+
+            // async read until answer message is back.
+            let mut buf = [0u8; 1024];
+            loop {
+                stream.readable().await?;
+                match stream.try_read(&mut buf) {
+                    Ok(n) => match bincode::deserialize::<Answer>(&buf) {
+                        Ok(msg) => return Ok(msg),
+                        Err(e) if n == 0 => return Err(e.into()),
+                        Err(_) => continue,
+                    },
+                    Err(e) if e.kind() == io::ErrorKind::WouldBlock => continue,
+                    Err(e) => return Err(e.into()),
+                }
+            }
+        }
+        .into_actor(self)
+        .boxed_local()
     }
 }
 
