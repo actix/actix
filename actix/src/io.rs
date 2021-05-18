@@ -442,13 +442,13 @@ impl<I: 'static, S: Sink<I> + Unpin + 'static> SinkWrite<I, S> {
     /// Queues an item to be sent to the sink.
     ///
     /// Returns unsent item if sink is closing or closed.
-    pub fn write(&mut self, item: I) -> Option<I> {
+    pub fn write(&mut self, item: I) -> Result<(), I> {
         if self.inner.borrow().closing_flag.is_empty() {
             self.inner.borrow_mut().buffer.push_back(item);
             self.notify_task();
-            None
+            Ok(())
         } else {
-            Some(item)
+            Err(item)
         }
     }
 
