@@ -1007,13 +1007,13 @@
     <span class="doccomment">/// Queues an item to be sent to the sink.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Returns unsent item if sink is closing or closed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">I</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">I</span><span class="op">&gt;</span> {
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow</span>().<span class="ident">closing_flag</span>.<span class="ident">is_empty</span>() {
             <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow_mut</span>().<span class="ident">buffer</span>.<span class="ident">push_back</span>(<span class="ident">item</span>);
             <span class="self">self</span>.<span class="ident">notify_task</span>();
-            <span class="prelude-val">None</span>
+            <span class="prelude-val">Ok</span>(())
         } <span class="kw">else</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">item</span>)
+            <span class="prelude-val">Err</span>(<span class="ident">item</span>)
         }
     }
 
