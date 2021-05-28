@@ -8,10 +8,12 @@
 
 ### Changed
 - Make `Context::new` public. [#491]
+- `SinkWriter::write` returns `Result` instead of `Option`. [#499]
 
 [#419]: https://github.com/actix/actix/pull/419
 [#491]: https://github.com/actix/actix/pull/491
 [#493]: https://github.com/actix/actix/pull/493
+[#499]: https://github.com/actix/actix/pull/499
 
 
 ## 0.11.1 - 2021-03-23
