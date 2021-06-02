@@ -5,6 +5,7 @@
 * Add `fut::try_future::ActorTryFuture`. [#419]
 * Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419]
 * Add `fut::future::ActorFutureExt::boxed_local` [#493] 
+* Implemented `MessageResponse` for `Vec<T>` [#501]
 
 ### Changed
 - Make `Context::new` public. [#491]
@@ -14,6 +15,7 @@
 [#491]: https://github.com/actix/actix/pull/491
 [#493]: https://github.com/actix/actix/pull/493
 [#499]: https://github.com/actix/actix/pull/499
+[#501]: https://github.com/actix/actix/pull/501
 
 
 ## 0.11.1 - 2021-03-23

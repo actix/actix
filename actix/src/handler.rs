@@ -296,6 +296,17 @@ where
     }
 }
 
+impl<A, M, I> MessageResponse<A, M> for Vec<I>
+where
+    A: Actor,
+    M: Message<Result = Self>,
+    I: 'static,
+{
+    fn handle(self, _: &mut A::Context, tx: Option<OneshotSender<Self>>) {
+        tx.send(self)
+    }
+}
+
 impl<A, M, B> MessageResponse<A, M> for Addr<B>
 where
     A: Actor,
