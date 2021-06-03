@@ -1,4 +1,4 @@
-#![cfg(feature = "derive")]
+#![cfg(feature = "macros")]
 
 use std::{
     sync::{

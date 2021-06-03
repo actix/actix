@@ -1,4 +1,4 @@
-#![cfg(feature = "derive")]
+#![cfg(feature = "macros")]
 #![allow(clippy::let_unit_value)]
 
 use std::sync::atomic::{AtomicUsize, Ordering};
