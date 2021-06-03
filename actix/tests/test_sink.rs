@@ -1,4 +1,4 @@
-#![cfg(feature = "derive")]
+#![cfg(feature = "macros")]
 
 use std::pin::Pin;
 use std::task::{Context, Poll};

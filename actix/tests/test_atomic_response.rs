@@ -1,4 +1,4 @@
-#![cfg(feature = "derive")]
+#![cfg(feature = "macros")]
 
 use actix::clock::sleep;
 use actix::prelude::*;
