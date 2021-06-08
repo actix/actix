@@ -1,6 +1,9 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+
+
+## 0.12.0 - 2021-06-06
 ### Added
 * Add `fut::try_future::ActorTryFuture`. [#419]
 * Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419]
