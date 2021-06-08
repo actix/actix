@@ -1,19 +1,17 @@
 [package]
 name = "actix-broker"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2018"
 authors = [
     "Chris Ricketts <chris.ricketts@steribar.com>",
 ]
 description = "Message broker for the Actix actor framework"
-readme = "README.md"
 keywords = ["actix", "message", "broker"]
-repository = "https://github.com/actix/actix-broker"
-documentation = "https://docs.rs/actix-broker"
+repository = "https://github.com/actix/actix"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-actix = "0.11.0"
+actix = ">=0.11.0, <0.13"
 ahash = { version = "0.7", default-features = false }
 log = "0.4"
 
