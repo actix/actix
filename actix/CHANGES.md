@@ -20,6 +20,9 @@
 [#499]: https://github.com/actix/actix/pull/499
 [#501]: https://github.com/actix/actix/pull/501
 
+### Removed
+- Removed `Resolver` actor [#451]
+
 
 ## 0.11.1 - 2021-03-23
 ### Fixed
