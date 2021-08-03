@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["mocker","Mocking utility actor."],["resolver","DNS resolver and connector utility actor"]]});
+initSidebarItems({"mod":[["mocker","Mocking utility actor."]]});
