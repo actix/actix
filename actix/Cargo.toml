@@ -25,9 +25,6 @@ default = ["macros"]
 # Re-exports derive macros from actix-derive and enables `#[actix::main]`.
 macros = ["actix_derive"]
 
-# DNS resolver
-resolver = ["trust-dns-proto", "trust-dns-resolver"]
-
 # Adds assertion to prevent processing too many messages on event loop
 mailbox_assert = []
 
@@ -49,10 +46,6 @@ pin-project-lite = "0.2"
 smallvec = "1.6.1"
 tokio = { version = "1", features = ["io-util", "sync"] }
 tokio-util = { version = "0.6", features = ["codec"] }
-
-# dns resolver
-trust-dns-proto = { version = "0.20.0" , optional = true, default-features = false, features = ["tokio-runtime"] }
-trust-dns-resolver = { version = "0.20.0" , optional = true, default-features = false, features = ["tokio-runtime", "system-config"] }
 
 [dev-dependencies]
 doc-comment = "0.3"
