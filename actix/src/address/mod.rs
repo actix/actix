@@ -179,11 +179,9 @@ impl<A: Actor> Hash for Addr<A> {
     }
 }
 
-impl <A: Actor> fmt::Debug for Addr<A> {
+impl<A: Actor> fmt::Debug for Addr<A> {
     fn fmt(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
-        fmt.debug_struct("Addr")
-            .field("tx",&self.tx)
-            .finish()
+        fmt.debug_struct("Addr").field("tx", &self.tx).finish()
     }
 }
 
@@ -230,7 +228,7 @@ impl<A: Actor> Clone for WeakAddr<A> {
 }
 
 impl<A: Actor> fmt::Debug for WeakAddr<A> {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result{
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("WeakAddr")
             .field("wtx", &self.wtx)
             .finish()
