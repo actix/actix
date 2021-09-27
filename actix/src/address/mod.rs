@@ -1,3 +1,4 @@
+use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
 use std::{error, fmt};
 
@@ -73,7 +74,6 @@ impl<T> fmt::Display for SendError<T> {
 }
 
 /// The address of an actor.
-#[derive(Debug)]
 pub struct Addr<A: Actor> {
     tx: AddressSender<A>,
 }
@@ -179,8 +179,15 @@ impl<A: Actor> Hash for Addr<A> {
     }
 }
 
+impl <A: Actor> fmt::Debug for Addr<A> {
+    fn fmt(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("Addr")
+            .field("tx",&self.tx)
+            .finish()
+    }
+}
+
 /// A weakly referenced counterpart to `Addr<A>`.
-#[derive(Debug)]
 pub struct WeakAddr<A: Actor> {
     wtx: WeakAddressSender<A>,
 }
@@ -219,6 +226,14 @@ impl<A: Actor> Clone for WeakAddr<A> {
         WeakAddr {
             wtx: self.wtx.clone(),
         }
+    }
+}
+
+impl<A: Actor> fmt::Debug for WeakAddr<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result{
+        fmt.debug_struct("WeakAddr")
+            .field("wtx", &self.wtx)
+            .finish()
     }
 }
 
