@@ -1,4 +1,3 @@
-use std::fmt::Formatter;
 use std::hash::{Hash, Hasher};
 use std::{error, fmt};
 
@@ -180,7 +179,7 @@ impl<A: Actor> Hash for Addr<A> {
 }
 
 impl<A: Actor> fmt::Debug for Addr<A> {
-    fn fmt(&self, fmt: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("Addr").field("tx", &self.tx).finish()
     }
 }
