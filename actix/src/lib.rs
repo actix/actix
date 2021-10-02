@@ -17,7 +17,7 @@
 //! - Actor communication in a local/thread context
 //! - Using Futures for asynchronous message handling
 //! - Actor supervision
-//! - Typed messages (No `Any` type). Generic messages are allowed
+//! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
 //! - Runs on stable Rust 1.40+
 //!
 //! ## Package feature
@@ -25,7 +25,12 @@
 
 #![allow(clippy::needless_doctest_main)]
 #![deny(nonstandard_style, rust_2018_idioms)]
-#![warn(deprecated_in_future, trivial_casts, trivial_numeric_casts)]
+#![warn(
+    deprecated_in_future,
+    trivial_casts,
+    trivial_numeric_casts,
+    clippy::doc_markdown
+)]
 // TODO: temporary allow deprecated until resolver actor is removed.
 #![allow(deprecated)]
 

@@ -24,9 +24,9 @@ mod timeout;
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.
 ///
-/// `ActorFuture` is very similar to a regular `Future`, only with subsequent combinator closures accepting the actor and its context, in addition to the result.
+/// [`ActorFuture`] is very similar to a regular [`Future`], only with subsequent combinator closures accepting the actor and its context, in addition to the result.
 ///
-/// `ActorFuture` allows for use cases where future processing requires access to the actor or its context.
+/// [`ActorFuture`] allows for use cases where future processing requires access to the actor or its context.
 ///
 /// Here is an example of a handler on a single actor, deferring work to another actor, and
 /// then updating the initiating actor's state:
@@ -112,7 +112,7 @@ mod timeout;
 ///
 /// ```
 ///
-/// See also [into_actor](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
+/// See also [`into_actor`](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
 pub trait ActorFuture<A: Actor> {
     /// The type of value that this future will resolved with if it is
     /// successful.
@@ -160,7 +160,7 @@ pub trait ActorFutureExt<A: Actor>: ActorFuture<A> {
 
     /// Wrap the future in a Box, pinning it.
     ///
-    /// A shortcut for wrapping in [`Box::pin`](std::boxed::Box::pin).
+    /// A shortcut for wrapping in [`Box::pin`].
     fn boxed_local(self) -> LocalBoxActorFuture<A, Self::Output>
     where
         Self: Sized + 'static,
@@ -176,7 +176,7 @@ where
 {
 }
 
-/// Type alias for a pinned box ActorFuture trait object.
+/// Type alias for a pinned box [`ActorFuture`] trait object.
 pub type LocalBoxActorFuture<A, I> = Pin<Box<dyn ActorFuture<A, Output = I>>>;
 
 impl<F, A> ActorFuture<A> for Box<F>
@@ -214,7 +214,7 @@ where
     }
 }
 
-/// Helper trait that allows conversion of normal future into `ActorFuture`
+/// Helper trait that allows conversion of normal future into [`ActorFuture`]
 pub trait WrapFuture<A>
 where
     A: Actor,
@@ -226,7 +226,7 @@ where
     #[doc(hidden)]
     fn actfuture(self) -> Self::Future;
 
-    /// Convert normal future to a ActorFuture
+    /// Convert normal future to a [`ActorFuture`]
     fn into_actor(self, a: &A) -> Self::Future;
 }
 
@@ -255,11 +255,11 @@ pin_project! {
     }
 }
 
-/// Converts normal future into `ActorFuture`, allowing its processing to
+/// Converts normal future into [`ActorFuture`], allowing its processing to
 /// use the actor's state.
 ///
-/// See the documentation for [ActorFuture](trait.ActorFuture.html) for a practical example involving both
-/// `wrap_future` and `ActorFuture`
+/// See the documentation for [`ActorFuture`] for a practical example involving both
+/// [`wrap_future`] and [`ActorFuture`]
 pub fn wrap_future<F, A>(f: F) -> FutureWrap<F, A>
 where
     F: Future,

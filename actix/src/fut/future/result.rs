@@ -1,4 +1,4 @@
-//! Definition of the `Result` (immediately finished) combinator
+//! Definition of the [`Ready`] (immediately finished) combinator
 
 use std::{
     future::Future,
