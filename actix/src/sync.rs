@@ -4,7 +4,7 @@
 //! This is useful for CPU bound, or concurrent workloads. There can only be
 //! a single Sync Actor type on a `SyncArbiter`. This means you can't have
 //! Actor type A and B, sharing the same thread pool. You need to create two
-//! SyncArbiters and have A and B spawn on unique `SyncArbiter`s respectively.
+//! [`SyncArbiter`]s and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
 use std::future::Future;
 use std::pin::Pin;
@@ -26,9 +26,9 @@ use crate::address::{
 use crate::context::Context;
 use crate::handler::{Handler, Message, MessageResponse};
 
-/// SyncArbiter provides the resources for a single Sync Actor to run on a dedicated
+/// [`SyncArbiter`] provides the resources for a single Sync Actor to run on a dedicated
 /// thread or threads. This is generally used for CPU bound concurrent workloads. It's
-/// important to note, that the SyncArbiter generates a single address for the pool
+/// important to note, that the [`SyncArbiter`] generates a single address for the pool
 /// of hosted Sync Actors. Any message sent to this Address, will be operated on by
 /// a single Sync Actor from the pool.
 ///
@@ -189,9 +189,9 @@ where
 }
 
 /// Sync actor execution context. This is used instead of impl Actor for your Actor
-/// instead of Context, if you intend this actor to run in a SyncArbiter.
+/// instead of Context, if you intend this actor to run in a [`SyncArbiter`].
 ///
-/// Unlike Context, an Actor that uses a SyncContext can not be stopped
+/// Unlike Context, an Actor that uses a [`SyncContext`] can not be stopped
 /// by calling `stop` or `terminate`: Instead, these trigger a restart of
 /// the Actor. Similar, returning `false` from `fn stopping` can not prevent
 /// the restart or termination of the Actor.
@@ -298,14 +298,14 @@ impl<A> ActorContext for SyncContext<A>
 where
     A: Actor<Context = Self>,
 {
-    /// Stop the current Actor. SyncContext will stop the existing Actor, and restart
+    /// Stop the current Actor. [`SyncContext`] will stop the existing Actor, and restart
     /// a new Actor of the same type to replace it.
     fn stop(&mut self) {
         self.stopping = true;
         self.state = ActorState::Stopping;
     }
 
-    /// Terminate the current Actor. SyncContext will terminate the existing Actor, and restart
+    /// Terminate the current Actor. [`SyncContext`] will terminate the existing Actor, and restart
     /// a new Actor of the same type to replace it.
     fn terminate(&mut self) {
         self.stopping = true;
