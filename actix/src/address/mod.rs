@@ -138,7 +138,7 @@ impl<A: Actor> Addr<A> {
         }
     }
 
-    /// Returns the `Recipient` for a specific message type.
+    /// Returns the [`Recipient`] for a specific message type.
     pub fn recipient<M: 'static>(self) -> Recipient<M>
     where
         A: Handler<M>,
@@ -149,7 +149,7 @@ impl<A: Actor> Addr<A> {
         self.into()
     }
 
-    /// Returns a downgraded `WeakAddr`.
+    /// Returns a downgraded [`WeakAddr`].
     pub fn downgrade(&self) -> WeakAddr<A> {
         WeakAddr {
             wtx: self.tx.downgrade(),
@@ -186,7 +186,7 @@ pub struct WeakAddr<A: Actor> {
 }
 
 impl<A: Actor> WeakAddr<A> {
-    /// Attempts to upgrade the `WeakAddr<A>` pointer to an `Addr<A>`.
+    /// Attempts to upgrade the [`WeakAddr<A>`] pointer to an [`Addr<A>`].
     ///
     /// Returns `None` if the actor has since been dropped or the
     /// underlying address is disconnected.
@@ -222,7 +222,7 @@ impl<A: Actor> Clone for WeakAddr<A> {
     }
 }
 
-/// The `Recipient` type allows to send one specific message to an
+/// The [`Recipient`] type allows to send one specific message to an
 /// actor.
 ///
 /// You can get a recipient using the `Addr::recipient()` method. It

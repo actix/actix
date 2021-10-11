@@ -562,10 +562,7 @@ impl<A: Actor> WeakAddressSender<A> {
     ///
     /// Returns [`None`] if the actor has since been dropped.
     pub fn upgrade(&self) -> Option<AddressSender<A>> {
-        match Weak::upgrade(&self.inner) {
-            Some(inner) => Some(AddressSenderProducer { inner }.sender()),
-            None => None,
-        }
+        Weak::upgrade(&self.inner).map(|inner| AddressSenderProducer { inner }.sender())
     }
 }
 
@@ -577,7 +574,7 @@ where
     M: Message + Send + 'static,
 {
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>> {
-        if let Some(inner) = WeakAddressSender::upgrade(&self) {
+        if let Some(inner) = WeakAddressSender::upgrade(self) {
             Some(Box::new(inner))
         } else {
             None

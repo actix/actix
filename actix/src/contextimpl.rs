@@ -65,7 +65,7 @@ where
     A::Context: AsyncContext<A>,
 {
     #[inline]
-    /// Create new ContextParts instance
+    /// Create new [`ContextParts`] instance
     pub fn new(addr: AddressSenderProducer<A>) -> Self {
         ContextParts {
             addr,

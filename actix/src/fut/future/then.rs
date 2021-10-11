@@ -8,7 +8,7 @@ use crate::actor::Actor;
 use crate::fut::ActorFuture;
 
 pin_project! {
-    /// Future for the `then` combinator, chaining computations on the end of
+    /// Future for the [`then`](super::ActorFutureExt::then) combinator, chaining computations on the end of
     /// another future regardless of its outcome.
     ///
     /// This is created by the `ActorFuture::then` method.
