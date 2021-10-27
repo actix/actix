@@ -180,7 +180,7 @@ where
     #[doc(hidden)]
     fn actstream(self) -> Self::Stream;
 
-    /// Convert normal stream to a ActorStream
+    /// Convert normal stream to a [`ActorStream`]
     fn into_actor(self, a: &A) -> Self::Stream;
 }
 
