@@ -10,10 +10,10 @@ use crate::clock::{sleep, Sleep};
 use crate::fut::ActorFuture;
 
 pin_project! {
-    /// Future for the `timeout` combinator, interrupts computations if it takes
-    /// more than `timeout`.
+    /// Future for the [`timeout`](super::ActorFutureExt::timeout) combinator, interrupts computations if it takes
+    /// more than [`timeout`](super::ActorFutureExt::timeout).
     ///
-    /// This is created by the `ActorFuture::timeout()` method.
+    /// This is created by the [`timeout`](super::ActorFutureExt::timeout) method.
     #[derive(Debug)]
     #[must_use = "futures do nothing unless polled"]
     pub struct Timeout<F>{

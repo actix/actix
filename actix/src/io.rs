@@ -298,7 +298,7 @@ where
     }
 }
 
-/// A wrapper for the `AsyncWrite` and `Encoder` types. The AsyncWrite will be flushed when this
+/// A wrapper for the `AsyncWrite` and `Encoder` types. The [`AsyncWrite`] will be flushed when this
 /// struct is dropped.
 pub struct FramedWrite<I, T: AsyncWrite + Unpin, U: Encoder<I>> {
     enc: U,

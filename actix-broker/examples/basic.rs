@@ -1,5 +1,6 @@
 use actix::prelude::*;
 use actix_broker::{BrokerIssue, BrokerSubscribe, SystemBroker};
+use std::time::Duration;
 
 struct ActorOne;
 struct ActorTwo;
@@ -11,8 +12,13 @@ impl Actor for ActorOne {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        println!("ActorOne started");
         self.subscribe_sync::<BrokerType, MessageTwo>(ctx);
         self.issue_async::<BrokerType, _>(MessageOne("hello".to_string()));
+        let _ = ctx.run_later(Duration::from_millis(50), |_, _| {
+            System::current().stop();
+            println!("Bye!");
+        });
     }
 }
 
@@ -28,7 +34,8 @@ impl Actor for ActorTwo {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.subscribe_async::<BrokerType, MessageOne>(ctx);
+        println!("ActorTwo started");
+        self.subscribe_sync::<BrokerType, MessageOne>(ctx);
     }
 }
 
@@ -45,6 +52,7 @@ impl Actor for ActorThree {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        println!("Actor 3 started");
         self.subscribe_async::<BrokerType, MessageOne>(ctx);
     }
 }
@@ -67,9 +75,14 @@ struct MessageOne(String);
 struct MessageTwo(u8);
 
 fn main() {
-    let _ = System::new().block_on(async {
+    println!("Starting");
+    let sys = System::new();
+
+    sys.block_on(async {
         ActorTwo.start();
         ActorThree.start();
         ActorOne.start();
     });
+    sys.run().unwrap();
+    println!("Done");
 }
