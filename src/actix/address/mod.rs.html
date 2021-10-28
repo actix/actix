@@ -467,6 +467,16 @@
 <span id="467">467</span>
 <span id="468">468</span>
 <span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error</span>, <span class="ident">fmt</span>};
 
@@ -542,7 +552,6 @@
 }
 
 <span class="doccomment">/// The address of an actor.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
     <span class="ident">tx</span>: <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 }
@@ -648,8 +657,13 @@
     }
 }
 
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+        <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Addr&quot;</span>).<span class="ident">field</span>(<span class="string">&quot;tx&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">tx</span>).<span class="ident">finish</span>()
+    }
+}
+
 <span class="doccomment">/// A weakly referenced counterpart to `Addr&lt;A&gt;`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
     <span class="ident">wtx</span>: <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
 }
@@ -691,12 +705,18 @@
     }
 }
 
-<span class="doccomment">/// The [`Recipient`] type allows to send one specific message to an</span>
-<span class="doccomment">/// actor.</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
+        <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;WeakAddr&quot;</span>)
+            .<span class="ident">field</span>(<span class="string">&quot;wtx&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">wtx</span>)
+            .<span class="ident">finish</span>()
+    }
+}
+
+<span class="doccomment">/// The [`Recipient`] type allows to send one specific message to an actor.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// You can get a recipient using the `Addr::recipient()` method. It</span>
-<span class="doccomment">/// is possible to use the `Clone::clone()` method to get a cloned</span>
-<span class="doccomment">/// recipient.</span>
+<span class="doccomment">/// You can get a recipient using the `Addr::recipient()` method. It is possible</span>
+<span class="doccomment">/// to use the `Clone::clone()` method to get a cloned recipient.</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
