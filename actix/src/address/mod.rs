@@ -73,7 +73,6 @@ impl<T> fmt::Display for SendError<T> {
 }
 
 /// The address of an actor.
-#[derive(Debug)]
 pub struct Addr<A: Actor> {
     tx: AddressSender<A>,
 }
@@ -179,8 +178,13 @@ impl<A: Actor> Hash for Addr<A> {
     }
 }
 
+impl<A: Actor> fmt::Debug for Addr<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("Addr").field("tx", &self.tx).finish()
+    }
+}
+
 /// A weakly referenced counterpart to `Addr<A>`.
-#[derive(Debug)]
 pub struct WeakAddr<A: Actor> {
     wtx: WeakAddressSender<A>,
 }
@@ -222,12 +226,18 @@ impl<A: Actor> Clone for WeakAddr<A> {
     }
 }
 
-/// The [`Recipient`] type allows to send one specific message to an
-/// actor.
+impl<A: Actor> fmt::Debug for WeakAddr<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("WeakAddr")
+            .field("wtx", &self.wtx)
+            .finish()
+    }
+}
+
+/// The [`Recipient`] type allows to send one specific message to an actor.
 ///
-/// You can get a recipient using the `Addr::recipient()` method. It
-/// is possible to use the `Clone::clone()` method to get a cloned
-/// recipient.
+/// You can get a recipient using the `Addr::recipient()` method. It is possible
+/// to use the `Clone::clone()` method to get a cloned recipient.
 pub struct Recipient<M: Message>
 where
     M: Message + Send,
