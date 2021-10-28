@@ -112,7 +112,7 @@
     <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>,
 {
     <span class="doccomment">/// Asynchronously subscribe to a message.</span>
-    <span class="kw">fn</span> <span class="ident">subscribe_async</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">RegisteredBroker</span>, <span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
+    <span class="kw">fn</span> <span class="ident">subscribe_async</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">RegisteredBroker</span>, <span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">M</span><span class="op">&gt;</span>,
@@ -126,7 +126,7 @@
     <span class="doccomment">/// This actor will do nothing else until its interest is registered.</span>
     <span class="doccomment">/// If messages of that type have been sent to the broker previously, a copy of the latest</span>
     <span class="doccomment">/// message is sent to the calling actor after it has subscribed.</span>
-    <span class="kw">fn</span> <span class="ident">subscribe_sync</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">RegisteredBroker</span>, <span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
+    <span class="kw">fn</span> <span class="ident">subscribe_sync</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">RegisteredBroker</span>, <span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">M</span><span class="op">&gt;</span>,
@@ -147,7 +147,7 @@
 
     <span class="doccomment">/// Helper to asynchronously subscribe to a system broker</span>
     <span class="doccomment">/// This is the equivalent of `self.subscribe_async::&lt;SystemBroker, M&gt;(ctx);`</span>
-    <span class="kw">fn</span> <span class="ident">subscribe_system_async</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
+    <span class="kw">fn</span> <span class="ident">subscribe_system_async</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">M</span><span class="op">&gt;</span>,
@@ -157,7 +157,7 @@
 
     <span class="doccomment">/// Helper to synchronously subscribe to a system broker</span>
     <span class="doccomment">/// This is the equivalent of `self.subscribe_sync::&lt;SystemBroker, M&gt;(ctx);</span>
-    <span class="kw">fn</span> <span class="ident">subscribe_system_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
+    <span class="kw">fn</span> <span class="ident">subscribe_system_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">M</span><span class="op">&gt;</span>,
@@ -167,7 +167,7 @@
 
     <span class="doccomment">/// Helper to asynchronously subscribe to an arbiter-specific broker</span>
     <span class="doccomment">/// This is the equivalent of `self.subscribe_async::&lt;ArbiterBroker, M&gt;(ctx);`</span>
-    <span class="kw">fn</span> <span class="ident">subscribe_arbiter_async</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
+    <span class="kw">fn</span> <span class="ident">subscribe_arbiter_async</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">M</span><span class="op">&gt;</span>,
@@ -177,7 +177,7 @@
 
     <span class="doccomment">/// Helper to synchronously subscribe to an arbiter-specific broker</span>
     <span class="doccomment">/// This is the equivalent of `self.subscribe_sync::&lt;ArbiterBroker, M&gt;(ctx);</span>
-    <span class="kw">fn</span> <span class="ident">subscribe_arbiter_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
+    <span class="kw">fn</span> <span class="ident">subscribe_arbiter_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>)
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">M</span><span class="op">&gt;</span>,

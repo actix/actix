@@ -559,7 +559,7 @@
     <span class="kw">type</span> <span class="ident">Context</span>: <span class="ident">ActorContext</span>;
 
     <span class="doccomment">/// Called when an actor gets polled the first time.</span>
-    <span class="kw">fn</span> <span class="ident">started</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {}
+    <span class="kw">fn</span> <span class="ident">started</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {}
 
     <span class="doccomment">/// Called after an actor is in `Actor::Stopping` state.</span>
     <span class="doccomment">///</span>
@@ -571,7 +571,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// An actor can return from the stopping state to the running</span>
     <span class="doccomment">/// state by returning `Running::Continue`.</span>
-    <span class="kw">fn</span> <span class="ident">stopping</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) -&gt; <span class="ident">Running</span> {
+    <span class="kw">fn</span> <span class="ident">stopping</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) -&gt; <span class="ident">Running</span> {
         <span class="ident">Running::Stop</span>
     }
 
@@ -580,7 +580,7 @@
     <span class="doccomment">/// This method can be used to perform any needed cleanup work or</span>
     <span class="doccomment">/// to spawn more actors. This is the final state, after this</span>
     <span class="doccomment">/// method got called, the actor will be dropped.</span>
-    <span class="kw">fn</span> <span class="ident">stopped</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {}
+    <span class="kw">fn</span> <span class="ident">stopped</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {}
 
     <span class="doccomment">/// Start a new asynchronous actor, returning its address.</span>
     <span class="doccomment">///</span>
@@ -625,14 +625,14 @@
     <span class="kw">fn</span> <span class="ident">start_in_arbiter</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">wrk</span>: <span class="kw-2">&amp;</span><span class="ident">ArbiterHandle</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
     {
         <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">channel::channel</span>(<span class="ident">DEFAULT_CAPACITY</span>);
 
         <span class="comment">// create actor</span>
         <span class="ident">wrk</span>.<span class="ident">spawn_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
             <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">Context::with_receiver</span>(<span class="ident">rx</span>);
-            <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ctx</span>);
+            <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>);
             <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">into_future</span>(<span class="ident">act</span>);
 
             <span class="ident">actix_rt::spawn</span>(<span class="ident">fut</span>);
@@ -669,10 +669,10 @@
     <span class="kw">fn</span> <span class="ident">create</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="self">Self</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span>,
     {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">Context::new</span>();
-        <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">ctx</span>);
+        <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>);
         <span class="ident">ctx</span>.<span class="ident">run</span>(<span class="ident">act</span>)
     }
 }
@@ -693,7 +693,7 @@
 <span class="doccomment">/// `Context` object.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Supervised</span>: <span class="ident">Actor</span> {
     <span class="doccomment">/// Called when the supervisor restarts a failed actor.</span>
-    <span class="kw">fn</span> <span class="ident">restarting</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>) {}
+    <span class="kw">fn</span> <span class="ident">restarting</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>) {}
 }
 
 <span class="doccomment">/// Actor execution state</span>
@@ -738,12 +738,12 @@
     <span class="doccomment">/// Immediately stop processing incoming messages and switch to a</span>
     <span class="doccomment">/// `stopping` state. This only affects actors that are currently</span>
     <span class="doccomment">/// `running`. Future attempts to queue messages will fail.</span>
-    <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>);
+    <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>);
 
     <span class="doccomment">/// Terminate actor execution unconditionally. This sets the actor</span>
     <span class="doccomment">/// into the `stopped` state. This causes future attempts to queue</span>
     <span class="doccomment">/// messages to fail.</span>
-    <span class="kw">fn</span> <span class="ident">terminate</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>);
+    <span class="kw">fn</span> <span class="ident">terminate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>);
 
     <span class="doccomment">/// Retrieve the current Actor execution state.</span>
     <span class="kw">fn</span> <span class="ident">state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ActorState</span>;
@@ -764,7 +764,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// All futures spawned into an actor&#39;s context are cancelled</span>
     <span class="doccomment">/// during the actor&#39;s stopping stage.</span>
-    <span class="kw">fn</span> <span class="ident">spawn</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
+    <span class="kw">fn</span> <span class="ident">spawn</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
     <span class="kw">where</span>
         <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>;
 
@@ -772,7 +772,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// This stops processing any incoming events until the future</span>
     <span class="doccomment">/// resolves.</span>
-    <span class="kw">fn</span> <span class="ident">wait</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>)
+    <span class="kw">fn</span> <span class="ident">wait</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>)
     <span class="kw">where</span>
         <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>;
 
@@ -782,7 +782,7 @@
     <span class="doccomment">/// Cancels a spawned future.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// The `handle` is a value returned by the `spawn` method.</span>
-    <span class="kw">fn</span> <span class="ident">cancel_future</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">SpawnHandle</span>) -&gt; <span class="ident">bool</span>;
+    <span class="kw">fn</span> <span class="ident">cancel_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">SpawnHandle</span>) -&gt; <span class="ident">bool</span>;
 
     <span class="doccomment">/// Registers a stream with the context.</span>
     <span class="doccomment">///</span>
@@ -827,7 +827,7 @@
     <span class="doccomment">///     sys.run();</span>
     <span class="doccomment">///  }</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">add_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">S</span>) -&gt; <span class="ident">SpawnHandle</span>
+    <span class="kw">fn</span> <span class="ident">add_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">S</span>) -&gt; <span class="ident">SpawnHandle</span>
     <span class="kw">where</span>
         <span class="ident">S</span>: <span class="ident">Stream</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
         <span class="ident">A</span>: <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span>,
@@ -874,7 +874,7 @@
     <span class="doccomment">///    });</span>
     <span class="doccomment">/// }</span>
     <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">add_message_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">S</span>)
+    <span class="kw">fn</span> <span class="ident">add_message_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">S</span>)
     <span class="kw">where</span>
         <span class="ident">S</span>: <span class="ident">Stream</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
         <span class="ident">S::Item</span>: <span class="ident">Message</span>,
@@ -890,7 +890,7 @@
     <span class="doccomment">/// Sends the message `msg` to self. This bypasses the mailbox capacity, and</span>
     <span class="doccomment">/// will always queue the message. If the actor is in the `stopped` state, an</span>
     <span class="doccomment">/// error will be raised.</span>
-    <span class="kw">fn</span> <span class="ident">notify</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>)
+    <span class="kw">fn</span> <span class="ident">notify</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>)
     <span class="kw">where</span>
         <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
@@ -909,7 +909,7 @@
     <span class="doccomment">/// called. This bypasses the mailbox capacity, and</span>
     <span class="doccomment">/// will always queue the message. If the actor is in the `stopped` state, an</span>
     <span class="doccomment">/// error will be raised.</span>
-    <span class="kw">fn</span> <span class="ident">notify_later</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">after</span>: <span class="ident">Duration</span>) -&gt; <span class="ident">SpawnHandle</span>
+    <span class="kw">fn</span> <span class="ident">notify_later</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">after</span>: <span class="ident">Duration</span>) -&gt; <span class="ident">SpawnHandle</span>
     <span class="kw">where</span>
         <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
         <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
@@ -927,18 +927,18 @@
     <span class="doccomment">/// The closure gets passed the same actor and its</span>
     <span class="doccomment">/// context. Execution gets cancelled if the context&#39;s stop method</span>
     <span class="doccomment">/// gets called.</span>
-    <span class="kw">fn</span> <span class="ident">run_later</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dur</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
+    <span class="kw">fn</span> <span class="ident">run_later</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">dur</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A::Context</span>) <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) <span class="op">+</span> <span class="lifetime">&#39;static</span>,
     {
         <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">TimerFunc::new</span>(<span class="ident">dur</span>, <span class="ident">f</span>))
     }
 
     <span class="doccomment">/// Spawns a job to execute the given closure periodically, at a</span>
     <span class="doccomment">/// specified fixed interval.</span>
-    <span class="kw">fn</span> <span class="ident">run_interval</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">dur</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
+    <span class="kw">fn</span> <span class="ident">run_interval</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">dur</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">A::Context</span>) <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) <span class="op">+</span> <span class="lifetime">&#39;static</span>,
     {
         <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">IntervalFunc::new</span>(<span class="ident">dur</span>, <span class="ident">f</span>).<span class="ident">finish</span>())
     }

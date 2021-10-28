@@ -86,7 +86,7 @@
     <span class="doccomment">/// Synchronously issue a message.</span>
     <span class="doccomment">/// This also causes the broker to synchronously forward those messages on to any subscribers</span>
     <span class="doccomment">/// before handling any other messages.</span>
-    <span class="kw">fn</span> <span class="ident">issue_sync</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">RegisteredBroker</span>, <span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
+    <span class="kw">fn</span> <span class="ident">issue_sync</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">RegisteredBroker</span>, <span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
         <span class="kw">let</span> <span class="ident">broker</span> <span class="op">=</span> <span class="ident">T::get_broker</span>();
         <span class="ident">broker</span>
             .<span class="ident">send</span>(<span class="ident">IssueSync</span>(<span class="ident">msg</span>, <span class="ident">TypeId::of</span>::<span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>()))
@@ -103,7 +103,7 @@
 
     <span class="doccomment">/// Helper to synchronously issue to an system broker</span>
     <span class="doccomment">/// This is the equivalent of `self.issue_sync::&lt;SystemBroker, M&gt;(ctx);`</span>
-    <span class="kw">fn</span> <span class="ident">issue_system_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
+    <span class="kw">fn</span> <span class="ident">issue_system_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
         <span class="self">self</span>.<span class="ident">issue_sync</span>::<span class="op">&lt;</span><span class="ident">SystemBroker</span>, <span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">msg</span>, <span class="ident">ctx</span>);
     }
 
@@ -115,7 +115,7 @@
 
     <span class="doccomment">/// Helper to synchronously issue to an arbiter-specific broker</span>
     <span class="doccomment">/// This is the equivalent of `self.issue_sync::&lt;ArbiterBroker, M&gt;(ctx);`</span>
-    <span class="kw">fn</span> <span class="ident">issue_arbiter_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
+    <span class="kw">fn</span> <span class="ident">issue_arbiter_sync</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">BrokerMsg</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
         <span class="self">self</span>.<span class="ident">issue_sync</span>::<span class="op">&lt;</span><span class="ident">ArbiterBroker</span>, <span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">msg</span>, <span class="ident">ctx</span>);
     }
 }

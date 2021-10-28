@@ -120,16 +120,16 @@
 <span class="kw">where</span>
     <span class="ident">A</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
     <span class="ident">B</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
-    <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident">A::Output</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>, <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act::Context</span>) -&gt; <span class="ident">B</span>,
+    <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident">A::Output</span>, <span class="kw-2">&amp;mut</span> <span class="ident">Act</span>, <span class="kw-2">&amp;mut</span> <span class="ident">Act::Context</span>) -&gt; <span class="ident">B</span>,
     <span class="ident">Act</span>: <span class="ident">Actor</span>,
 {
     <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">B::Output</span>;
 
     <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">Act::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
+        <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
+        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Act</span>,
+        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Act::Context</span>,
+        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
     ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident">B::Output</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">as_mut</span>().<span class="ident">project</span>() {
             <span class="ident">ThenProj::First</span> { <span class="ident">fut1</span>, <span class="ident">data</span> } =&gt; {
