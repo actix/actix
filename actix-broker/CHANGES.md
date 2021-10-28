@@ -1,7 +1,6 @@
 # Changes
 
 ## Unreleased - 2021-xx-xx
-* Fix `basic` example
 
 ## 0.4.1 - 2021-06-06
 * Add support for actix v0.12 (in addition to v0.11).
