@@ -500,9 +500,9 @@ where
     }
 
     fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
-       Box::new(WeakAddressSender {
-           inner:Arc::downgrade(&self.inner)
-       } )
+        Box::new(WeakAddressSender {
+            inner: Arc::downgrade(&self.inner),
+        })
     }
 }
 

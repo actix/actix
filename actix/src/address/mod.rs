@@ -294,7 +294,7 @@ where
     /// Returns a downgraded `WeakRecipient`
     pub fn downgrade(&self) -> WeakRecipient<M> {
         WeakRecipient {
-            wtx : self.tx.downgrade()
+            wtx: self.tx.downgrade(),
         }
     }
 }
