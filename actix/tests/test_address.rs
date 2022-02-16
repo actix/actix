@@ -1,7 +1,7 @@
-use std::{collections::HashSet, time::Duration};
 use std::mem::drop;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::{collections::HashSet, time::Duration};
 
 use actix_rt::time::sleep;
 
@@ -16,7 +16,6 @@ impl Message for Ping {
 
 struct MyActor(Arc<AtomicUsize>);
 
-
 impl Actor for MyActor {
     type Context = actix::Context<Self>;
 }
@@ -28,7 +27,6 @@ impl actix::Handler<Ping> for MyActor {
         self.0.fetch_add(1, Ordering::Relaxed);
     }
 }
-
 
 #[derive(Debug)]
 struct MyActor3;
@@ -75,7 +73,6 @@ impl actix::Handler<Ping> for PingCounterActor {
         self.ping_count.fetch_add(1, Ordering::SeqCst);
     }
 }
-
 
 impl actix::Handler<CountPings> for PingCounterActor {
     type Result = <CountPings as actix::Message>::Result;
@@ -209,10 +206,23 @@ fn test_weak_recipient_can_be_cloned() {
         let weak_recipient = addr.downgrade().recipient();
         let weak_recipient_clone = weak_recipient.clone();
 
-        weak_recipient.upgrade().expect("must be able to upgrade the weak recipient here").send(Ping(0)).await.expect("send must not fail");
-        weak_recipient_clone.upgrade().expect("must be able to upgrade the cloned weak recipient here").send(Ping(0)).await.expect("send must not fail");
+        weak_recipient
+            .upgrade()
+            .expect("must be able to upgrade the weak recipient here")
+            .send(Ping(0))
+            .await
+            .expect("send must not fail");
+        weak_recipient_clone
+            .upgrade()
+            .expect("must be able to upgrade the cloned weak recipient here")
+            .send(Ping(0))
+            .await
+            .expect("send must not fail");
         let pings = addr.send(CountPings {}).await.expect("send must not fail");
-        assert_eq!(pings, 2, "both the weak recipient and its clone must have sent a ping");
+        assert_eq!(
+            pings, 2,
+            "both the weak recipient and its clone must have sent a ping"
+        );
     })
 }
 
