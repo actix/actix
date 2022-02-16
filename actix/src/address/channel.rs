@@ -43,7 +43,8 @@ where
 
     fn connected(&self) -> bool;
 
-    fn downgrade(&self) -> Box<dyn WeakSender<M>>;
+    /// Returns a downgraded sender, where the sender is downgraded into its weak counterpart
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static>;
 }
 
 impl<S, M> Sender<M> for Box<S>
@@ -76,7 +77,7 @@ where
         (**self).connected()
     }
 
-    fn downgrade(&self) -> Box<dyn WeakSender<M>> {
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
         (**self).downgrade()
     }
 }
@@ -498,7 +499,7 @@ where
         self.connected()
     }
 
-    fn downgrade(&self) -> Box<dyn WeakSender<M>> {
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
        Box::new(WeakAddressSender {
            inner:Arc::downgrade(&self.inner)
        } )
