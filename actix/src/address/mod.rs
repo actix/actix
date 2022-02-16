@@ -390,6 +390,14 @@ where
     }
 }
 
+impl<M> From<Recipient<M>> for WeakRecipient<M>
+where M: Message + Send,
+M::Result : Send {
+    fn from(recipient: Recipient<M>) -> Self {
+        recipient.downgrade()
+    }
+}
+
 impl<M> WeakRecipient<M>
 where
     M: Message + Send,

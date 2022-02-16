@@ -234,9 +234,18 @@ fn test_recipient_can_be_downgraded() {
     sys.block_on(async move {
         let addr = PingCounterActor::start_default();
         let strong_recipient: Recipient<Ping> = addr.clone().recipient();
+        // test the downgrade method
         let weak_recipient: WeakRecipient<Ping> = strong_recipient.downgrade();
-
+        // test the From trait
+        let converted_weak_recipient  = WeakRecipient::from(strong_recipient);
         weak_recipient
+            .upgrade()
+            .expect("upgrade of weak recipient must not fail here")
+            .send(Ping(0))
+            .await
+            .unwrap();
+
+              converted_weak_recipient
             .upgrade()
             .expect("upgrade of weak recipient must not fail here")
             .send(Ping(0))
@@ -244,8 +253,8 @@ fn test_recipient_can_be_downgraded() {
             .unwrap();
         let ping_count = addr.send(CountPings {}).await.unwrap();
         assert_eq!(
-            ping_count, 1,
-            "weak recipient must not fail to send a message"
+            ping_count, 2,
+            "weak recipients must not fail to send a message"
         );
     })
 }
