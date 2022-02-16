@@ -4,7 +4,9 @@
 ### Removed
 - Removed `Resolver` actor [#451]
 - Implement `Clone` for `WeakRecipient` [#518]
-- 
+- Extend Sender trait by a downgrade function [#518]
+- Make `WeakSender` trait public rather than crate-public [#518]
+- Add `downgrade` functionality to `Recipient` to obtain a `WeakRecipient` [#518]
 
 ## 0.12.0 - 2021-06-06
 ### Added
