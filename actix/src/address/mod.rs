@@ -371,6 +371,16 @@ where
     }
 }
 
+impl<M> Clone for WeakRecipient<M>
+where M: Message + Send,
+M::Result: Send {
+    fn clone(&self) -> Self {
+        Self {
+            wtx : self.wtx.boxed()
+        }
+    }
+}
+
 impl<M> WeakRecipient<M>
 where
     M: Message + Send,
