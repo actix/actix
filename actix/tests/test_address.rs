@@ -237,7 +237,7 @@ fn test_recipient_can_be_downgraded() {
         // test the downgrade method
         let weak_recipient: WeakRecipient<Ping> = strong_recipient.downgrade();
         // test the From trait
-        let converted_weak_recipient  = WeakRecipient::from(strong_recipient);
+        let converted_weak_recipient = WeakRecipient::from(strong_recipient);
         weak_recipient
             .upgrade()
             .expect("upgrade of weak recipient must not fail here")
@@ -245,7 +245,7 @@ fn test_recipient_can_be_downgraded() {
             .await
             .unwrap();
 
-              converted_weak_recipient
+        converted_weak_recipient
             .upgrade()
             .expect("upgrade of weak recipient must not fail here")
             .send(Ping(0))
