@@ -6,6 +6,7 @@ use std::{collections::HashSet, time::Duration};
 use actix_rt::time::sleep;
 
 use actix::prelude::*;
+use actix::WeakRecipient;
 
 #[derive(Debug)]
 struct Ping(usize);
@@ -224,6 +225,23 @@ fn test_weak_recipient_can_be_cloned() {
             "both the weak recipient and its clone must have sent a ping"
         );
     })
+}
+
+#[test]
+fn test_recipient_can_be_downgraded() {
+    let sys = System::new();
+
+    sys.block_on(
+        async move {
+            let addr = PingCounterActor::start_default();
+            let strong_recipient : Recipient<Ping> = addr.clone().recipient();
+            let weak_recipient : WeakRecipient<Ping> = strong_recipient.downgrade();
+
+            weak_recipient.upgrade().expect("upgrade of weak recipient must not fail here").send(Ping(0)).await.unwrap();
+            let ping_count = addr.send(CountPings{}).await.unwrap();
+            assert_eq!(ping_count,1, "weak recipient must not fail to send a message");
+        }
+    )
 }
 
 #[test]
