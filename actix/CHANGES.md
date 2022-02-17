@@ -1,8 +1,12 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Changed
+- Updated minimum supported Rust version to 1.49.
+
 ### Removed
 - Removed `Resolver` actor [#451]
+
 
 ## 0.12.0 - 2021-06-06
 ### Added
@@ -20,6 +24,7 @@
 [#493]: https://github.com/actix/actix/pull/493
 [#499]: https://github.com/actix/actix/pull/499
 [#501]: https://github.com/actix/actix/pull/501
+
 
 ## 0.11.1 - 2021-03-23
 ### Fixed

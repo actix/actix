@@ -7,7 +7,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/actix?label=latest)](https://crates.io/crates/actix)
 [![Documentation](https://docs.rs/actix/badge.svg?version=0.12.0)](https://docs.rs/actix/0.12.0)
-[![Version](https://img.shields.io/badge/rustc-1.46+-ab6000.svg)](https://blog.rust-lang.org/2019/12/19/Rust-1.46.0.html)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.49+-ab6000.svg)
 ![License](https://img.shields.io/crates/l/actix.svg)
 [![Dependency Status](https://deps.rs/crate/actix/0.12.0/status.svg)](https://deps.rs/crate/actix/0.12.0)
 <br />
@@ -32,7 +32,7 @@
 - Uses [futures](https://crates.io/crates/futures) for asynchronous message handling
 - Actor supervision
 - Typed messages (No `Any` type)
-- Runs on stable Rust 1.46+
+- Runs on stable Rust 1.49+
 
 ## Usage
 
