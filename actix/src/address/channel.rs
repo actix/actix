@@ -42,6 +42,9 @@ where
     fn hash(&self) -> usize;
 
     fn connected(&self) -> bool;
+
+    /// Returns a downgraded sender, where the sender is downgraded into its weak counterpart
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static>;
 }
 
 impl<S, M> Sender<M> for Box<S>
@@ -73,9 +76,13 @@ where
     fn connected(&self) -> bool {
         (**self).connected()
     }
+
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
+        (**self).downgrade()
+    }
 }
 
-pub(crate) trait WeakSender<M>: Send
+pub trait WeakSender<M>: Send
 where
     M::Result: Send,
     M: Message + Send,
@@ -490,6 +497,12 @@ where
 
     fn connected(&self) -> bool {
         self.connected()
+    }
+
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
+        Box::new(WeakAddressSender {
+            inner: Arc::downgrade(&self.inner),
+        })
     }
 }
 
