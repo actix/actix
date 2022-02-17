@@ -945,6 +945,19 @@
 <span id="940">940</span>
 <span id="941">941</span>
 <span id="942">942</span>
+<span id="943">943</span>
+<span id="944">944</span>
+<span id="945">945</span>
+<span id="946">946</span>
+<span id="947">947</span>
+<span id="948">948</span>
+<span id="949">949</span>
+<span id="950">950</span>
+<span id="951">951</span>
+<span id="952">952</span>
+<span id="953">953</span>
+<span id="954">954</span>
+<span id="955">955</span>
 </pre><pre class="rust"><code><span class="doccomment">//! This is copy of [sync/mpsc/](https://github.com/rust-lang/futures-rs)</span>
 
 <span class="kw">use</span> <span class="ident">std</span>::{
@@ -989,6 +1002,9 @@
     <span class="kw">fn</span> <span class="ident">hash</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span>;
 
     <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span>;
+
+    <span class="doccomment">/// Returns a downgraded sender, where the sender is downgraded into its weak counterpart</span>
+    <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span>;
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
@@ -1020,9 +1036,13 @@
     <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">connected</span>()
     }
+
+    <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> {
+        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">downgrade</span>()
+    }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>: <span class="ident">Send</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>: <span class="ident">Send</span>
 <span class="kw">where</span>
     <span class="ident">M::Result</span>: <span class="ident">Send</span>,
     <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
@@ -1437,6 +1457,12 @@
 
     <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">connected</span>()
+    }
+
+    <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> {
+        <span class="ident">Box::new</span>(<span class="ident">WeakAddressSender</span> {
+            <span class="ident">inner</span>: <span class="ident">Arc::downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>),
+        })
     }
 }
 
