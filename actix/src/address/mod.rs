@@ -290,6 +290,13 @@ where
     pub fn connected(&self) -> bool {
         self.tx.connected()
     }
+
+    /// Returns a downgraded `WeakRecipient`
+    pub fn downgrade(&self) -> WeakRecipient<M> {
+        WeakRecipient {
+            wtx: self.tx.downgrade(),
+        }
+    }
 }
 
 impl<A: Actor, M: Message + Send + 'static> From<Addr<A>> for Recipient<M>
@@ -368,6 +375,28 @@ where
 {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "WeakRecipient {{ /* omitted */ }}")
+    }
+}
+
+impl<M> Clone for WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn clone(&self) -> Self {
+        Self {
+            wtx: self.wtx.boxed(),
+        }
+    }
+}
+
+impl<M> From<Recipient<M>> for WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn from(recipient: Recipient<M>) -> Self {
+        recipient.downgrade()
     }
 }
 

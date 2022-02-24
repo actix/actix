@@ -3,8 +3,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::{collections::HashSet, time::Duration};
 
-use actix::prelude::*;
 use actix_rt::time::sleep;
+
+use actix::prelude::*;
+use actix::WeakRecipient;
 
 #[derive(Debug)]
 struct Ping(usize);
@@ -39,6 +41,45 @@ impl actix::Handler<Ping> for MyActor3 {
 
     fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor3>) -> Self::Result {
         System::current().stop();
+    }
+}
+
+#[derive(Debug)]
+struct PingCounterActor {
+    ping_count: Arc<AtomicUsize>,
+}
+
+impl Default for PingCounterActor {
+    fn default() -> Self {
+        Self {
+            ping_count: Arc::new(AtomicUsize::from(0)),
+        }
+    }
+}
+
+impl Actor for PingCounterActor {
+    type Context = Context<Self>;
+}
+
+struct CountPings;
+
+impl Message for CountPings {
+    type Result = usize;
+}
+
+impl actix::Handler<Ping> for PingCounterActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: Ping, _ctx: &mut Self::Context) -> Self::Result {
+        self.ping_count.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+impl actix::Handler<CountPings> for PingCounterActor {
+    type Result = <CountPings as actix::Message>::Result;
+
+    fn handle(&mut self, _msg: CountPings, _ctx: &mut Self::Context) -> Self::Result {
+        self.ping_count.load(Ordering::SeqCst)
     }
 }
 
@@ -155,6 +196,67 @@ fn test_weak_recipient() {
     });
 
     sys.run().unwrap();
+}
+
+#[test]
+fn test_weak_recipient_can_be_cloned() {
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let addr = PingCounterActor::start_default();
+        let weak_recipient = addr.downgrade().recipient();
+        let weak_recipient_clone = weak_recipient.clone();
+
+        weak_recipient
+            .upgrade()
+            .expect("must be able to upgrade the weak recipient here")
+            .send(Ping(0))
+            .await
+            .expect("send must not fail");
+        weak_recipient_clone
+            .upgrade()
+            .expect("must be able to upgrade the cloned weak recipient here")
+            .send(Ping(0))
+            .await
+            .expect("send must not fail");
+        let pings = addr.send(CountPings {}).await.expect("send must not fail");
+        assert_eq!(
+            pings, 2,
+            "both the weak recipient and its clone must have sent a ping"
+        );
+    })
+}
+
+#[test]
+fn test_recipient_can_be_downgraded() {
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let addr = PingCounterActor::start_default();
+        let strong_recipient: Recipient<Ping> = addr.clone().recipient();
+        // test the downgrade method
+        let weak_recipient: WeakRecipient<Ping> = strong_recipient.downgrade();
+        // test the From trait
+        let converted_weak_recipient = WeakRecipient::from(strong_recipient);
+        weak_recipient
+            .upgrade()
+            .expect("upgrade of weak recipient must not fail here")
+            .send(Ping(0))
+            .await
+            .unwrap();
+
+        converted_weak_recipient
+            .upgrade()
+            .expect("upgrade of weak recipient must not fail here")
+            .send(Ping(0))
+            .await
+            .unwrap();
+        let ping_count = addr.send(CountPings {}).await.unwrap();
+        assert_eq!(
+            ping_count, 2,
+            "weak recipients must not fail to send a message"
+        );
+    })
 }
 
 #[test]
