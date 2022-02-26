@@ -224,7 +224,7 @@ fn test_weak_recipient_can_be_cloned() {
             pings, 2,
             "both the weak recipient and its clone must have sent a ping"
         );
-    })
+    });
 }
 
 #[test]
@@ -256,7 +256,33 @@ fn test_recipient_can_be_downgraded() {
             ping_count, 2,
             "weak recipients must not fail to send a message"
         );
-    })
+    });
+}
+
+#[test]
+fn test_weak_addr_partial_equality() {
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let actor1 = MyActor3 {}.start();
+        let actor2 = MyActor3 {}.start();
+
+        let weak1 = actor1.downgrade();
+        let weak1_again = actor1.downgrade();
+        let weak2 = actor2.downgrade();
+
+        // if this stops compiling this means that Add::downgrade
+        // now takes self by value and we must clone before downgrading
+        assert!(actor1.connected(), "actor 1 must be alive");
+        assert!(actor2.connected(), "actor 2 must be alive");
+
+        assert_eq!(weak1, weak1);
+        assert_eq!(weak1, weak1_again);
+        assert_eq!(weak2, weak2);
+
+        assert_ne!(weak1, weak2);
+        assert_ne!(weak1_again, weak2);
+    });
 }
 
 #[test]
