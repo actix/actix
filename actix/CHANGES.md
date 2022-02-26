@@ -11,7 +11,7 @@
 - Make `WeakSender` trait public rather than crate-public [#518]
 - Add `downgrade` functionality to `Recipient` to obtain a `WeakRecipient` [#518]
 - Add `From` conversion from `Recipient` to `WeakRecipient` [#518]
-
+- Add `PartialEq` to `WeakAddr` and `WeakAddressSender` [#523]
 
 ## 0.12.0 - 2021-06-06
 ### Added

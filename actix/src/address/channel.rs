@@ -141,6 +141,12 @@ impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
     }
 }
 
+impl<A: Actor> PartialEq for WeakAddressSender<A> {
+    fn eq(&self, other: &Self) -> bool {
+       self.inner.ptr_eq(&other.inner)
+    }
+}
+
 trait AssertKinds: Send + Sync + Clone {}
 
 /// The receiving end of a channel which implements the `Stream` trait.

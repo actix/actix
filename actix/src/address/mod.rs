@@ -234,6 +234,12 @@ impl<A: Actor> fmt::Debug for WeakAddr<A> {
     }
 }
 
+impl<A: Actor> PartialEq for WeakAddr<A> {
+    fn eq(&self, other: &Self) -> bool {
+       self.wtx == other.wtx
+    }
+}
+
 /// The [`Recipient`] type allows to send one specific message to an actor.
 ///
 /// You can get a recipient using the `Addr::recipient()` method. It is possible
