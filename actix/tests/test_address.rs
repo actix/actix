@@ -287,6 +287,13 @@ fn test_weak_addr_partial_equality() {
             assert_ne!(weak1_again, weak2);
         };
         check_equality_assertions();
+        // make sure that the same results apply when upgrading weak addr to addr and
+        // comparing strong addresses so the results are intuitive and consistent
+        assert_eq!(weak1.upgrade().unwrap(), weak1.upgrade().unwrap());
+        assert_eq!(weak1.upgrade().unwrap(), weak1_again.upgrade().unwrap());
+        assert_eq!(weak2.upgrade().unwrap(), weak2.upgrade().unwrap());
+        assert_ne!(weak1.upgrade().unwrap(), weak2.upgrade().unwrap());
+        assert_ne!(weak1_again.upgrade().unwrap(), weak2.upgrade().unwrap());
 
         // now drop one of the actors and make sure the same equality comparisons still hold
         drop(actor1);
