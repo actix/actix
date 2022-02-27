@@ -240,6 +240,8 @@ impl<A: Actor> PartialEq for WeakAddr<A> {
     }
 }
 
+impl<A: Actor> std::cmp::Eq for WeakAddr<A> {}
+
 /// The [`Recipient`] type allows to send one specific message to an actor.
 ///
 /// You can get a recipient using the `Addr::recipient()` method. It is possible
