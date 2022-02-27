@@ -94,11 +94,11 @@ impl<A: Actor> Addr<A> {
     /// The message is always queued, even if the mailbox for the receiver is full.
     /// If the mailbox is closed, the message is silently dropped.
     pub fn do_send<M>(&self, msg: M)
-        where
-            M: Message + Send,
-            M::Result: Send,
-            A: Handler<M>,
-            A::Context: ToEnvelope<A, M>,
+    where
+        M: Message + Send,
+        M::Result: Send,
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
     {
         let _ = self.tx.do_send(msg);
     }
@@ -108,11 +108,11 @@ impl<A: Actor> Addr<A> {
     /// This method fails if actor's mailbox is full or closed. This
     /// method registers the current task in the receiver's queue.
     pub fn try_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where
-            M: Message + Send + 'static,
-            M::Result: Send,
-            A: Handler<M>,
-            A::Context: ToEnvelope<A, M>,
+    where
+        M: Message + Send + 'static,
+        M::Result: Send,
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
     {
         self.tx.try_send(msg, true)
     }
@@ -124,11 +124,11 @@ impl<A: Actor> Addr<A> {
     /// returned `Future` object gets dropped, the message is
     /// cancelled.
     pub fn send<M>(&self, msg: M) -> Request<A, M>
-        where
-            M: Message + Send + 'static,
-            M::Result: Send,
-            A: Handler<M>,
-            A::Context: ToEnvelope<A, M>,
+    where
+        M: Message + Send + 'static,
+        M::Result: Send,
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
     {
         match self.tx.send(msg) {
             Ok(rx) => Request::new(Some(rx), None),
@@ -139,11 +139,11 @@ impl<A: Actor> Addr<A> {
 
     /// Returns the [`Recipient`] for a specific message type.
     pub fn recipient<M: 'static>(self) -> Recipient<M>
-        where
-            A: Handler<M>,
-            A::Context: ToEnvelope<A, M>,
-            M: Message + Send,
-            M::Result: Send,
+    where
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
+        M: Message + Send,
+        M::Result: Send,
     {
         self.into()
     }
@@ -208,11 +208,11 @@ impl<A: Actor> WeakAddr<A> {
     }
 
     pub fn recipient<M: 'static>(self) -> WeakRecipient<M>
-        where
-            A: Handler<M>,
-            A::Context: ToEnvelope<A, M>,
-            M: Message + Send,
-            M::Result: Send,
+    where
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
+        M: Message + Send,
+        M::Result: Send,
     {
         self.into()
     }
@@ -245,17 +245,17 @@ impl<A: Actor> PartialEq for WeakAddr<A> {
 /// You can get a recipient using the `Addr::recipient()` method. It is possible
 /// to use the `Clone::clone()` method to get a cloned recipient.
 pub struct Recipient<M: Message>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     tx: Box<dyn Sender<M> + Sync>,
 }
 
 impl<M> Recipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     /// Creates a new recipient.
     pub(crate) fn new(tx: Box<dyn Sender<M> + Sync>) -> Recipient<M> {
@@ -306,10 +306,10 @@ impl<M> Recipient<M>
 }
 
 impl<A: Actor, M: Message + Send + 'static> From<Addr<A>> for Recipient<M>
-    where
-        A: Handler<M>,
-        M::Result: Send,
-        A::Context: ToEnvelope<A, M>,
+where
+    A: Handler<M>,
+    M::Result: Send,
+    A::Context: ToEnvelope<A, M>,
 {
     fn from(addr: Addr<A>) -> Self {
         Recipient::new(Box::new(addr.tx))
@@ -317,9 +317,9 @@ impl<A: Actor, M: Message + Send + 'static> From<Addr<A>> for Recipient<M>
 }
 
 impl<M> Clone for Recipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     fn clone(&self) -> Recipient<M> {
         Recipient {
@@ -329,9 +329,9 @@ impl<M> Clone for Recipient<M>
 }
 
 impl<M> PartialEq for Recipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     fn eq(&self, other: &Self) -> bool {
         self.tx.hash() == other.tx.hash()
@@ -339,15 +339,16 @@ impl<M> PartialEq for Recipient<M>
 }
 
 impl<M> Eq for Recipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
-{}
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+}
 
 impl<M> Hash for Recipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.tx.hash().hash(state)
@@ -355,9 +356,9 @@ impl<M> Hash for Recipient<M>
 }
 
 impl<M> fmt::Debug for Recipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "Recipient {{ /* omitted */ }}")
@@ -366,17 +367,17 @@ impl<M> fmt::Debug for Recipient<M>
 
 /// A weakly referenced counterpart to `Recipient<M>`
 pub struct WeakRecipient<M: Message>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     wtx: Box<dyn WeakSender<M> + Sync>,
 }
 
 impl<M> fmt::Debug for WeakRecipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "WeakRecipient {{ /* omitted */ }}")
@@ -384,9 +385,9 @@ impl<M> fmt::Debug for WeakRecipient<M>
 }
 
 impl<M> Clone for WeakRecipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     fn clone(&self) -> Self {
         Self {
@@ -395,18 +396,10 @@ impl<M> Clone for WeakRecipient<M>
     }
 }
 
-impl<M> PartialEq for WeakRecipient<M>
-    where M: Message + Send,
-          M::Result: Send {
-    fn eq(&self, other: &Self) -> bool {
-       self.wtx.hash() == other.wtx.hash()
-    }
-}
-
 impl<M> From<Recipient<M>> for WeakRecipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     fn from(recipient: Recipient<M>) -> Self {
         recipient.downgrade()
@@ -414,9 +407,9 @@ impl<M> From<Recipient<M>> for WeakRecipient<M>
 }
 
 impl<M> WeakRecipient<M>
-    where
-        M: Message + Send,
-        M::Result: Send,
+where
+    M: Message + Send,
+    M::Result: Send,
 {
     pub(crate) fn new(wtx: Box<dyn WeakSender<M> + Sync>) -> WeakRecipient<M> {
         WeakRecipient { wtx }
@@ -429,10 +422,10 @@ impl<M> WeakRecipient<M>
 }
 
 impl<A: Actor, M: Message + Send + 'static> From<Addr<A>> for WeakRecipient<M>
-    where
-        A: Handler<M>,
-        M::Result: Send,
-        A::Context: ToEnvelope<A, M>,
+where
+    A: Handler<M>,
+    M::Result: Send,
+    A::Context: ToEnvelope<A, M>,
 {
     fn from(addr: Addr<A>) -> WeakRecipient<M> {
         addr.downgrade().recipient()
@@ -440,10 +433,10 @@ impl<A: Actor, M: Message + Send + 'static> From<Addr<A>> for WeakRecipient<M>
 }
 
 impl<A: Actor, M: Message + Send + 'static> From<WeakAddr<A>> for WeakRecipient<M>
-    where
-        A: Handler<M>,
-        M::Result: Send,
-        A::Context: ToEnvelope<A, M>,
+where
+    A: Handler<M>,
+    M::Result: Send,
+    A::Context: ToEnvelope<A, M>,
 {
     fn from(addr: WeakAddr<A>) -> WeakRecipient<M> {
         WeakRecipient::new(Box::new(addr.wtx))

@@ -92,8 +92,6 @@ where
     /// Returns [`None`] if the actor has since been dropped.
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
     fn boxed(&self) -> Box<dyn WeakSender<M> + Sync>;
-    /// return a hash that uniquely identifies the destination that the weak sender points to
-    fn hash(&self) -> usize;
 }
 
 /// The transmission end of a channel which is used to send values.
@@ -145,7 +143,7 @@ impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
 
 impl<A: Actor> PartialEq for WeakAddressSender<A> {
     fn eq(&self, other: &Self) -> bool {
-       self.inner.ptr_eq(&other.inner)
+        self.inner.ptr_eq(&other.inner)
     }
 }
 
@@ -604,11 +602,6 @@ where
 
     fn boxed(&self) -> Box<dyn WeakSender<M> + Sync> {
         Box::new(self.clone())
-    }
-
-    fn hash(&self) -> usize {
-        let hash: *const _ = self.inner.as_ptr();
-        hash as usize
     }
 }
 

@@ -273,15 +273,29 @@ fn test_weak_addr_partial_equality() {
 
         // if this stops compiling this means that Add::downgrade
         // now takes self by value and we must clone before downgrading
+
         assert!(actor1.connected(), "actor 1 must be alive");
         assert!(actor2.connected(), "actor 2 must be alive");
+        // the assertions we want to hold for partial equality of weak actor addresses
+        // these assertions must hold whether one or both of the actors are connected or not
+        let check_equality_assertions = || {
+            assert_eq!(weak1, weak1);
+            assert_eq!(weak1, weak1_again);
+            assert_eq!(weak2, weak2);
 
-        assert_eq!(weak1, weak1);
-        assert_eq!(weak1, weak1_again);
-        assert_eq!(weak2, weak2);
+            assert_ne!(weak1, weak2);
+            assert_ne!(weak1_again, weak2);
+        };
+        check_equality_assertions();
 
-        assert_ne!(weak1, weak2);
-        assert_ne!(weak1_again, weak2);
+        // now drop one of the actors and make sure the same equality comparisons still hold
+        drop(actor1);
+        assert!(actor2.connected());
+        check_equality_assertions();
+
+        // and drop the second actor as well
+        drop(actor2);
+        check_equality_assertions();
     });
 }
 
