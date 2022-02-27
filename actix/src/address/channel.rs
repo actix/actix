@@ -92,7 +92,7 @@ where
     /// Returns [`None`] if the actor has since been dropped.
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
     fn boxed(&self) -> Box<dyn WeakSender<M> + Sync>;
-
+    /// return a hash that uniquely identifies the destination that the weak sender points to
     fn hash(&self) -> usize;
 }
 
