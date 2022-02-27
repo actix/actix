@@ -147,6 +147,8 @@ impl<A: Actor> PartialEq for WeakAddressSender<A> {
     }
 }
 
+impl<A: Actor> Eq for WeakAddressSender<A> {}
+
 trait AssertKinds: Send + Sync + Clone {}
 
 /// The receiving end of a channel which implements the `Stream` trait.
