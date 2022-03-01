@@ -518,8 +518,6 @@
 <span id="513">513</span>
 <span id="514">514</span>
 <span id="515">515</span>
-<span id="516">516</span>
-<span id="517">517</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>};
 <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error</span>, <span class="ident">fmt</span>};
 
@@ -604,17 +602,17 @@
         <span class="ident">Addr</span> { <span class="ident">tx</span> }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="doccomment">/// Returns whether the actor is still alive.</span>
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
         <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">connected</span>()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="doccomment">/// Sends a message unconditionally, ignoring any potential errors.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The message is always queued, even if the mailbox for the receiver is full.</span>
-    <span class="doccomment">/// If the mailbox is closed, the message is silently dropped.</span>
+    <span class="doccomment">/// The message is always queued, even if the mailbox for the receiver is full. If the mailbox</span>
+    <span class="doccomment">/// is closed, the message is silently dropped.</span>
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>)
     <span class="kw">where</span>
         <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
@@ -639,12 +637,11 @@
         <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>, <span class="bool-val">true</span>)
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="doccomment">/// Sends an asynchronous message and waits for a response.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The communication channel to the actor is bounded. If the</span>
-    <span class="doccomment">/// returned `Future` object gets dropped, the message is</span>
-    <span class="doccomment">/// cancelled.</span>
+    <span class="doccomment">/// The communication channel to the actor is bounded. If the returned request future gets</span>
+    <span class="doccomment">/// dropped, the message is cancelled.</span>
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
@@ -788,25 +785,24 @@
 
     <span class="doccomment">/// Sends a message.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// Deliver the message even if the recipient&#39;s mailbox is full.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">do_send</span>(<span class="ident">msg</span>)
+    <span class="doccomment">/// The message is always queued, even if the mailbox for the receiver is full. If the mailbox</span>
+    <span class="doccomment">/// is closed, the message is silently dropped.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) {
+        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">do_send</span>(<span class="ident">msg</span>);
     }
 
     <span class="doccomment">/// Attempts to send a message.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// This method fails if the actor&#39;s mailbox is full or</span>
-    <span class="doccomment">/// closed. This method registers the current task in the</span>
-    <span class="doccomment">/// receivers queue.</span>
+    <span class="doccomment">/// This method fails if the actor&#39;s mailbox is full or closed. This method registers the</span>
+    <span class="doccomment">/// current task in the receivers queue.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>)
     }
 
     <span class="doccomment">/// Sends a message and asynchronously wait for a response.</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// The communication channel to the actor is bounded. If the</span>
-    <span class="doccomment">/// returned `Request` object gets dropped, the message is</span>
-    <span class="doccomment">/// cancelled.</span>
+    <span class="doccomment">/// The communication channel to the actor is bounded. If the returned `RecipientRequest` object</span>
+    <span class="doccomment">/// gets dropped, the message is cancelled.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="ident">RecipientRequest</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">msg</span>) {
             <span class="prelude-val">Ok</span>(<span class="ident">rx</span>) =&gt; <span class="ident">RecipientRequest::new</span>(<span class="prelude-val">Some</span>(<span class="ident">rx</span>), <span class="prelude-val">None</span>),

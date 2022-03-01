@@ -481,12 +481,6 @@
 <span id="476">476</span>
 <span id="477">477</span>
 <span id="478">478</span>
-<span id="479">479</span>
-<span id="480">480</span>
-<span id="481">481</span>
-<span id="482">482</span>
-<span id="483">483</span>
-<span id="484">484</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::time::Duration</span>;
 
 <span class="kw">use</span> <span class="ident">actix_rt::ArbiterHandle</span>;
@@ -952,7 +946,7 @@
 <span class="doccomment">/// A handle to a spawned future.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Can be used to cancel the future.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Hash</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Default</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SpawnHandle</span>(<span class="ident">usize</span>);
 
 <span class="kw">impl</span> <span class="ident">SpawnHandle</span> {
@@ -963,12 +957,6 @@
     <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_usize</span>(<span class="self">self</span>) -&gt; <span class="ident">usize</span> {
         <span class="self">self</span>.<span class="number">0</span>
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">SpawnHandle</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="ident">SpawnHandle</span> {
-        <span class="ident">SpawnHandle</span>(<span class="number">0</span>)
     }
 }
 </code></pre></div>
