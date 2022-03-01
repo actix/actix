@@ -17,7 +17,7 @@
 
 ### Changed
 - Updated `tokio-util` dependency to `0.7`. [#525]
-- Updated minimum supported Rust version to 1.49.
+- Updated minimum supported Rust version to 1.54.
 
 ### Removed
 - Remove `Resolver` actor. [#451]
