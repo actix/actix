@@ -42,6 +42,9 @@ where
     fn hash(&self) -> usize;
 
     fn connected(&self) -> bool;
+
+    /// Returns a downgraded sender, where the sender is downgraded into its weak counterpart
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static>;
 }
 
 impl<S, M> Sender<M> for Box<S>
@@ -73,9 +76,13 @@ where
     fn connected(&self) -> bool {
         (**self).connected()
     }
+
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
+        (**self).downgrade()
+    }
 }
 
-pub(crate) trait WeakSender<M>: Send
+pub trait WeakSender<M>: Send
 where
     M::Result: Send,
     M: Message + Send,
@@ -133,6 +140,14 @@ impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
         fmt.debug_struct("WeakAddressSender").finish()
     }
 }
+
+impl<A: Actor> PartialEq for WeakAddressSender<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner.ptr_eq(&other.inner)
+    }
+}
+
+impl<A: Actor> Eq for WeakAddressSender<A> {}
 
 trait AssertKinds: Send + Sync + Clone {}
 
@@ -491,6 +506,12 @@ where
     fn connected(&self) -> bool {
         self.connected()
     }
+
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
+        Box::new(WeakAddressSender {
+            inner: Arc::downgrade(&self.inner),
+        })
+    }
 }
 
 impl<A: Actor> Clone for AddressSender<A> {
@@ -562,10 +583,7 @@ impl<A: Actor> WeakAddressSender<A> {
     ///
     /// Returns [`None`] if the actor has since been dropped.
     pub fn upgrade(&self) -> Option<AddressSender<A>> {
-        match Weak::upgrade(&self.inner) {
-            Some(inner) => Some(AddressSenderProducer { inner }.sender()),
-            None => None,
-        }
+        Weak::upgrade(&self.inner).map(|inner| AddressSenderProducer { inner }.sender())
     }
 }
 
@@ -577,7 +595,7 @@ where
     M: Message + Send + 'static,
 {
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>> {
-        if let Some(inner) = WeakAddressSender::upgrade(&self) {
+        if let Some(inner) = WeakAddressSender::upgrade(self) {
             Some(Box::new(inner))
         } else {
             None

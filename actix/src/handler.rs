@@ -20,7 +20,7 @@ where
 {
     /// The type of value that this handler will return.
     ///
-    /// Check the [MessageResponse] trait for some details
+    /// Check the [`MessageResponse`] trait for some details
     /// on how a message can be responded to.
     type Result: MessageResponse<Self, M>;
 
@@ -51,7 +51,7 @@ where
     type Result = M::Result;
 }
 
-/// A helper type that implements the `MessageResponse` trait.
+/// A helper type that implements the [`MessageResponse`] trait.
 ///
 /// # Examples
 /// ```no_run
@@ -85,13 +85,13 @@ pub struct MessageResult<M: Message>(pub M::Result);
 /// internal state or context, e.g., it can yield at critical sessions.
 /// When the actor starts to process this future, it will not pull any other
 /// spawned futures until this one as been completed.
-/// Check [ActorFuture] for available methods for accessing Actor's
+/// Check [`ActorFuture`] for available methods for accessing Actor's
 /// internal state.
 ///
 /// ## Note
 /// The runtime itself is not blocked in the process, only the Actor,
 /// other futures, and therefore, other actors are still allowed to make
-/// progress when this [AtomicResponse] is used.
+/// progress when this [`AtomicResponse`] is used.
 ///
 /// # Examples
 /// On the following example, the response to `Msg` would always be 29
@@ -154,13 +154,13 @@ where
 /// A specialized actor future for asynchronous message handling.
 ///
 /// Intended be used when the future returned will, at some point, need to access Actor's internal
-/// state or context in order to finish. Check [ActorFuture] for available methods for accessing
+/// state or context in order to finish. Check [`ActorFuture`] for available methods for accessing
 /// Actor's internal state.
 ///
 /// # Note
-/// It's important to keep in mind that the provided [AsyncContext], does not enforce the poll of
-/// any [ActorFuture] to be exclusive. Therefore, if other instances of [ActorFuture] are spawned
-/// into this Context **their execution won't necessarily be atomic**. Check [AtomicResponse] if you
+/// It's important to keep in mind that the provided [`AsyncContext`], does not enforce the poll of
+/// any [`ActorFuture`] to be exclusive. Therefore, if other instances of [`ActorFuture`] are spawned
+/// into this Context **their execution won't necessarily be atomic**. Check [`AtomicResponse`] if you
 /// need exclusive access over the actor.
 ///
 /// # Examples
@@ -234,19 +234,19 @@ pub type ResponseFuture<I> = Pin<Box<dyn Future<Output = I>>>;
 /// A trait which defines message responses.
 ///
 /// We offer implementation for some common language types, if you need
-/// to respond with a new type you can use [MessageResult].
+/// to respond with a new type you can use [`MessageResult`].
 ///
-/// If `Actor::Context` implements [AsyncContext] it's possible to handle
+/// If `Actor::Context` implements [`AsyncContext`] it's possible to handle
 /// the message asynchronously.
 /// For asynchronous message handling we offer the following possible response types:
-/// - [ResponseFuture] should be used for when the future returned doesn't
+/// - [`ResponseFuture`] should be used for when the future returned doesn't
 ///   need to access Actor's internal state or context to progress, either
 ///   because it's completely agnostic to it or because the required data has
 ///   already been moved to it and it won't need Actor state to continue.
-/// - [ResponseActFuture] should be used when the future returned
+/// - [`ResponseActFuture`] should be used when the future returned
 ///   will, at some point, need to access Actor's internal state or context
 ///   in order to finish.
-/// - [AtomicResponse] should be used when the future returned needs exclusive
+/// - [`AtomicResponse`] should be used when the future returned needs exclusive
 ///   access to  Actor's internal state or context.
 pub trait MessageResponse<A: Actor, M: Message> {
     fn handle(self, ctx: &mut A::Context, tx: Option<OneshotSender<M::Result>>);
@@ -329,7 +329,7 @@ where
     }
 }
 
-/// MessageResponse trait impl to enable the use of any `I: 'static` with asynchronous
+/// [`MessageResponse`] trait impl to enable the use of any `I: 'static` with asynchronous
 /// message handling
 ///
 /// # Examples

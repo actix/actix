@@ -73,7 +73,6 @@ impl<T> fmt::Display for SendError<T> {
 }
 
 /// The address of an actor.
-#[derive(Debug)]
 pub struct Addr<A: Actor> {
     tx: AddressSender<A>,
 }
@@ -138,7 +137,7 @@ impl<A: Actor> Addr<A> {
         }
     }
 
-    /// Returns the `Recipient` for a specific message type.
+    /// Returns the [`Recipient`] for a specific message type.
     pub fn recipient<M: 'static>(self) -> Recipient<M>
     where
         A: Handler<M>,
@@ -149,7 +148,7 @@ impl<A: Actor> Addr<A> {
         self.into()
     }
 
-    /// Returns a downgraded `WeakAddr`.
+    /// Returns a downgraded [`WeakAddr`].
     pub fn downgrade(&self) -> WeakAddr<A> {
         WeakAddr {
             wtx: self.tx.downgrade(),
@@ -179,14 +178,19 @@ impl<A: Actor> Hash for Addr<A> {
     }
 }
 
+impl<A: Actor> fmt::Debug for Addr<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("Addr").field("tx", &self.tx).finish()
+    }
+}
+
 /// A weakly referenced counterpart to `Addr<A>`.
-#[derive(Debug)]
 pub struct WeakAddr<A: Actor> {
     wtx: WeakAddressSender<A>,
 }
 
 impl<A: Actor> WeakAddr<A> {
-    /// Attempts to upgrade the `WeakAddr<A>` pointer to an `Addr<A>`.
+    /// Attempts to upgrade the [`WeakAddr<A>`] pointer to an [`Addr<A>`].
     ///
     /// Returns `None` if the actor has since been dropped or the
     /// underlying address is disconnected.
@@ -222,12 +226,26 @@ impl<A: Actor> Clone for WeakAddr<A> {
     }
 }
 
-/// The `Recipient` type allows to send one specific message to an
-/// actor.
+impl<A: Actor> fmt::Debug for WeakAddr<A> {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt.debug_struct("WeakAddr")
+            .field("wtx", &self.wtx)
+            .finish()
+    }
+}
+
+impl<A: Actor> PartialEq for WeakAddr<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.wtx == other.wtx
+    }
+}
+
+impl<A: Actor> std::cmp::Eq for WeakAddr<A> {}
+
+/// The [`Recipient`] type allows to send one specific message to an actor.
 ///
-/// You can get a recipient using the `Addr::recipient()` method. It
-/// is possible to use the `Clone::clone()` method to get a cloned
-/// recipient.
+/// You can get a recipient using the `Addr::recipient()` method. It is possible
+/// to use the `Clone::clone()` method to get a cloned recipient.
 pub struct Recipient<M: Message>
 where
     M: Message + Send,
@@ -279,6 +297,13 @@ where
 
     pub fn connected(&self) -> bool {
         self.tx.connected()
+    }
+
+    /// Returns a downgraded `WeakRecipient`
+    pub fn downgrade(&self) -> WeakRecipient<M> {
+        WeakRecipient {
+            wtx: self.tx.downgrade(),
+        }
     }
 }
 
@@ -361,6 +386,28 @@ where
     }
 }
 
+impl<M> Clone for WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn clone(&self) -> Self {
+        Self {
+            wtx: self.wtx.boxed(),
+        }
+    }
+}
+
+impl<M> From<Recipient<M>> for WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn from(recipient: Recipient<M>) -> Self {
+        recipient.downgrade()
+    }
+}
+
 impl<M> WeakRecipient<M>
 where
     M: Message + Send,
@@ -416,6 +463,7 @@ mod tests {
     }
 
     pub struct SetCounter(usize);
+
     impl Message for SetCounter {
         type Result = ();
     }
