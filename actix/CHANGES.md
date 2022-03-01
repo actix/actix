@@ -1,22 +1,28 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+### Added
+- Add `Sender::downgrade` trait method. [#518]
+- Add `Recipient::downgrade` method for obtaining a `WeakRecipient`. [#518]
+- Expose `WeakSender` trait. [#518]
+- Implement `Clone` for `WeakRecipient`. [#518]
+- Implement `From<Recipient>` for `WeakRecipient`. [#518]
+- Implement `From<Pin<Box<dyn ActorFuture>>>` for `ActorResponse`. [#509]
+- Implement `PartialEq` and `Eq` for `WeakAddr`. [#523]
+- Implement `PartialEq` and `Eq` for `WeakAddressSender`. [#523]
+- Implement `From<Recipient>` for `WeakRecipient`. [#518]
+
 ### Changed
+- Updated `tokio-util` dependency to `0.7`. [#???]
 - Updated minimum supported Rust version to 1.49.
-- Implement `Clone` for `WeakRecipient` [#518]
-- Extend Sender trait by a downgrade function [#518]
-- Make `WeakSender` trait public rather than crate-public [#518]
-- Add `downgrade` functionality to `Recipient` to obtain a `WeakRecipient` [#518]
-- Add `From` conversion from `Recipient` to `WeakRecipient` [#518]
-- Implement `PartialEq` and `Eq` to `WeakAddr` and `WeakAddressSender` [#523]
 
 ### Removed
-- Removed `Resolver` actor [#451]
+- Remove `Resolver` actor. [#451]
 
-### Added
-- Add a `From<Pin<Box<dyn ActorFuture + 'static>>>` implementation for `ActorResponse`. [#509]
-
+[#451]: https://github.com/actix/actix/pull/451
 [#509]: https://github.com/actix/actix/pull/509
+[#518]: https://github.com/actix/actix/pull/518
+[#???]: https://github.com/actix/actix/pull/???
 
 ## 0.12.0 - 2021-06-06
 ### Added

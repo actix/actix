@@ -192,6 +192,16 @@ where
     }
 }
 
+impl<A> Default for Context<A>
+where
+    A: Actor<Context = Self>,
+{
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<A> AsyncContextParts<A> for Context<A>
 where
     A: Actor<Context = Self>,

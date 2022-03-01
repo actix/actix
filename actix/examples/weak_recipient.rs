@@ -18,7 +18,7 @@ pub struct TimePing(Instant);
 #[rtype(result = "()")]
 pub struct RegisterForTime(pub WeakRecipient<TimePing>);
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TimeService {
     clients: Vec<WeakRecipient<TimePing>>,
 }
@@ -78,14 +78,6 @@ impl Handler<RegisterForTime> for TimeService {
 
 impl Supervised for TimeService {}
 impl SystemService for TimeService {}
-
-impl Default for TimeService {
-    fn default() -> Self {
-        TimeService {
-            clients: Default::default(),
-        }
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct ClientA;
