@@ -1,6 +1,9 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+
+
+## 0.13.0 - 2022-03-01
 ### Added
 - Add `Sender::downgrade` trait method. [#518]
 - Add `Recipient::downgrade` method for obtaining a `WeakRecipient`. [#518]
@@ -13,7 +16,7 @@
 - Implement `From<Recipient>` for `WeakRecipient`. [#518]
 
 ### Changed
-- Updated `tokio-util` dependency to `0.7`. [#???]
+- Updated `tokio-util` dependency to `0.7`. [#525]
 - Updated minimum supported Rust version to 1.49.
 
 ### Removed
@@ -22,7 +25,7 @@
 [#451]: https://github.com/actix/actix/pull/451
 [#509]: https://github.com/actix/actix/pull/509
 [#518]: https://github.com/actix/actix/pull/518
-[#???]: https://github.com/actix/actix/pull/???
+[#525]: https://github.com/actix/actix/pull/525
 
 ## 0.12.0 - 2021-06-06
 ### Added
