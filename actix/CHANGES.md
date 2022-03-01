@@ -13,6 +13,11 @@
 ### Removed
 - Removed `Resolver` actor [#451]
 
+### Added
+- Add a `From<Pin<Box<dyn ActorFuture + 'static>>>` implementation for `ActorResponse`. [#509]
+
+[#509]: https://github.com/actix/actix/pull/509
+
 ## 0.12.0 - 2021-06-06
 ### Added
 * Add `fut::try_future::ActorTryFuture`. [#419]
