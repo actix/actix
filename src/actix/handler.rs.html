@@ -555,6 +555,16 @@
 <span id="550">550</span>
 <span id="551">551</span>
 <span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fmt</span>, <span class="ident">future::Future</span>, <span class="ident">pin::Pin</span>, <span class="ident">sync::Arc</span>};
 
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tokio::sync::oneshot::Sender</span> <span class="kw">as</span> <span class="ident">OneshotSender</span>;
@@ -1060,6 +1070,16 @@
                 <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">fut</span>);
             }
             <span class="ident">ActorResponseTypeItem::Result</span>(<span class="ident">res</span>) =&gt; <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>),
+        }
+    }
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>
+    <span class="kw">for</span> <span class="ident">ActorResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span>
+{
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">fut</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
+        <span class="self">Self</span> {
+            <span class="ident">item</span>: <span class="ident">ActorResponseTypeItem::Fut</span>(<span class="ident">fut</span>),
         }
     }
 }
