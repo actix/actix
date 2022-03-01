@@ -128,7 +128,7 @@ impl<T: 'static + Unpin, M: BrokerMsg> Handler<IssueAsync<M>> for Broker<T> {
         if let Some(mut subs) = self.take_subs::<M>() {
             subs.drain(..)
                 .filter_map(|(id, s)| {
-                    if id == msg.1 || s.do_send(msg.0.clone()).is_ok() {
+                    if id == msg.1 || s.try_send(msg.0.clone()).is_ok() {
                         Some((id, s))
                     } else {
                         None

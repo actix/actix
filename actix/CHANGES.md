@@ -16,12 +16,14 @@
 - Implement `From<Recipient>` for `WeakRecipient`. [#518]
 
 ### Changed
+- `Recipient::do_send()` no longer has a return value. [#441]
 - Updated `tokio-util` dependency to `0.7`. [#525]
 - Updated minimum supported Rust version to 1.54.
 
 ### Removed
 - Remove `Resolver` actor. [#451]
 
+[#441]: https://github.com/actix/actix/pull/441
 [#451]: https://github.com/actix/actix/pull/451
 [#509]: https://github.com/actix/actix/pull/509
 [#518]: https://github.com/actix/actix/pull/518

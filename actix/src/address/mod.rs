@@ -267,8 +267,8 @@ where
     /// Sends a message.
     ///
     /// Deliver the message even if the recipient's mailbox is full.
-    pub fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.tx.do_send(msg)
+    pub fn do_send(&self, msg: M) {
+        let _ = self.tx.do_send(msg);
     }
 
     /// Attempts to send a message.
