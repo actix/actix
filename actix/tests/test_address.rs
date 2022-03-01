@@ -224,7 +224,7 @@ fn test_weak_recipient_can_be_cloned() {
             pings, 2,
             "both the weak recipient and its clone must have sent a ping"
         );
-    })
+    });
 }
 
 #[test]
@@ -256,7 +256,54 @@ fn test_recipient_can_be_downgraded() {
             ping_count, 2,
             "weak recipients must not fail to send a message"
         );
-    })
+    });
+}
+
+#[test]
+fn test_weak_addr_partial_equality() {
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let actor1 = MyActor3 {}.start();
+        let actor2 = MyActor3 {}.start();
+
+        let weak1 = actor1.downgrade();
+        let weak1_again = actor1.downgrade();
+        let weak2 = actor2.downgrade();
+
+        // if this stops compiling this means that Add::downgrade
+        // now takes self by value and we must clone before downgrading
+
+        assert!(actor1.connected(), "actor 1 must be alive");
+        assert!(actor2.connected(), "actor 2 must be alive");
+        // the assertions we want to hold for partial equality of weak actor addresses
+        // these assertions must hold whether one or both of the actors are connected or not
+        let check_equality_assertions = || {
+            assert_eq!(weak1, weak1);
+            assert_eq!(weak1, weak1_again);
+            assert_eq!(weak2, weak2);
+
+            assert_ne!(weak1, weak2);
+            assert_ne!(weak1_again, weak2);
+        };
+        check_equality_assertions();
+        // make sure that the same results apply when upgrading weak addr to addr and
+        // comparing strong addresses so the results are intuitive and consistent
+        assert_eq!(weak1.upgrade().unwrap(), weak1.upgrade().unwrap());
+        assert_eq!(weak1.upgrade().unwrap(), weak1_again.upgrade().unwrap());
+        assert_eq!(weak2.upgrade().unwrap(), weak2.upgrade().unwrap());
+        assert_ne!(weak1.upgrade().unwrap(), weak2.upgrade().unwrap());
+        assert_ne!(weak1_again.upgrade().unwrap(), weak2.upgrade().unwrap());
+
+        // now drop one of the actors and make sure the same equality comparisons still hold
+        drop(actor1);
+        assert!(actor2.connected());
+        check_equality_assertions();
+
+        // and drop the second actor as well
+        drop(actor2);
+        check_equality_assertions();
+    });
 }
 
 #[test]
