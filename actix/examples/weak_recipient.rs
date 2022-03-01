@@ -27,8 +27,7 @@ impl TimeService {
     fn send_tick(&mut self, _ctx: &mut Context<Self>) {
         for client in self.clients.iter() {
             if let Some(client) = client.upgrade() {
-                // `Recipient::do_send` seems inconsistent with `Addr::do_send`
-                client.do_send(TimePing(Instant::now())).unwrap();
+                client.do_send(TimePing(Instant::now()));
                 println!("⏰ sent ping to client {:?}", client);
             } else {
                 println!("⏰ client can no longer be upgraded");
