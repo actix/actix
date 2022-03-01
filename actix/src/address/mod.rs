@@ -82,17 +82,17 @@ impl<A: Actor> Addr<A> {
         Addr { tx }
     }
 
-    #[inline]
     /// Returns whether the actor is still alive.
+    #[inline]
     pub fn connected(&self) -> bool {
         self.tx.connected()
     }
 
-    #[inline]
     /// Sends a message unconditionally, ignoring any potential errors.
     ///
-    /// The message is always queued, even if the mailbox for the receiver is full.
-    /// If the mailbox is closed, the message is silently dropped.
+    /// The message is always queued, even if the mailbox for the receiver is full. If the mailbox
+    /// is closed, the message is silently dropped.
+    #[inline]
     pub fn do_send<M>(&self, msg: M)
     where
         M: Message + Send,
@@ -117,12 +117,11 @@ impl<A: Actor> Addr<A> {
         self.tx.try_send(msg, true)
     }
 
-    #[inline]
     /// Sends an asynchronous message and waits for a response.
     ///
-    /// The communication channel to the actor is bounded. If the
-    /// returned `Future` object gets dropped, the message is
-    /// cancelled.
+    /// The communication channel to the actor is bounded. If the returned request future gets
+    /// dropped, the message is cancelled.
+    #[inline]
     pub fn send<M>(&self, msg: M) -> Request<A, M>
     where
         M: Message + Send + 'static,
@@ -266,25 +265,24 @@ where
 
     /// Sends a message.
     ///
-    /// Deliver the message even if the recipient's mailbox is full.
-    pub fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.tx.do_send(msg)
+    /// The message is always queued, even if the mailbox for the receiver is full. If the mailbox
+    /// is closed, the message is silently dropped.
+    pub fn do_send(&self, msg: M) {
+        let _ = self.tx.do_send(msg);
     }
 
     /// Attempts to send a message.
     ///
-    /// This method fails if the actor's mailbox is full or
-    /// closed. This method registers the current task in the
-    /// receivers queue.
+    /// This method fails if the actor's mailbox is full or closed. This method registers the
+    /// current task in the receivers queue.
     pub fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.tx.try_send(msg)
     }
 
     /// Sends a message and asynchronously wait for a response.
     ///
-    /// The communication channel to the actor is bounded. If the
-    /// returned `Request` object gets dropped, the message is
-    /// cancelled.
+    /// The communication channel to the actor is bounded. If the returned `RecipientRequest` object
+    /// gets dropped, the message is cancelled.
     pub fn send(&self, msg: M) -> RecipientRequest<M> {
         match self.tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),

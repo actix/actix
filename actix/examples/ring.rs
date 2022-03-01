@@ -51,9 +51,7 @@ impl Handler<Payload> for Node {
             );
         }
 
-        self.next
-            .do_send(Payload(msg.0 + 1))
-            .expect("Unable to send payload");
+        self.next.do_send(Payload(msg.0 + 1));
     }
 }
 

@@ -507,10 +507,8 @@ where
     }
 }
 
-impl<A: Actor, I> From<Pin<Box<dyn ActorFuture<A, Output = I> + 'static>>>
-    for ActorResponse<A, I>
-{
-    fn from(fut: Pin<Box<dyn ActorFuture<A, Output = I> + 'static>>) -> Self {
+impl<A: Actor, I> From<Pin<Box<dyn ActorFuture<A, Output = I>>>> for ActorResponse<A, I> {
+    fn from(fut: Pin<Box<dyn ActorFuture<A, Output = I>>>) -> Self {
         Self {
             item: ActorResponseTypeItem::Fut(fut),
         }
