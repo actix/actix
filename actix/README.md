@@ -232,7 +232,7 @@ fn main() {
 
 See this [chat example] which shows more comprehensive usage in a networking client/server service.
 
-[chat example]: https://github.com/actix/examples/tree/HEAD/websockets/tcp-chat
+[chat example]: https://github.com/actix/examples/tree/HEAD/websockets/chat-tcp
 
 ## Contributing
 
