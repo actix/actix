@@ -2,6 +2,11 @@
 
 ## Unreleased - 2021-xx-xx
 
+### Added
+
+- Derive `PartialEq` and `Eq` for `MailboxError`. [#527]
+
+[#527]: https://github.com/actix/actix/pull/527
 
 ## 0.13.0 - 2022-03-01
 ### Added
