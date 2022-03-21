@@ -1,24 +1,40 @@
 # CHANGES
 
 ## Unreleased - 2021-xx-xx
+
+
+## 0.13.0 - 2022-03-01
+### Added
+- Add `Sender::downgrade` trait method. [#518]
+- Add `Recipient::downgrade` method for obtaining a `WeakRecipient`. [#518]
+- Expose `WeakSender` trait. [#518]
+- Implement `Clone` for `WeakRecipient`. [#518]
+- Implement `From<Recipient>` for `WeakRecipient`. [#518]
+- Implement `From<Pin<Box<dyn ActorFuture>>>` for `ActorResponse`. [#509]
+- Implement `PartialEq` and `Eq` for `WeakAddr`. [#523]
+- Implement `PartialEq` and `Eq` for `WeakAddressSender`. [#523]
+- Implement `From<Recipient>` for `WeakRecipient`. [#518]
+
 ### Changed
-- Updated minimum supported Rust version to 1.49.
+- `Recipient::do_send()` no longer has a return value. [#441]
+- Updated `tokio-util` dependency to `0.7`. [#525]
+- Updated minimum supported Rust version to 1.54.
 
 ### Removed
-- Removed `Resolver` actor [#451]
-- Implement `Clone` for `WeakRecipient` [#518]
-- Extend Sender trait by a downgrade function [#518]
-- Make `WeakSender` trait public rather than crate-public [#518]
-- Add `downgrade` functionality to `Recipient` to obtain a `WeakRecipient` [#518]
-- Add `From` conversion from `Recipient` to `WeakRecipient` [#518]
+- Remove `Resolver` actor. [#451]
 
+[#441]: https://github.com/actix/actix/pull/441
+[#451]: https://github.com/actix/actix/pull/451
+[#509]: https://github.com/actix/actix/pull/509
+[#518]: https://github.com/actix/actix/pull/518
+[#525]: https://github.com/actix/actix/pull/525
 
 ## 0.12.0 - 2021-06-06
 ### Added
-* Add `fut::try_future::ActorTryFuture`. [#419]
-* Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419]
-* Add `fut::future::ActorFutureExt::boxed_local` [#493] 
-* Implemented `MessageResponse` for `Vec<T>` [#501]
+- Add `fut::try_future::ActorTryFuture`. [#419]
+- Add `fut::try_future::ActorTryFutureExt` trait with `map_ok`, `map_err` and `and_then` combinator. [#419]
+- Add `fut::future::ActorFutureExt::boxed_local` [#493] 
+- Implemented `MessageResponse` for `Vec<T>` [#501]
 
 ### Changed
 - Make `Context::new` public. [#491]
@@ -33,20 +49,20 @@
 
 ## 0.11.1 - 2021-03-23
 ### Fixed
-* Panics caused by instant cancellation of a spawned future. [#484]
+- Panics caused by instant cancellation of a spawned future. [#484]
 
 [#484]: https://github.com/actix/actix/pull/484
 
 
 ## 0.11.0 - 2021-03-21
 ### Removed
-* Remove `fut::IntoActorFuture` trait. [#475]
-* Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
-* Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
-* Remove `prelude::Future` re-export from std. [#482]
-* Remove `fut::future::Either` re-export. Support for the enum re-exported from `futures_util` enum
+- Remove `fut::IntoActorFuture` trait. [#475]
+- Remove `fut::future::WrapFuture`'s `Output` associated type. [#475]
+- Remove `fut::stream::WrapStream`'s `Item` associated type. [#475]
+- Remove `prelude::Future` re-export from std. [#482]
+- Remove `fut::future::Either` re-export. Support for the enum re-exported from `futures_util` enum
   still exists. [#482]
-* Remove `fut::future::FutureResult` type alias. [#482]
+- Remove `fut::future::FutureResult` type alias. [#482]
 
 [#475]: https://github.com/actix/actix/pull/475
 [#479]: https://github.com/actix/actix/pull/479
@@ -55,28 +71,28 @@
 
 ## 0.11.0-beta.3 - 2021-03-03
 ### Added
-* Added `fut::{ActorFutureExt, ActorStreamExt}` traits for extension method
+- Added `fut::{ActorFutureExt, ActorStreamExt}` traits for extension method
   for `ActorFuture` and `ActorStream` trait. This is aiming to have a similar traits set inline
   with `futures` crate. [#474]
-* Added `ActorStreamExt::collect` method for collect an actor stream's items and output them as an
+- Added `ActorStreamExt::collect` method for collect an actor stream's items and output them as an
   actor future. [#474]
-* Added `ActorStreamExt::take_while` method to take an actor stream's items based on the
+- Added `ActorStreamExt::take_while` method to take an actor stream's items based on the
   closure output. [#474]
-* Added `ActorStreamExt::skip_while` method to skip an actor stream's items based on the
+- Added `ActorStreamExt::skip_while` method to skip an actor stream's items based on the
   closure output. [#474]
-* Added `fut::LocalBoxActorFuture` type to keep inline with the
+- Added `fut::LocalBoxActorFuture` type to keep inline with the
   `futures::future::LocalBoxFuture` type. [#474]
 
 ### Changed
-* Rework `fut::future::ActorFuture` trait. [#465]
-* `fut::future::{wrap_future, wrap_stream}` would need type annotation for Actor type. [#465]
-* `dev::MessageResponse::handle` method does not need generic type [#472]
-* `fut::{ok, err, result, FutureResult, Either}` are changed to re-export of 
+- Rework `fut::future::ActorFuture` trait. [#465]
+- `fut::future::{wrap_future, wrap_stream}` would need type annotation for Actor type. [#465]
+- `dev::MessageResponse::handle` method does not need generic type [#472]
+- `fut::{ok, err, result, FutureResult, Either}` are changed to re-export of 
   `futures::future::{ready, Ready, Either}` types. [#474]
-* `futures::future::{ok, err, ready, Ready, Either}` types impls `ActorFuture` trait by default. [#474]
+- `futures::future::{ok, err, ready, Ready, Either}` types impls `ActorFuture` trait by default. [#474]
 
 ### Removed
-* Remove `dev::ResponseChannel` trait. [#472]
+- Remove `dev::ResponseChannel` trait. [#472]
 
 [#465]: https://github.com/actix/actix/pull/465
 [#472]: https://github.com/actix/actix/pull/472
@@ -85,48 +101,48 @@
 
 ## 0.11.0-beta.2 - 2021-02-06
 ### Changed
-* Update `actix-rt` to `v2.0.0`. [#461]
-* Feature `resolver` is no longer default. [#461]
-* Rename `derive` feature to `macros` since it now includes derive *and* attribute macros. [#461]
+- Update `actix-rt` to `v2.0.0`. [#461]
+- Feature `resolver` is no longer default. [#461]
+- Rename `derive` feature to `macros` since it now includes derive *and- attribute macros. [#461]
 
 [#421]: https://github.com/actix/actix/pull/421
 
 
 ## 0.11.0-beta.1 - 2021-01-01
 ### Added
-* Re-export `actix_rt::main` macro as `actix::main`. [#448]
-* Added `actix::fut::Either::{left, right}()` variant constructors. [#453]
+- Re-export `actix_rt::main` macro as `actix::main`. [#448]
+- Added `actix::fut::Either::{left, right}()` variant constructors. [#453]
 
 ### Changed
-* The re-exported `actix-derive` macros are now conditionally included with the `derive` feature
+- The re-exported `actix-derive` macros are now conditionally included with the `derive` feature
   which is enabled by default but can be switched off to reduce dependencies. [#424]
-* The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a
+- The `where` clause on `Response::fut()` was relaxed to no longer require `T: Unpin`, allowing a
   `Response` to be created with an `async` block [#421]
-* Allow creating `WeakRecipient` from `WeakAddr`, similiar to `Recipient` from `Addr`. [#432]
-* Send `SyncArbiter` to current `System`'s `Arbiter` and run it as future there.
+- Allow creating `WeakRecipient` from `WeakAddr`, similiar to `Recipient` from `Addr`. [#432]
+- Send `SyncArbiter` to current `System`'s `Arbiter` and run it as future there.
   Enables nested `SyncArbiter`s. [#439]
-* Use generic type instead of associate type for `EnvelopeProxy`. [#445]
-* `SyncEnvelopeProxy` and `SyncContextEnvelope` are no longer bound to an Actor. [#445]
-* Rename `actix::clock::{delay_for, delay_until, Delay}` to `{sleep, sleep_until, Sleep}`. [#443]
-* Remove all `Unpin` requirement from `ActorStream`. [#443]
-* Update examples and tests according to the change of `actix-rt`. `Arbiter::spawn` and
+- Use generic type instead of associate type for `EnvelopeProxy`. [#445]
+- `SyncEnvelopeProxy` and `SyncContextEnvelope` are no longer bound to an Actor. [#445]
+- Rename `actix::clock::{delay_for, delay_until, Delay}` to `{sleep, sleep_until, Sleep}`. [#443]
+- Remove all `Unpin` requirement from `ActorStream`. [#443]
+- Update examples and tests according to the change of `actix-rt`. `Arbiter::spawn` and
   `actix_rt::spawn` now panic outside the context of `actix::System`. They must be called inside
   `System::run`, `SystemRunner::run` or `SystemRunner::block_on`. More information can be
   found [here](IC717769654). [#447]
-* `actix::fut::Either`'s internal variants' representation has changed to struct fields. [#453]
-* Replace `pin_project` with `pin_project_lite` [#453] 
-* Update `crossbeam-channel` to `0.5`
-* Update `bytes` to `1`. [#443]
-* Update `tokio` to `1`. [#443]
-* Update `tokio-util` tp `0.6`. [#443]
+- `actix::fut::Either`'s internal variants' representation has changed to struct fields. [#453]
+- Replace `pin_project` with `pin_project_lite` [#453] 
+- Update `crossbeam-channel` to `0.5`
+- Update `bytes` to `1`. [#443]
+- Update `tokio` to `1`. [#443]
+- Update `tokio-util` tp `0.6`. [#443]
 
 ### Fixed
-* Unified MessageResponse impl (combine separate Item/Error type, migrate to Item=Result). [#446]
-* Fix error for build with `--no-default-features` flag, add `sink` feature for
+- Unified MessageResponse impl (combine separate Item/Error type, migrate to Item=Result). [#446]
+- Fix error for build with `--no-default-features` flag, add `sink` feature for
   futures-util dependency. [#427]
 
 ### Removed
-* Remove unnecessary `actix::clock::Duration` re-export of `std::time::Duration`. [#443]
+- Remove unnecessary `actix::clock::Duration` re-export of `std::time::Duration`. [#443]
 
 [#421]: https://github.com/actix/actix/pull/421
 [#424]: https://github.com/actix/actix/pull/424
@@ -145,10 +161,10 @@
 
 ## 0.10.0 - 2020-09-10
 ### Changed
-* `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
-* Add `Sync` bound for `Box<dyn Sender>` trait object that making `Recipient` a `Send` + `Sync` type. [#403]
-* Update `parking_lot` to 0.11 [#404]
-* Remove unnecessary `PhantomData` field from `Request` making it `Send + Sync` regardless if
+- `SinkWrite::write` calls now send all items correctly using an internal buffer. [#384]
+- Add `Sync` bound for `Box<dyn Sender>` trait object that making `Recipient` a `Send` + `Sync` type. [#403]
+- Update `parking_lot` to 0.11 [#404]
+- Remove unnecessary `PhantomData` field from `Request` making it `Send + Sync` regardless if
   `Request`'s type-argument is `Send` or `Sync` [#407]
 
 [#384]: https://github.com/actix/actix/pull/384
@@ -159,25 +175,25 @@
 
 ## 0.10.0-alpha.3 - 2020-05-13
 ### Changed
-* Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
-* Only poll dropped ContextFut if event loop is running. [#374]
-* Minimum Rust version is now 1.40 (to be able to use `#[cfg(doctest)]`)
+- Update `tokio-util` dependency to 0.3, `FramedWrite` trait bound is changed. [#365]
+- Only poll dropped ContextFut if event loop is running. [#374]
+- Minimum Rust version is now 1.40 (to be able to use `#[cfg(doctest)]`)
 
 [#365]: https://github.com/actix/actix/pull/365
 [#374]: https://github.com/actix/actix/pull/374
 
 ### Fixed
-* Fix `ActorFuture::poll_next` impl for `StreamThen` to not lose inner future when it's pending. [#376]
+- Fix `ActorFuture::poll_next` impl for `StreamThen` to not lose inner future when it's pending. [#376]
 
 [#376]: https://github.com/actix/actix/pull/376
 
 
 ## 0.10.0-alpha.2 - 2020-03-05
 ### Added
-* New `AtomicResponse`, a `MessageResponse` with exclusive poll over actor's reference. [#357]
+- New `AtomicResponse`, a `MessageResponse` with exclusive poll over actor's reference. [#357]
 
 ### Changed
-* Require `Pin` for `ResponseActFuture`. [#355]
+- Require `Pin` for `ResponseActFuture`. [#355]
 
 [#355]: https://github.com/actix/actix/pull/355
 [#357]: https://github.com/actix/actix/pull/357
@@ -185,19 +201,19 @@
 
 ## 0.10.0-alpha.1 - 2020-02-25
 ### Fixed
-* Fix `MessageResponse` implementation  for `ResponseFuture` to always poll the spawned `Future`. [#317]
+- Fix `MessageResponse` implementation  for `ResponseFuture` to always poll the spawned `Future`. [#317]
 
 ### Added
-* New method address on SyncContext [#341]
-* Allow return of any `T: 'static` on `ResponseActFuture`. [#310]
-* Allow return of any `T: 'static` on `ResponseFuture`. [#343]
+- New method address on SyncContext [#341]
+- Allow return of any `T: 'static` on `ResponseActFuture`. [#310]
+- Allow return of any `T: 'static` on `ResponseFuture`. [#343]
 
 ### Changed
-* Feature `http` was removed. Actix support for http was moved solely to actix-http and actix-web crates. [#324]
-* Make `Pin`s safe [#335] [#346] [#347]
-* Only implement `ActorFuture` for `Box` where `ActorFuture` is `Unpin` [#348]
-* Upgrade `trust-dns-proto` to 0.19 [#349]
-* Upgrade `trust-dns-resolver` to 0.19 [#349]
+- Feature `http` was removed. Actix support for http was moved solely to actix-http and actix-web crates. [#324]
+- Make `Pin`s safe [#335] [#346] [#347]
+- Only implement `ActorFuture` for `Box` where `ActorFuture` is `Unpin` [#348]
+- Upgrade `trust-dns-proto` to 0.19 [#349]
+- Upgrade `trust-dns-resolver` to 0.19 [#349]
 
 [#310]: https://github.com/actix/actix/pull/310
 [#317]: https://github.com/actix/actix/pull/317
@@ -212,73 +228,73 @@
 
 ## 0.9.0 - 2019-12-20
 ### Fixed
-* Fix `ResolveFuture` type signature.
+- Fix `ResolveFuture` type signature.
 
 
 ## 0.9.0-alpha.2 - 2019-12-16
 ### Fixed
-* Fix `Resolve` actor's panic
+- Fix `Resolve` actor's panic
 
 
 ## 0.9.0-alpha.1 - 2019-12-15
 ### Added
-* Added `Context::connected()` to check any addresses are alive
-* Added `fut::ready()` future
+- Added `Context::connected()` to check any addresses are alive
+- Added `fut::ready()` future
 
 ### Changed
-* Migrate to std::future, tokio 0.2 and actix-rt 1.0.0 @bcmcmill #300
-* Upgrade `derive_more` to 0.99.2
-* Upgrade `smallvec` to 1.0.0
+- Migrate to std::future, tokio 0.2 and actix-rt 1.0.0 @bcmcmill #300
+- Upgrade `derive_more` to 0.99.2
+- Upgrade `smallvec` to 1.0.0
 
 ### Fixed
-* Added `#[must_use]` attribute to `ActorFuture` and `ActorStream`
+- Added `#[must_use]` attribute to `ActorFuture` and `ActorStream`
 
 
 ## 0.8.3 - 2019-05-29
 ### Fixed
-* Stop actor on async context drop
+- Stop actor on async context drop
 
 
 ## 0.8.2 - 2019-05-12
 ### Changed
-* Enable `http` feature by default
+- Enable `http` feature by default
 
 
 ## 0.8.1 - 2019-04-16
 ### Added
-* Added `std::error::Error` impl for `SendError`
+- Added `std::error::Error` impl for `SendError`
 
 ### Fixed
-* Fixed concurrent system registry insert #248
+- Fixed concurrent system registry insert #248
 
 
 ## 0.8.0 - 2019-04-14
 ### Added
-* Added `std::error::Error` impl for `MailboxError`
+- Added `std::error::Error` impl for `MailboxError`
 
 ### Changed
-* Use trust-dns-resolver 0.11.0
+- Use trust-dns-resolver 0.11.0
 
 
 ## 0.8.0.alpha.3 - 2019-04-12
-* Add `Actor::start_in_arbiter` with semantics of `Supervisor::start_in_arbiter`.
-* Add `ResponseError` for `ResolverError`
-* Add `io::SinkWrite`
+- Add `Actor::start_in_arbiter` with semantics of `Supervisor::start_in_arbiter`.
+- Add `ResponseError` for `ResolverError`
+- Add `io::SinkWrite`
 
 
 ## 0.8.0-alpha.2 - 2019-03-29
-* Add `actix-http` error support for MailboxError
+- Add `actix-http` error support for MailboxError
 
 
 ## 0.8.0-alpha.1 - 2019-03-28
 ### Changes
-* Edition 2018
-* Replace System/Arbiter with `actix_rt::System` and `actix_rt::Arbiter`
-* Add implementations for `Message` for `Arc` and `Box`
-* System and arbiter registries available via `from_registry()` method.
+- Edition 2018
+- Replace System/Arbiter with `actix_rt::System` and `actix_rt::Arbiter`
+- Add implementations for `Message` for `Arc` and `Box`
+- System and arbiter registries available via `from_registry()` method.
 
 ### Deleted
-* Deleted signals actor. The functionality formerly provided by the
+- Deleted signals actor. The functionality formerly provided by the
   signals actor can be achieved using the `tokio-signal` crate. See
   the [chat example] for how this can work.
 
@@ -330,165 +346,165 @@
 
 
 ## 0.7.4 - 2018-08-27
-* Introduce method `query` to determine whether there is running actor in registry.
-* Return back `mocker` module.
+- Introduce method `query` to determine whether there is running actor in registry.
+- Return back `mocker` module.
 
 
 ## 0.7.3 - 2018-07-30
-* Parked messages not getting processed #120
+- Parked messages not getting processed #120
 
 
 ## 0.7.2 - 2018-07-24
-* Use actix-derive 0.3
+- Use actix-derive 0.3
 
 
 ## 0.7.1 - 2018-07-20
-* Arbiter now has `Arbiter::builder()` which allows opt-in of behavior to stop
+- Arbiter now has `Arbiter::builder()` which allows opt-in of behavior to stop
   the actor system on uncaught panic in any arbiter thread. See #111 for examples.
-* Allow to set custom system service actor via `SystemRegistry::set()` method.
-* `AsyncContext::run_interval` does not fire callback immediately, instead it fires after specified duration.
+- Allow to set custom system service actor via `SystemRegistry::set()` method.
+- `AsyncContext::run_interval` does not fire callback immediately, instead it fires after specified duration.
 
 
 ## 0.7.0 - 2018-07-05
-* Context impl refactoring, fix potential UB
-* Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Addr`
-* Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Recipient`
+- Context impl refactoring, fix potential UB
+- Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Addr`
+- Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Recipient`
 
 
 ## 0.6.2 - 2018-06-xx
-* Breaking change: Restore `StreamHandler` from 0.5, new `StreamHandler` renamed to `StreamHandler2`
+- Breaking change: Restore `StreamHandler` from 0.5, new `StreamHandler` renamed to `StreamHandler2`
 
 
 ## 0.6.1 - 2018-06-19
-* Added `actix::run()` and `actix::spawn()` helper functions
-* Use parking_lot 0.6
-* Fixed potential memory unsafety
+- Added `actix::run()` and `actix::spawn()` helper functions
+- Use parking_lot 0.6
+- Fixed potential memory unsafety
 
 
 ## 0.6.0 - 2018-06-18
 ### Changed
-* Use tokio
-* `System` and `Arbiter` refactored
-* `Arbiter::handle()` is not available anymore. Use `Arbiter::spawn()` and
+- Use tokio
+- `System` and `Arbiter` refactored
+- `Arbiter::handle()` is not available anymore. Use `Arbiter::spawn()` and
   `Arbiter::spawn_fn()` instead.
-* `StreamHandler` trait refactored.
-* Min rustc version - 1.26
+- `StreamHandler` trait refactored.
+- Min rustc version - 1.26
 
 
 ## 0.5.7 - 2018-05-17
-* Stop sync actor if sender is dead.
+- Stop sync actor if sender is dead.
 
 
 ## 0.5.6 - 2018-04-17
-* Fix index usage during iteration for future cancellation #67
+- Fix index usage during iteration for future cancellation #67
 
 
 ## 0.5.5 - 2018-03-19
-* Fix polling of wrong wait future after completion
+- Fix polling of wrong wait future after completion
 
 
 ## 0.5.4 - 2018-03-16
-* Always complete actor lifecycle (i.e. Actor::started())
+- Always complete actor lifecycle (i.e. Actor::started())
 
 
 ## 0.5.3 - 2018-03-08
-* Panic after cancelling stream future #58
+- Panic after cancelling stream future #58
 
 
 ## 0.5.2 - 2018-03-06
-* Allow to set timeout for Connect message #56
+- Allow to set timeout for Connect message #56
 
 
 ## 0.5.1 - 2018-03-02
-* Internal state is alive during `stopping` period.
-* Do not send StopArbiter message to system arbiter during system shutdown #53
+- Internal state is alive during `stopping` period.
+- Do not send StopArbiter message to system arbiter during system shutdown #53
 
 
 ## 0.5.0 - 2018-02-17
-* Address/Recipient is generic over actor destination
-* Make rules of actor stopping more strict
-* Use bounded channels for actor communications
-* Add dns resolver and tcp connector utility actor
-* Add `StreamHandler` trait for stream handling
-* Add `Context::handle()` method, currently running future handle
-* Add `actix::io` helper types for `AsyncWrite` related types
-* Drop FramedContext
+- Address/Recipient is generic over actor destination
+- Make rules of actor stopping more strict
+- Use bounded channels for actor communications
+- Add dns resolver and tcp connector utility actor
+- Add `StreamHandler` trait for stream handling
+- Add `Context::handle()` method, currently running future handle
+- Add `actix::io` helper types for `AsyncWrite` related types
+- Drop FramedContext
 
 
 ## 0.4.5 - 2018-01-23
-* Refactor context implementation
-* Refactor Supervisor type
-* Allow to use `Framed` instances with normal `Context`
+- Refactor context implementation
+- Refactor Supervisor type
+- Allow to use `Framed` instances with normal `Context`
 
 
 ## 0.4.4 - 2018-01-19
-* Add `Clone` implementation for `Box<Subscriber<M> + Send>`
-* Stop stream polling if context is waiting for future completion
-* Upgraded address stops working after all references are dropped #38
+- Add `Clone` implementation for `Box<Subscriber<M> + Send>`
+- Stop stream polling if context is waiting for future completion
+- Upgraded address stops working after all references are dropped #38
 
 
 ## 0.4.3 - 2018-01-09
-* Cleanup `FramedActor` error and close state handling.
-* Do not exit early from framed polling
+- Cleanup `FramedActor` error and close state handling.
+- Do not exit early from framed polling
 
 
 ## 0.4.2 - 2018-01-07
-* Cleanup actor stopping process
-* Unify context implementation
+- Cleanup actor stopping process
+- Unify context implementation
 
 
 ## 0.4.1 - 2018-01-06
-* Remove StreamHandler requirements from add_message_stream()
-* Fix items length check
+- Remove StreamHandler requirements from add_message_stream()
+- Fix items length check
 
 
 ## 0.4.0 - 2018-01-05
-* Simplify `Handler` trait (E type removed).
-* Use associated type for handler response for `Handler` trait.
-* Added framed `drain` method.
-* Allow to replace framed object in framed context.
-* Enable signal actor by default, make it compatible with windows.
-* Added `SyncContext::restart()` method, which allow to restart sync actor.
-* Changed behaviour of `Address::call`, if request get drop message cancels.
+- Simplify `Handler` trait (E type removed).
+- Use associated type for handler response for `Handler` trait.
+- Added framed `drain` method.
+- Allow to replace framed object in framed context.
+- Enable signal actor by default, make it compatible with windows.
+- Added `SyncContext::restart()` method, which allow to restart sync actor.
+- Changed behaviour of `Address::call`, if request get drop message cancels.
 
 
 ## 0.3.5 - 2017-12-23
-* Re-export `actix_derive` package
-* Added conversion implementation `From<Result<I, E>> for Response<A, M>`
-* Expose the Framed underneath FramedContext #29
+- Re-export `actix_derive` package
+- Added conversion implementation `From<Result<I, E>> for Response<A, M>`
+- Expose the Framed underneath FramedContext #29
 
 
 ## 0.3.4 - 2017-12-20
-* Fix memory leak when sending messages recursively to self #28
-* Add convenience impl for boxed Subscriber objects. #27
-* Add `ActorStream::fold()` method.
-* Add helper combinator `Stream::finish()` method.
+- Fix memory leak when sending messages recursively to self #28
+- Add convenience impl for boxed Subscriber objects. #27
+- Add `ActorStream::fold()` method.
+- Add helper combinator `Stream::finish()` method.
 
 
 ## 0.3.3 - 2017-11-21
-* SystemRegistry does not store created actor #21
+- SystemRegistry does not store created actor #21
 
 
 ## 0.3.2 - 2017-11-06
-* Disable `signal` feature by default
+- Disable `signal` feature by default
 
 
 ## 0.3.1 - 2017-10-30
-* Simplify `ToEnvelope` trait, do not generalize over Message type.
-* `ActorContext` requires `ToEnvelope` trait.
-* Added `Subscriber::subscriber() -> Box<Subscriber>`
-* Simplify `ActorContext` trait, it does not need to know about `Actor`
-* Cancel `notify` and `run_later` futures on context stop
+- Simplify `ToEnvelope` trait, do not generalize over Message type.
+- `ActorContext` requires `ToEnvelope` trait.
+- Added `Subscriber::subscriber() -> Box<Subscriber>`
+- Simplify `ActorContext` trait, it does not need to know about `Actor`
+- Cancel `notify` and `run_later` futures on context stop
 
 
 ## 0.3.0 - 2017-10-23
-* Added `Either` future
-* Message has to provide `ResponseType` impl instead of Actor
+- Added `Either` future
+- Message has to provide `ResponseType` impl instead of Actor
 
 
 ## 0.2.0 - 2017-10-17
-* Added `ActorStream`
+- Added `ActorStream`
 
 
 ## 0.1.0 (2017-10-11)
-* First release
+- First release

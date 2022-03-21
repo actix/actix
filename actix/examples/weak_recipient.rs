@@ -18,7 +18,7 @@ pub struct TimePing(Instant);
 #[rtype(result = "()")]
 pub struct RegisterForTime(pub WeakRecipient<TimePing>);
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TimeService {
     clients: Vec<WeakRecipient<TimePing>>,
 }
@@ -27,8 +27,7 @@ impl TimeService {
     fn send_tick(&mut self, _ctx: &mut Context<Self>) {
         for client in self.clients.iter() {
             if let Some(client) = client.upgrade() {
-                // `Recipient::do_send` seems inconsistent with `Addr::do_send`
-                client.do_send(TimePing(Instant::now())).unwrap();
+                client.do_send(TimePing(Instant::now()));
                 println!("⏰ sent ping to client {:?}", client);
             } else {
                 println!("⏰ client can no longer be upgraded");
@@ -78,14 +77,6 @@ impl Handler<RegisterForTime> for TimeService {
 
 impl Supervised for TimeService {}
 impl SystemService for TimeService {}
-
-impl Default for TimeService {
-    fn default() -> Self {
-        TimeService {
-            clients: Default::default(),
-        }
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct ClientA;

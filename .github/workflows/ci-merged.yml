@@ -1,13 +1,11 @@
-name: CI
+name: CI (post-merge)
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
   push:
     branches: [master]
 
 jobs:
-  build_and_test:
+  build_and_test_nightly:
     strategy:
       fail-fast: false
       matrix:
@@ -16,8 +14,7 @@ jobs:
           - { name: macOS, os: macos-latest, triple: x86_64-apple-darwin }
           - { name: Windows, os: windows-latest, triple: x86_64-pc-windows-msvc }
         version:
-          - 1.54.0 # MSRV
-          - stable
+          - nightly
 
     name: ${{ matrix.target.name }} / ${{ matrix.version }}
     runs-on: ${{ matrix.target.os }}
@@ -56,24 +53,6 @@ jobs:
         with:
           command: test
           args: -v --workspace --all-features --no-fail-fast -- --nocapture
-
-      # disable coverage for now
-      # - name: Generate coverage file
-      #   if: >
-      #     matrix.target.os == 'ubuntu-latest'
-      #     && matrix.version == 'stable'
-      #     && github.ref == 'refs/heads/master'
-      #   run: |
-      #     cargo install cargo-tarpaulin --vers "^0.13"
-      #     cargo tarpaulin --out Xml --verbose
-      # - name: Upload to Codecov
-      #   if: >
-      #     matrix.target.os == 'ubuntu-latest'
-      #     && matrix.version == 'stable'
-      #     && github.ref == 'refs/heads/master'
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     file: cobertura.xml
 
       - name: Clear the cargo caches
         run: |

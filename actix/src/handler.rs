@@ -507,6 +507,14 @@ where
     }
 }
 
+impl<A: Actor, I> From<Pin<Box<dyn ActorFuture<A, Output = I>>>> for ActorResponse<A, I> {
+    fn from(fut: Pin<Box<dyn ActorFuture<A, Output = I>>>) -> Self {
+        Self {
+            item: ActorResponseTypeItem::Fut(fut),
+        }
+    }
+}
+
 macro_rules! SIMPLE_RESULT {
     ($type:ty) => {
         impl<A, M> MessageResponse<A, M> for $type

@@ -43,7 +43,7 @@ where
 
     fn connected(&self) -> bool;
 
-    /// Returns a downgraded sender, where the sender is downgraded into its weak counterpart
+    /// Returns a downgraded sender, where the sender is downgraded into its weak counterpart.
     fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static>;
 }
 
@@ -77,7 +77,7 @@ where
         (**self).connected()
     }
 
-    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync> {
         (**self).downgrade()
     }
 }
@@ -91,6 +91,7 @@ where
     ///
     /// Returns [`None`] if the actor has since been dropped.
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
+
     fn boxed(&self) -> Box<dyn WeakSender<M> + Sync>;
 }
 
@@ -140,6 +141,14 @@ impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
         fmt.debug_struct("WeakAddressSender").finish()
     }
 }
+
+impl<A: Actor> PartialEq for WeakAddressSender<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner.ptr_eq(&other.inner)
+    }
+}
+
+impl<A: Actor> Eq for WeakAddressSender<A> {}
 
 trait AssertKinds: Send + Sync + Clone {}
 
