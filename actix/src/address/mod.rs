@@ -1,5 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::{error, fmt};
+use std::rc::Weak;
 
 pub(crate) mod channel;
 mod envelope;
@@ -246,6 +247,14 @@ impl<A: Actor> PartialEq for WeakAddr<A> {
 }
 
 impl<A: Actor> std::cmp::Eq for WeakAddr<A> {}
+
+impl<A: Actor> From<Addr<A>> for WeakAddr<A> {
+    fn from(addr: Addr<A>) -> Self {
+        WeakAddr {
+            wtx: addr.tx.downgrade(),
+        }
+    }
+}
 
 /// The [`Recipient`] type allows to send one specific message to an actor.
 ///
