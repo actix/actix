@@ -1,5 +1,6 @@
 # CHANGES
-
+- Add `connected` associated functions to `WeakAddr` and `WeakRecipient`
+- 
 ## Unreleased - 2021-xx-xx
 
 

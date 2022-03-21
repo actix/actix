@@ -215,6 +215,12 @@ impl<A: Actor> WeakAddr<A> {
     {
         self.into()
     }
+
+    /// Returns true iff the actor is still alive.
+    pub fn connected(&self) -> bool {
+        self.wtx.connected()
+    }
+
 }
 
 impl<A: Actor> Clone for WeakAddr<A> {
@@ -418,6 +424,11 @@ where
     /// Attempts to upgrade the `WeakRecipient<M>` pointer to an `Recipient<M>`, similar to `WeakAddr<A>`
     pub fn upgrade(&self) -> Option<Recipient<M>> {
         self.wtx.upgrade().map(Recipient::new)
+    }
+
+    /// Returns true if the recipient is still alive
+    pub fn connected(&self) -> bool {
+        self.wtx.connected()
     }
 }
 
