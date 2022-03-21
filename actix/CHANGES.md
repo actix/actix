@@ -1,6 +1,6 @@
 # CHANGES
 - Add `connected` associated functions to `WeakAddr` and `WeakRecipient`
-- 
+- Implement conversion `From<Addr<A>>` for `WeakAddr<A>`
 ## Unreleased - 2021-xx-xx
 
 
