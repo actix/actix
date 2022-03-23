@@ -8,7 +8,6 @@ use actix_rt::time::sleep;
 use actix::prelude::*;
 use actix::{WeakAddr, WeakRecipient};
 
-
 #[derive(Debug)]
 struct Ping(usize);
 
@@ -566,13 +565,34 @@ fn test_weak_conversions() {
         let weak_addr_from_addr = WeakAddr::from(addr.clone());
 
         let weak_recipient_from_addr = WeakRecipient::<Ping>::from(addr.clone());
-        let weak_recipient_from_weak_addr = WeakRecipient::<Ping>::from(weak_addr_from_addr.clone());
+        let weak_recipient_from_weak_addr =
+            WeakRecipient::<Ping>::from(weak_addr_from_addr.clone());
         let weak_recipient_from_recipient = WeakRecipient::from(recipient.clone());
 
-        weak_addr_from_addr.upgrade().unwrap().send(Ping(1)).await.unwrap();
-        weak_recipient_from_addr.upgrade().unwrap().send(Ping(1)).await.unwrap();
-        weak_recipient_from_weak_addr.upgrade().unwrap().send(Ping(1)).await.unwrap();
-        weak_recipient_from_recipient.upgrade().unwrap().send(Ping(1)).await.unwrap();
+        weak_addr_from_addr
+            .upgrade()
+            .unwrap()
+            .send(Ping(1))
+            .await
+            .unwrap();
+        weak_recipient_from_addr
+            .upgrade()
+            .unwrap()
+            .send(Ping(1))
+            .await
+            .unwrap();
+        weak_recipient_from_weak_addr
+            .upgrade()
+            .unwrap()
+            .send(Ping(1))
+            .await
+            .unwrap();
+        weak_recipient_from_recipient
+            .upgrade()
+            .unwrap()
+            .send(Ping(1))
+            .await
+            .unwrap();
 
         let pings = addr.send(CountPings).await.unwrap();
         assert_eq!(pings, 4);
@@ -583,7 +603,6 @@ fn test_weak_conversions() {
 // test that the connected methods for weak addresses and recipients work with the same
 // semantics as the connected methods for normal addresses and recipients
 fn test_connected_for_weak_addr_and_recipient() {
-
     System::new().block_on(async move {
         let addr = PingCounterActor::start_default();
         let recipient = addr.clone().recipient::<Ping>();

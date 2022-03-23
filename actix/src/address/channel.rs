@@ -22,15 +22,14 @@ use tokio::sync::oneshot::{channel as oneshot_channel, Receiver as OneshotReceiv
 use crate::actor::Actor;
 use crate::handler::{Handler, Message};
 
-
 use super::envelope::{Envelope, ToEnvelope};
 use super::queue::Queue;
 use super::SendError;
 
 pub trait Sender<M>: Send
-    where
-        M::Result: Send,
-        M: Message + Send,
+where
+    M::Result: Send,
+    M: Message + Send,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>>;
 
@@ -49,10 +48,10 @@ pub trait Sender<M>: Send
 }
 
 impl<S, M> Sender<M> for Box<S>
-    where
-        S: Sender<M> + ?Sized,
-        M::Result: Send,
-        M: Message + Send,
+where
+    S: Sender<M> + ?Sized,
+    M::Result: Send,
+    M: Message + Send,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         (**self).do_send(msg)
@@ -84,9 +83,9 @@ impl<S, M> Sender<M> for Box<S>
 }
 
 pub trait WeakSender<M>: Send
-    where
-        M::Result: Send,
-        M: Message + Send,
+where
+    M::Result: Send,
+    M: Message + Send,
 {
     /// Attempts to upgrade a `WeakAddressSender<A>` to a [`Sender<M>`]
     ///
@@ -135,11 +134,14 @@ pub struct WeakAddressSender<A: Actor> {
 impl<A: Actor> WeakAddressSender<A> {
     /// Returns true iff the actor is still alive.
     pub fn connected(&self) -> bool {
-        self.inner.upgrade().map(|inner| {
-            let curr = inner.state.load(SeqCst);
-           let state = decode_state(curr);
-            state.is_open
-        }).unwrap_or(false)
+        self.inner
+            .upgrade()
+            .map(|inner| {
+                let curr = inner.state.load(SeqCst);
+                let state = decode_state(curr);
+                state.is_open
+            })
+            .unwrap_or(false)
     }
 }
 
@@ -315,11 +317,11 @@ impl<A: Actor> AddressSender<A> {
     ///
     /// This function must be called from inside of a task.
     pub fn send<M>(&self, msg: M) -> Result<OneshotReceiver<M::Result>, SendError<M>>
-        where
-            A: Handler<M>,
-            A::Context: ToEnvelope<A, M>,
-            M::Result: Send,
-            M: Message + Send,
+    where
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
+        M::Result: Send,
+        M: Message + Send,
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false, None).is_ready() {
@@ -355,11 +357,11 @@ impl<A: Actor> AddressSender<A> {
 
     /// Attempts to send a message on this `Sender<A>` without blocking.
     pub fn try_send<M>(&self, msg: M, park: bool) -> Result<(), SendError<M>>
-        where
-            A: Handler<M>,
-            <A as Actor>::Context: ToEnvelope<A, M>,
-            M::Result: Send,
-            M: Message + Send + 'static,
+    where
+        A: Handler<M>,
+        <A as Actor>::Context: ToEnvelope<A, M>,
+        M::Result: Send,
+        M: Message + Send + 'static,
     {
         // If the sender is currently blocked, reject the message
         if !self.poll_unparked(false, None).is_ready() {
@@ -387,11 +389,11 @@ impl<A: Actor> AddressSender<A> {
     ///
     /// This function does not park current task.
     pub fn do_send<M>(&self, msg: M) -> Result<(), SendError<M>>
-        where
-            A: Handler<M>,
-            <A as Actor>::Context: ToEnvelope<A, M>,
-            M::Result: Send,
-            M: Message + Send,
+    where
+        A: Handler<M>,
+        <A as Actor>::Context: ToEnvelope<A, M>,
+        M::Result: Send,
+        M: Message + Send,
     {
         if self.inc_num_messages().is_none() {
             Err(SendError::Closed(msg))
@@ -495,11 +497,11 @@ impl<A: Actor> AddressSender<A> {
 }
 
 impl<A, M> Sender<M> for AddressSender<A>
-    where
-        A: Handler<M>,
-        A::Context: ToEnvelope<A, M>,
-        M::Result: Send,
-        M: Message + Send + 'static,
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<A, M>,
+    M::Result: Send,
+    M: Message + Send + 'static,
 {
     fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.do_send(msg)
@@ -601,16 +603,14 @@ impl<A: Actor> WeakAddressSender<A> {
     pub fn upgrade(&self) -> Option<AddressSender<A>> {
         Weak::upgrade(&self.inner).map(|inner| AddressSenderProducer { inner }.sender())
     }
-
-
 }
 
 impl<A, M> WeakSender<M> for WeakAddressSender<A>
-    where
-        A: Handler<M>,
-        A::Context: ToEnvelope<A, M>,
-        M::Result: Send,
-        M: Message + Send + 'static,
+where
+    A: Handler<M>,
+    A::Context: ToEnvelope<A, M>,
+    M::Result: Send,
+    M: Message + Send + 'static,
 {
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>> {
         if let Some(inner) = WeakAddressSender::upgrade(self) {
@@ -625,7 +625,9 @@ impl<A, M> WeakSender<M> for WeakAddressSender<A>
     }
 
     fn connected(&self) -> bool {
-        WeakAddressSender::upgrade(self).map(|inner| inner.connected()).unwrap_or(false)
+        WeakAddressSender::upgrade(self)
+            .map(|inner| inner.connected())
+            .unwrap_or(false)
     }
 }
 

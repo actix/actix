@@ -1,7 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::{error, fmt};
 
-
 pub(crate) mod channel;
 mod envelope;
 mod message;
@@ -221,7 +220,6 @@ impl<A: Actor> WeakAddr<A> {
     pub fn connected(&self) -> bool {
         self.wtx.connected()
     }
-
 }
 
 impl<A: Actor> Clone for WeakAddr<A> {
