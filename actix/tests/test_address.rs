@@ -6,7 +6,8 @@ use std::{collections::HashSet, time::Duration};
 use actix_rt::time::sleep;
 
 use actix::prelude::*;
-use actix::WeakRecipient;
+use actix::{WeakAddr, WeakRecipient};
+
 
 #[derive(Debug)]
 struct Ping(usize);
@@ -67,11 +68,25 @@ impl Message for CountPings {
     type Result = usize;
 }
 
+struct StopPingCounterActor;
+
+impl Message for StopPingCounterActor {
+    type Result = ();
+}
+
 impl actix::Handler<Ping> for PingCounterActor {
     type Result = ();
 
     fn handle(&mut self, _msg: Ping, _ctx: &mut Self::Context) -> Self::Result {
         self.ping_count.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+impl actix::Handler<StopPingCounterActor> for PingCounterActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: StopPingCounterActor, ctx: &mut Self::Context) -> Self::Result {
+        ctx.stop();
     }
 }
 
@@ -538,5 +553,53 @@ fn test_recipient_hash() {
         assert!(recipients.contains(&recipient11));
 
         System::current().stop();
+    });
+}
+
+#[test]
+// test that the weak conversion traits are implemented and dispatch correctly
+fn test_weak_conversions() {
+    System::new().block_on(async move {
+        let addr = PingCounterActor::start_default();
+        let recipient = addr.clone().recipient::<Ping>();
+
+        let weak_addr_from_addr = WeakAddr::from(addr.clone());
+
+        let weak_recipient_from_addr = WeakRecipient::<Ping>::from(addr.clone());
+        let weak_recipient_from_weak_addr = WeakRecipient::<Ping>::from(weak_addr_from_addr.clone());
+        let weak_recipient_from_recipient = WeakRecipient::from(recipient.clone());
+
+        weak_addr_from_addr.upgrade().unwrap().send(Ping(1)).await.unwrap();
+        weak_recipient_from_addr.upgrade().unwrap().send(Ping(1)).await.unwrap();
+        weak_recipient_from_weak_addr.upgrade().unwrap().send(Ping(1)).await.unwrap();
+        weak_recipient_from_recipient.upgrade().unwrap().send(Ping(1)).await.unwrap();
+
+        let pings = addr.send(CountPings).await.unwrap();
+        assert_eq!(pings, 4);
+    });
+}
+
+#[test]
+// test that the connected methods for weak addresses and recipients work with the same
+// semantics as the connected methods for normal addresses and recipients
+fn test_connected_for_weak_addr_and_recipient() {
+
+    System::new().block_on(async move {
+        let addr = PingCounterActor::start_default();
+        let recipient = addr.clone().recipient::<Ping>();
+        let weak_addr = WeakAddr::from(addr.clone());
+        let weak_recipient = WeakRecipient::<Ping>::from(addr.clone());
+
+        assert!(addr.connected());
+        assert!(recipient.connected());
+        assert_eq!(weak_addr.connected(), addr.connected());
+        assert_eq!(weak_recipient.connected(), recipient.connected());
+
+        // now stop the actor and try the same thing again
+        addr.send(StopPingCounterActor).await.unwrap();
+        assert!(!addr.connected());
+        assert!(!recipient.connected());
+        assert_eq!(weak_addr.connected(), addr.connected());
+        assert_eq!(weak_recipient.connected(), recipient.connected());
     });
 }
