@@ -21,7 +21,7 @@ use tokio::sync::oneshot::{channel as oneshot_channel, Receiver as OneshotReceiv
 
 use crate::actor::Actor;
 use crate::handler::{Handler, Message};
-use crate::WeakAddr;
+
 
 use super::envelope::{Envelope, ToEnvelope};
 use super::queue::Queue;

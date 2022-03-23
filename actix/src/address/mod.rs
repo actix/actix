@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 use std::{error, fmt};
-use std::rc::Weak;
+
 
 pub(crate) mod channel;
 mod envelope;
