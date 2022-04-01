@@ -93,8 +93,8 @@ implement the `started`, `stopping` and `stopped` methods of the Actor trait. `s
 when the actor starts and `stopping` when the actor finishes. Check the API docs
 for more information on [the actor lifecycle].
 
-[Actor trait]: [https://actix.github.io/actix/actix/trait.Actor.html]
-[the actor lifecycle]: [https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle]
+[Actor trait]: https://actix.github.io/actix/actix/trait.Actor.html
+[the actor lifecycle]: https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle
 
 ### Handle Messages
 
