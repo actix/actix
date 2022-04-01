@@ -65,25 +65,25 @@ In order to define an actor you need to define a struct and have it implement
 the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
 
 ```rust
-use actix::{Actor, Addr, Context, System};
+use actix::{Actor, Context, System};
 
 struct MyActor;
 
 impl Actor for MyActor {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(&mut self, _ctx: &mut Self::Context) {
         println!("I am alive!");
         System::current().stop(); // <- stop system
     }
 }
 
 fn main() {
-    let mut system = System::new();
+    let system = System::new();
 
-    let addr = system.block_on(async { MyActor.start() });
+    let _addr = system.block_on(async { MyActor.start() });
 
-    system.run();
+    system.run().unwrap();
 }
 ```
 
