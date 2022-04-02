@@ -102,7 +102,8 @@ pub mod prelude {
         Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
     pub use crate::address::{
-        Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
+        Addr, MailboxError, Recipient, RecipientRequest, Request, SendError, WeakAddr,
+        WeakRecipient,
     };
     pub use crate::context::{Context, ContextFutureSpawner};
     pub use crate::fut::{
@@ -142,9 +143,11 @@ pub mod dev {
     pub use crate::prelude::*;
 
     pub use crate::address::{Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope};
+
     pub mod channel {
         pub use crate::address::channel::{channel, AddressReceiver, AddressSender};
     }
+
     pub use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
     pub use crate::handler::{MessageResponse, OneshotSender};
     pub use crate::mailbox::Mailbox;
