@@ -1,7 +1,7 @@
 # CHANGES
 - Add `connected` associated functions to `WeakAddr` and `WeakRecipient` with same semantics as in `Addr` and `Recipient`
 - Implement missing conversion `From<Addr<A>>` for `WeakAddr<A>`
-- `WeakAddr` and `WeakRecipient` are not exposed as part of `prelude`
+- `WeakAddr` and `WeakRecipient` are now exposed as part of `prelude`
 ## Unreleased - 2021-xx-xx
 
 
