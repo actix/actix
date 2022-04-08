@@ -124,7 +124,7 @@ impl Actor for Calculator {
 impl Handler<Sum> for Calculator {
     type Result = usize; // <- Message response type
 
-    fn handle(&mut self, msg: Sum, ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: Sum, _ctx: &mut Context<Self>) -> Self::Result {
         msg.0 + msg.1
     }
 }
