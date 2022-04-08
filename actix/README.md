@@ -196,11 +196,11 @@ impl Handler<Ping> for Game {
 }
 
 fn main() {
-    let mut system = System::new();
+    let system = System::new();
 
     // To get a Recipient object, we need to use a different builder method
     // which will allow postponing actor creation
-    let addr = system.block_on(async {
+    let _addr = system.block_on(async {
         Game::create(|ctx| {
             // now we can get an address of the first actor and create the second actor
             let addr = ctx.address();
@@ -224,7 +224,7 @@ fn main() {
         });
     });
 
-    system.run();
+    system.run().unwrap();
 }
 ```
 
