@@ -20,7 +20,7 @@ pub enum SendError<T> {
     Closed(T),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 /// The errors that can occur during the message delivery process.
 pub enum MailboxError {
     Closed,
