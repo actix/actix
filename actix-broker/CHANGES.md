@@ -1,6 +1,9 @@
 # Changes
 
 ## Unreleased - 2022-xx-xx
+
+
+## 0.4.3 - 2022-05-24
 - Fix at-least-once delivery guarantee for IssueAsync. [#536]
 
 [#536]: https://github.com/actix/actix/pull/536
