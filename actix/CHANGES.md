@@ -1,14 +1,17 @@
 # CHANGES
-- Add `connected` associated functions to `WeakAddr` and `WeakRecipient` with same semantics as in `Addr` and `Recipient`
-- Implement missing conversion `From<Addr<A>>` for `WeakAddr<A>`
-- `WeakAddr` and `WeakRecipient` are now exposed as part of `prelude`
-## Unreleased - 2021-xx-xx
 
+## Unreleased - 2022-xx-xx
 ### Added
-
+- Add `connected` associated functions to `WeakAddr` and `WeakRecipient` with same semantics as in `Addr` and `Recipient`. [#530]
+- Implement `From<Addr<A>>` for `WeakAddr<A>`. [#530]
 - Derive `PartialEq` and `Eq` for `MailboxError`. [#527]
 
+### Changed
+- `WeakAddr` and `WeakRecipient` are now exposed as part of `prelude`. [#530]
+
 [#527]: https://github.com/actix/actix/pull/527
+[#530]: https://github.com/actix/actix/pull/530
+
 
 ## 0.13.0 - 2022-03-01
 ### Added
