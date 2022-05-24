@@ -14,6 +14,9 @@ where
     <Self as Actor>::Context: AsyncContext<Self>,
 {
     /// Asynchronously issue a message.
+    /// This bypasses the mailbox capacity, and  will always queue the message.
+    /// If the mailbox is closed, the message is silently dropped and the subscriber
+    /// is detached from the broker.
     fn issue_async<T: RegisteredBroker, M: BrokerMsg>(&self, msg: M) {
         let broker = T::get_broker();
         broker.do_send(IssueAsync(msg, TypeId::of::<Self>()));

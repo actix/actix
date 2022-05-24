@@ -126,15 +126,22 @@ impl<T: 'static + Unpin, M: BrokerMsg> Handler<IssueAsync<M>> for Broker<T> {
     fn handle(&mut self, msg: IssueAsync<M>, _ctx: &mut Context<Self>) {
         trace!("Broker: Received IssueAsync");
         if let Some(mut subs) = self.take_subs::<M>() {
-            subs.drain(..)
-                .filter_map(|(id, s)| {
-                    if id == msg.1 || s.try_send(msg.0.clone()).is_ok() {
-                        Some((id, s))
-                    } else {
-                        None
+            subs.drain(..).for_each(|(id, s)| {
+                if id == msg.1 {
+                    self.add_sub::<M>(s, id);
+                } else {
+                    match s.try_send(msg.0.clone()) {
+                        Ok(_) => self.add_sub::<M>(s, id),
+                        Err(SendError::Full(_)) => {
+                            // Ensure that that the message is delivered even if the mailbox is full.
+                            // We do a try first to remove receiver that have closed their mailbox.
+                            s.do_send(msg.0.clone());
+                            self.add_sub::<M>(s, id);
+                        }
+                        Err(_) => (),
                     }
-                })
-                .for_each(|(id, s)| self.add_sub::<M>(s, id));
+                }
+            });
         }
         self.set_msg::<M>(msg.0);
     }
