@@ -3,7 +3,9 @@
         </a><h2 class="location"></h2>
     </nav>
     <nav class="sidebar"><a class="sidebar-logo" href="../../actix_broker/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix_broker/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix_broker/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><div id="settings-menu" tabindex="-1">
+                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
+                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -194,6 +196,13 @@
 <span id="189">189</span>
 <span id="190">190</span>
 <span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">actix::prelude</span>::<span class="kw-2">*</span>;
 <span class="kw">use</span> <span class="ident">ahash::AHasher</span>;
 <span class="kw">use</span> <span class="ident">log::trace</span>;
@@ -322,15 +331,22 @@
     <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">IssueAsync</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>, <span class="ident">_ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) {
         <span class="macro">trace!</span>(<span class="string">&quot;Broker: Received IssueAsync&quot;</span>);
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">subs</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">take_subs</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>() {
-            <span class="ident">subs</span>.<span class="ident">drain</span>(..)
-                .<span class="ident">filter_map</span>(<span class="op">|</span>(<span class="ident">id</span>, <span class="ident">s</span>)<span class="op">|</span> {
-                    <span class="kw">if</span> <span class="ident">id</span> <span class="op">==</span> <span class="ident">msg</span>.<span class="number">1</span> <span class="op">|</span><span class="op">|</span> <span class="ident">s</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>.<span class="number">0</span>.<span class="ident">clone</span>()).<span class="ident">is_ok</span>() {
-                        <span class="prelude-val">Some</span>((<span class="ident">id</span>, <span class="ident">s</span>))
-                    } <span class="kw">else</span> {
-                        <span class="prelude-val">None</span>
+            <span class="ident">subs</span>.<span class="ident">drain</span>(..).<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">id</span>, <span class="ident">s</span>)<span class="op">|</span> {
+                <span class="kw">if</span> <span class="ident">id</span> <span class="op">==</span> <span class="ident">msg</span>.<span class="number">1</span> {
+                    <span class="self">self</span>.<span class="ident">add_sub</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">s</span>, <span class="ident">id</span>);
+                } <span class="kw">else</span> {
+                    <span class="kw">match</span> <span class="ident">s</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>.<span class="number">0</span>.<span class="ident">clone</span>()) {
+                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">add_sub</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">s</span>, <span class="ident">id</span>),
+                        <span class="prelude-val">Err</span>(<span class="ident">SendError::Full</span>(<span class="kw">_</span>)) =&gt; {
+                            <span class="comment">// Ensure that that the message is delivered even if the mailbox is full.</span>
+                            <span class="comment">// We do a try first to remove receiver that have closed their mailbox.</span>
+                            <span class="ident">s</span>.<span class="ident">do_send</span>(<span class="ident">msg</span>.<span class="number">0</span>.<span class="ident">clone</span>());
+                            <span class="self">self</span>.<span class="ident">add_sub</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">s</span>, <span class="ident">id</span>);
+                        }
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; (),
                     }
-                })
-                .<span class="ident">for_each</span>(<span class="op">|</span>(<span class="ident">id</span>, <span class="ident">s</span>)<span class="op">|</span> <span class="self">self</span>.<span class="ident">add_sub</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">s</span>, <span class="ident">id</span>));
+                }
+            });
         }
         <span class="self">self</span>.<span class="ident">set_msg</span>::<span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="ident">msg</span>.<span class="number">0</span>);
     }
@@ -386,5 +402,5 @@
     }
 }
 </code></pre></div>
-</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_broker" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.0-nightly (de1026a67 2022-04-23)" ></div>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_broker" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.63.0-nightly (ee160f2f5 2022-05-23)" ></div>
 </body></html>
