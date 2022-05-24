@@ -1,6 +1,6 @@
 [package]
 name = "actix-broker"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2018"
 authors = [
     "Chris Ricketts <chris.ricketts@steribar.com>",
