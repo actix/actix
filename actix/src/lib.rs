@@ -19,9 +19,6 @@
 //! - Actor supervision
 //! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
 //! - Runs on stable Rust 1.40+
-//!
-//! ## Package feature
-//! * `resolver` - enables DNS resolver actor; see [resolver](./actors/resolver/index.html) module
 
 #![allow(clippy::needless_doctest_main)]
 #![deny(nonstandard_style, rust_2018_idioms)]
