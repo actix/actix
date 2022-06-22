@@ -10,7 +10,7 @@
 //!
 //! ## Other Documentation
 //! - [User Guide](https://actix.rs/book/actix/)
-//! - [Community Chat on Gitter](https://gitter.im/actix/actix)
+//! - [Community Chat on Discord](https://discord.gg/NWpN5mmg3x)
 //!
 //! ## Features
 //! - Async/Sync actors
