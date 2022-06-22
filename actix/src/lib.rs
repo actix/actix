@@ -18,7 +18,7 @@
 //! - Using Futures for asynchronous message handling
 //! - Actor supervision
 //! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
-//! - Runs on stable Rust 1.40+
+//! - Runs on stable Rust 1.54+
 
 #![allow(clippy::needless_doctest_main)]
 #![deny(nonstandard_style, rust_2018_idioms)]
