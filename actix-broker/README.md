@@ -5,7 +5,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/actix-broker?label=latest)](https://crates.io/crates/actix-broker)
 [![Documentation](https://docs.rs/actix-broker/badge.svg?version=0.4.3)](https://docs.rs/actix-broker/0.4.3)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.54+-ab6000.svg)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.57+-ab6000.svg)
 ![License](https://img.shields.io/crates/l/actix-broker.svg)
 [![Dependency Status](https://deps.rs/crate/actix-broker/0.4.3/status.svg)](https://deps.rs/crate/actix-broker/0.4.3)
 

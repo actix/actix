@@ -4,7 +4,8 @@
 ### Added
 - Add `connected` associated functions to `WeakAddr` and `WeakRecipient` with same semantics as in `Addr` and `Recipient`. [#530]
 - Implement `From<Addr<A>>` for `WeakAddr<A>`. [#530]
-- Derive `PartialEq` and `Eq` for `MailboxError`. [#527]
+- Implement `PartialEq` and `Eq` for `MailboxError`. [#527]
+- Minimum supported Rust version (MSRV) is now 1.57.
 
 ### Changed
 - `WeakAddr` and `WeakRecipient` are now exposed as part of `prelude`. [#530]

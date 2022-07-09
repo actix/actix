@@ -10,7 +10,7 @@
 //!
 //! ## Other Documentation
 //! - [User Guide](https://actix.rs/book/actix/)
-//! - [Community Chat on Gitter](https://gitter.im/actix/actix)
+//! - [Community Chat on Discord](https://discord.gg/NWpN5mmg3x)
 //!
 //! ## Features
 //! - Async/Sync actors
@@ -18,10 +18,7 @@
 //! - Using Futures for asynchronous message handling
 //! - Actor supervision
 //! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
-//! - Runs on stable Rust 1.40+
-//!
-//! ## Package feature
-//! * `resolver` - enables DNS resolver actor; see [resolver](./actors/resolver/index.html) module
+//! - Runs on stable Rust 1.57+
 
 #![allow(clippy::needless_doctest_main)]
 #![deny(nonstandard_style, rust_2018_idioms)]
