@@ -40,7 +40,7 @@ To use `actix`, add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-actix = "0.12"
+actix = "0.13"
 ```
 
 ### Initialize Actix
