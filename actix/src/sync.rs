@@ -113,24 +113,23 @@ where
     where
         F: Fn() -> A + Send + Sync + 'static,
     {
-        Self::_start(threads, None, factory)
+        Self::start_with_thread_builder(threads, thread::Builder::new, factory)
     }
 
-    /// Start a new `SyncArbiter` with specified number of worker threads,
-    /// each thread having the specified stack size (in bytes).
+    /// Start a new `SyncArbiter` with specified number of worker threads.
+    /// Each worker thread is spawned from the [`std::thread::Builder`]
+    /// returned by a new call to `thread_builder_factory`.
     /// Returns a single address of the started actor. A single address is
     /// used to communicate to the actor(s), and messages are handled by
     /// the next available Actor in the `SyncArbiter`.
-    pub fn start_with_stack_size<F>(threads: usize, stack_size: usize, factory: F) -> Addr<A>
+    pub fn start_with_thread_builder<F, BF>(
+        threads: usize,
+        mut thread_builder_factory: BF,
+        factory: F,
+    ) -> Addr<A>
     where
         F: Fn() -> A + Send + Sync + 'static,
-    {
-        Self::_start(threads, Some(stack_size), factory)
-    }
-
-    fn _start<F>(threads: usize, stack_size: Option<usize>, factory: F) -> Addr<A>
-    where
-        F: Fn() -> A + Send + Sync + 'static,
+        BF: FnMut() -> thread::Builder,
     {
         let factory = Arc::new(factory);
         let (sender, receiver) = cb_channel::unbounded();
@@ -142,12 +141,7 @@ where
             let actor_queue = receiver.clone();
             let inner_rx = rx.sender_producer();
 
-            let builder = if let Some(stack_size) = stack_size {
-                thread::Builder::new().stack_size(stack_size)
-            } else {
-                thread::Builder::new()
-            };
-            builder
+            thread_builder_factory()
                 .spawn(move || {
                     System::set_current(sys);
                     SyncContext::new(f, actor_queue, inner_rx).run();
