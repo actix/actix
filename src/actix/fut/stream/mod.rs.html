@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/stream/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/stream/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -247,249 +241,248 @@
 <span id="241">241</span>
 <span id="242">242</span>
 <span id="243">243</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">marker::PhantomData</span>,
-    <span class="ident">pin::Pin</span>,
-    <span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>},
-    <span class="ident">time::Duration</span>,
+</pre><pre class="rust"><code><span class="kw">use </span>std::{
+    marker::PhantomData,
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
 };
 
-<span class="kw">use</span> <span class="ident">futures_core::stream::Stream</span>;
-<span class="kw">use</span> <span class="ident">pin_project_lite::pin_project</span>;
+<span class="kw">use </span>futures_core::stream::Stream;
+<span class="kw">use </span>pin_project_lite::pin_project;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">collect::Collect</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">finish::Finish</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">fold::Fold</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">map::Map</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">skip_while::SkipWhile</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">take_while::TakeWhile</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">then::Then</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">timeout::Timeout</span>;
+<span class="kw">pub use </span>collect::Collect;
+<span class="kw">pub use </span>finish::Finish;
+<span class="kw">pub use </span>fold::Fold;
+<span class="kw">pub use </span>map::Map;
+<span class="kw">pub use </span>skip_while::SkipWhile;
+<span class="kw">pub use </span>take_while::TakeWhile;
+<span class="kw">pub use </span>then::Then;
+<span class="kw">pub use </span>timeout::Timeout;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor::Actor</span>;
+<span class="kw">use </span><span class="kw">crate</span>::actor::Actor;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::future::ActorFuture</span>;
+<span class="kw">use </span><span class="kw">super</span>::future::ActorFuture;
 
-<span class="kw">mod</span> <span class="ident">collect</span>;
-<span class="kw">mod</span> <span class="ident">finish</span>;
-<span class="kw">mod</span> <span class="ident">fold</span>;
-<span class="kw">mod</span> <span class="ident">map</span>;
-<span class="kw">mod</span> <span class="ident">skip_while</span>;
-<span class="kw">mod</span> <span class="ident">take_while</span>;
-<span class="kw">mod</span> <span class="ident">then</span>;
-<span class="kw">mod</span> <span class="ident">timeout</span>;
+<span class="kw">mod </span>collect;
+<span class="kw">mod </span>finish;
+<span class="kw">mod </span>fold;
+<span class="kw">mod </span>map;
+<span class="kw">mod </span>skip_while;
+<span class="kw">mod </span>take_while;
+<span class="kw">mod </span>then;
+<span class="kw">mod </span>timeout;
 
-<span class="doccomment">/// A stream of values, not all of which may have been produced yet.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is similar to `futures_util::stream::Stream` trait, except it works with `Actor`</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The type of item this stream will yield on success.</span>
-    <span class="kw">type</span> <span class="ident">Item</span>;
+<span class="doccomment">/// A stream of values, not all of which may have been produced yet.
+///
+/// This is similar to `futures_util::stream::Stream` trait, except it works with `Actor`
+</span><span class="kw">pub trait </span>ActorStream&lt;A: Actor&gt; {
+    <span class="doccomment">/// The type of item this stream will yield on success.
+    </span><span class="kw">type </span>Item;
 
-    <span class="kw">fn</span> <span class="ident">poll_next</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>poll_next(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        srv: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorStreamExt</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Maps this stream&#39;s items to a different type, returning a new stream of</span>
-    <span class="doccomment">/// the resulting type.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The provided closure is executed over all elements of this stream as</span>
-    <span class="doccomment">/// they are made available. It is executed inline with calls to</span>
-    <span class="doccomment">/// [`poll_next`](ActorStream::poll_next).</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note that this function consumes the stream passed into it and returns a</span>
-    <span class="doccomment">/// wrapped version of it, similar to the existing `map` methods in the</span>
-    <span class="doccomment">/// standard library.</span>
-    <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Map</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">U</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+<span class="kw">pub trait </span>ActorStreamExt&lt;A: Actor&gt;: ActorStream&lt;A&gt; {
+    <span class="doccomment">/// Maps this stream&#39;s items to a different type, returning a new stream of
+    /// the resulting type.
+    ///
+    /// The provided closure is executed over all elements of this stream as
+    /// they are made available. It is executed inline with calls to
+    /// [`poll_next`](ActorStream::poll_next).
+    ///
+    /// Note that this function consumes the stream passed into it and returns a
+    /// wrapped version of it, similar to the existing `map` methods in the
+    /// standard library.
+    </span><span class="kw">fn </span>map&lt;F, U&gt;(<span class="self">self</span>, f: F) -&gt; Map&lt;<span class="self">Self</span>, F&gt;
+    <span class="kw">where
+        </span>F: FnMut(<span class="self">Self</span>::Item, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; U,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">map::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        map::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Computes from this stream&#39;s items new items of a different type using</span>
-    <span class="doccomment">/// an asynchronous closure.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The provided closure `f` will be called with an `Item` once a value is</span>
-    <span class="doccomment">/// ready, it returns a future which will then be run to completion</span>
-    <span class="doccomment">/// to produce the next value on this stream.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note that this function consumes the stream passed into it and returns a</span>
-    <span class="doccomment">/// wrapped version of it.</span>
-    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident"><span class="self">Self</span>::Item</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Computes from this stream&#39;s items new items of a different type using
+    /// an asynchronous closure.
+    ///
+    /// The provided closure `f` will be called with an `Item` once a value is
+    /// ready, it returns a future which will then be run to completion
+    /// to produce the next value on this stream.
+    ///
+    /// Note that this function consumes the stream passed into it and returns a
+    /// wrapped version of it.
+    </span><span class="kw">fn </span>then&lt;F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; Then&lt;<span class="self">Self</span>, F, Fut&gt;
+    <span class="kw">where
+        </span>F: FnMut(<span class="self">Self</span>::Item, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; Fut,
+        Fut: ActorFuture&lt;A&gt;,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">then::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        then::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Execute an accumulating asynchronous computation over a stream,</span>
-    <span class="doccomment">/// collecting all the values into one final result.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This combinator will accumulate all values returned by this stream</span>
-    <span class="doccomment">/// according to the closure provided. The initial state is also provided to</span>
-    <span class="doccomment">/// this method and then is returned again by each execution of the closure.</span>
-    <span class="doccomment">/// Once the entire stream has been exhausted the returned future will</span>
-    <span class="doccomment">/// resolve to this value.</span>
-    <span class="kw">fn</span> <span class="ident">fold</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">init</span>: <span class="ident">Fut::Output</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Fold</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span>, <span class="ident">Fut</span>, <span class="ident">Fut::Output</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="ident">Fut::Output</span>, <span class="ident"><span class="self">Self</span>::Item</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Execute an accumulating asynchronous computation over a stream,
+    /// collecting all the values into one final result.
+    ///
+    /// This combinator will accumulate all values returned by this stream
+    /// according to the closure provided. The initial state is also provided to
+    /// this method and then is returned again by each execution of the closure.
+    /// Once the entire stream has been exhausted the returned future will
+    /// resolve to this value.
+    </span><span class="kw">fn </span>fold&lt;F, Fut&gt;(<span class="self">self</span>, init: Fut::Output, f: F) -&gt; Fold&lt;<span class="self">Self</span>, F, Fut, Fut::Output&gt;
+    <span class="kw">where
+        </span>F: FnMut(Fut::Output, <span class="self">Self</span>::Item, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; Fut,
+        Fut: ActorFuture&lt;A&gt;,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">fold::new</span>(<span class="self">self</span>, <span class="ident">f</span>, <span class="ident">init</span>)
+        fold::new(<span class="self">self</span>, f, init)
     }
 
-    <span class="doccomment">/// Take elements from this stream while the provided asynchronous predicate</span>
-    <span class="doccomment">/// resolves to `true`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This function, like `Iterator::take_while`, will take elements from the</span>
-    <span class="doccomment">/// stream until the predicate `f` resolves to `false`. Once one element</span>
-    <span class="doccomment">/// returns `false`, it will always return that the stream is done.</span>
-    <span class="kw">fn</span> <span class="ident">take_while</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">TakeWhile</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Item</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">bool</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Take elements from this stream while the provided asynchronous predicate
+    /// resolves to `true`.
+    ///
+    /// This function, like `Iterator::take_while`, will take elements from the
+    /// stream until the predicate `f` resolves to `false`. Once one element
+    /// returns `false`, it will always return that the stream is done.
+    </span><span class="kw">fn </span>take_while&lt;F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; TakeWhile&lt;<span class="self">Self</span>, <span class="self">Self</span>::Item, F, Fut&gt;
+    <span class="kw">where
+        </span>F: FnMut(<span class="kw-2">&amp;</span><span class="self">Self</span>::Item, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; Fut,
+        Fut: ActorFuture&lt;A, Output = bool&gt;,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">take_while::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        take_while::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Skip elements on this stream while the provided asynchronous predicate</span>
-    <span class="doccomment">/// resolves to `true`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This function, like `Iterator::skip_while`, will skip elements on the</span>
-    <span class="doccomment">/// stream until the predicate `f` resolves to `false`. Once one element</span>
-    <span class="doccomment">/// returns `false`, all future elements will be returned from the underlying</span>
-    <span class="doccomment">/// stream.</span>
-    <span class="kw">fn</span> <span class="ident">skip_while</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SkipWhile</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Item</span>, <span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident"><span class="self">Self</span>::Item</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">bool</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Skip elements on this stream while the provided asynchronous predicate
+    /// resolves to `true`.
+    ///
+    /// This function, like `Iterator::skip_while`, will skip elements on the
+    /// stream until the predicate `f` resolves to `false`. Once one element
+    /// returns `false`, all future elements will be returned from the underlying
+    /// stream.
+    </span><span class="kw">fn </span>skip_while&lt;F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; SkipWhile&lt;<span class="self">Self</span>, <span class="self">Self</span>::Item, F, Fut&gt;
+    <span class="kw">where
+        </span>F: FnMut(<span class="kw-2">&amp;</span><span class="self">Self</span>::Item, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; Fut,
+        Fut: ActorFuture&lt;A, Output = bool&gt;,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">skip_while::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        skip_while::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Add timeout to stream.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `Err(())` returned as a timeout error.</span>
-    <span class="kw">fn</span> <span class="ident">timeout</span>(<span class="self">self</span>, <span class="ident">timeout</span>: <span class="ident">Duration</span>) -&gt; <span class="ident">Timeout</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Add timeout to stream.
+    ///
+    /// `Err(())` returned as a timeout error.
+    </span><span class="kw">fn </span>timeout(<span class="self">self</span>, timeout: Duration) -&gt; Timeout&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
     {
-        <span class="ident">Timeout::new</span>(<span class="self">self</span>, <span class="ident">timeout</span>)
+        Timeout::new(<span class="self">self</span>, timeout)
     }
 
-    <span class="doccomment">/// Transforms a stream into a collection, returning a</span>
-    <span class="doccomment">/// future representing the result of that computation.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The returned future will be resolved when the stream terminates.</span>
-    <span class="kw">fn</span> <span class="ident">collect</span><span class="op">&lt;</span><span class="ident">C</span><span class="op">&gt;</span>(<span class="self">self</span>) -&gt; <span class="ident">Collect</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">C</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">C</span>: <span class="ident">Default</span> <span class="op">+</span> <span class="ident">Extend</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Transforms a stream into a collection, returning a
+    /// future representing the result of that computation.
+    ///
+    /// The returned future will be resolved when the stream terminates.
+    </span><span class="kw">fn </span>collect&lt;C&gt;(<span class="self">self</span>) -&gt; Collect&lt;<span class="self">Self</span>, C&gt;
+    <span class="kw">where
+        </span>C: Default + Extend&lt;<span class="self">Self</span>::Item&gt;,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">Collect::new</span>(<span class="self">self</span>)
+        Collect::new(<span class="self">self</span>)
     }
 
-    <span class="doccomment">/// Transforms a stream to a future that resolves when stream finishes.</span>
-    <span class="kw">fn</span> <span class="ident">finish</span>(<span class="self">self</span>) -&gt; <span class="ident">Finish</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Transforms a stream to a future that resolves when stream finishes.
+    </span><span class="kw">fn </span>finish(<span class="self">self</span>) -&gt; Finish&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
     {
-        <span class="ident">Finish::new</span>(<span class="self">self</span>)
+        Finish::new(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">S</span><span class="op">&gt;</span> <span class="ident">ActorStreamExt</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">S</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;A, S&gt; ActorStreamExt&lt;A&gt; <span class="kw">for </span>S
+<span class="kw">where
+    </span>S: ActorStream&lt;A&gt;,
+    A: Actor,
 {
 }
 
-<span class="doccomment">/// Helper trait that allows conversion of normal stream into `ActorStream`</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">WrapStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="doccomment">/// Helper trait that allows conversion of normal stream into `ActorStream`
+</span><span class="kw">pub trait </span>WrapStream&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor,
 {
-    <span class="doccomment">/// The stream that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Stream</span>: <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// The stream that this type can be converted into.
+    </span><span class="kw">type </span>Stream: ActorStream&lt;A&gt;;
 
-    <span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.11.0&quot;</span>, <span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Please use WrapStream::into_actor&quot;</span>)]</span>
-    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">actstream</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Stream</span>;
+    <span class="attribute">#[deprecated(since = <span class="string">&quot;0.11.0&quot;</span>, note = <span class="string">&quot;Please use WrapStream::into_actor&quot;</span>)]
+    #[doc(hidden)]
+    </span><span class="kw">fn </span>actstream(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Stream;
 
-    <span class="doccomment">/// Convert normal stream to a [`ActorStream`]</span>
-    <span class="kw">fn</span> <span class="ident">into_actor</span>(<span class="self">self</span>, <span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>) -&gt; <span class="ident"><span class="self">Self</span>::Stream</span>;
+    <span class="doccomment">/// Convert normal stream to a [`ActorStream`]
+    </span><span class="kw">fn </span>into_actor(<span class="self">self</span>, a: <span class="kw-2">&amp;</span>A) -&gt; <span class="self">Self</span>::Stream;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">WrapStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">S</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Stream</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;S, A&gt; WrapStream&lt;A&gt; <span class="kw">for </span>S
+<span class="kw">where
+    </span>S: Stream,
+    A: Actor,
 {
-    <span class="kw">type</span> <span class="ident">Stream</span> <span class="op">=</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>;
+    <span class="kw">type </span>Stream = StreamWrap&lt;S, A&gt;;
 
-    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">actstream</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Stream</span> {
-        <span class="ident">wrap_stream</span>(<span class="self">self</span>)
+    <span class="attribute">#[doc(hidden)]
+    </span><span class="kw">fn </span>actstream(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Stream {
+        wrap_stream(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">into_actor</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>) -&gt; <span class="ident"><span class="self">Self</span>::Stream</span> {
-        <span class="ident">wrap_stream</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>into_actor(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span>A) -&gt; <span class="self">Self</span>::Stream {
+        wrap_stream(<span class="self">self</span>)
     }
 }
 
-<span class="macro">pin_project!</span> {
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Stream</span>,
-        <span class="ident">A</span>: <span class="ident">Actor</span>
+<span class="macro">pin_project! </span>{
+    <span class="kw">pub struct </span>StreamWrap&lt;S, A&gt;
+    <span class="kw">where
+        </span>S: Stream,
+        A: Actor
     {
-        <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">stream</span>: <span class="ident">S</span>,
-        <span class="ident">_act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
+        <span class="attribute">#[pin]
+        </span>stream: S,
+        _act: PhantomData&lt;A&gt;
     }
 }
 
-<span class="doccomment">/// Converts normal stream into `ActorStream`</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wrap_stream</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>(<span class="ident">stream</span>: <span class="ident">S</span>) -&gt; <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Stream</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="doccomment">/// Converts normal stream into `ActorStream`
+</span><span class="kw">pub fn </span>wrap_stream&lt;S, A&gt;(stream: S) -&gt; StreamWrap&lt;S, A&gt;
+<span class="kw">where
+    </span>S: Stream,
+    A: Actor,
 {
-    <span class="ident">StreamWrap</span> {
-        <span class="ident">stream</span>,
-        <span class="ident">_act</span>: <span class="ident">PhantomData</span>,
+    StreamWrap {
+        stream,
+        _act: PhantomData,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">StreamWrap</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Stream</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;S, A&gt; ActorStream&lt;A&gt; <span class="kw">for </span>StreamWrap&lt;S, A&gt;
+<span class="kw">where
+    </span>S: Stream,
+    A: Actor,
 {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">S::Item</span>;
+    <span class="kw">type </span>Item = S::Item;
 
-    <span class="kw">fn</span> <span class="ident">poll_next</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">project</span>().<span class="ident">stream</span>.<span class="ident">poll_next</span>(<span class="ident">task</span>)
+    <span class="kw">fn </span>poll_next(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A,
+        <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+        <span class="self">self</span>.project().stream.poll_next(task)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

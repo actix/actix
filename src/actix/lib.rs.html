@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -189,191 +183,190 @@
 <span id="183">183</span>
 <span id="184">184</span>
 <span id="185">185</span>
-</pre><pre class="rust"><code><span class="doccomment">//! Actix is an actor framework.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! [Actors](./trait.Actor.html) are</span>
-<span class="doccomment">//! objects which encapsulate state and behavior, they communicate</span>
-<span class="doccomment">//! exclusively by exchanging messages. Actix actors are implemented</span>
-<span class="doccomment">//! on top of [Tokio](https://tokio.rs).  Multiple actors can run in</span>
-<span class="doccomment">//! same thread. Actors can run in multiple threads using the</span>
-<span class="doccomment">//! [`Arbiter`](struct.Arbiter.html) API. Actors exchange typed</span>
-<span class="doccomment">//! messages.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ## Other Documentation</span>
-<span class="doccomment">//! - [User Guide](https://actix.rs/book/actix/)</span>
-<span class="doccomment">//! - [Community Chat on Discord](https://discord.gg/NWpN5mmg3x)</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ## Features</span>
-<span class="doccomment">//! - Async/Sync actors</span>
-<span class="doccomment">//! - Actor communication in a local/thread context</span>
-<span class="doccomment">//! - Using Futures for asynchronous message handling</span>
-<span class="doccomment">//! - Actor supervision</span>
-<span class="doccomment">//! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed</span>
-<span class="doccomment">//! - Runs on stable Rust 1.57+</span>
+</pre><pre class="rust"><code><span class="doccomment">//! Actix is an actor framework.
+//!
+//! [Actors](./trait.Actor.html) are
+//! objects which encapsulate state and behavior, they communicate
+//! exclusively by exchanging messages. Actix actors are implemented
+//! on top of [Tokio](https://tokio.rs).  Multiple actors can run in
+//! same thread. Actors can run in multiple threads using the
+//! [`Arbiter`](struct.Arbiter.html) API. Actors exchange typed
+//! messages.
+//!
+//! ## Other Documentation
+//! - [User Guide](https://actix.rs/book/actix/)
+//! - [Community Chat on Discord](https://discord.gg/NWpN5mmg3x)
+//!
+//! ## Features
+//! - Async/Sync actors
+//! - Actor communication in a local/thread context
+//! - Using Futures for asynchronous message handling
+//! - Actor supervision
+//! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
+//! - Runs on stable Rust 1.57+
 
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">clippy::needless_doctest_main</span>)]</span>
-<span class="attribute">#![<span class="ident">deny</span>(<span class="ident">nonstandard_style</span>, <span class="ident">rust_2018_idioms</span>)]</span>
-<span class="attribute">#![<span class="ident">warn</span>(
-    <span class="ident">deprecated_in_future</span>,
-    <span class="ident">trivial_casts</span>,
-    <span class="ident">trivial_numeric_casts</span>,
-    <span class="ident">clippy::doc_markdown</span>
-)]</span>
-<span class="comment">// TODO: temporary allow deprecated until resolver actor is removed.</span>
-<span class="attribute">#![<span class="ident">allow</span>(<span class="ident">deprecated</span>)]</span>
+</span><span class="attribute">#![allow(clippy::needless_doctest_main)]
+#![deny(nonstandard_style, rust_2018_idioms)]
+#![warn(
+    deprecated_in_future,
+    trivial_casts,
+    trivial_numeric_casts,
+    clippy::doc_markdown
+)]
+</span><span class="comment">// TODO: temporary allow deprecated until resolver actor is removed.
+</span><span class="attribute">#![allow(deprecated)]
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">doctest</span>)]</span>
-<span class="macro">doc_comment::doctest!</span>(<span class="string">&quot;../README.md&quot;</span>);
+#[cfg(doctest)]
+</span><span class="macro">doc_comment::doctest!</span>(<span class="string">&quot;../README.md&quot;</span>);
 
-<span class="kw">mod</span> <span class="ident">actor</span>;
-<span class="kw">mod</span> <span class="ident">context</span>;
-<span class="kw">mod</span> <span class="ident">contextimpl</span>;
-<span class="kw">mod</span> <span class="ident">contextitems</span>;
-<span class="kw">mod</span> <span class="ident">handler</span>;
-<span class="kw">mod</span> <span class="ident">stream</span>;
-<span class="kw">mod</span> <span class="ident">supervisor</span>;
+<span class="kw">mod </span>actor;
+<span class="kw">mod </span>context;
+<span class="kw">mod </span>contextimpl;
+<span class="kw">mod </span>contextitems;
+<span class="kw">mod </span>handler;
+<span class="kw">mod </span>stream;
+<span class="kw">mod </span>supervisor;
 
-<span class="kw">mod</span> <span class="ident">address</span>;
-<span class="kw">mod</span> <span class="ident">mailbox</span>;
+<span class="kw">mod </span>address;
+<span class="kw">mod </span>mailbox;
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">actors</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">clock</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">fut</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">io</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">registry</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">sync</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">utils</span>;
+<span class="kw">pub mod </span>actors;
+<span class="kw">pub mod </span>clock;
+<span class="kw">pub mod </span>fut;
+<span class="kw">pub mod </span>io;
+<span class="kw">pub mod </span>registry;
+<span class="kw">pub mod </span>sync;
+<span class="kw">pub mod </span>utils;
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;macros&quot;</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::{<span class="ident">main</span>, <span class="ident">test</span>, <span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">spawn</span>, <span class="ident">Arbiter</span>, <span class="ident">ArbiterHandle</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
+<span class="attribute">#[cfg(feature = <span class="string">&quot;macros&quot;</span>)]
+</span><span class="kw">pub use </span>actix_derive::{main, test, Message, MessageResponse};
+<span class="kw">pub use </span>actix_rt::{spawn, Arbiter, ArbiterHandle, System, SystemRunner};
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{
-    <span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">Running</span>, <span class="ident">SpawnHandle</span>, <span class="ident">Supervised</span>,
+<span class="kw">pub use </span><span class="kw">crate</span>::actor::{
+    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::{<span class="ident">Addr</span>, <span class="ident">MailboxError</span>, <span class="ident">Recipient</span>, <span class="ident">WeakAddr</span>, <span class="ident">WeakRecipient</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::context::Context</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut</span>::{
-    <span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">ActorStream</span>, <span class="ident">ActorStreamExt</span>, <span class="ident">ActorTryFuture</span>,
-    <span class="ident">ActorTryFutureExt</span>, <span class="ident">WrapFuture</span>, <span class="ident">WrapStream</span>,
+<span class="kw">pub use </span><span class="kw">crate</span>::address::{Addr, MailboxError, Recipient, WeakAddr, WeakRecipient};
+<span class="kw">pub use </span><span class="kw">crate</span>::context::Context;
+<span class="kw">pub use </span><span class="kw">crate</span>::fut::{
+    ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
+    ActorTryFutureExt, WrapFuture, WrapStream,
 };
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::handler</span>::{
-    <span class="ident">ActorResponse</span>, <span class="ident">AtomicResponse</span>, <span class="ident">Handler</span>, <span class="ident">Message</span>, <span class="ident">MessageResult</span>, <span class="ident">Response</span>,
-    <span class="ident">ResponseActFuture</span>, <span class="ident">ResponseFuture</span>,
+<span class="kw">pub use </span><span class="kw">crate</span>::handler::{
+    ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
+    ResponseActFuture, ResponseFuture,
 };
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::registry</span>::{<span class="ident">ArbiterService</span>, <span class="ident">Registry</span>, <span class="ident">SystemRegistry</span>, <span class="ident">SystemService</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::stream::StreamHandler</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::supervisor::Supervisor</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sync</span>::{<span class="ident">SyncArbiter</span>, <span class="ident">SyncContext</span>};
+<span class="kw">pub use </span><span class="kw">crate</span>::registry::{ArbiterService, Registry, SystemRegistry, SystemService};
+<span class="kw">pub use </span><span class="kw">crate</span>::stream::StreamHandler;
+<span class="kw">pub use </span><span class="kw">crate</span>::supervisor::Supervisor;
+<span class="kw">pub use </span><span class="kw">crate</span>::sync::{SyncArbiter, SyncContext};
 
-<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::context::ContextFutureSpawner</span>;
+<span class="attribute">#[doc(hidden)]
+</span><span class="kw">pub use </span><span class="kw">crate</span>::context::ContextFutureSpawner;
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">prelude</span> {
-    <span class="doccomment">//! The `actix` prelude.</span>
-    <span class="doccomment">//!</span>
-    <span class="doccomment">//! The purpose of this module is to alleviate imports of many common actix</span>
-    <span class="doccomment">//! traits by adding a glob import to the top of actix heavy modules:</span>
-    <span class="doccomment">//!</span>
-    <span class="doccomment">//! ```</span>
-    <span class="doccomment">//! # #![allow(unused_imports)]</span>
-    <span class="doccomment">//! use actix::prelude::*;</span>
-    <span class="doccomment">//! ```</span>
+<span class="kw">pub mod </span>prelude {
+    <span class="doccomment">//! The `actix` prelude.
+    //!
+    //! The purpose of this module is to alleviate imports of many common actix
+    //! traits by adding a glob import to the top of actix heavy modules:
+    //!
+    //! ```
+    //! # #![allow(unused_imports)]
+    //! use actix::prelude::*;
+    //! ```
 
-    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;macros&quot;</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_derive</span>::{<span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
+    </span><span class="attribute">#[doc(hidden)]
+    #[cfg(feature = <span class="string">&quot;macros&quot;</span>)]
+    </span><span class="kw">pub use </span>actix_derive::{Message, MessageResponse};
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">actix_rt</span>::{<span class="ident">Arbiter</span>, <span class="ident">ArbiterHandle</span>, <span class="ident">System</span>, <span class="ident">SystemRunner</span>};
+    <span class="kw">pub use </span>actix_rt::{Arbiter, ArbiterHandle, System, SystemRunner};
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{
-        <span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">Running</span>, <span class="ident">SpawnHandle</span>, <span class="ident">Supervised</span>,
+    <span class="kw">pub use </span><span class="kw">crate</span>::actor::{
+        Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
     };
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::{
-        <span class="ident">Addr</span>, <span class="ident">MailboxError</span>, <span class="ident">Recipient</span>, <span class="ident">RecipientRequest</span>, <span class="ident">Request</span>, <span class="ident">SendError</span>,
+    <span class="kw">pub use </span><span class="kw">crate</span>::address::{
+        Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
     };
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::context</span>::{<span class="ident">Context</span>, <span class="ident">ContextFutureSpawner</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut</span>::{
-        <span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">ActorStream</span>, <span class="ident">ActorStreamExt</span>, <span class="ident">ActorTryFuture</span>,
-        <span class="ident">ActorTryFutureExt</span>, <span class="ident">WrapFuture</span>, <span class="ident">WrapStream</span>,
+    <span class="kw">pub use </span><span class="kw">crate</span>::context::{Context, ContextFutureSpawner};
+    <span class="kw">pub use </span><span class="kw">crate</span>::fut::{
+        ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
+        ActorTryFutureExt, WrapFuture, WrapStream,
     };
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::handler</span>::{
-        <span class="ident">ActorResponse</span>, <span class="ident">AtomicResponse</span>, <span class="ident">Handler</span>, <span class="ident">Message</span>, <span class="ident">MessageResult</span>, <span class="ident">Response</span>,
-        <span class="ident">ResponseActFuture</span>, <span class="ident">ResponseFuture</span>,
+    <span class="kw">pub use </span><span class="kw">crate</span>::handler::{
+        ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
+        ResponseActFuture, ResponseFuture,
     };
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::registry</span>::{<span class="ident">ArbiterService</span>, <span class="ident">SystemService</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::stream::StreamHandler</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::supervisor::Supervisor</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sync</span>::{<span class="ident">SyncArbiter</span>, <span class="ident">SyncContext</span>};
+    <span class="kw">pub use </span><span class="kw">crate</span>::registry::{ArbiterService, SystemService};
+    <span class="kw">pub use </span><span class="kw">crate</span>::stream::StreamHandler;
+    <span class="kw">pub use </span><span class="kw">crate</span>::supervisor::Supervisor;
+    <span class="kw">pub use </span><span class="kw">crate</span>::sync::{SyncArbiter, SyncContext};
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actors</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::dev</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::io</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>::{<span class="ident">Condition</span>, <span class="ident">IntervalFunc</span>, <span class="ident">TimerFunc</span>};
+    <span class="kw">pub use </span><span class="kw">crate</span>::actors;
+    <span class="kw">pub use </span><span class="kw">crate</span>::dev;
+    <span class="kw">pub use </span><span class="kw">crate</span>::fut;
+    <span class="kw">pub use </span><span class="kw">crate</span>::io;
+    <span class="kw">pub use </span><span class="kw">crate</span>::utils::{Condition, IntervalFunc, TimerFunc};
 
-    <span class="comment">// TODO: remove Stream re-export when it reaches std</span>
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">futures_core::stream::Stream</span>;
+    <span class="comment">// TODO: remove Stream re-export when it reaches std
+    </span><span class="kw">pub use </span>futures_core::stream::Stream;
 }
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">dev</span> {
-    <span class="doccomment">//! The `actix` prelude for library developers.</span>
-    <span class="doccomment">//!</span>
-    <span class="doccomment">//! The purpose of this module is to alleviate imports of many common actix</span>
-    <span class="doccomment">//! traits by adding a glob import to the top of actix heavy modules:</span>
-    <span class="doccomment">//!</span>
-    <span class="doccomment">//! ```</span>
-    <span class="doccomment">//! # #![allow(unused_imports)]</span>
-    <span class="doccomment">//! use actix::dev::*;</span>
-    <span class="doccomment">//! ```</span>
+<span class="kw">pub mod </span>dev {
+    <span class="doccomment">//! The `actix` prelude for library developers.
+    //!
+    //! The purpose of this module is to alleviate imports of many common actix
+    //! traits by adding a glob import to the top of actix heavy modules:
+    //!
+    //! ```
+    //! # #![allow(unused_imports)]
+    //! use actix::dev::*;
+    //! ```
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+    </span><span class="kw">pub use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::{<span class="ident">Envelope</span>, <span class="ident">EnvelopeProxy</span>, <span class="ident">RecipientRequest</span>, <span class="ident">Request</span>, <span class="ident">ToEnvelope</span>};
-    <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">channel</span> {
-        <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address::channel</span>::{<span class="ident">channel</span>, <span class="ident">AddressReceiver</span>, <span class="ident">AddressSender</span>};
+    <span class="kw">pub use </span><span class="kw">crate</span>::address::{Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope};
+    <span class="kw">pub mod </span>channel {
+        <span class="kw">pub use </span><span class="kw">crate</span>::address::channel::{channel, AddressReceiver, AddressSender};
     }
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::contextimpl</span>::{<span class="ident">AsyncContextParts</span>, <span class="ident">ContextFut</span>, <span class="ident">ContextParts</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::handler</span>::{<span class="ident">MessageResponse</span>, <span class="ident">OneshotSender</span>};
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::mailbox::Mailbox</span>;
-    <span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::registry</span>::{<span class="ident">Registry</span>, <span class="ident">SystemRegistry</span>};
+    <span class="kw">pub use </span><span class="kw">crate</span>::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
+    <span class="kw">pub use </span><span class="kw">crate</span>::handler::{MessageResponse, OneshotSender};
+    <span class="kw">pub use </span><span class="kw">crate</span>::mailbox::Mailbox;
+    <span class="kw">pub use </span><span class="kw">crate</span>::registry::{Registry, SystemRegistry};
 }
 
-<span class="doccomment">/// Starts the system and executes the supplied future.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This function does the following:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// * Creates and starts the actix system with default configuration.</span>
-<span class="doccomment">/// * Spawns the given future onto the current arbiter.</span>
-<span class="doccomment">/// * Blocks the current thread until the system shuts down.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The `run` function returns when the `System::current().stop()`</span>
-<span class="doccomment">/// method gets called.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// use std::time::{Duration, Instant};</span>
-<span class="doccomment">/// use actix_rt::time::sleep;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// fn main() {</span>
-<span class="doccomment">///   actix::run(async move {</span>
-<span class="doccomment">///       sleep(Duration::from_millis(100)).await;</span>
-<span class="doccomment">///       actix::System::current().stop();</span>
-<span class="doccomment">///   });</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Panics</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This function panics if the actix system is already running.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::unit_arg</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">R</span>) -&gt; <span class="ident">std::io::Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">R</span>: <span class="ident">std::future::Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="doccomment">/// Starts the system and executes the supplied future.
+///
+/// This function does the following:
+///
+/// * Creates and starts the actix system with default configuration.
+/// * Spawns the given future onto the current arbiter.
+/// * Blocks the current thread until the system shuts down.
+///
+/// The `run` function returns when the `System::current().stop()`
+/// method gets called.
+///
+/// # Examples
+///
+/// ```
+/// use std::time::{Duration, Instant};
+/// use actix_rt::time::sleep;
+///
+/// fn main() {
+///   actix::run(async move {
+///       sleep(Duration::from_millis(100)).await;
+///       actix::System::current().stop();
+///   });
+/// }
+/// ```
+///
+/// # Panics
+///
+/// This function panics if the actix system is already running.
+</span><span class="attribute">#[allow(clippy::unit_arg)]
+</span><span class="kw">pub fn </span>run&lt;R&gt;(f: R) -&gt; std::io::Result&lt;()&gt;
+<span class="kw">where
+    </span>R: std::future::Future&lt;Output = ()&gt; + <span class="lifetime">&#39;static</span>,
 {
-    <span class="prelude-val">Ok</span>(<span class="ident">actix_rt::System::new</span>().<span class="ident">block_on</span>(<span class="ident">f</span>))
+    <span class="prelude-val">Ok</span>(actix_rt::System::new().block_on(f))
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

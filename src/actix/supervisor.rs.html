@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/supervisor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>supervisor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/supervisor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>supervisor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -168,164 +162,164 @@
 <span id="162">162</span>
 <span id="163">163</span>
 <span id="164">164</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::future::Future</span>;
-<span class="kw">use</span> <span class="ident">std::pin::Pin</span>;
-<span class="kw">use</span> <span class="ident">std::task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::future::Future;
+<span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::task::{<span class="self">self</span>, Poll};
 
-<span class="kw">use</span> <span class="ident">actix_rt::ArbiterHandle</span>;
-<span class="kw">use</span> <span class="ident">pin_project_lite::pin_project</span>;
+<span class="kw">use </span>actix_rt::ArbiterHandle;
+<span class="kw">use </span>pin_project_lite::pin_project;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{<span class="ident">Actor</span>, <span class="ident">AsyncContext</span>, <span class="ident">Supervised</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::{<span class="ident">channel</span>, <span class="ident">Addr</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::contextimpl::ContextFut</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::mailbox::DEFAULT_CAPACITY</span>;
+<span class="kw">use </span><span class="kw">crate</span>::actor::{Actor, AsyncContext, Supervised};
+<span class="kw">use </span><span class="kw">crate</span>::address::{channel, Addr};
+<span class="kw">use </span><span class="kw">crate</span>::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::contextimpl::ContextFut;
+<span class="kw">use </span><span class="kw">crate</span>::mailbox::DEFAULT_CAPACITY;
 
-<span class="macro">pin_project!</span> {
-    <span class="doccomment">/// Actor supervisor</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// A Supervisor manages incoming messages for an actor. In case of actor failure,</span>
-    <span class="doccomment">/// the supervisor creates a new execution context and restarts the actor&#39;s lifecycle.</span>
-    <span class="doccomment">/// A Supervisor does not re-create their actor, it just calls the `restarting()`</span>
-    <span class="doccomment">/// method.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Supervisors have the same lifecycle as actors. If all addresses to</span>
-    <span class="doccomment">/// a supervisor gets dropped and its actor does not execute anything, the supervisor</span>
-    <span class="doccomment">/// terminates.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Supervisors can not guarantee that their actors successfully processes incoming</span>
-    <span class="doccomment">/// messages. If the actor fails during message processing, the message can not be</span>
-    <span class="doccomment">/// recovered. The sender would receive an `Err(Cancelled)` error in this situation.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// # use actix::prelude::*;</span>
-    <span class="doccomment">/// #[derive(Message)]</span>
-    <span class="doccomment">/// #[rtype(result = &quot;()&quot;)]</span>
-    <span class="doccomment">/// struct Die;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// struct MyActor;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// // To use actor with supervisor actor has to implement `Supervised` trait</span>
-    <span class="doccomment">/// impl actix::Supervised for MyActor {</span>
-    <span class="doccomment">///     fn restarting(&amp;mut self, ctx: &amp;mut Context&lt;MyActor&gt;) {</span>
-    <span class="doccomment">///         println!(&quot;restarting&quot;);</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl Handler&lt;Die&gt; for MyActor {</span>
-    <span class="doccomment">///     type Result = ();</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn handle(&amp;mut self, _: Die, ctx: &amp;mut Context&lt;MyActor&gt;) {</span>
-    <span class="doccomment">///         ctx.stop();</span>
-    <span class="doccomment">/// #       System::current().stop();</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// fn main() {</span>
-    <span class="doccomment">///     let mut sys = System::new();</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     let addr = sys.block_on(async { actix::Supervisor::start(|_| MyActor) });</span>
-    <span class="doccomment">///     addr.do_send(Die);</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     sys.run();</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Supervisor</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Supervised</span>,
-        <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>
+<span class="macro">pin_project! </span>{
+    <span class="doccomment">/// Actor supervisor
+    ///
+    /// A Supervisor manages incoming messages for an actor. In case of actor failure,
+    /// the supervisor creates a new execution context and restarts the actor&#39;s lifecycle.
+    /// A Supervisor does not re-create their actor, it just calls the `restarting()`
+    /// method.
+    ///
+    /// Supervisors have the same lifecycle as actors. If all addresses to
+    /// a supervisor gets dropped and its actor does not execute anything, the supervisor
+    /// terminates.
+    ///
+    /// Supervisors can not guarantee that their actors successfully processes incoming
+    /// messages. If the actor fails during message processing, the message can not be
+    /// recovered. The sender would receive an `Err(Cancelled)` error in this situation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use actix::prelude::*;
+    /// #[derive(Message)]
+    /// #[rtype(result = &quot;()&quot;)]
+    /// struct Die;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl Actor for MyActor {
+    ///     type Context = Context&lt;Self&gt;;
+    /// }
+    ///
+    /// // To use actor with supervisor actor has to implement `Supervised` trait
+    /// impl actix::Supervised for MyActor {
+    ///     fn restarting(&amp;mut self, ctx: &amp;mut Context&lt;MyActor&gt;) {
+    ///         println!(&quot;restarting&quot;);
+    ///     }
+    /// }
+    ///
+    /// impl Handler&lt;Die&gt; for MyActor {
+    ///     type Result = ();
+    ///
+    ///     fn handle(&amp;mut self, _: Die, ctx: &amp;mut Context&lt;MyActor&gt;) {
+    ///         ctx.stop();
+    /// #       System::current().stop();
+    ///     }
+    /// }
+    ///
+    /// fn main() {
+    ///     let mut sys = System::new();
+    ///
+    ///     let addr = sys.block_on(async { actix::Supervisor::start(|_| MyActor) });
+    ///     addr.do_send(Die);
+    ///
+    ///     sys.run();
+    /// }
+    /// ```
+    </span><span class="attribute">#[derive(Debug)]
+    </span><span class="kw">pub struct </span>Supervisor&lt;A&gt;
+    <span class="kw">where
+        </span>A: Supervised,
+        A: Actor&lt;Context = Context&lt;A&gt;&gt;
     {
-        <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">fut</span>: <span class="ident">ContextFut</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+        <span class="attribute">#[pin]
+        </span>fut: ContextFut&lt;A, Context&lt;A&gt;&gt;,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">Supervisor</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Supervised</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A&gt; Supervisor&lt;A&gt;
+<span class="kw">where
+    </span>A: Supervised + Actor&lt;Context = Context&lt;A&gt;&gt;,
 {
-    <span class="doccomment">/// Start new supervised actor in current tokio runtime.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Type of returned address depends on variable type. For example to get</span>
-    <span class="doccomment">/// `Addr&lt;Syn, _&gt;` of newly created actor, use explicitly `Addr&lt;Syn,</span>
-    <span class="doccomment">/// _&gt;` type as type of a variable.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// # use actix::prelude::*;</span>
-    <span class="doccomment">/// struct MyActor;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # impl actix::Supervised for MyActor {}</span>
-    <span class="doccomment">/// # fn main() {</span>
-    <span class="doccomment">/// #    System::new().block_on(async {</span>
-    <span class="doccomment">/// // Get `Addr` of a MyActor actor</span>
-    <span class="doccomment">/// let addr = actix::Supervisor::start(|_| MyActor);</span>
-    <span class="doccomment">/// #         System::current().stop();</span>
-    <span class="doccomment">/// # });}</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">A</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-        <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Start new supervised actor in current tokio runtime.
+    ///
+    /// Type of returned address depends on variable type. For example to get
+    /// `Addr&lt;Syn, _&gt;` of newly created actor, use explicitly `Addr&lt;Syn,
+    /// _&gt;` type as type of a variable.
+    ///
+    /// ```
+    /// # use actix::prelude::*;
+    /// struct MyActor;
+    ///
+    /// impl Actor for MyActor {
+    ///     type Context = Context&lt;Self&gt;;
+    /// }
+    ///
+    /// # impl actix::Supervised for MyActor {}
+    /// # fn main() {
+    /// #    System::new().block_on(async {
+    /// // Get `Addr` of a MyActor actor
+    /// let addr = actix::Supervisor::start(|_| MyActor);
+    /// #         System::current().stop();
+    /// # });}
+    /// ```
+    </span><span class="kw">pub fn </span>start&lt;F&gt;(f: F) -&gt; Addr&lt;A&gt;
+    <span class="kw">where
+        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>A::Context) -&gt; A + <span class="lifetime">&#39;static</span>,
+        A: Actor&lt;Context = Context&lt;A&gt;&gt;,
     {
-        <span class="comment">// create actor</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">Context::new</span>();
-        <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>);
-        <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">address</span>();
-        <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">into_future</span>(<span class="ident">act</span>);
+        <span class="comment">// create actor
+        </span><span class="kw">let </span><span class="kw-2">mut </span>ctx = Context::new();
+        <span class="kw">let </span>act = f(<span class="kw-2">&amp;mut </span>ctx);
+        <span class="kw">let </span>addr = ctx.address();
+        <span class="kw">let </span>fut = ctx.into_future(act);
 
-        <span class="comment">// create supervisor</span>
-        <span class="ident">actix_rt::spawn</span>(<span class="self">Self</span> { <span class="ident">fut</span> });
+        <span class="comment">// create supervisor
+        </span>actix_rt::spawn(<span class="self">Self </span>{ fut });
 
-        <span class="ident">addr</span>
+        addr
     }
 
-    <span class="doccomment">/// Start new supervised actor in arbiter&#39;s thread.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">start_in_arbiter</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">sys</span>: <span class="kw-2">&amp;</span><span class="ident">ArbiterHandle</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) -&gt; <span class="ident">A</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Start new supervised actor in arbiter&#39;s thread.
+    </span><span class="kw">pub fn </span>start_in_arbiter&lt;F&gt;(sys: <span class="kw-2">&amp;</span>ArbiterHandle, f: F) -&gt; Addr&lt;A&gt;
+    <span class="kw">where
+        </span>A: Actor&lt;Context = Context&lt;A&gt;&gt;,
+        F: FnOnce(<span class="kw-2">&amp;mut </span>Context&lt;A&gt;) -&gt; A + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">channel::channel</span>(<span class="ident">DEFAULT_CAPACITY</span>);
+        <span class="kw">let </span>(tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
-        <span class="ident">sys</span>.<span class="ident">spawn_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">Context::with_receiver</span>(<span class="ident">rx</span>);
-            <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>);
-            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">into_future</span>(<span class="ident">act</span>);
+        sys.spawn_fn(<span class="kw">move </span>|| {
+            <span class="kw">let </span><span class="kw-2">mut </span>ctx = Context::with_receiver(rx);
+            <span class="kw">let </span>act = f(<span class="kw-2">&amp;mut </span>ctx);
+            <span class="kw">let </span>fut = ctx.into_future(act);
 
-            <span class="ident">actix_rt::spawn</span>(<span class="self">Self</span> { <span class="ident">fut</span> });
+            actix_rt::spawn(<span class="self">Self </span>{ fut });
         });
 
-        <span class="ident">Addr::new</span>(<span class="ident">tx</span>)
+        Addr::new(tx)
     }
 }
 
-<span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">Future</span> <span class="kw">for</span> <span class="ident">Supervisor</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Supervised</span> <span class="op">+</span> <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="attribute">#[doc(hidden)]
+</span><span class="kw">impl</span>&lt;A&gt; Future <span class="kw">for </span>Supervisor&lt;A&gt;
+<span class="kw">where
+    </span>A: Supervised + Actor&lt;Context = Context&lt;A&gt;&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
-        <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">fut</span>.<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">cx</span>) {
-                <span class="ident">Poll::Pending</span> =&gt; <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
-                <span class="ident">Poll::Ready</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="comment">// stop if context&#39;s address is not connected</span>
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">this</span>.<span class="ident">fut</span>.<span class="ident">restart</span>() {
-                        <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>this = <span class="self">self</span>.project();
+        <span class="kw">loop </span>{
+            <span class="kw">match </span>this.fut.as_mut().poll(cx) {
+                Poll::Pending =&gt; <span class="kw">return </span>Poll::Pending,
+                Poll::Ready(<span class="kw">_</span>) =&gt; {
+                    <span class="comment">// stop if context&#39;s address is not connected
+                    </span><span class="kw">if </span>!this.fut.restart() {
+                        <span class="kw">return </span>Poll::Ready(());
                     }
                 }
             }
@@ -333,5 +327,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

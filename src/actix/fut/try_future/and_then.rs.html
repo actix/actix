@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/try_future/and_then.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>and_then.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/try_future/and_then.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>and_then.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -81,83 +75,82 @@
 <span id="75">75</span>
 <span id="76">76</span>
 <span id="77">77</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">pin::Pin</span>,
-    <span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>},
+</pre><pre class="rust"><code><span class="kw">use </span>std::{
+    pin::Pin,
+    task::{Context, Poll},
 };
 
-<span class="kw">use</span> <span class="ident">futures_util::ready</span>;
-<span class="kw">use</span> <span class="ident">pin_project_lite::pin_project</span>;
+<span class="kw">use </span>futures_util::ready;
+<span class="kw">use </span>pin_project_lite::pin_project;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor::Actor</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut</span>::{<span class="ident">future::ActorFuture</span>, <span class="ident">try_future::ActorTryFuture</span>};
+<span class="kw">use </span><span class="kw">crate</span>::actor::Actor;
+<span class="kw">use </span><span class="kw">crate</span>::fut::{future::ActorFuture, try_future::ActorTryFuture};
 
-<span class="macro">pin_project!</span> {
-    <span class="doccomment">/// Future for the `and_then` combinator, chaining computations</span>
-    <span class="doccomment">/// on the end of another actor future regardless of its outcome.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is created by the `ActorTryFuture::and_then` method.</span>
-    <span class="attribute">#[<span class="ident">project</span> <span class="op">=</span> <span class="ident">AndThenProj</span>]</span>
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;futures do nothing unless polled&quot;</span>]</span>
-    <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">AndThen</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span><span class="op">&gt;</span> {
-        <span class="ident">First</span> {
-            <span class="attribute">#[<span class="ident">pin</span>]</span>
-            <span class="ident">fut1</span>: <span class="ident">A</span>,
-            <span class="ident">data</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>,
+<span class="macro">pin_project! </span>{
+    <span class="doccomment">/// Future for the `and_then` combinator, chaining computations
+    /// on the end of another actor future regardless of its outcome.
+    ///
+    /// This is created by the `ActorTryFuture::and_then` method.
+    </span><span class="attribute">#[project = AndThenProj]
+    #[derive(Debug)]
+    #[must_use = <span class="string">&quot;futures do nothing unless polled&quot;</span>]
+    </span><span class="kw">pub enum </span>AndThen&lt;A, B, F&gt; {
+        First {
+            <span class="attribute">#[pin]
+            </span>fut1: A,
+            data: <span class="prelude-ty">Option</span>&lt;F&gt;,
         },
-        <span class="ident">Second</span> {
-            <span class="attribute">#[<span class="ident">pin</span>]</span>
-            <span class="ident">fut2</span>: <span class="ident">B</span>
+        Second {
+            <span class="attribute">#[pin]
+            </span>fut2: B
         },
-        <span class="ident">Empty</span>,
+        Empty,
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span>, <span class="ident">Act</span><span class="op">&gt;</span>(<span class="ident">future</span>: <span class="ident">A</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">AndThen</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
-    <span class="ident">B</span>: <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
-    <span class="ident">Act</span>: <span class="ident">Actor</span>,
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new&lt;A, B, F, Act&gt;(future: A, f: F) -&gt; AndThen&lt;A, B, F&gt;
+<span class="kw">where
+    </span>A: ActorTryFuture&lt;Act&gt;,
+    B: ActorTryFuture&lt;Act&gt;,
+    Act: Actor,
 {
-    <span class="ident">AndThen::First</span> {
-        <span class="ident">fut1</span>: <span class="ident">future</span>,
-        <span class="ident">data</span>: <span class="prelude-val">Some</span>(<span class="ident">f</span>),
+    AndThen::First {
+        fut1: future,
+        data: <span class="prelude-val">Some</span>(f),
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span>, <span class="ident">Act</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AndThen</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">B</span>, <span class="ident">F</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>,
-    <span class="ident">B</span>: <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">Act</span>, <span class="ident">Error</span> <span class="op">=</span> <span class="ident">A::Error</span><span class="op">&gt;</span>,
-    <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident">A::Ok</span>, <span class="kw-2">&amp;mut</span> <span class="ident">Act</span>, <span class="kw-2">&amp;mut</span> <span class="ident">Act::Context</span>) -&gt; <span class="ident">B</span>,
-    <span class="ident">Act</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;A, B, F, Act&gt; ActorFuture&lt;Act&gt; <span class="kw">for </span>AndThen&lt;A, B, F&gt;
+<span class="kw">where
+    </span>A: ActorTryFuture&lt;Act&gt;,
+    B: ActorTryFuture&lt;Act, Error = A::Error&gt;,
+    F: FnOnce(A::Ok, <span class="kw-2">&amp;mut </span>Act, <span class="kw-2">&amp;mut </span>Act::Context) -&gt; B,
+    Act: Actor,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">B::Ok</span>, <span class="ident">A::Error</span><span class="op">&gt;</span>;
+    <span class="kw">type </span>Output = <span class="prelude-ty">Result</span>&lt;B::Ok, A::Error&gt;;
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Act</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Act::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">as_mut</span>().<span class="ident">project</span>() {
-            <span class="ident">AndThenProj::First</span> { <span class="ident">fut1</span>, <span class="ident">data</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">ok</span> <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident">fut1</span>.<span class="ident">try_poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">data</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">fut2</span> <span class="op">=</span> <span class="ident">data</span>(<span class="ident">ok</span>, <span class="ident">act</span>, <span class="ident">ctx</span>);
-                <span class="self">self</span>.<span class="ident">set</span>(<span class="ident">AndThen::Second</span> { <span class="ident">fut2</span> });
-                <span class="self">self</span>.<span class="ident">poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
+    <span class="kw">fn </span>poll(
+        <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>Act,
+        ctx: <span class="kw-2">&amp;mut </span>Act::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">match </span><span class="self">self</span>.as_mut().project() {
+            AndThenProj::First { fut1, data } =&gt; {
+                <span class="kw">let </span>ok = <span class="macro">ready!</span>(fut1.try_poll(act, ctx, task))<span class="question-mark">?</span>;
+                <span class="kw">let </span>data = data.take().unwrap();
+                <span class="kw">let </span>fut2 = data(ok, act, ctx);
+                <span class="self">self</span>.set(AndThen::Second { fut2 });
+                <span class="self">self</span>.poll(act, ctx, task)
             }
-            <span class="ident">AndThenProj::Second</span> { <span class="ident">fut2</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident">fut2</span>.<span class="ident">try_poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>));
-                <span class="self">self</span>.<span class="ident">set</span>(<span class="ident">AndThen::Empty</span>);
-                <span class="ident">Poll::Ready</span>(<span class="ident">res</span>)
+            AndThenProj::Second { fut2 } =&gt; {
+                <span class="kw">let </span>res = <span class="macro">ready!</span>(fut2.try_poll(act, ctx, task));
+                <span class="self">self</span>.set(AndThen::Empty);
+                Poll::Ready(res)
             }
-            <span class="ident">AndThenProj::Empty</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;ActorFuture polled after finish&quot;</span>),
+            AndThenProj::Empty =&gt; <span class="macro">panic!</span>(<span class="string">&quot;ActorFuture polled after finish&quot;</span>),
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

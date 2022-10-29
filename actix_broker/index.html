@@ -1,70 +1,58 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A message broker for the Actix actor framework."><meta name="keywords" content="rust, rustlang, rust-lang, actix_broker"><title>actix_broker - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script defer src="../crates.js"></script><script defer src="../main.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../actix_broker/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../actix_broker/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"><a href="#">Crate actix_broker</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 0.4.3</li><li><a id="all-types" href="all.html">All Items</a></li></ul></div><section><div class="block"><ul><li><a href="#structs">Structs</a></li><li><a href="#traits">Traits</a></li></ul></div></section></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../actix_broker/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
-    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">actix_broker</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/actix_broker/lib.rs.html#1-83">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A message broker for the Actix actor framework.</p>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="A message broker for the Actix actor framework."><meta name="keywords" content="rust, rustlang, rust-lang, actix_broker"><title>actix_broker - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../normalize.css"><link rel="stylesheet" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../ayu.css" disabled><link rel="stylesheet" href="../dark.css" disabled><link rel="stylesheet" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script defer src="../crates.js"></script><script defer src="../main.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../actix_broker/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../actix_broker/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><h2 class="location"><a href="#">Crate actix_broker</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.4.3</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#structs">Structs</a></li><li><a href="#traits">Traits</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Crate <a class="mod" href="#">actix_broker</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/actix_broker/lib.rs.html#1-83">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>A message broker for the Actix actor framework.</p>
 <p>The <code>actix_broker</code> crate contains <code>SystemService</code> and <code>ArbiterService</code> Brokers that
 keep track of active subscriptions to different <code>Messages</code>. Broker services are
 automatically started when an actor uses functions from the <code>BrokerSubscribe</code> and
 <code>BrokerIssue</code> traits to either subscribe to or issue a message.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">actix::prelude</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">actix_broker</span>::{<span class="ident">BrokerSubscribe</span>, <span class="ident">BrokerIssue</span>, <span class="ident">SystemBroker</span>, <span class="ident">ArbiterBroker</span>, <span class="ident">Broker</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>actix::prelude::<span class="kw-2">*</span>;
+<span class="kw">use </span>actix_broker::{BrokerSubscribe, BrokerIssue, SystemBroker, ArbiterBroker, Broker};
 
-<span class="comment">// Note: The message must implement &#39;Clone&#39;</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Message</span>)]</span>
-<span class="attribute">#[<span class="ident">rtype</span>(<span class="ident">result</span> <span class="op">=</span> <span class="string">&quot;()&quot;</span>)]</span>
-<span class="kw">struct</span> <span class="ident">MessageOne</span>;
+<span class="comment">// Note: The message must implement &#39;Clone&#39;
+</span><span class="attribute">#[derive(Clone, Message)]
+#[rtype(result = <span class="string">&quot;()&quot;</span>)]
+</span><span class="kw">struct </span>MessageOne;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Message</span>)]</span>
-<span class="attribute">#[<span class="ident">rtype</span>(<span class="ident">result</span> <span class="op">=</span> <span class="string">&quot;()&quot;</span>)]</span>
-<span class="kw">struct</span> <span class="ident">MessageTwo</span>;
+<span class="attribute">#[derive(Clone, Message)]
+#[rtype(result = <span class="string">&quot;()&quot;</span>)]
+</span><span class="kw">struct </span>MessageTwo;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Message</span>)]</span>
-<span class="attribute">#[<span class="ident">rtype</span>(<span class="ident">result</span> <span class="op">=</span> <span class="string">&quot;()&quot;</span>)]</span>
-<span class="kw">struct</span> <span class="ident">MessageThree</span>;
+<span class="attribute">#[derive(Clone, Message)]
+#[rtype(result = <span class="string">&quot;()&quot;</span>)]
+</span><span class="kw">struct </span>MessageThree;
 
-<span class="kw">struct</span> <span class="ident">ActorOne</span>;
+<span class="kw">struct </span>ActorOne;
 
-<span class="kw">impl</span> <span class="ident">Actor</span> <span class="kw">for</span> <span class="ident">ActorOne</span> {
-    <span class="comment">// Note: The actor context must be Asynchronous,</span>
-    <span class="comment">// i.e. it cannot be &#39;SyncContext&#39;</span>
-    <span class="kw">type</span> <span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>;
+<span class="kw">impl </span>Actor <span class="kw">for </span>ActorOne {
+    <span class="comment">// Note: The actor context must be Asynchronous,
+    // i.e. it cannot be &#39;SyncContext&#39;
+    </span><span class="kw">type </span>Context = Context&lt;<span class="self">Self</span>&gt;;
 
-    <span class="kw">fn</span> <span class="ident">started</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>,<span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
-        <span class="comment">// Asynchronously subscribe to a message on the system (global) broker</span>
-        <span class="self">self</span>.<span class="ident">subscribe_system_async</span>::<span class="op">&lt;</span><span class="ident">MessageOne</span><span class="op">&gt;</span>(<span class="ident">ctx</span>);
-        <span class="comment">// Asynchronously issue a message to any subscribers on the system (global) broker</span>
-        <span class="self">self</span>.<span class="ident">issue_system_async</span>(<span class="ident">MessageOne</span>);
-        <span class="comment">// Synchronously subscribe to a message on the arbiter (local) broker</span>
-        <span class="self">self</span>.<span class="ident">subscribe_arbiter_sync</span>::<span class="op">&lt;</span><span class="ident">MessageTwo</span><span class="op">&gt;</span>(<span class="ident">ctx</span>);
-        <span class="comment">// Synchronously issue a message to any subscribers on the arbiter (local) broker</span>
-        <span class="self">self</span>.<span class="ident">issue_arbiter_sync</span>(<span class="ident">MessageTwo</span>, <span class="ident">ctx</span>);
+    <span class="kw">fn </span>started(<span class="kw-2">&amp;mut </span><span class="self">self</span>,ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {
+        <span class="comment">// Asynchronously subscribe to a message on the system (global) broker
+        </span><span class="self">self</span>.subscribe_system_async::&lt;MessageOne&gt;(ctx);
+        <span class="comment">// Asynchronously issue a message to any subscribers on the system (global) broker
+        </span><span class="self">self</span>.issue_system_async(MessageOne);
+        <span class="comment">// Synchronously subscribe to a message on the arbiter (local) broker
+        </span><span class="self">self</span>.subscribe_arbiter_sync::&lt;MessageTwo&gt;(ctx);
+        <span class="comment">// Synchronously issue a message to any subscribers on the arbiter (local) broker
+        </span><span class="self">self</span>.issue_arbiter_sync(MessageTwo, ctx);
     }
 }
      
-    <span class="comment">// To subscribe to a messsage, the actor must handle it</span>
-<span class="kw">impl</span> <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">MessageOne</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorOne</span> {
-    <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> ();
+    <span class="comment">// To subscribe to a messsage, the actor must handle it
+</span><span class="kw">impl </span>Handler&lt;MessageOne&gt; <span class="kw">for </span>ActorOne {
+    <span class="kw">type </span><span class="prelude-ty">Result </span>= ();
 
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">MessageOne</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
-        <span class="comment">// An actor does not have to handle a message to just issue it</span>
-        <span class="self">self</span>.<span class="ident">issue_async</span>::<span class="op">&lt;</span><span class="ident">SystemBroker</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">MessageThree</span>);
+    <span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: MessageOne, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {
+        <span class="comment">// An actor does not have to handle a message to just issue it
+        </span><span class="self">self</span>.issue_async::&lt;SystemBroker, <span class="kw">_</span>&gt;(MessageThree);
     }
 }
 
-<span class="comment">// Messages can also be sent from outside actors</span>
-<span class="kw">fn</span> <span class="ident">my_function</span>() {
-    <span class="ident">Broker</span>::<span class="op">&lt;</span><span class="ident">SystemBroker</span><span class="op">&gt;</span><span class="ident">::issue_async</span>(<span class="ident">MessageOne</span>);
+<span class="comment">// Messages can also be sent from outside actors
+</span><span class="kw">fn </span>my_function() {
+    Broker::&lt;SystemBroker&gt;::issue_async(MessageOne);
 }
 </code></pre></div>
-</div></details><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
-<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.ArbiterBroker.html" title="actix_broker::ArbiterBroker struct">ArbiterBroker</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Broker.html" title="actix_broker::Broker struct">Broker</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.SystemBroker.html" title="actix_broker::SystemBroker struct">SystemBroker</a></div><div class="item-right docblock-short"></div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2>
-<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.BrokerIssue.html" title="actix_broker::BrokerIssue trait">BrokerIssue</a></div><div class="item-right docblock-short"><p>The <code>BrokerIssue</code> provides functions to issue messages to subscribers.</p>
-</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.BrokerMsg.html" title="actix_broker::BrokerMsg trait">BrokerMsg</a></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.BrokerSubscribe.html" title="actix_broker::BrokerSubscribe trait">BrokerSubscribe</a></div><div class="item-right docblock-short"><p>The <code>BrokerSubscribe</code> trait has functions to register an actor’s interest in different
-messages.</p>
-</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="actix_broker" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</div></details><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.ArbiterBroker.html" title="actix_broker::ArbiterBroker struct">ArbiterBroker</a></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Broker.html" title="actix_broker::Broker struct">Broker</a></div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.SystemBroker.html" title="actix_broker::SystemBroker struct">SystemBroker</a></div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.BrokerIssue.html" title="actix_broker::BrokerIssue trait">BrokerIssue</a></div><div class="item-right docblock-short">The <code>BrokerIssue</code> provides functions to issue messages to subscribers.</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.BrokerMsg.html" title="actix_broker::BrokerMsg trait">BrokerMsg</a></div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.BrokerSubscribe.html" title="actix_broker::BrokerSubscribe trait">BrokerSubscribe</a></div><div class="item-right docblock-short">The <code>BrokerSubscribe</code> trait has functions to register an actor’s interest in different
+messages.</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="actix_broker" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

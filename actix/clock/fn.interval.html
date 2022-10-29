@@ -1,11 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Creates new [`Interval`] that yields with interval of `period`. The first tick completes immediately. The default [`MissedTickBehavior`] is `Burst`, but this can be configured by calling `set_missed_tick_behavior`."><meta name="keywords" content="rust, rustlang, rust-lang, interval"><title>interval in actix::clock - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><div class="sidebar-elems"><h2 class="location"><a href="index.html">In actix::clock</a></h2></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
-    <h1 class="fqn"><span class="in-band">Function <a href="../index.html">actix</a>::<wbr><a href="index.html">clock</a>::<wbr><a class="fn" href="#">interval</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><div class="docblock item-decl"><pre class="rust fn"><code>pub fn interval(period: <a class="struct" href="https://doc.rust-lang.org/nightly/core/time/struct.Duration.html" title="struct core::time::Duration">Duration</a>) -&gt; <a class="struct" href="struct.Interval.html" title="struct actix::clock::Interval">Interval</a></code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Creates new <a href="struct.Interval.html" title="Interval"><code>Interval</code></a> that yields with interval of <code>period</code>. The first
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Creates new [`Interval`] that yields with interval of `period`. The first tick completes immediately. The default [`MissedTickBehavior`] is `Burst`, but this can be configured by calling `set_missed_tick_behavior`."><meta name="keywords" content="rust, rustlang, rust-lang, interval"><title>interval in actix::clock - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><div class="sidebar-elems"><h2><a href="index.html">In actix::clock</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Function <a href="../index.html">actix</a>::<wbr><a href="index.html">clock</a>::<wbr><a class="fn" href="#">interval</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../clipboard.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><div class="item-decl"><pre class="rust fn"><code>pub fn interval(period: <a class="struct" href="https://doc.rust-lang.org/nightly/core/time/struct.Duration.html" title="struct core::time::Duration">Duration</a>) -&gt; <a class="struct" href="struct.Interval.html" title="struct actix::clock::Interval">Interval</a></code></pre></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Creates new <a href="struct.Interval.html" title="Interval"><code>Interval</code></a> that yields with interval of <code>period</code>. The first
 tick completes immediately. The default [<code>MissedTickBehavior</code>] is
 <a href="MissedTickBehavior::Burst"><code>Burst</code></a>, but this can be configured
 by calling <a href="struct.Interval.html#method.set_missed_tick_behavior"><code>set_missed_tick_behavior</code></a>.</p>
@@ -16,18 +9,18 @@ be dropped. This cancels the interval.</p>
 <h2 id="panics"><a href="#panics">Panics</a></h2>
 <p>This function panics if <code>period</code> is zero.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::time</span>::{<span class="self">self</span>, <span class="ident">Duration</span>};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::time::{<span class="self">self</span>, Duration};
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interval</span> <span class="op">=</span> <span class="ident">time::interval</span>(<span class="ident">Duration::from_millis</span>(<span class="number">10</span>));
+<span class="attribute">#[tokio::main]
+</span><span class="kw">async fn </span>main() {
+    <span class="kw">let </span><span class="kw-2">mut </span>interval = time::interval(Duration::from_millis(<span class="number">10</span>));
 
-    <span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>; <span class="comment">// ticks immediately</span>
-    <span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>; <span class="comment">// ticks after 10ms</span>
-    <span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>; <span class="comment">// ticks after 10ms</span>
+    interval.tick().<span class="kw">await</span>; <span class="comment">// ticks immediately
+    </span>interval.tick().<span class="kw">await</span>; <span class="comment">// ticks after 10ms
+    </span>interval.tick().<span class="kw">await</span>; <span class="comment">// ticks after 10ms
 
-    <span class="comment">// approximately 20ms have elapsed.</span>
-}</code></pre></div>
+    // approximately 20ms have elapsed.
+</span>}</code></pre></div>
 <p>A simple example using <code>interval</code> to execute a task every two seconds.</p>
 <p>The difference between <code>interval</code> and <a href="fn.sleep.html"><code>sleep</code></a> is that an <a href="struct.Interval.html" title="Interval"><code>Interval</code></a>
 measures the time since the last tick, which means that <a href="struct.Interval.html#method.tick"><code>.tick().await</code></a>
@@ -37,20 +30,19 @@ if some time has passed between calls to <a href="struct.Interval.html#method.ti
 would only be executed once every three seconds, and not every two
 seconds.</p>
 
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">tokio::time</span>;
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>tokio::time;
 
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">task_that_takes_a_second</span>() {
+<span class="kw">async fn </span>task_that_takes_a_second() {
     <span class="macro">println!</span>(<span class="string">&quot;hello&quot;</span>);
-    <span class="ident">time::sleep</span>(<span class="ident">time::Duration::from_secs</span>(<span class="number">1</span>)).<span class="kw">await</span>
-}
+    time::sleep(time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await
+</span>}
 
-<span class="attribute">#[<span class="ident">tokio::main</span>]</span>
-<span class="kw">async</span> <span class="kw">fn</span> <span class="ident">main</span>() {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">interval</span> <span class="op">=</span> <span class="ident">time::interval</span>(<span class="ident">time::Duration::from_secs</span>(<span class="number">2</span>));
-    <span class="kw">for</span> <span class="ident">_i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">5</span> {
-        <span class="ident">interval</span>.<span class="ident">tick</span>().<span class="kw">await</span>;
-        <span class="ident">task_that_takes_a_second</span>().<span class="kw">await</span>;
+<span class="attribute">#[tokio::main]
+</span><span class="kw">async fn </span>main() {
+    <span class="kw">let </span><span class="kw-2">mut </span>interval = time::interval(time::Duration::from_secs(<span class="number">2</span>));
+    <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
+        interval.tick().<span class="kw">await</span>;
+        task_that_takes_a_second().<span class="kw">await</span>;
     }
 }</code></pre></div>
-</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</div></details></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

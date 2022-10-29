@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/contextitems.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>contextitems.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/contextitems.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>contextitems.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -164,166 +158,165 @@
 <span id="158">158</span>
 <span id="159">159</span>
 <span id="160">160</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::future::Future</span>;
-<span class="kw">use</span> <span class="ident">std::pin::Pin</span>;
-<span class="kw">use</span> <span class="ident">std::task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>};
-<span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::future::Future;
+<span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::task::{<span class="self">self</span>, Poll};
+<span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident">futures_core</span>::{<span class="ident">ready</span>, <span class="ident">stream::Stream</span>};
-<span class="kw">use</span> <span class="ident">pin_project_lite::pin_project</span>;
+<span class="kw">use </span>futures_core::{ready, stream::Stream};
+<span class="kw">use </span>pin_project_lite::pin_project;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">AsyncContext</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::clock::Sleep</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut::ActorFuture</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::handler</span>::{<span class="ident">Handler</span>, <span class="ident">Message</span>, <span class="ident">MessageResponse</span>};
+<span class="kw">use </span><span class="kw">crate</span>::actor::{Actor, ActorContext, AsyncContext};
+<span class="kw">use </span><span class="kw">crate</span>::clock::Sleep;
+<span class="kw">use </span><span class="kw">crate</span>::fut::ActorFuture;
+<span class="kw">use </span><span class="kw">crate</span>::handler::{Handler, Message, MessageResponse};
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorWaitItem</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>(<span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>);
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ActorWaitItem&lt;A: Actor&gt;(Pin&lt;Box&lt;<span class="kw">dyn </span>ActorFuture&lt;A, Output = ()&gt;&gt;&gt;);
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorWaitItem</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">A::Context</span>: <span class="ident">ActorContext</span> <span class="op">+</span> <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A&gt; ActorWaitItem&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor,
+    A::Context: ActorContext + AsyncContext&lt;A&gt;,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">fut</span>: <span class="ident">F</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>new&lt;F&gt;(fut: F) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>,
     {
-        <span class="ident">ActorWaitItem</span>(<span class="ident">Box::pin</span>(<span class="ident">fut</span>))
+        ActorWaitItem(Box::pin(fut))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">act</span>, <span class="ident">ctx</span>, <span class="ident">task</span>) {
-            <span class="ident">Poll::Pending</span> =&gt; {
-                <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">state</span>().<span class="ident">alive</span>() {
-                    <span class="ident">Poll::Pending</span>
-                } <span class="kw">else</span> {
-                    <span class="ident">Poll::Ready</span>(())
+    <span class="kw">pub fn </span>poll(
+        <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;()&gt; {
+        <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.as_mut().poll(act, ctx, task) {
+            Poll::Pending =&gt; {
+                <span class="kw">if </span>ctx.state().alive() {
+                    Poll::Pending
+                } <span class="kw">else </span>{
+                    Poll::Ready(())
                 }
             }
-            <span class="ident">Poll::Ready</span>(<span class="kw">_</span>) =&gt; <span class="ident">Poll::Ready</span>(()),
+            Poll::Ready(<span class="kw">_</span>) =&gt; Poll::Ready(()),
         }
     }
 }
 
-<span class="macro">pin_project!</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorDelayedMessageItem</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span>{
-        <span class="ident">msg</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">timeout</span>: <span class="ident">Sleep</span>,
+<span class="macro">pin_project! </span>{
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ActorDelayedMessageItem&lt;M: Message&gt;{
+        msg: <span class="prelude-ty">Option</span>&lt;M&gt;,
+        <span class="attribute">#[pin]
+        </span>timeout: Sleep,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span> <span class="ident">ActorDelayedMessageItem</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">timeout</span>: <span class="ident">Duration</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">msg</span>: <span class="prelude-val">Some</span>(<span class="ident">msg</span>),
-            <span class="ident">timeout</span>: <span class="ident">actix_rt::time::sleep</span>(<span class="ident">timeout</span>),
+<span class="kw">impl</span>&lt;M: Message&gt; ActorDelayedMessageItem&lt;M&gt; {
+    <span class="kw">pub fn </span>new(msg: M, timeout: Duration) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            msg: <span class="prelude-val">Some</span>(msg),
+            timeout: actix_rt::time::sleep(timeout),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorDelayedMessageItem</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span> <span class="op">+</span> <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>ActorDelayedMessageItem&lt;M&gt;
+<span class="kw">where
+    </span>A: Actor + Handler&lt;M&gt;,
+    A::Context: AsyncContext&lt;A&gt;,
+    M: Message + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
-        <span class="macro">ready!</span>(<span class="ident">this</span>.<span class="ident">timeout</span>.<span class="ident">poll</span>(<span class="ident">task</span>));
-        <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">A::handle</span>(<span class="ident">act</span>, <span class="ident">this</span>.<span class="ident">msg</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>(), <span class="ident">ctx</span>);
-        <span class="ident">fut</span>.<span class="ident">handle</span>(<span class="ident">ctx</span>, <span class="prelude-val">None</span>);
-        <span class="ident">Poll::Ready</span>(())
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span>this = <span class="self">self</span>.project();
+        <span class="macro">ready!</span>(this.timeout.poll(task));
+        <span class="kw">let </span>fut = A::handle(act, this.msg.take().unwrap(), ctx);
+        fut.handle(ctx, <span class="prelude-val">None</span>);
+        Poll::Ready(())
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorMessageItem</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span> {
-    <span class="ident">msg</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ActorMessageItem&lt;M: Message&gt; {
+    msg: <span class="prelude-ty">Option</span>&lt;M&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span> <span class="ident">Unpin</span> <span class="kw">for</span> <span class="ident">ActorMessageItem</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;M: Message&gt; Unpin <span class="kw">for </span>ActorMessageItem&lt;M&gt; {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span> <span class="ident">ActorMessageItem</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">msg</span>: <span class="prelude-val">Some</span>(<span class="ident">msg</span>) }
+<span class="kw">impl</span>&lt;M: Message&gt; ActorMessageItem&lt;M&gt; {
+    <span class="kw">pub fn </span>new(msg: M) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ msg: <span class="prelude-val">Some</span>(msg) }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorMessageItem</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span> <span class="op">+</span> <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>ActorMessageItem&lt;M&gt;
+<span class="kw">where
+    </span>A: Actor + Handler&lt;M&gt;,
+    A::Context: AsyncContext&lt;A&gt;,
+    M: Message + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
-        <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">Handler::handle</span>(<span class="ident">act</span>, <span class="ident">this</span>.<span class="ident">msg</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>(), <span class="ident">ctx</span>);
-        <span class="ident">fut</span>.<span class="ident">handle</span>(<span class="ident">ctx</span>, <span class="prelude-val">None</span>);
-        <span class="ident">Poll::Ready</span>(())
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span>this = <span class="self">self</span>.get_mut();
+        <span class="kw">let </span>fut = Handler::handle(act, this.msg.take().unwrap(), ctx);
+        fut.handle(ctx, <span class="prelude-val">None</span>);
+        Poll::Ready(())
     }
 }
 
-<span class="macro">pin_project!</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorMessageStreamItem</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>{
-        <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">stream</span>: <span class="ident">S</span>,
+<span class="macro">pin_project! </span>{
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ActorMessageStreamItem&lt;S&gt;{
+        <span class="attribute">#[pin]
+        </span>stream: S,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span> <span class="ident">ActorMessageStreamItem</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">st</span>: <span class="ident">S</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> { <span class="ident">stream</span>: <span class="ident">st</span> }
+<span class="kw">impl</span>&lt;S&gt; ActorMessageStreamItem&lt;S&gt; {
+    <span class="kw">pub fn </span>new(st: S) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ stream: st }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">S</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorMessageStreamItem</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Stream</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span> <span class="op">+</span> <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">S::Item</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, S&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>ActorMessageStreamItem&lt;S&gt;
+<span class="kw">where
+    </span>S: Stream,
+    A: Actor + Handler&lt;S::Item&gt;,
+    A::Context: AsyncContext&lt;A&gt;,
+    S::Item: Message + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>this = <span class="self">self</span>.project();
 
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">task</span>)) {
-            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">Handler::handle</span>(<span class="ident">act</span>, <span class="ident">msg</span>, <span class="ident">ctx</span>);
-            <span class="ident">fut</span>.<span class="ident">handle</span>(<span class="ident">ctx</span>, <span class="prelude-val">None</span>);
-            <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">waiting</span>() {
-                <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(msg) = <span class="macro">ready!</span>(this.stream.as_mut().poll_next(task)) {
+            <span class="kw">let </span>fut = Handler::handle(act, msg, ctx);
+            fut.handle(ctx, <span class="prelude-val">None</span>);
+            <span class="kw">if </span>ctx.waiting() {
+                <span class="kw">return </span>Poll::Pending;
             }
         }
 
-        <span class="ident">Poll::Ready</span>(())
+        Poll::Ready(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

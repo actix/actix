@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/future/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/future/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -293,295 +287,294 @@
 <span id="287">287</span>
 <span id="288">288</span>
 <span id="289">289</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">future::Future</span>,
-    <span class="ident">marker::PhantomData</span>,
-    <span class="ident">ops</span>::{<span class="ident">Deref</span>, <span class="ident">DerefMut</span>},
-    <span class="ident">pin::Pin</span>,
-    <span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>},
-    <span class="ident">time::Duration</span>,
+</pre><pre class="rust"><code><span class="kw">use </span>std::{
+    future::Future,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
 };
 
-<span class="kw">use</span> <span class="ident">pin_project_lite::pin_project</span>;
+<span class="kw">use </span>pin_project_lite::pin_project;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">map::Map</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">then::Then</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">timeout::Timeout</span>;
+<span class="kw">pub use </span>map::Map;
+<span class="kw">pub use </span>then::Then;
+<span class="kw">pub use </span>timeout::Timeout;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor::Actor</span>;
+<span class="kw">use </span><span class="kw">crate</span>::actor::Actor;
 
-<span class="kw">mod</span> <span class="ident">either</span>;
-<span class="kw">mod</span> <span class="ident">map</span>;
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">result</span>;
-<span class="kw">mod</span> <span class="ident">then</span>;
-<span class="kw">mod</span> <span class="ident">timeout</span>;
+<span class="kw">mod </span>either;
+<span class="kw">mod </span>map;
+<span class="kw">pub mod </span>result;
+<span class="kw">mod </span>then;
+<span class="kw">mod </span>timeout;
 
-<span class="doccomment">/// Trait for types which are a placeholder of a value that may become</span>
-<span class="doccomment">/// available at some later point in time.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`ActorFuture`] is very similar to a regular [`Future`], only with subsequent combinator closures accepting the actor and its context, in addition to the result.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// [`ActorFuture`] allows for use cases where future processing requires access to the actor or its context.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Here is an example of a handler on a single actor, deferring work to another actor, and</span>
-<span class="doccomment">/// then updating the initiating actor&#39;s state:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use actix::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// // The response type returned by the actor future</span>
-<span class="doccomment">/// type OriginalActorResponse = ();</span>
-<span class="doccomment">/// // The error type returned by the actor future</span>
-<span class="doccomment">/// type MessageError = ();</span>
-<span class="doccomment">/// // This is the needed result for the DeferredWork message</span>
-<span class="doccomment">/// // It&#39;s a result that combine both Response and Error from the future response.</span>
-<span class="doccomment">/// type DeferredWorkResult = Result&lt;OriginalActorResponse, MessageError&gt;;</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # struct ActorState {}</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # impl ActorState {</span>
-<span class="doccomment">/// #    fn update_from(&amp;mut self, _result: ()) {}</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # struct OtherActor {}</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # impl Actor for OtherActor {</span>
-<span class="doccomment">/// #    type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # impl Handler&lt;OtherMessage&gt; for OtherActor {</span>
-<span class="doccomment">/// #    type Result = ();</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// #    fn handle(&amp;mut self, _msg: OtherMessage, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">/// #    }</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # struct OriginalActor{</span>
-<span class="doccomment">/// #     other_actor: Addr&lt;OtherActor&gt;,</span>
-<span class="doccomment">/// #     inner_state: ActorState</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # impl Actor for OriginalActor{</span>
-<span class="doccomment">/// #     type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # #[derive(Message)]</span>
-<span class="doccomment">/// # #[rtype(result = &quot;Result&lt;(), MessageError&gt;&quot;)]</span>
-<span class="doccomment">/// # struct DeferredWork{}</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # #[derive(Message)]</span>
-<span class="doccomment">/// # #[rtype(result = &quot;()&quot;)]</span>
-<span class="doccomment">/// # struct OtherMessage{}</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Handler&lt;DeferredWork&gt; for OriginalActor {</span>
-<span class="doccomment">///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.</span>
-<span class="doccomment">///     type Result = ResponseActFuture&lt;Self, Result&lt;OriginalActorResponse, MessageError&gt;&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///     fn handle(&amp;mut self, _msg: DeferredWork, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         // this creates a `Future` representing the `.send` and subsequent `Result` from</span>
-<span class="doccomment">///         // `other_actor`</span>
-<span class="doccomment">///         let send_to_other = self.other_actor</span>
-<span class="doccomment">///             .send(OtherMessage {});</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///         // Wrap that `Future` so subsequent chained handlers can access</span>
-<span class="doccomment">///         // the `actor` (`self` in the  synchronous code) as well as the context.</span>
-<span class="doccomment">///         let send_to_other = actix::fut::wrap_future::&lt;_, Self&gt;(send_to_other);</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///         // once the wrapped future resolves, update this actor&#39;s state</span>
-<span class="doccomment">///         let update_self = send_to_other.map(|result, actor, _ctx| {</span>
-<span class="doccomment">///             // Actor&#39;s state updated here</span>
-<span class="doccomment">///             match result {</span>
-<span class="doccomment">///                 Ok(v) =&gt; {</span>
-<span class="doccomment">///                     actor.inner_state.update_from(v);</span>
-<span class="doccomment">///                     Ok(())</span>
-<span class="doccomment">///                 },</span>
-<span class="doccomment">///                 // Failed to send message to other_actor</span>
-<span class="doccomment">///                 Err(_e) =&gt; Err(()),</span>
-<span class="doccomment">///             }</span>
-<span class="doccomment">///         });</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///         // return the wrapped future</span>
-<span class="doccomment">///         Box::pin(update_self)</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// See also [`into_actor`](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The type of value that this future will resolved with if it is</span>
-    <span class="doccomment">/// successful.</span>
-    <span class="kw">type</span> <span class="ident">Output</span>;
+<span class="doccomment">/// Trait for types which are a placeholder of a value that may become
+/// available at some later point in time.
+///
+/// [`ActorFuture`] is very similar to a regular [`Future`], only with subsequent combinator closures accepting the actor and its context, in addition to the result.
+///
+/// [`ActorFuture`] allows for use cases where future processing requires access to the actor or its context.
+///
+/// Here is an example of a handler on a single actor, deferring work to another actor, and
+/// then updating the initiating actor&#39;s state:
+///
+/// ```no_run
+/// use actix::prelude::*;
+///
+/// // The response type returned by the actor future
+/// type OriginalActorResponse = ();
+/// // The error type returned by the actor future
+/// type MessageError = ();
+/// // This is the needed result for the DeferredWork message
+/// // It&#39;s a result that combine both Response and Error from the future response.
+/// type DeferredWorkResult = Result&lt;OriginalActorResponse, MessageError&gt;;
+/// #
+/// # struct ActorState {}
+/// #
+/// # impl ActorState {
+/// #    fn update_from(&amp;mut self, _result: ()) {}
+/// # }
+/// #
+/// # struct OtherActor {}
+/// #
+/// # impl Actor for OtherActor {
+/// #    type Context = Context&lt;Self&gt;;
+/// # }
+/// #
+/// # impl Handler&lt;OtherMessage&gt; for OtherActor {
+/// #    type Result = ();
+/// #
+/// #    fn handle(&amp;mut self, _msg: OtherMessage, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+/// #    }
+/// # }
+/// #
+/// # struct OriginalActor{
+/// #     other_actor: Addr&lt;OtherActor&gt;,
+/// #     inner_state: ActorState
+/// # }
+/// #
+/// # impl Actor for OriginalActor{
+/// #     type Context = Context&lt;Self&gt;;
+/// # }
+/// #
+/// # #[derive(Message)]
+/// # #[rtype(result = &quot;Result&lt;(), MessageError&gt;&quot;)]
+/// # struct DeferredWork{}
+/// #
+/// # #[derive(Message)]
+/// # #[rtype(result = &quot;()&quot;)]
+/// # struct OtherMessage{}
+///
+/// impl Handler&lt;DeferredWork&gt; for OriginalActor {
+///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
+///     type Result = ResponseActFuture&lt;Self, Result&lt;OriginalActorResponse, MessageError&gt;&gt;;
+///
+///     fn handle(&amp;mut self, _msg: DeferredWork, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         // this creates a `Future` representing the `.send` and subsequent `Result` from
+///         // `other_actor`
+///         let send_to_other = self.other_actor
+///             .send(OtherMessage {});
+///
+///         // Wrap that `Future` so subsequent chained handlers can access
+///         // the `actor` (`self` in the  synchronous code) as well as the context.
+///         let send_to_other = actix::fut::wrap_future::&lt;_, Self&gt;(send_to_other);
+///
+///         // once the wrapped future resolves, update this actor&#39;s state
+///         let update_self = send_to_other.map(|result, actor, _ctx| {
+///             // Actor&#39;s state updated here
+///             match result {
+///                 Ok(v) =&gt; {
+///                     actor.inner_state.update_from(v);
+///                     Ok(())
+///                 },
+///                 // Failed to send message to other_actor
+///                 Err(_e) =&gt; Err(()),
+///             }
+///         });
+///
+///         // return the wrapped future
+///         Box::pin(update_self)
+///     }
+/// }
+///
+/// ```
+///
+/// See also [`into_actor`](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
+</span><span class="kw">pub trait </span>ActorFuture&lt;A: Actor&gt; {
+    <span class="doccomment">/// The type of value that this future will resolved with if it is
+    /// successful.
+    </span><span class="kw">type </span>Output;
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        srv: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt;;
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorFutureExt</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Map this future&#39;s result to a different type, returning a new future of</span>
-    <span class="doccomment">/// the resulting type.</span>
-    <span class="kw">fn</span> <span class="ident">map</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">U</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Map</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident"><span class="self">Self</span>::Output</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">U</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+<span class="kw">pub trait </span>ActorFutureExt&lt;A: Actor&gt;: ActorFuture&lt;A&gt; {
+    <span class="doccomment">/// Map this future&#39;s result to a different type, returning a new future of
+    /// the resulting type.
+    </span><span class="kw">fn </span>map&lt;F, U&gt;(<span class="self">self</span>, f: F) -&gt; Map&lt;<span class="self">Self</span>, F&gt;
+    <span class="kw">where
+        </span>F: FnOnce(<span class="self">Self</span>::Output, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; U,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">Map::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        Map::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Chain on a computation for when a future finished, passing the result of</span>
-    <span class="doccomment">/// the future to the provided closure `f`.</span>
-    <span class="kw">fn</span> <span class="ident">then</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">Fut</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Then</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident"><span class="self">Self</span>::Output</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Chain on a computation for when a future finished, passing the result of
+    /// the future to the provided closure `f`.
+    </span><span class="kw">fn </span>then&lt;F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; Then&lt;<span class="self">Self</span>, Fut, F&gt;
+    <span class="kw">where
+        </span>F: FnOnce(<span class="self">Self</span>::Output, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; Fut,
+        Fut: ActorFuture&lt;A&gt;,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">then::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        then::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Add timeout to futures chain.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `Err(())` returned as a timeout error.</span>
-    <span class="kw">fn</span> <span class="ident">timeout</span>(<span class="self">self</span>, <span class="ident">timeout</span>: <span class="ident">Duration</span>) -&gt; <span class="ident">Timeout</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Add timeout to futures chain.
+    ///
+    /// `Err(())` returned as a timeout error.
+    </span><span class="kw">fn </span>timeout(<span class="self">self</span>, timeout: Duration) -&gt; Timeout&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized,
     {
-        <span class="ident">Timeout::new</span>(<span class="self">self</span>, <span class="ident">timeout</span>)
+        Timeout::new(<span class="self">self</span>, timeout)
     }
 
-    <span class="doccomment">/// Wrap the future in a Box, pinning it.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// A shortcut for wrapping in [`Box::pin`].</span>
-    <span class="kw">fn</span> <span class="ident">boxed_local</span>(<span class="self">self</span>) -&gt; <span class="ident">LocalBoxActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Wrap the future in a Box, pinning it.
+    ///
+    /// A shortcut for wrapping in [`Box::pin`].
+    </span><span class="kw">fn </span>boxed_local(<span class="self">self</span>) -&gt; LocalBoxActorFuture&lt;A, <span class="self">Self</span>::Output&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Sized + <span class="lifetime">&#39;static</span>,
     {
-        <span class="ident">Box::pin</span>(<span class="self">self</span>)
+        Box::pin(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFutureExt</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;F, A&gt; ActorFutureExt&lt;A&gt; <span class="kw">for </span>F
+<span class="kw">where
+    </span>F: ActorFuture&lt;A&gt;,
+    A: Actor,
 {
 }
 
-<span class="doccomment">/// Type alias for a pinned box [`ActorFuture`] trait object.</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">LocalBoxActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="doccomment">/// Type alias for a pinned box [`ActorFuture`] trait object.
+</span><span class="kw">pub type </span>LocalBoxActorFuture&lt;A, I&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>ActorFuture&lt;A, Output = I&gt;&gt;&gt;;
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;F, A&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>Box&lt;F&gt;
+<span class="kw">where
+    </span>F: ActorFuture&lt;A&gt; + Unpin + <span class="question-mark">?</span>Sized,
+    A: Actor,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">F::Output</span>;
+    <span class="kw">type </span>Output = F::Output;
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="kw-2">mut</span> <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>.<span class="ident">as_mut</span>()).<span class="ident">poll</span>(<span class="ident">srv</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
+    <span class="kw">fn </span>poll(
+        <span class="kw-2">mut </span><span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        srv: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        Pin::new(<span class="kw-2">&amp;mut **</span><span class="self">self</span>.as_mut()).poll(srv, ctx, task)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">P</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">P</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">P</span>: <span class="ident">Unpin</span> <span class="op">+</span> <span class="ident">DerefMut</span>,
-    <span class="op">&lt;</span><span class="ident">P</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::Target</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;P, A&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>Pin&lt;P&gt;
+<span class="kw">where
+    </span>P: Unpin + DerefMut,
+    &lt;P <span class="kw">as </span>Deref&gt;::Target: ActorFuture&lt;A&gt;,
+    A: Actor,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">P</span> <span class="kw">as</span> <span class="ident">Deref</span><span class="op">&gt;</span><span class="ident">::Target</span> <span class="kw">as</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Output</span>;
+    <span class="kw">type </span>Output = &lt;&lt;P <span class="kw">as </span>Deref&gt;::Target <span class="kw">as </span>ActorFuture&lt;A&gt;&gt;::Output;
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="ident">Pin::get_mut</span>(<span class="self">self</span>).<span class="ident">as_mut</span>().<span class="ident">poll</span>(<span class="ident">srv</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        srv: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        Pin::get_mut(<span class="self">self</span>).as_mut().poll(srv, ctx, task)
     }
 }
 
-<span class="doccomment">/// Helper trait that allows conversion of normal future into [`ActorFuture`]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">WrapFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="doccomment">/// Helper trait that allows conversion of normal future into [`ActorFuture`]
+</span><span class="kw">pub trait </span>WrapFuture&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor,
 {
-    <span class="doccomment">/// The future that this type can be converted into.</span>
-    <span class="kw">type</span> <span class="ident">Future</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// The future that this type can be converted into.
+    </span><span class="kw">type </span>Future: ActorFuture&lt;A&gt;;
 
-    <span class="attribute">#[<span class="ident">deprecated</span>(<span class="ident">since</span> <span class="op">=</span> <span class="string">&quot;0.11.0&quot;</span>, <span class="ident">note</span> <span class="op">=</span> <span class="string">&quot;Please use WrapFuture::into_actor&quot;</span>)]</span>
-    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">actfuture</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Future</span>;
+    <span class="attribute">#[deprecated(since = <span class="string">&quot;0.11.0&quot;</span>, note = <span class="string">&quot;Please use WrapFuture::into_actor&quot;</span>)]
+    #[doc(hidden)]
+    </span><span class="kw">fn </span>actfuture(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Future;
 
-    <span class="doccomment">/// Convert normal future to a [`ActorFuture`]</span>
-    <span class="kw">fn</span> <span class="ident">into_actor</span>(<span class="self">self</span>, <span class="ident">a</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>) -&gt; <span class="ident"><span class="self">Self</span>::Future</span>;
+    <span class="doccomment">/// Convert normal future to a [`ActorFuture`]
+    </span><span class="kw">fn </span>into_actor(<span class="self">self</span>, a: <span class="kw-2">&amp;</span>A) -&gt; <span class="self">Self</span>::Future;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">Future</span>, <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">WrapFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span> {
-    <span class="kw">type</span> <span class="ident">Future</span> <span class="op">=</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>;
+<span class="kw">impl</span>&lt;F: Future, A: Actor&gt; WrapFuture&lt;A&gt; <span class="kw">for </span>F {
+    <span class="kw">type </span>Future = FutureWrap&lt;F, A&gt;;
 
-    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="kw">fn</span> <span class="ident">actfuture</span>(<span class="self">self</span>) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
-        <span class="ident">wrap_future</span>(<span class="self">self</span>)
+    <span class="attribute">#[doc(hidden)]
+    </span><span class="kw">fn </span>actfuture(<span class="self">self</span>) -&gt; <span class="self">Self</span>::Future {
+        wrap_future(<span class="self">self</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">into_actor</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span><span class="ident">A</span>) -&gt; <span class="ident"><span class="self">Self</span>::Future</span> {
-        <span class="ident">wrap_future</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>into_actor(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;</span>A) -&gt; <span class="self">Self</span>::Future {
+        wrap_future(<span class="self">self</span>)
     }
 }
 
-<span class="macro">pin_project!</span> {
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">Future</span>,
-        <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="macro">pin_project! </span>{
+    <span class="kw">pub struct </span>FutureWrap&lt;F, A&gt;
+    <span class="kw">where
+        </span>F: Future,
+        A: Actor,
     {
-        <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">fut</span>: <span class="ident">F</span>,
-        <span class="ident">_act</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
+        <span class="attribute">#[pin]
+        </span>fut: F,
+        _act: PhantomData&lt;A&gt;
     }
 }
 
-<span class="doccomment">/// Converts normal future into [`ActorFuture`], allowing its processing to</span>
-<span class="doccomment">/// use the actor&#39;s state.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// See the documentation for [`ActorFuture`] for a practical example involving both</span>
-<span class="doccomment">/// [`wrap_future`] and [`ActorFuture`]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wrap_future</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Future</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="doccomment">/// Converts normal future into [`ActorFuture`], allowing its processing to
+/// use the actor&#39;s state.
+///
+/// See the documentation for [`ActorFuture`] for a practical example involving both
+/// [`wrap_future`] and [`ActorFuture`]
+</span><span class="kw">pub fn </span>wrap_future&lt;F, A&gt;(f: F) -&gt; FutureWrap&lt;F, A&gt;
+<span class="kw">where
+    </span>F: Future,
+    A: Actor,
 {
-    <span class="ident">FutureWrap</span> {
-        <span class="ident">fut</span>: <span class="ident">f</span>,
-        <span class="ident">_act</span>: <span class="ident">PhantomData</span>,
+    FutureWrap {
+        fut: f,
+        _act: PhantomData,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">FutureWrap</span><span class="op">&lt;</span><span class="ident">F</span>, <span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">F</span>: <span class="ident">Future</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;F, A&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>FutureWrap&lt;F, A&gt;
+<span class="kw">where
+    </span>F: Future,
+    A: Actor,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="ident">F::Output</span>;
+    <span class="kw">type </span>Output = F::Output;
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">project</span>().<span class="ident">fut</span>.<span class="ident">poll</span>(<span class="ident">task</span>)
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A,
+        <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="self">self</span>.project().fut.poll(task)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

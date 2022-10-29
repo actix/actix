@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/context.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>context.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/context.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>context.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -250,252 +244,251 @@
 <span id="244">244</span>
 <span id="245">245</span>
 <span id="246">246</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::fmt</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::fmt;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">SpawnHandle</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::{<span class="ident">Addr</span>, <span class="ident">AddressReceiver</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::contextimpl</span>::{<span class="ident">AsyncContextParts</span>, <span class="ident">ContextFut</span>, <span class="ident">ContextParts</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut::ActorFuture</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::mailbox::Mailbox</span>;
+<span class="kw">use </span><span class="kw">crate</span>::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
+<span class="kw">use </span><span class="kw">crate</span>::address::{Addr, AddressReceiver};
+<span class="kw">use </span><span class="kw">crate</span>::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
+<span class="kw">use </span><span class="kw">crate</span>::fut::ActorFuture;
+<span class="kw">use </span><span class="kw">crate</span>::mailbox::Mailbox;
 
-<span class="doccomment">/// An actor execution context.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// An actor execution context.
+</span><span class="kw">pub struct </span>Context&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor&lt;Context = Context&lt;A&gt;&gt;,
 {
-    <span class="ident">parts</span>: <span class="ident">ContextParts</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">mb</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Mailbox</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    parts: ContextParts&lt;A&gt;,
+    mb: <span class="prelude-ty">Option</span>&lt;Mailbox&lt;A&gt;&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Context&quot;</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;parts&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">parts</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;mb&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">mb</span>)
-            .<span class="ident">finish</span>()
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorContext</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
-{
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">stop</span>()
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">terminate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">terminate</span>()
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ActorState</span> {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">state</span>()
+<span class="kw">impl</span>&lt;A: Actor&lt;Context = Context&lt;A&gt;&gt;&gt; fmt::Debug <span class="kw">for </span>Context&lt;A&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        fmt.debug_struct(<span class="string">&quot;Context&quot;</span>)
+            .field(<span class="string">&quot;parts&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.parts)
+            .field(<span class="string">&quot;mb&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.mb)
+            .finish()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A&gt; ActorContext <span class="kw">for </span>Context&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor&lt;Context = <span class="self">Self</span>&gt;,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">spawn</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.parts.stop()
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>terminate(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.parts.terminate()
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ActorState {
+        <span class="self">self</span>.parts.state()
+    }
+}
+
+<span class="kw">impl</span>&lt;A&gt; AsyncContext&lt;A&gt; <span class="kw">for </span>Context&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor&lt;Context = <span class="self">Self</span>&gt;,
+{
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>spawn&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: F) -&gt; SpawnHandle
+    <span class="kw">where
+        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">spawn</span>(<span class="ident">fut</span>)
+        <span class="self">self</span>.parts.spawn(fut)
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">wait</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>)
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>wait&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: F)
+    <span class="kw">where
+        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">wait</span>(<span class="ident">fut</span>)
+        <span class="self">self</span>.parts.wait(fut)
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">waiting</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">waiting</span>()
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>waiting(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.parts.waiting()
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">cancel_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">SpawnHandle</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">cancel_future</span>(<span class="ident">handle</span>)
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>cancel_future(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: SpawnHandle) -&gt; bool {
+        <span class="self">self</span>.parts.cancel_future(handle)
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">address</span>()
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Addr&lt;A&gt; {
+        <span class="self">self</span>.parts.address()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A&gt; Context&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor&lt;Context = <span class="self">Self</span>&gt;,
 {
-    <span class="doccomment">/// Create a context without spawning it.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The context can be spawned into an actor using its [`run`](`Context::run`) method.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// # use actix::prelude::*;</span>
-    <span class="doccomment">/// struct Actor1 {</span>
-    <span class="doccomment">///     actor2_addr: Addr&lt;Actor2&gt;,</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// # impl Actor for Actor1 {</span>
-    <span class="doccomment">/// #     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">/// # }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// struct Actor2 {</span>
-    <span class="doccomment">///     actor1_addr: Addr&lt;Actor1&gt;,</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// # impl Actor for Actor2 {</span>
-    <span class="doccomment">/// #     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">/// #</span>
-    <span class="doccomment">/// #     fn started(&amp;mut self, _: &amp;mut Self::Context) {</span>
-    <span class="doccomment">/// #         System::current().stop();</span>
-    <span class="doccomment">/// #     }        </span>
-    <span class="doccomment">/// # }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # fn main() {</span>
-    <span class="doccomment">/// # let sys = System::new();</span>
-    <span class="doccomment">/// # sys.block_on(async {</span>
-    <span class="doccomment">/// let ctx1 = Context::&lt;Actor1&gt;::new();</span>
-    <span class="doccomment">/// let ctx2 = Context::&lt;Actor2&gt;::new();</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// let actor1 = Actor1 { actor2_addr: ctx2.address() };</span>
-    <span class="doccomment">/// let actor2 = Actor2 { actor1_addr: ctx1.address() };</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ctx1.run(actor1);</span>
-    <span class="doccomment">/// ctx2.run(actor2);</span>
-    <span class="doccomment">/// # });</span>
-    <span class="doccomment">/// # sys.run().unwrap();</span>
-    <span class="doccomment">/// # }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="ident">Mailbox::default</span>();
-        <span class="self">Self</span> {
-            <span class="ident">parts</span>: <span class="ident">ContextParts::new</span>(<span class="ident">mb</span>.<span class="ident">sender_producer</span>()),
-            <span class="ident">mb</span>: <span class="prelude-val">Some</span>(<span class="ident">mb</span>),
+    <span class="doccomment">/// Create a context without spawning it.
+    ///
+    /// The context can be spawned into an actor using its [`run`](`Context::run`) method.
+    ///
+    /// ```
+    /// # use actix::prelude::*;
+    /// struct Actor1 {
+    ///     actor2_addr: Addr&lt;Actor2&gt;,
+    /// }
+    /// # impl Actor for Actor1 {
+    /// #     type Context = Context&lt;Self&gt;;
+    /// # }
+    ///
+    /// struct Actor2 {
+    ///     actor1_addr: Addr&lt;Actor1&gt;,
+    /// }
+    /// # impl Actor for Actor2 {
+    /// #     type Context = Context&lt;Self&gt;;
+    /// #
+    /// #     fn started(&amp;mut self, _: &amp;mut Self::Context) {
+    /// #         System::current().stop();
+    /// #     }        
+    /// # }
+    ///
+    /// # fn main() {
+    /// # let sys = System::new();
+    /// # sys.block_on(async {
+    /// let ctx1 = Context::&lt;Actor1&gt;::new();
+    /// let ctx2 = Context::&lt;Actor2&gt;::new();
+    ///
+    /// let actor1 = Actor1 { actor2_addr: ctx2.address() };
+    /// let actor2 = Actor2 { actor1_addr: ctx1.address() };
+    ///
+    /// ctx1.run(actor1);
+    /// ctx2.run(actor2);
+    /// # });
+    /// # sys.run().unwrap();
+    /// # }
+    /// ```
+    </span><span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>mb = Mailbox::default();
+        <span class="self">Self </span>{
+            parts: ContextParts::new(mb.sender_producer()),
+            mb: <span class="prelude-val">Some</span>(mb),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_receiver</span>(<span class="ident">rx</span>: <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="ident">Mailbox::new</span>(<span class="ident">rx</span>);
-        <span class="self">Self</span> {
-            <span class="ident">parts</span>: <span class="ident">ContextParts::new</span>(<span class="ident">mb</span>.<span class="ident">sender_producer</span>()),
-            <span class="ident">mb</span>: <span class="prelude-val">Some</span>(<span class="ident">mb</span>),
+    <span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>with_receiver(rx: AddressReceiver&lt;A&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>mb = Mailbox::new(rx);
+        <span class="self">Self </span>{
+            parts: ContextParts::new(mb.sender_producer()),
+            mb: <span class="prelude-val">Some</span>(mb),
         }
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span>(<span class="self">self</span>, <span class="ident">act</span>: <span class="ident">A</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">into_future</span>(<span class="ident">act</span>);
-        <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">fut</span>.<span class="ident">address</span>();
-        <span class="ident">actix_rt::spawn</span>(<span class="ident">fut</span>);
-        <span class="ident">addr</span>
+    <span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>run(<span class="self">self</span>, act: A) -&gt; Addr&lt;A&gt; {
+        <span class="kw">let </span>fut = <span class="self">self</span>.into_future(act);
+        <span class="kw">let </span>addr = fut.address();
+        actix_rt::spawn(fut);
+        addr
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_future</span>(<span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">act</span>: <span class="ident">A</span>) -&gt; <span class="ident">ContextFut</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="self">Self</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">mb</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">mb</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
-        <span class="ident">ContextFut::new</span>(<span class="self">self</span>, <span class="ident">act</span>, <span class="ident">mb</span>)
+    <span class="kw">pub fn </span>into_future(<span class="kw-2">mut </span><span class="self">self</span>, act: A) -&gt; ContextFut&lt;A, <span class="self">Self</span>&gt; {
+        <span class="kw">let </span>mb = <span class="self">self</span>.mb.take().unwrap();
+        ContextFut::new(<span class="self">self</span>, act, mb)
     }
 
-    <span class="doccomment">/// Returns a handle to the running future.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is the handle returned by the `AsyncContext::spawn()`</span>
-    <span class="doccomment">/// method.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SpawnHandle</span> {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">curr_handle</span>()
+    <span class="doccomment">/// Returns a handle to the running future.
+    ///
+    /// This is the handle returned by the `AsyncContext::spawn()`
+    /// method.
+    </span><span class="kw">pub fn </span>handle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SpawnHandle {
+        <span class="self">self</span>.parts.curr_handle()
     }
 
-    <span class="doccomment">/// Sets the mailbox capacity.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The default mailbox capacity is 16 messages.</span>
-    <span class="doccomment">/// #Examples</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// # use actix::prelude::*;</span>
-    <span class="doccomment">/// struct MyActor;</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn started(&amp;mut self, ctx: &amp;mut Self::Context) {</span>
-    <span class="doccomment">///         ctx.set_mailbox_capacity(1);</span>
-    <span class="doccomment">///         System::current().stop();</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # fn main() {</span>
-    <span class="doccomment">/// # let mut sys = System::new();</span>
-    <span class="doccomment">/// let addr = sys.block_on(async { MyActor.start() });</span>
-    <span class="doccomment">/// sys.run();</span>
-    <span class="doccomment">/// # }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_mailbox_capacity</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">cap</span>: <span class="ident">usize</span>) {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">set_mailbox_capacity</span>(<span class="ident">cap</span>)
+    <span class="doccomment">/// Sets the mailbox capacity.
+    ///
+    /// The default mailbox capacity is 16 messages.
+    /// #Examples
+    /// ```
+    /// # use actix::prelude::*;
+    /// struct MyActor;
+    /// impl Actor for MyActor {
+    ///     type Context = Context&lt;Self&gt;;
+    ///
+    ///     fn started(&amp;mut self, ctx: &amp;mut Self::Context) {
+    ///         ctx.set_mailbox_capacity(1);
+    ///         System::current().stop();
+    ///     }
+    /// }
+    ///
+    /// # fn main() {
+    /// # let mut sys = System::new();
+    /// let addr = sys.block_on(async { MyActor.start() });
+    /// sys.run();
+    /// # }
+    /// ```
+    </span><span class="kw">pub fn </span>set_mailbox_capacity(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cap: usize) {
+        <span class="self">self</span>.parts.set_mailbox_capacity(cap)
     }
 
-    <span class="doccomment">/// Returns whether any addresses are still connected.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">parts</span>.<span class="ident">connected</span>()
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
-{
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::new</span>()
+    <span class="doccomment">/// Returns whether any addresses are still connected.
+    </span><span class="kw">pub fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.parts.connected()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="ident">AsyncContextParts</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A&gt; Default <span class="kw">for </span>Context&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor&lt;Context = <span class="self">Self</span>&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">parts</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ContextParts</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">parts</span>
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new()
     }
 }
 
-<span class="doccomment">/// Helper trait which can spawn a future into the actor&#39;s context.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ContextFutureSpawner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A&gt; AsyncContextParts&lt;A&gt; <span class="kw">for </span>Context&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor&lt;Context = <span class="self">Self</span>&gt;,
 {
-    <span class="doccomment">/// Spawns the future into the given context.</span>
-    <span class="kw">fn</span> <span class="ident">spawn</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>);
-
-    <span class="doccomment">/// Spawns the future into the given context, waiting for it to</span>
-    <span class="doccomment">/// resolve.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This stops processing any incoming events until this future</span>
-    <span class="doccomment">/// resolves.</span>
-    <span class="kw">fn</span> <span class="ident">wait</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>);
+    <span class="kw">fn </span>parts(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ContextParts&lt;A&gt; {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.parts
+    }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">ContextFutureSpawner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">T</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="doccomment">/// Helper trait which can spawn a future into the actor&#39;s context.
+</span><span class="kw">pub trait </span>ContextFutureSpawner&lt;A&gt;
+<span class="kw">where
+    </span>A: Actor,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">spawn</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) {
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="self">self</span>);
+    <span class="doccomment">/// Spawns the future into the given context.
+    </span><span class="kw">fn </span>spawn(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context);
+
+    <span class="doccomment">/// Spawns the future into the given context, waiting for it to
+    /// resolve.
+    ///
+    /// This stops processing any incoming events until this future
+    /// resolves.
+    </span><span class="kw">fn </span>wait(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context);
+}
+
+<span class="kw">impl</span>&lt;A, T&gt; ContextFutureSpawner&lt;A&gt; <span class="kw">for </span>T
+<span class="kw">where
+    </span>A: Actor,
+    A::Context: AsyncContext&lt;A&gt;,
+    T: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>,
+{
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>spawn(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context) {
+        <span class="kw">let _ </span>= ctx.spawn(<span class="self">self</span>);
     }
 
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">wait</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) {
-        <span class="ident">ctx</span>.<span class="ident">wait</span>(<span class="self">self</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>wait(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context) {
+        ctx.wait(<span class="self">self</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

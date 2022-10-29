@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-broker/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix_broker/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix_broker/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix_broker/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-broker/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix_broker/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -87,89 +81,88 @@
 <span id="81">81</span>
 <span id="82">82</span>
 <span id="83">83</span>
-</pre><pre class="rust"><code><span class="doccomment">//! A message broker for the Actix actor framework.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The `actix_broker` crate contains `SystemService` and `ArbiterService` Brokers that</span>
-<span class="doccomment">//! keep track of active subscriptions to different `Messages`. Broker services are</span>
-<span class="doccomment">//! automatically started when an actor uses functions from the `BrokerSubscribe` and</span>
-<span class="doccomment">//! `BrokerIssue` traits to either subscribe to or issue a message.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! # Examples</span>
-<span class="doccomment">//! ```no_run</span>
-<span class="doccomment">//! # #[macro_use]</span>
-<span class="doccomment">//! # extern crate actix;</span>
-<span class="doccomment">//! # extern crate actix_broker;</span>
-<span class="doccomment">//! use actix::prelude::*;</span>
-<span class="doccomment">//! use actix_broker::{BrokerSubscribe, BrokerIssue, SystemBroker, ArbiterBroker, Broker};</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! // Note: The message must implement &#39;Clone&#39;</span>
-<span class="doccomment">//! #[derive(Clone, Message)]</span>
-<span class="doccomment">//! #[rtype(result = &quot;()&quot;)]</span>
-<span class="doccomment">//! struct MessageOne;</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! #[derive(Clone, Message)]</span>
-<span class="doccomment">//! #[rtype(result = &quot;()&quot;)]</span>
-<span class="doccomment">//! struct MessageTwo;</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! #[derive(Clone, Message)]</span>
-<span class="doccomment">//! #[rtype(result = &quot;()&quot;)]</span>
-<span class="doccomment">//! struct MessageThree;</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! struct ActorOne;</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! impl Actor for ActorOne {</span>
-<span class="doccomment">//!     // Note: The actor context must be Asynchronous,</span>
-<span class="doccomment">//!     // i.e. it cannot be &#39;SyncContext&#39;</span>
-<span class="doccomment">//!     type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//!     fn started(&amp;mut self,ctx: &amp;mut Self::Context) {</span>
-<span class="doccomment">//!         // Asynchronously subscribe to a message on the system (global) broker</span>
-<span class="doccomment">//!         self.subscribe_system_async::&lt;MessageOne&gt;(ctx);</span>
-<span class="doccomment">//!         // Asynchronously issue a message to any subscribers on the system (global) broker</span>
-<span class="doccomment">//!         self.issue_system_async(MessageOne);</span>
-<span class="doccomment">//!         // Synchronously subscribe to a message on the arbiter (local) broker</span>
-<span class="doccomment">//!         self.subscribe_arbiter_sync::&lt;MessageTwo&gt;(ctx);</span>
-<span class="doccomment">//!         // Synchronously issue a message to any subscribers on the arbiter (local) broker</span>
-<span class="doccomment">//!         self.issue_arbiter_sync(MessageTwo, ctx);</span>
-<span class="doccomment">//!     }</span>
-<span class="doccomment">//! }</span>
-<span class="doccomment">//!     </span>
-<span class="doccomment">//!     // To subscribe to a messsage, the actor must handle it</span>
-<span class="doccomment">//! impl Handler&lt;MessageOne&gt; for ActorOne {</span>
-<span class="doccomment">//!     type Result = ();</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//!     fn handle(&amp;mut self, msg: MessageOne, ctx: &amp;mut Self::Context) {</span>
-<span class="doccomment">//!         // An actor does not have to handle a message to just issue it</span>
-<span class="doccomment">//!         self.issue_async::&lt;SystemBroker, _&gt;(MessageThree);</span>
-<span class="doccomment">//!     }</span>
-<span class="doccomment">//! }</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! // Messages can also be sent from outside actors</span>
-<span class="doccomment">//! fn my_function() {</span>
-<span class="doccomment">//!     Broker::&lt;SystemBroker&gt;::issue_async(MessageOne);</span>
-<span class="doccomment">//! }</span>
-<span class="doccomment">//! #</span>
-<span class="doccomment">//! # // Handler for MessageTwo...</span>
-<span class="doccomment">//! # impl Handler&lt;MessageTwo&gt; for ActorOne {</span>
-<span class="doccomment">//! #     type Result = ();</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! #     fn handle(&amp;mut self, msg: MessageTwo, ctx: &amp;mut Self::Context) {</span>
-<span class="doccomment">//! #     }</span>
-<span class="doccomment">//! # }</span>
-<span class="doccomment">//! # fn main() {}</span>
-<span class="doccomment">//! ```</span>
-<span class="kw">mod</span> <span class="ident">broker</span>;
-<span class="kw">mod</span> <span class="ident">issue</span>;
-<span class="kw">mod</span> <span class="ident">msgs</span>;
-<span class="kw">mod</span> <span class="ident">subscribe</span>;
+</pre><pre class="rust"><code><span class="doccomment">//! A message broker for the Actix actor framework.
+//!
+//! The `actix_broker` crate contains `SystemService` and `ArbiterService` Brokers that
+//! keep track of active subscriptions to different `Messages`. Broker services are
+//! automatically started when an actor uses functions from the `BrokerSubscribe` and
+//! `BrokerIssue` traits to either subscribe to or issue a message.
+//!
+//! # Examples
+//! ```no_run
+//! # #[macro_use]
+//! # extern crate actix;
+//! # extern crate actix_broker;
+//! use actix::prelude::*;
+//! use actix_broker::{BrokerSubscribe, BrokerIssue, SystemBroker, ArbiterBroker, Broker};
+//!
+//! // Note: The message must implement &#39;Clone&#39;
+//! #[derive(Clone, Message)]
+//! #[rtype(result = &quot;()&quot;)]
+//! struct MessageOne;
+//!
+//! #[derive(Clone, Message)]
+//! #[rtype(result = &quot;()&quot;)]
+//! struct MessageTwo;
+//!
+//! #[derive(Clone, Message)]
+//! #[rtype(result = &quot;()&quot;)]
+//! struct MessageThree;
+//!
+//! struct ActorOne;
+//!
+//! impl Actor for ActorOne {
+//!     // Note: The actor context must be Asynchronous,
+//!     // i.e. it cannot be &#39;SyncContext&#39;
+//!     type Context = Context&lt;Self&gt;;
+//!
+//!     fn started(&amp;mut self,ctx: &amp;mut Self::Context) {
+//!         // Asynchronously subscribe to a message on the system (global) broker
+//!         self.subscribe_system_async::&lt;MessageOne&gt;(ctx);
+//!         // Asynchronously issue a message to any subscribers on the system (global) broker
+//!         self.issue_system_async(MessageOne);
+//!         // Synchronously subscribe to a message on the arbiter (local) broker
+//!         self.subscribe_arbiter_sync::&lt;MessageTwo&gt;(ctx);
+//!         // Synchronously issue a message to any subscribers on the arbiter (local) broker
+//!         self.issue_arbiter_sync(MessageTwo, ctx);
+//!     }
+//! }
+//!     
+//!     // To subscribe to a messsage, the actor must handle it
+//! impl Handler&lt;MessageOne&gt; for ActorOne {
+//!     type Result = ();
+//!
+//!     fn handle(&amp;mut self, msg: MessageOne, ctx: &amp;mut Self::Context) {
+//!         // An actor does not have to handle a message to just issue it
+//!         self.issue_async::&lt;SystemBroker, _&gt;(MessageThree);
+//!     }
+//! }
+//!
+//! // Messages can also be sent from outside actors
+//! fn my_function() {
+//!     Broker::&lt;SystemBroker&gt;::issue_async(MessageOne);
+//! }
+//! #
+//! # // Handler for MessageTwo...
+//! # impl Handler&lt;MessageTwo&gt; for ActorOne {
+//! #     type Result = ();
+//!
+//! #     fn handle(&amp;mut self, msg: MessageTwo, ctx: &amp;mut Self::Context) {
+//! #     }
+//! # }
+//! # fn main() {}
+//! ```
+</span><span class="kw">mod </span>broker;
+<span class="kw">mod </span>issue;
+<span class="kw">mod </span>msgs;
+<span class="kw">mod </span>subscribe;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::msgs::BrokerMsg</span>;
+<span class="kw">pub use </span><span class="kw">crate</span>::msgs::BrokerMsg;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::broker</span>::{<span class="ident">ArbiterBroker</span>, <span class="ident">Broker</span>, <span class="ident">SystemBroker</span>};
+<span class="kw">pub use </span><span class="kw">crate</span>::broker::{ArbiterBroker, Broker, SystemBroker};
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::subscribe::BrokerSubscribe</span>;
+<span class="kw">pub use </span><span class="kw">crate</span>::subscribe::BrokerSubscribe;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::issue::BrokerIssue</span>;
+<span class="kw">pub use </span><span class="kw">crate</span>::issue::BrokerIssue;
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_broker" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_broker" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

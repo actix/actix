@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/handler.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>handler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/handler.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>handler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -564,566 +558,565 @@
 <span id="558">558</span>
 <span id="559">559</span>
 <span id="560">560</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">fmt</span>, <span class="ident">future::Future</span>, <span class="ident">pin::Pin</span>, <span class="ident">sync::Arc</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::{fmt, future::Future, pin::Pin, sync::Arc};
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">tokio::sync::oneshot::Sender</span> <span class="kw">as</span> <span class="ident">OneshotSender</span>;
+<span class="kw">pub use </span>tokio::sync::oneshot::Sender <span class="kw">as </span>OneshotSender;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{<span class="ident">Actor</span>, <span class="ident">AsyncContext</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address::Addr</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorFutureExt</span>, <span class="ident">LocalBoxActorFuture</span>};
+<span class="kw">use </span><span class="kw">crate</span>::actor::{Actor, AsyncContext};
+<span class="kw">use </span><span class="kw">crate</span>::address::Addr;
+<span class="kw">use </span><span class="kw">crate</span>::fut::{ActorFuture, ActorFutureExt, LocalBoxActorFuture};
 
-<span class="doccomment">/// Describes how to handle messages of a specific type.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Implementing `Handler` is a general way to handle incoming</span>
-<span class="doccomment">/// messages, streams, and futures.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The type `M` is a message which can be handled by the actor.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="self">Self</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
+<span class="doccomment">/// Describes how to handle messages of a specific type.
+///
+/// Implementing `Handler` is a general way to handle incoming
+/// messages, streams, and futures.
+///
+/// The type `M` is a message which can be handled by the actor.
+</span><span class="attribute">#[allow(unused_variables)]
+</span><span class="kw">pub trait </span>Handler&lt;M&gt;
+<span class="kw">where
+    </span><span class="self">Self</span>: Actor,
+    M: Message,
 {
-    <span class="doccomment">/// The type of value that this handler will return.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Check the [`MessageResponse`] trait for some details</span>
-    <span class="doccomment">/// on how a message can be responded to.</span>
-    <span class="kw">type</span> <span class="prelude-ty">Result</span>: <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">M</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// The type of value that this handler will return.
+    ///
+    /// Check the [`MessageResponse`] trait for some details
+    /// on how a message can be responded to.
+    </span><span class="kw">type </span><span class="prelude-ty">Result</span>: MessageResponse&lt;<span class="self">Self</span>, M&gt;;
 
-    <span class="doccomment">/// This method is called for every message received by this actor.</span>
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) -&gt; <span class="ident"><span class="self">Self</span>::Result</span>;
+    <span class="doccomment">/// This method is called for every message received by this actor.
+    </span><span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: M, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) -&gt; <span class="self">Self</span>::Result;
 }
 
-<span class="doccomment">/// Represent message that can be handled by an actor.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Message</span> {
-    <span class="doccomment">/// The type of value that this message will resolved with if it is</span>
-    <span class="doccomment">/// successful.</span>
-    <span class="kw">type</span> <span class="prelude-ty">Result</span>: <span class="lifetime">&#39;static</span>;
+<span class="doccomment">/// Represent message that can be handled by an actor.
+</span><span class="kw">pub trait </span>Message {
+    <span class="doccomment">/// The type of value that this message will resolved with if it is
+    /// successful.
+    </span><span class="kw">type </span><span class="prelude-ty">Result</span>: <span class="lifetime">&#39;static</span>;
 }
 
-<span class="doccomment">/// Allow users to use `Arc&lt;M&gt;` as a message without having to re-impl `Message`</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Message</span> <span class="kw">for</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span>,
+<span class="doccomment">/// Allow users to use `Arc&lt;M&gt;` as a message without having to re-impl `Message`
+</span><span class="kw">impl</span>&lt;M&gt; Message <span class="kw">for </span>Arc&lt;M&gt;
+<span class="kw">where
+    </span>M: Message,
 {
-    <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> <span class="ident">M::Result</span>;
+    <span class="kw">type </span><span class="prelude-ty">Result </span>= M::Result;
 }
 
-<span class="doccomment">/// Allow users to use `Box&lt;M&gt;` as a message without having to re-impl `Message`</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Message</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span>,
+<span class="doccomment">/// Allow users to use `Box&lt;M&gt;` as a message without having to re-impl `Message`
+</span><span class="kw">impl</span>&lt;M&gt; Message <span class="kw">for </span>Box&lt;M&gt;
+<span class="kw">where
+    </span>M: Message,
 {
-    <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> <span class="ident">M::Result</span>;
+    <span class="kw">type </span><span class="prelude-ty">Result </span>= M::Result;
 }
 
-<span class="doccomment">/// A helper type that implements the [`MessageResponse`] trait.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use actix::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// #[derive(Message)]</span>
-<span class="doccomment">/// #[rtype(result = &quot;Response&quot;)]</span>
-<span class="doccomment">/// struct Msg;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct Response;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct MyActor;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Actor for MyActor {</span>
-<span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Handler&lt;Msg&gt; for MyActor {</span>
-<span class="doccomment">///     type Result = MessageResult&lt;Msg&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         MessageResult(Response {})</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MessageResult</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span>(<span class="kw">pub</span> <span class="ident">M::Result</span>);
+<span class="doccomment">/// A helper type that implements the [`MessageResponse`] trait.
+///
+/// # Examples
+/// ```no_run
+/// use actix::prelude::*;
+///
+/// #[derive(Message)]
+/// #[rtype(result = &quot;Response&quot;)]
+/// struct Msg;
+///
+/// struct Response;
+///
+/// struct MyActor;
+///
+/// impl Actor for MyActor {
+///     type Context = Context&lt;Self&gt;;
+/// }
+///
+/// impl Handler&lt;Msg&gt; for MyActor {
+///     type Result = MessageResult&lt;Msg&gt;;
+///
+///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         MessageResult(Response {})
+///     }
+/// }
+/// ```
+</span><span class="kw">pub struct </span>MessageResult&lt;M: Message&gt;(<span class="kw">pub </span>M::Result);
 
-<span class="doccomment">/// A specialized actor future holder for atomic asynchronous message handling.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Intended be used when the future returned will need exclusive access Actor&#39;s</span>
-<span class="doccomment">/// internal state or context, e.g., it can yield at critical sessions.</span>
-<span class="doccomment">/// When the actor starts to process this future, it will not pull any other</span>
-<span class="doccomment">/// spawned futures until this one as been completed.</span>
-<span class="doccomment">/// Check [`ActorFuture`] for available methods for accessing Actor&#39;s</span>
-<span class="doccomment">/// internal state.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ## Note</span>
-<span class="doccomment">/// The runtime itself is not blocked in the process, only the Actor,</span>
-<span class="doccomment">/// other futures, and therefore, other actors are still allowed to make</span>
-<span class="doccomment">/// progress when this [`AtomicResponse`] is used.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// On the following example, the response to `Msg` would always be 29</span>
-<span class="doccomment">/// even if there are multiple `Msg` sent to `MyActor`.</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// # use actix::prelude::*;</span>
-<span class="doccomment">/// # use actix::clock::sleep;</span>
-<span class="doccomment">/// # use std::time::Duration;</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # #[derive(Message)]</span>
-<span class="doccomment">/// # #[rtype(result = &quot;usize&quot;)]</span>
-<span class="doccomment">/// # struct Msg;</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # struct MyActor(usize);</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// # impl Actor for MyActor {</span>
-<span class="doccomment">/// #    type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">/// # }</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// impl Handler&lt;Msg&gt; for MyActor {</span>
-<span class="doccomment">///     type Result = AtomicResponse&lt;Self, usize&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         AtomicResponse::new(Box::pin(</span>
-<span class="doccomment">///             async {}</span>
-<span class="doccomment">///                 .into_actor(self)</span>
-<span class="doccomment">///                 .map(|_, this, _| {</span>
-<span class="doccomment">///                     this.0 = 30;</span>
-<span class="doccomment">///                 })</span>
-<span class="doccomment">///                 .then(|_, this, _| {</span>
-<span class="doccomment">///                     sleep(Duration::from_secs(3)).into_actor(this)</span>
-<span class="doccomment">///                 })</span>
-<span class="doccomment">///                 .map(|_, this, _| {</span>
-<span class="doccomment">///                     this.0 -= 1;</span>
-<span class="doccomment">///                     this.0</span>
-<span class="doccomment">///                 }),</span>
-<span class="doccomment">///         ))</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AtomicResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">ResponseActFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">T</span><span class="op">&gt;</span>);
+<span class="doccomment">/// A specialized actor future holder for atomic asynchronous message handling.
+///
+/// Intended be used when the future returned will need exclusive access Actor&#39;s
+/// internal state or context, e.g., it can yield at critical sessions.
+/// When the actor starts to process this future, it will not pull any other
+/// spawned futures until this one as been completed.
+/// Check [`ActorFuture`] for available methods for accessing Actor&#39;s
+/// internal state.
+///
+/// ## Note
+/// The runtime itself is not blocked in the process, only the Actor,
+/// other futures, and therefore, other actors are still allowed to make
+/// progress when this [`AtomicResponse`] is used.
+///
+/// # Examples
+/// On the following example, the response to `Msg` would always be 29
+/// even if there are multiple `Msg` sent to `MyActor`.
+/// ```no_run
+/// # use actix::prelude::*;
+/// # use actix::clock::sleep;
+/// # use std::time::Duration;
+/// #
+/// # #[derive(Message)]
+/// # #[rtype(result = &quot;usize&quot;)]
+/// # struct Msg;
+/// #
+/// # struct MyActor(usize);
+/// #
+/// # impl Actor for MyActor {
+/// #    type Context = Context&lt;Self&gt;;
+/// # }
+/// #
+/// impl Handler&lt;Msg&gt; for MyActor {
+///     type Result = AtomicResponse&lt;Self, usize&gt;;
+///
+///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         AtomicResponse::new(Box::pin(
+///             async {}
+///                 .into_actor(self)
+///                 .map(|_, this, _| {
+///                     this.0 = 30;
+///                 })
+///                 .then(|_, this, _| {
+///                     sleep(Duration::from_secs(3)).into_actor(this)
+///                 })
+///                 .map(|_, this, _| {
+///                     this.0 -= 1;
+///                     this.0
+///                 }),
+///         ))
+///     }
+/// }
+/// ```
+</span><span class="kw">pub struct </span>AtomicResponse&lt;A, T&gt;(ResponseActFuture&lt;A, T&gt;);
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">T</span><span class="op">&gt;</span> <span class="ident">AtomicResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">fut</span>: <span class="ident">ResponseActFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">AtomicResponse</span>(<span class="ident">fut</span>)
+<span class="kw">impl</span>&lt;A, T&gt; AtomicResponse&lt;A, T&gt; {
+    <span class="kw">pub fn </span>new(fut: ResponseActFuture&lt;A, T&gt;) -&gt; <span class="self">Self </span>{
+        AtomicResponse(fut)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AtomicResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M::Result</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A, M&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>AtomicResponse&lt;A, M::Result&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">ctx</span>.<span class="ident">wait</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>)));
+    <span class="kw">fn </span>handle(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;) {
+        ctx.wait(<span class="self">self</span>.<span class="number">0</span>.map(|res, <span class="kw">_</span>, <span class="kw">_</span>| tx.send(res)));
     }
 }
 
-<span class="doccomment">/// A specialized actor future for asynchronous message handling.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Intended be used when the future returned will, at some point, need to access Actor&#39;s internal</span>
-<span class="doccomment">/// state or context in order to finish. Check [`ActorFuture`] for available methods for accessing</span>
-<span class="doccomment">/// Actor&#39;s internal state.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Note</span>
-<span class="doccomment">/// It&#39;s important to keep in mind that the provided [`AsyncContext`], does not enforce the poll of</span>
-<span class="doccomment">/// any [`ActorFuture`] to be exclusive. Therefore, if other instances of [`ActorFuture`] are spawned</span>
-<span class="doccomment">/// into this Context **their execution won&#39;t necessarily be atomic**. Check [`AtomicResponse`] if you</span>
-<span class="doccomment">/// need exclusive access over the actor.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use actix::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// #[derive(Message)]</span>
-<span class="doccomment">/// #[rtype(result = &quot;Result&lt;usize, ()&gt;&quot;)]</span>
-<span class="doccomment">/// struct Msg;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct MyActor;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Actor for MyActor {</span>
-<span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Handler&lt;Msg&gt; for MyActor {</span>
-<span class="doccomment">///     type Result = ResponseActFuture&lt;Self, Result&lt;usize, ()&gt;&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         Box::pin(</span>
-<span class="doccomment">///             async {</span>
-<span class="doccomment">///                 // Some async computation</span>
-<span class="doccomment">///                 42</span>
-<span class="doccomment">///             }</span>
-<span class="doccomment">///             .into_actor(self) // converts future to ActorFuture</span>
-<span class="doccomment">///             .map(|res, _act, _ctx| {</span>
-<span class="doccomment">///                 // Do some computation with actor&#39;s state or context</span>
-<span class="doccomment">///                 Ok(res)</span>
-<span class="doccomment">///             }),</span>
-<span class="doccomment">///         )</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ResponseActFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">LocalBoxActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span>;
+<span class="doccomment">/// A specialized actor future for asynchronous message handling.
+///
+/// Intended be used when the future returned will, at some point, need to access Actor&#39;s internal
+/// state or context in order to finish. Check [`ActorFuture`] for available methods for accessing
+/// Actor&#39;s internal state.
+///
+/// # Note
+/// It&#39;s important to keep in mind that the provided [`AsyncContext`], does not enforce the poll of
+/// any [`ActorFuture`] to be exclusive. Therefore, if other instances of [`ActorFuture`] are spawned
+/// into this Context **their execution won&#39;t necessarily be atomic**. Check [`AtomicResponse`] if you
+/// need exclusive access over the actor.
+///
+/// # Examples
+/// ```no_run
+/// use actix::prelude::*;
+///
+/// #[derive(Message)]
+/// #[rtype(result = &quot;Result&lt;usize, ()&gt;&quot;)]
+/// struct Msg;
+///
+/// struct MyActor;
+///
+/// impl Actor for MyActor {
+///     type Context = Context&lt;Self&gt;;
+/// }
+///
+/// impl Handler&lt;Msg&gt; for MyActor {
+///     type Result = ResponseActFuture&lt;Self, Result&lt;usize, ()&gt;&gt;;
+///
+///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         Box::pin(
+///             async {
+///                 // Some async computation
+///                 42
+///             }
+///             .into_actor(self) // converts future to ActorFuture
+///             .map(|res, _act, _ctx| {
+///                 // Do some computation with actor&#39;s state or context
+///                 Ok(res)
+///             }),
+///         )
+///     }
+/// }
+/// ```
+</span><span class="kw">pub type </span>ResponseActFuture&lt;A, I&gt; = LocalBoxActorFuture&lt;A, I&gt;;
 
-<span class="doccomment">/// A specialized future for asynchronous message handling.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Intended be used for when the future returned doesn&#39;t</span>
-<span class="doccomment">/// need to access Actor&#39;s internal state or context to progress, either</span>
-<span class="doccomment">/// because it&#39;s completely agnostic to it, or because the required data has</span>
-<span class="doccomment">/// already been moved inside the future and it won&#39;t need Actor state to continue.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use actix::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// #[derive(Message)]</span>
-<span class="doccomment">/// #[rtype(result = &quot;Result&lt;(), ()&gt;&quot;)]</span>
-<span class="doccomment">/// struct Msg;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct MyActor;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Actor for MyActor {</span>
-<span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Handler&lt;Msg&gt; for MyActor {</span>
-<span class="doccomment">///     type Result = ResponseFuture&lt;Result&lt;(), ()&gt;&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         Box::pin(async move {</span>
-<span class="doccomment">///             // Some async computation</span>
-<span class="doccomment">///             Ok(())</span>
-<span class="doccomment">///         })</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ResponseFuture</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+<span class="doccomment">/// A specialized future for asynchronous message handling.
+///
+/// Intended be used for when the future returned doesn&#39;t
+/// need to access Actor&#39;s internal state or context to progress, either
+/// because it&#39;s completely agnostic to it, or because the required data has
+/// already been moved inside the future and it won&#39;t need Actor state to continue.
+///
+/// # Examples
+/// ```no_run
+/// use actix::prelude::*;
+///
+/// #[derive(Message)]
+/// #[rtype(result = &quot;Result&lt;(), ()&gt;&quot;)]
+/// struct Msg;
+///
+/// struct MyActor;
+///
+/// impl Actor for MyActor {
+///     type Context = Context&lt;Self&gt;;
+/// }
+///
+/// impl Handler&lt;Msg&gt; for MyActor {
+///     type Result = ResponseFuture&lt;Result&lt;(), ()&gt;&gt;;
+///
+///     fn handle(&amp;mut self, _: Msg, _: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         Box::pin(async move {
+///             // Some async computation
+///             Ok(())
+///         })
+///     }
+/// }
+/// ```
+</span><span class="kw">pub type </span>ResponseFuture&lt;I&gt; = Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = I&gt;&gt;&gt;;
 
-<span class="doccomment">/// A trait which defines message responses.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// We offer implementation for some common language types, if you need</span>
-<span class="doccomment">/// to respond with a new type you can use [`MessageResult`].</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If `Actor::Context` implements [`AsyncContext`] it&#39;s possible to handle</span>
-<span class="doccomment">/// the message asynchronously.</span>
-<span class="doccomment">/// For asynchronous message handling we offer the following possible response types:</span>
-<span class="doccomment">/// - [`ResponseFuture`] should be used for when the future returned doesn&#39;t</span>
-<span class="doccomment">///   need to access Actor&#39;s internal state or context to progress, either</span>
-<span class="doccomment">///   because it&#39;s completely agnostic to it or because the required data has</span>
-<span class="doccomment">///   already been moved to it and it won&#39;t need Actor state to continue.</span>
-<span class="doccomment">/// - [`ResponseActFuture`] should be used when the future returned</span>
-<span class="doccomment">///   will, at some point, need to access Actor&#39;s internal state or context</span>
-<span class="doccomment">///   in order to finish.</span>
-<span class="doccomment">/// - [`AtomicResponse`] should be used when the future returned needs exclusive</span>
-<span class="doccomment">///   access to  Actor&#39;s internal state or context.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span><span class="op">&gt;</span>);
+<span class="doccomment">/// A trait which defines message responses.
+///
+/// We offer implementation for some common language types, if you need
+/// to respond with a new type you can use [`MessageResult`].
+///
+/// If `Actor::Context` implements [`AsyncContext`] it&#39;s possible to handle
+/// the message asynchronously.
+/// For asynchronous message handling we offer the following possible response types:
+/// - [`ResponseFuture`] should be used for when the future returned doesn&#39;t
+///   need to access Actor&#39;s internal state or context to progress, either
+///   because it&#39;s completely agnostic to it or because the required data has
+///   already been moved to it and it won&#39;t need Actor state to continue.
+/// - [`ResponseActFuture`] should be used when the future returned
+///   will, at some point, need to access Actor&#39;s internal state or context
+///   in order to finish.
+/// - [`AtomicResponse`] should be used when the future returned needs exclusive
+///   access to  Actor&#39;s internal state or context.
+</span><span class="kw">pub trait </span>MessageResponse&lt;A: Actor, M: Message&gt; {
+    <span class="kw">fn </span>handle(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;);
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">MessageResult</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
+<span class="kw">impl</span>&lt;A, M&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>MessageResult&lt;M&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>.<span class="number">0</span>)
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;) {
+        tx.send(<span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span>, <span class="ident">I</span>, <span class="ident">E</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">E</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span>,
-    <span class="ident">E</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M, I, E&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;I, E&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
+    I: <span class="lifetime">&#39;static</span>,
+    E: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
+        tx.send(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M, I&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>Arc&lt;I&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
+    I: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
+        tx.send(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M, I&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;I&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
+    I: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
+        tx.send(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M, I&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>Vec&lt;I&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
+    I: <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
+        tx.send(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span>, <span class="ident">B</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">B</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
-    <span class="ident">B</span>: <span class="ident">Actor</span>,
+<span class="kw">impl</span>&lt;A, M, B&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>Addr&lt;B&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
+    B: Actor,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
+        tx.send(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ResponseActFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M::Result</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A, M&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>ResponseActFuture&lt;A, M::Result&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="self">self</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>)));
+    <span class="kw">fn </span>handle(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;) {
+        ctx.spawn(<span class="self">self</span>.map(|res, <span class="kw">_</span>, <span class="kw">_</span>| tx.send(res)));
     }
 }
 
-<span class="doccomment">/// [`MessageResponse`] trait impl to enable the use of any `I: &#39;static` with asynchronous</span>
-<span class="doccomment">/// message handling</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// Usage with `Result&lt;I,E&gt;`:</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// # pub struct MyActorAsync {}</span>
-<span class="doccomment">/// # impl Actor for MyActorAsync { type Context = actix::Context&lt;Self&gt;; }</span>
-<span class="doccomment">/// # use actix::prelude::*;</span>
-<span class="doccomment">/// # use core::pin::Pin;</span>
-<span class="doccomment">/// #</span>
-<span class="doccomment">/// pub struct MyQuestion{}</span>
-<span class="doccomment">/// impl Message for MyQuestion {</span>
-<span class="doccomment">///     type Result = Result&lt;u8,u8&gt;;</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// impl Handler&lt;MyQuestion&gt; for MyActorAsync {</span>
-<span class="doccomment">///     type Result = ResponseFuture&lt;Result&lt;u8,u8&gt;&gt;;</span>
-<span class="doccomment">///     fn handle(&amp;mut self, question: MyQuestion, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         Box::pin(async {Ok(5)})</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// Usage with `Option&lt;I&gt;`:</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// # pub struct MyActorAsync {}</span>
-<span class="doccomment">/// # impl Actor for MyActorAsync { type Context = actix::Context&lt;Self&gt;; }</span>
-<span class="doccomment">/// # use actix::prelude::*;</span>
-<span class="doccomment">/// # use core::pin::Pin;</span>
-<span class="doccomment">/// pub struct MyQuestion{}</span>
-<span class="doccomment">/// impl Message for MyQuestion {</span>
-<span class="doccomment">///     type Result = Option&lt;u8&gt;;</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// impl Handler&lt;MyQuestion&gt; for MyActorAsync {</span>
-<span class="doccomment">///     type Result = ResponseFuture&lt;Option&lt;u8&gt;&gt;;</span>
-<span class="doccomment">///     fn handle(&amp;mut self, question: MyQuestion, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         Box::pin(async {Some(5)})</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// Usage with any `I: &#39;static`:</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// # pub struct MyActorAsync {}</span>
-<span class="doccomment">/// # impl Actor for MyActorAsync { type Context = actix::Context&lt;Self&gt;; }</span>
-<span class="doccomment">/// # use actix::prelude::*;</span>
-<span class="doccomment">/// # use core::pin::Pin;</span>
-<span class="doccomment">/// pub struct MyQuestion{}</span>
-<span class="doccomment">/// impl Message for MyQuestion {</span>
-<span class="doccomment">///     type Result = u8;</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// impl Handler&lt;MyQuestion&gt; for MyActorAsync {</span>
-<span class="doccomment">///     type Result = ResponseFuture&lt;u8&gt;;</span>
-<span class="doccomment">///     fn handle(&amp;mut self, question: MyQuestion, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {</span>
-<span class="doccomment">///         Box::pin(async {5})</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ResponseFuture</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
+<span class="doccomment">/// [`MessageResponse`] trait impl to enable the use of any `I: &#39;static` with asynchronous
+/// message handling
+///
+/// # Examples
+/// Usage with `Result&lt;I,E&gt;`:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context&lt;Self&gt;; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// #
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = Result&lt;u8,u8&gt;;
+/// }
+/// impl Handler&lt;MyQuestion&gt; for MyActorAsync {
+///     type Result = ResponseFuture&lt;Result&lt;u8,u8&gt;&gt;;
+///     fn handle(&amp;mut self, question: MyQuestion, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         Box::pin(async {Ok(5)})
+///     }
+/// }
+/// ```
+/// Usage with `Option&lt;I&gt;`:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context&lt;Self&gt;; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = Option&lt;u8&gt;;
+/// }
+/// impl Handler&lt;MyQuestion&gt; for MyActorAsync {
+///     type Result = ResponseFuture&lt;Option&lt;u8&gt;&gt;;
+///     fn handle(&amp;mut self, question: MyQuestion, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         Box::pin(async {Some(5)})
+///     }
+/// }
+/// ```
+/// Usage with any `I: &#39;static`:
+/// ```
+/// # pub struct MyActorAsync {}
+/// # impl Actor for MyActorAsync { type Context = actix::Context&lt;Self&gt;; }
+/// # use actix::prelude::*;
+/// # use core::pin::Pin;
+/// pub struct MyQuestion{}
+/// impl Message for MyQuestion {
+///     type Result = u8;
+/// }
+/// impl Handler&lt;MyQuestion&gt; for MyActorAsync {
+///     type Result = ResponseFuture&lt;u8&gt;;
+///     fn handle(&amp;mut self, question: MyQuestion, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
+///         Box::pin(async {5})
+///     }
+/// }
+/// ```
+</span><span class="kw">impl</span>&lt;A, M&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>ResponseFuture&lt;M::Result&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="ident">actix_rt::spawn</span>(<span class="kw">async</span> { <span class="ident">tx</span>.<span class="ident">send</span>(<span class="self">self</span>.<span class="kw">await</span>) });
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;) {
+        actix_rt::spawn(<span class="kw">async </span>{ tx.send(<span class="self">self</span>.<span class="kw">await</span>) });
     }
 }
 
-<span class="kw">enum</span> <span class="ident">ResponseTypeItem</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="prelude-ty">Result</span>(<span class="ident">I</span>),
-    <span class="ident">Fut</span>(<span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>),
+<span class="kw">enum </span>ResponseTypeItem&lt;I&gt; {
+    <span class="prelude-ty">Result</span>(I),
+    Fut(Pin&lt;Box&lt;<span class="kw">dyn </span>Future&lt;Output = I&gt;&gt;&gt;),
 }
 
-<span class="doccomment">/// Helper type for representing different type of message responses</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Response</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="ident">item</span>: <span class="ident">ResponseTypeItem</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
+<span class="doccomment">/// Helper type for representing different type of message responses
+</span><span class="kw">pub struct </span>Response&lt;I&gt; {
+    item: ResponseTypeItem&lt;I&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Response</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fmt</span> <span class="op">=</span> <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Response&quot;</span>);
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
-            <span class="ident">ResponseTypeItem::Result</span>(<span class="kw">_</span>) =&gt; <span class="ident">fmt</span>.<span class="ident">field</span>(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.<span class="ident">to_string</span>()),
-            <span class="ident">ResponseTypeItem::Fut</span>(<span class="kw">_</span>) =&gt; <span class="ident">fmt</span>.<span class="ident">field</span>(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Fut(_)&quot;</span>.<span class="ident">to_string</span>()),
+<span class="kw">impl</span>&lt;I&gt; fmt::Debug <span class="kw">for </span>Response&lt;I&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span><span class="kw-2">mut </span>fmt = fmt.debug_struct(<span class="string">&quot;Response&quot;</span>);
+        <span class="kw">match </span><span class="self">self</span>.item {
+            ResponseTypeItem::Result(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.to_string()),
+            ResponseTypeItem::Fut(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Fut(_)&quot;</span>.to_string()),
         }
-        .<span class="ident">finish</span>()
+        .finish()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="ident">Response</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Creates an asynchronous response.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">fut</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">fut</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;I&gt; Response&lt;I&gt; {
+    <span class="doccomment">/// Creates an asynchronous response.
+    </span><span class="kw">pub fn </span>fut&lt;T&gt;(fut: T) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>T: Future&lt;Output = I&gt; + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">Self</span> {
-            <span class="ident">item</span>: <span class="ident">ResponseTypeItem::Fut</span>(<span class="ident">Box::pin</span>(<span class="ident">fut</span>)),
+        <span class="self">Self </span>{
+            item: ResponseTypeItem::Fut(Box::pin(fut)),
         }
     }
 
-    <span class="doccomment">/// Creates a response.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reply</span>(<span class="ident">val</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">item</span>: <span class="ident">ResponseTypeItem::Result</span>(<span class="ident">val</span>),
+    <span class="doccomment">/// Creates a response.
+    </span><span class="kw">pub fn </span>reply(val: I) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            item: ResponseTypeItem::Result(val),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Response</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
+<span class="kw">impl</span>&lt;A, M&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>Response&lt;M::Result&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
-            <span class="ident">ResponseTypeItem::Fut</span>(<span class="ident">fut</span>) =&gt; {
-                <span class="ident">actix_rt::spawn</span>(<span class="kw">async</span> { <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">fut</span>.<span class="kw">await</span>) });
+    <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;) {
+        <span class="kw">match </span><span class="self">self</span>.item {
+            ResponseTypeItem::Fut(fut) =&gt; {
+                actix_rt::spawn(<span class="kw">async </span>{ tx.send(fut.<span class="kw">await</span>) });
             }
-            <span class="ident">ResponseTypeItem::Result</span>(<span class="ident">res</span>) =&gt; <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>),
+            ResponseTypeItem::Result(res) =&gt; tx.send(res),
         }
     }
 }
 
-<span class="kw">enum</span> <span class="ident">ActorResponseTypeItem</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="prelude-ty">Result</span>(<span class="ident">I</span>),
-    <span class="ident">Fut</span>(<span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>),
+<span class="kw">enum </span>ActorResponseTypeItem&lt;A, I&gt; {
+    <span class="prelude-ty">Result</span>(I),
+    Fut(Pin&lt;Box&lt;<span class="kw">dyn </span>ActorFuture&lt;A, Output = I&gt;&gt;&gt;),
 }
 
-<span class="doccomment">/// A helper type for representing different types of message responses.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ActorResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="ident">item</span>: <span class="ident">ActorResponseTypeItem</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A helper type for representing different types of message responses.
+</span><span class="kw">pub struct </span>ActorResponse&lt;A, I&gt; {
+    item: ActorResponseTypeItem&lt;A, I&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">ActorResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fmt</span> <span class="op">=</span> <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;ActorResponse&quot;</span>);
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
-            <span class="ident">ActorResponseTypeItem::Result</span>(<span class="kw">_</span>) =&gt; <span class="ident">fmt</span>.<span class="ident">field</span>(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.<span class="ident">to_string</span>()),
-            <span class="ident">ActorResponseTypeItem::Fut</span>(<span class="kw">_</span>) =&gt; <span class="ident">fmt</span>.<span class="ident">field</span>(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Fut(_)&quot;</span>.<span class="ident">to_string</span>()),
+<span class="kw">impl</span>&lt;A, I&gt; fmt::Debug <span class="kw">for </span>ActorResponse&lt;A, I&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span><span class="kw-2">mut </span>fmt = fmt.debug_struct(<span class="string">&quot;ActorResponse&quot;</span>);
+        <span class="kw">match </span><span class="self">self</span>.item {
+            ActorResponseTypeItem::Result(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.to_string()),
+            ActorResponseTypeItem::Fut(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Fut(_)&quot;</span>.to_string()),
         }
-        .<span class="ident">finish</span>()
+        .finish()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">ActorResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Creates a response.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reply</span>(<span class="ident">val</span>: <span class="ident">I</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">item</span>: <span class="ident">ActorResponseTypeItem::Result</span>(<span class="ident">val</span>),
+<span class="kw">impl</span>&lt;A: Actor, I&gt; ActorResponse&lt;A, I&gt; {
+    <span class="doccomment">/// Creates a response.
+    </span><span class="kw">pub fn </span>reply(val: I) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            item: ActorResponseTypeItem::Result(val),
         }
     }
 
-    <span class="doccomment">/// Creates an asynchronous response.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">r#async</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">fut</span>: <span class="ident">T</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Creates an asynchronous response.
+    </span><span class="kw">pub fn </span>r#async&lt;T&gt;(fut: T) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>T: ActorFuture&lt;A, Output = I&gt; + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">Self</span> {
-            <span class="ident">item</span>: <span class="ident">ActorResponseTypeItem::Fut</span>(<span class="ident">Box::pin</span>(<span class="ident">fut</span>)),
+        <span class="self">Self </span>{
+            item: ActorResponseTypeItem::Fut(Box::pin(fut)),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M::Result</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A, M&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span>ActorResponse&lt;A, M::Result&gt;
+<span class="kw">where
+    </span>A: Actor,
+    M: Message,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">item</span> {
-            <span class="ident">ActorResponseTypeItem::Fut</span>(<span class="ident">fut</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">fut</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">res</span>, <span class="kw">_</span>, <span class="kw">_</span><span class="op">|</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>));
-                <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">fut</span>);
+    <span class="kw">fn </span>handle(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;) {
+        <span class="kw">match </span><span class="self">self</span>.item {
+            ActorResponseTypeItem::Fut(fut) =&gt; {
+                <span class="kw">let </span>fut = fut.map(|res, <span class="kw">_</span>, <span class="kw">_</span>| tx.send(res));
+                ctx.spawn(fut);
             }
-            <span class="ident">ActorResponseTypeItem::Result</span>(<span class="ident">res</span>) =&gt; <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">res</span>),
+            ActorResponseTypeItem::Result(res) =&gt; tx.send(res),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">I</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">fut</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">item</span>: <span class="ident">ActorResponseTypeItem::Fut</span>(<span class="ident">fut</span>),
+<span class="kw">impl</span>&lt;A: Actor, I&gt; From&lt;Pin&lt;Box&lt;<span class="kw">dyn </span>ActorFuture&lt;A, Output = I&gt;&gt;&gt;&gt; <span class="kw">for </span>ActorResponse&lt;A, I&gt; {
+    <span class="kw">fn </span>from(fut: Pin&lt;Box&lt;<span class="kw">dyn </span>ActorFuture&lt;A, Output = I&gt;&gt;&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            item: ActorResponseTypeItem::Fut(fut),
         }
     }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">SIMPLE_RESULT</span> {
+<span class="macro">macro_rules! </span>SIMPLE_RESULT {
     (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>) =&gt; {
-        <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">MessageResponse</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="kw">type</span>
-        <span class="kw">where</span>
-            <span class="macro-nonterminal">A</span>: <span class="ident">Actor</span>,
-            <span class="ident">M</span>: <span class="ident">Message</span><span class="op">&lt;</span><span class="prelude-ty">Result</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="kw">type</span><span class="op">&gt;</span>,
+        <span class="kw">impl</span>&lt;A, M&gt; MessageResponse&lt;A, M&gt; <span class="kw">for </span><span class="macro-nonterminal">$</span><span class="kw">type
+        where
+            </span><span class="macro-nonterminal">A</span>: Actor,
+            M: Message&lt;<span class="prelude-ty">Result </span>= <span class="macro-nonterminal">$</span><span class="kw">type</span>&gt;,
         {
-            <span class="kw">fn</span> <span class="macro-nonterminal">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>, <span class="ident">tx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="kw">type</span><span class="op">&gt;</span><span class="op">&gt;</span>) {
-                <span class="macro-nonterminal">tx</span>.<span class="ident">send</span>(<span class="self">self</span>)
+            <span class="kw">fn </span><span class="macro-nonterminal">handle</span>(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="macro-nonterminal">$</span><span class="kw">type</span>&gt;&gt;) {
+                <span class="macro-nonterminal">tx</span>.send(<span class="self">self</span>)
             }
         }
     };
 }
 
 <span class="macro">SIMPLE_RESULT!</span>(());
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u8</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u16</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u32</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">u64</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">usize</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i8</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i16</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i32</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">i64</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">isize</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">f32</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">f64</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">String</span>);
-<span class="macro">SIMPLE_RESULT!</span>(<span class="ident">bool</span>);
+<span class="macro">SIMPLE_RESULT!</span>(u8);
+<span class="macro">SIMPLE_RESULT!</span>(u16);
+<span class="macro">SIMPLE_RESULT!</span>(u32);
+<span class="macro">SIMPLE_RESULT!</span>(u64);
+<span class="macro">SIMPLE_RESULT!</span>(usize);
+<span class="macro">SIMPLE_RESULT!</span>(i8);
+<span class="macro">SIMPLE_RESULT!</span>(i16);
+<span class="macro">SIMPLE_RESULT!</span>(i32);
+<span class="macro">SIMPLE_RESULT!</span>(i64);
+<span class="macro">SIMPLE_RESULT!</span>(isize);
+<span class="macro">SIMPLE_RESULT!</span>(f32);
+<span class="macro">SIMPLE_RESULT!</span>(f64);
+<span class="macro">SIMPLE_RESULT!</span>(String);
+<span class="macro">SIMPLE_RESULT!</span>(bool);
 
-<span class="comment">// Helper trait for send one shot message from Option&lt;Sender&gt; type.</span>
-<span class="comment">// None and error are ignored.</span>
-<span class="kw">trait</span> <span class="ident">OneshotSend</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>);
+<span class="comment">// Helper trait for send one shot message from Option&lt;Sender&gt; type.
+// None and error are ignored.
+</span><span class="kw">trait </span>OneshotSend&lt;M&gt; {
+    <span class="kw">fn </span>send(<span class="self">self</span>, msg: M);
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">OneshotSend</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OneshotSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">tx</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">msg</span>);
+<span class="kw">impl</span>&lt;M&gt; OneshotSend&lt;M&gt; <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M&gt;&gt; {
+    <span class="kw">fn </span>send(<span class="self">self</span>, msg: M) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(tx) = <span class="self">self </span>{
+            <span class="kw">let _ </span>= tx.send(msg);
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

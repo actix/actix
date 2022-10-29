@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-derive/src/message.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>message.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix_derive/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix_derive/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix_derive/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-derive/src/message.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>message.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix_derive/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -109,111 +103,110 @@
 <span id="103">103</span>
 <span id="104">104</span>
 <span id="105">105</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">proc_macro2</span>::{<span class="ident">Span</span>, <span class="ident">TokenStream</span>};
-<span class="kw">use</span> <span class="ident">quote</span>::{<span class="ident">quote</span>, <span class="ident">ToTokens</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Span, TokenStream};
+<span class="kw">use </span>quote::{quote, ToTokens};
 
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">MESSAGE_ATTR</span>: <span class="kw-2">&amp;</span><span class="ident">str</span> <span class="op">=</span> <span class="string">&quot;rtype&quot;</span>;
+<span class="kw">pub const </span>MESSAGE_ATTR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rtype&quot;</span>;
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expand</span>(<span class="ident">ast</span>: <span class="kw-2">&amp;</span><span class="ident">syn::DeriveInput</span>) -&gt; <span class="ident">TokenStream</span> {
-    <span class="kw">let</span> <span class="ident">item_type</span> <span class="op">=</span> {
-        <span class="kw">match</span> <span class="ident">get_attribute_type_multiple</span>(<span class="ident">ast</span>, <span class="ident">MESSAGE_ATTR</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">ty</span>) =&gt; <span class="kw">match</span> <span class="ident">ty</span>.<span class="ident">len</span>() {
-                <span class="number">1</span> =&gt; <span class="ident">ty</span>[<span class="number">0</span>].<span class="ident">clone</span>(),
-                <span class="kw">_</span> =&gt; {
-                    <span class="kw">return</span> <span class="ident">syn::Error::new</span>(
-                        <span class="ident">Span::call_site</span>(),
+<span class="kw">pub fn </span>expand(ast: <span class="kw-2">&amp;</span>syn::DeriveInput) -&gt; TokenStream {
+    <span class="kw">let </span>item_type = {
+        <span class="kw">match </span>get_attribute_type_multiple(ast, MESSAGE_ATTR) {
+            <span class="prelude-val">Ok</span>(ty) =&gt; <span class="kw">match </span>ty.len() {
+                <span class="number">1 </span>=&gt; ty[<span class="number">0</span>].clone(),
+                <span class="kw">_ </span>=&gt; {
+                    <span class="kw">return </span>syn::Error::new(
+                        Span::call_site(),
                         <span class="macro">format!</span>(
                             <span class="string">&quot;#[{}(type)] takes 1 parameters, given {}&quot;</span>,
-                            <span class="ident">MESSAGE_ATTR</span>,
-                            <span class="ident">ty</span>.<span class="ident">len</span>()
+                            MESSAGE_ATTR,
+                            ty.len()
                         ),
                     )
-                    .<span class="ident">to_compile_error</span>()
+                    .to_compile_error()
                 }
             },
-            <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; <span class="kw">return</span> <span class="ident">err</span>.<span class="ident">to_compile_error</span>(),
+            <span class="prelude-val">Err</span>(err) =&gt; <span class="kw">return </span>err.to_compile_error(),
         }
     };
 
-    <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">ast</span>.<span class="ident">ident</span>;
-    <span class="kw">let</span> (<span class="ident">impl_generics</span>, <span class="ident">ty_generics</span>, <span class="ident">where_clause</span>) <span class="op">=</span> <span class="ident">ast</span>.<span class="ident">generics</span>.<span class="ident">split_for_impl</span>();
+    <span class="kw">let </span>name = <span class="kw-2">&amp;</span>ast.ident;
+    <span class="kw">let </span>(impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    <span class="kw">let</span> <span class="ident">item_type</span> <span class="op">=</span> <span class="ident">item_type</span>
-        .<span class="ident">map</span>(<span class="ident">ToTokens::into_token_stream</span>)
-        .<span class="ident">unwrap_or_else</span>(<span class="op">|</span><span class="op">|</span> <span class="macro">quote!</span> { () });
+    <span class="kw">let </span>item_type = item_type
+        .map(ToTokens::into_token_stream)
+        .unwrap_or_else(|| <span class="macro">quote! </span>{ () });
 
-    <span class="macro">quote!</span> {
-        <span class="kw">impl</span> #<span class="ident">impl_generics</span> <span class="ident">::actix::Message</span> <span class="kw">for</span> #<span class="ident">name</span> #<span class="ident">ty_generics</span> #<span class="ident">where_clause</span> {
-            <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> #<span class="ident">item_type</span>;
+    <span class="macro">quote! </span>{
+        <span class="kw">impl </span>#impl_generics ::actix::Message <span class="kw">for </span>#name #ty_generics #where_clause {
+            <span class="kw">type </span><span class="prelude-ty">Result </span>= #item_type;
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">get_attribute_type_multiple</span>(
-    <span class="ident">ast</span>: <span class="kw-2">&amp;</span><span class="ident">syn::DeriveInput</span>,
-    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-) -&gt; <span class="ident">syn::Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">syn::Type</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">attr</span> <span class="op">=</span> <span class="ident">ast</span>
-        .<span class="ident">attrs</span>
-        .<span class="ident">iter</span>()
-        .<span class="ident">find_map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="ident">a</span> <span class="op">=</span> <span class="ident">a</span>.<span class="ident">parse_meta</span>();
-            <span class="kw">match</span> <span class="ident">a</span> {
-                <span class="prelude-val">Ok</span>(<span class="ident">meta</span>) =&gt; {
-                    <span class="kw">if</span> <span class="ident">meta</span>.<span class="ident">path</span>().<span class="ident">is_ident</span>(<span class="ident">name</span>) {
-                        <span class="prelude-val">Some</span>(<span class="ident">meta</span>)
-                    } <span class="kw">else</span> {
-                        <span class="prelude-val">None</span>
-                    }
+<span class="kw">fn </span>get_attribute_type_multiple(
+    ast: <span class="kw-2">&amp;</span>syn::DeriveInput,
+    name: <span class="kw-2">&amp;</span>str,
+) -&gt; syn::Result&lt;Vec&lt;<span class="prelude-ty">Option</span>&lt;syn::Type&gt;&gt;&gt; {
+    <span class="kw">let </span>attr = ast
+        .attrs
+        .iter()
+        .find_map(|a| {
+            <span class="kw">let </span>a = a.parse_meta();
+            <span class="kw">match </span>a {
+                <span class="prelude-val">Ok</span>(meta) =&gt; {
+                    <span class="kw">if </span>meta.path().is_ident(name) {
+                        <span class="prelude-val">Some</span>(meta)
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">None
+                    </span>}
                 }
-                <span class="kw">_</span> =&gt; <span class="prelude-val">None</span>,
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
             }
         })
-        .<span class="ident">ok_or_else</span>(<span class="op">|</span><span class="op">|</span> {
-            <span class="ident">syn::Error::new</span>(<span class="ident">Span::call_site</span>(), <span class="macro">format!</span>(<span class="string">&quot;Expect an attribute `{}`&quot;</span>, <span class="ident">name</span>))
+        .ok_or_else(|| {
+            syn::Error::new(Span::call_site(), <span class="macro">format!</span>(<span class="string">&quot;Expect an attribute `{}`&quot;</span>, name))
         })<span class="question-mark">?</span>;
 
-    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::Meta::List</span>(<span class="kw-2">ref</span> <span class="ident">list</span>) <span class="op">=</span> <span class="ident">attr</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">list</span>
-            .<span class="ident">nested</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">m</span><span class="op">|</span> <span class="ident">meta_item_to_ty</span>(<span class="ident">m</span>).<span class="ident">ok</span>())
-            .<span class="ident">collect</span>())
-    } <span class="kw">else</span> {
-        <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new_spanned</span>(
-            <span class="ident">attr</span>,
-            <span class="macro">format!</span>(<span class="string">&quot;The correct syntax is #[{}(type, type, ...)]&quot;</span>, <span class="ident">name</span>),
+    <span class="kw">if let </span>syn::Meta::List(<span class="kw-2">ref </span>list) = attr {
+        <span class="prelude-val">Ok</span>(list
+            .nested
+            .iter()
+            .map(|m| meta_item_to_ty(m).ok())
+            .collect())
+    } <span class="kw">else </span>{
+        <span class="prelude-val">Err</span>(syn::Error::new_spanned(
+            attr,
+            <span class="macro">format!</span>(<span class="string">&quot;The correct syntax is #[{}(type, type, ...)]&quot;</span>, name),
         ))
     }
 }
 
-<span class="kw">fn</span> <span class="ident">meta_item_to_ty</span>(<span class="ident">meta_item</span>: <span class="kw-2">&amp;</span><span class="ident">syn::NestedMeta</span>) -&gt; <span class="ident">syn::Result</span><span class="op">&lt;</span><span class="ident">syn::Type</span><span class="op">&gt;</span> {
-    <span class="kw">match</span> <span class="ident">meta_item</span> {
-        <span class="ident">syn::NestedMeta::Meta</span>(<span class="ident">syn::Meta::Path</span>(<span class="kw-2">ref</span> <span class="ident">path</span>)) =&gt; <span class="kw">match</span> <span class="ident">path</span>.<span class="ident">get_ident</span>() {
-            <span class="prelude-val">Some</span>(<span class="ident">ident</span>) =&gt; <span class="ident">syn::parse_str</span>::<span class="op">&lt;</span><span class="ident">syn::Type</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">ident</span>.<span class="ident">to_string</span>())
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">syn::Error::new_spanned</span>(<span class="ident">ident</span>, <span class="string">&quot;Expect type&quot;</span>)),
-            <span class="prelude-val">None</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new_spanned</span>(<span class="ident">path</span>, <span class="string">&quot;Expect type&quot;</span>)),
+<span class="kw">fn </span>meta_item_to_ty(meta_item: <span class="kw-2">&amp;</span>syn::NestedMeta) -&gt; syn::Result&lt;syn::Type&gt; {
+    <span class="kw">match </span>meta_item {
+        syn::NestedMeta::Meta(syn::Meta::Path(<span class="kw-2">ref </span>path)) =&gt; <span class="kw">match </span>path.get_ident() {
+            <span class="prelude-val">Some</span>(ident) =&gt; syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>ident.to_string())
+                .map_err(|<span class="kw">_</span>| syn::Error::new_spanned(ident, <span class="string">&quot;Expect type&quot;</span>)),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(path, <span class="string">&quot;Expect type&quot;</span>)),
         },
-        <span class="ident">syn::NestedMeta::Meta</span>(<span class="ident">syn::Meta::NameValue</span>(<span class="ident">val</span>)) =&gt; <span class="kw">match</span> <span class="ident">val</span>.<span class="ident">path</span>.<span class="ident">get_ident</span>() {
-            <span class="prelude-val">Some</span>(<span class="ident">ident</span>) <span class="kw">if</span> <span class="ident">ident</span> <span class="op">==</span> <span class="string">&quot;result&quot;</span> =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">syn::Lit::Str</span>(<span class="kw-2">ref</span> <span class="ident">s</span>) <span class="op">=</span> <span class="ident">val</span>.<span class="ident">lit</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Ok</span>(<span class="ident">ty</span>) <span class="op">=</span> <span class="ident">syn::parse_str</span>::<span class="op">&lt;</span><span class="ident">syn::Type</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>.<span class="ident">value</span>()) {
-                        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">ty</span>);
+        syn::NestedMeta::Meta(syn::Meta::NameValue(val)) =&gt; <span class="kw">match </span>val.path.get_ident() {
+            <span class="prelude-val">Some</span>(ident) <span class="kw">if </span>ident == <span class="string">&quot;result&quot; </span>=&gt; {
+                <span class="kw">if let </span>syn::Lit::Str(<span class="kw-2">ref </span>s) = val.lit {
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(ty) = syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>s.value()) {
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(ty);
                     }
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new_spanned</span>(<span class="kw-2">&amp;</span><span class="ident">val</span>.<span class="ident">lit</span>, <span class="string">&quot;Expect type&quot;</span>))
+                <span class="prelude-val">Err</span>(syn::Error::new_spanned(<span class="kw-2">&amp;</span>val.lit, <span class="string">&quot;Expect type&quot;</span>))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new_spanned</span>(
-                <span class="kw-2">&amp;</span><span class="ident">val</span>.<span class="ident">lit</span>,
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(
+                <span class="kw-2">&amp;</span>val.lit,
                 <span class="string">r#&quot;Expect `result = &quot;TYPE&quot;`&quot;#</span>,
             )),
         },
-        <span class="ident">syn::NestedMeta::Lit</span>(<span class="ident">syn::Lit::Str</span>(<span class="kw-2">ref</span> <span class="ident">s</span>)) =&gt; <span class="ident">syn::parse_str</span>::<span class="op">&lt;</span><span class="ident">syn::Type</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>.<span class="ident">value</span>())
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">syn::Error::new_spanned</span>(<span class="ident">s</span>, <span class="string">&quot;Expect type&quot;</span>)),
+        syn::NestedMeta::Lit(syn::Lit::Str(<span class="kw-2">ref </span>s)) =&gt; syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>s.value())
+            .map_err(|<span class="kw">_</span>| syn::Error::new_spanned(s, <span class="string">&quot;Expect type&quot;</span>)),
 
-        <span class="ident">meta</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">syn::Error::new_spanned</span>(<span class="ident">meta</span>, <span class="string">&quot;Expect type&quot;</span>)),
+        meta =&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(meta, <span class="string">&quot;Expect type&quot;</span>)),
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_derive" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_derive" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-derive/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix_derive/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix_derive/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix_derive/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix-derive/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix_derive/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -120,122 +114,121 @@
 <span id="114">114</span>
 <span id="115">115</span>
 <span id="116">116</span>
-</pre><pre class="rust"><code><span class="attribute">#![<span class="ident">recursion_limit</span> <span class="op">=</span> <span class="string">&quot;128&quot;</span>]</span>
+</pre><pre class="rust"><code><span class="attribute">#![recursion_limit = <span class="string">&quot;128&quot;</span>]
 
-<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">proc_macro</span>;
+</span><span class="kw">extern crate </span>proc_macro;
 
-<span class="kw">use</span> <span class="ident">proc_macro::TokenStream</span>;
-<span class="kw">use</span> <span class="ident">quote::quote</span>;
-<span class="kw">use</span> <span class="ident">syn::DeriveInput</span>;
+<span class="kw">use </span>proc_macro::TokenStream;
+<span class="kw">use </span>quote::quote;
+<span class="kw">use </span>syn::DeriveInput;
 
-<span class="kw">mod</span> <span class="ident">message</span>;
-<span class="kw">mod</span> <span class="ident">message_response</span>;
+<span class="kw">mod </span>message;
+<span class="kw">mod </span>message_response;
 
-<span class="attribute">#[<span class="ident">proc_macro_derive</span>(<span class="ident">Message</span>, <span class="ident">attributes</span>(<span class="ident">rtype</span>))]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">message_derive_rtype</span>(<span class="ident">input</span>: <span class="ident">TokenStream</span>) -&gt; <span class="ident">TokenStream</span> {
-    <span class="kw">let</span> <span class="ident">ast</span>: <span class="ident">DeriveInput</span> <span class="op">=</span> <span class="ident">syn::parse</span>(<span class="ident">input</span>).<span class="ident">unwrap</span>();
+<span class="attribute">#[proc_macro_derive(Message, attributes(rtype))]
+</span><span class="kw">pub fn </span>message_derive_rtype(input: TokenStream) -&gt; TokenStream {
+    <span class="kw">let </span>ast: DeriveInput = syn::parse(input).unwrap();
 
-    <span class="ident">message::expand</span>(<span class="kw-2">&amp;</span><span class="ident">ast</span>).<span class="ident">into</span>()
+    message::expand(<span class="kw-2">&amp;</span>ast).into()
 }
 
-<span class="attribute">#[<span class="ident">proc_macro_derive</span>(<span class="ident">MessageResponse</span>)]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">message_response_derive_rtype</span>(<span class="ident">input</span>: <span class="ident">TokenStream</span>) -&gt; <span class="ident">TokenStream</span> {
-    <span class="kw">let</span> <span class="ident">ast</span>: <span class="ident">DeriveInput</span> <span class="op">=</span> <span class="ident">syn::parse</span>(<span class="ident">input</span>).<span class="ident">unwrap</span>();
+<span class="attribute">#[proc_macro_derive(MessageResponse)]
+</span><span class="kw">pub fn </span>message_response_derive_rtype(input: TokenStream) -&gt; TokenStream {
+    <span class="kw">let </span>ast: DeriveInput = syn::parse(input).unwrap();
 
-    <span class="ident">message_response::expand</span>(<span class="kw-2">&amp;</span><span class="ident">ast</span>).<span class="ident">into</span>()
+    message_response::expand(<span class="kw-2">&amp;</span>ast).into()
 }
 
-<span class="doccomment">/// Marks async function to be executed by Actix system.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```ignore</span>
-<span class="doccomment">/// #[actix::main]</span>
-<span class="doccomment">/// async fn main() {</span>
-<span class="doccomment">///     println!(&quot;Hello world&quot;);</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">clippy::needless_doctest_main</span>)]</span>
-<span class="attribute">#[<span class="ident">proc_macro_attribute</span>]</span>
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">test</span>))]</span> <span class="comment">// Work around for rust-lang/rust#62127</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span>(<span class="kw">_</span>: <span class="ident">TokenStream</span>, <span class="ident">item</span>: <span class="ident">TokenStream</span>) -&gt; <span class="ident">TokenStream</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="macro">syn::parse_macro_input!</span>(<span class="ident">item</span> <span class="kw">as</span> <span class="ident">syn::ItemFn</span>);
-    <span class="kw">let</span> <span class="ident">attrs</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">attrs</span>;
-    <span class="kw">let</span> <span class="ident">vis</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">vis</span>;
-    <span class="kw">let</span> <span class="ident">sig</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">input</span>.<span class="ident">sig</span>;
-    <span class="kw">let</span> <span class="ident">body</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">block</span>;
+<span class="doccomment">/// Marks async function to be executed by Actix system.
+///
+/// # Examples
+/// ```ignore
+/// #[actix::main]
+/// async fn main() {
+///     println!(&quot;Hello world&quot;);
+/// }
+/// ```
+</span><span class="attribute">#[allow(clippy::needless_doctest_main)]
+#[proc_macro_attribute]
+#[cfg(not(test))] </span><span class="comment">// Work around for rust-lang/rust#62127
+</span><span class="kw">pub fn </span>main(<span class="kw">_</span>: TokenStream, item: TokenStream) -&gt; TokenStream {
+    <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">syn::parse_macro_input!</span>(item <span class="kw">as </span>syn::ItemFn);
+    <span class="kw">let </span>attrs = <span class="kw-2">&amp;</span>input.attrs;
+    <span class="kw">let </span>vis = <span class="kw-2">&amp;</span>input.vis;
+    <span class="kw">let </span>sig = <span class="kw-2">&amp;mut </span>input.sig;
+    <span class="kw">let </span>body = <span class="kw-2">&amp;</span>input.block;
 
-    <span class="kw">if</span> <span class="ident">sig</span>.<span class="ident">asyncness</span>.<span class="ident">is_none</span>() {
-        <span class="kw">return</span> <span class="ident">syn::Error::new_spanned</span>(
-            <span class="ident">sig</span>.<span class="ident">fn_token</span>,
+    <span class="kw">if </span>sig.asyncness.is_none() {
+        <span class="kw">return </span>syn::Error::new_spanned(
+            sig.fn_token,
             <span class="string">&quot;the async keyword is missing from the function declaration&quot;</span>,
         )
-        .<span class="ident">to_compile_error</span>()
-        .<span class="ident">into</span>();
+        .to_compile_error()
+        .into();
     }
 
-    <span class="ident">sig</span>.<span class="ident">asyncness</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+    sig.asyncness = <span class="prelude-val">None</span>;
 
-    (<span class="macro">quote!</span> {
-        #(#<span class="ident">attrs</span>)<span class="op">*</span>
-        #<span class="ident">vis</span> #<span class="ident">sig</span> {
-            <span class="ident">actix::System::new</span>()
-                .<span class="ident">block_on</span>(<span class="kw">async</span> <span class="kw">move</span> { #<span class="ident">body</span> })
+    (<span class="macro">quote! </span>{
+        #(#attrs)*
+        #vis #sig {
+            actix::System::new()
+                .block_on(<span class="kw">async move </span>{ #body })
         }
     })
-    .<span class="ident">into</span>()
+    .into()
 }
 
-<span class="doccomment">/// Marks async test function to be executed by Actix system.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```ignore</span>
-<span class="doccomment">/// #[actix::test]</span>
-<span class="doccomment">/// async fn my_test() {</span>
-<span class="doccomment">///     assert!(true);</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">proc_macro_attribute</span>]</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test</span>(<span class="kw">_</span>: <span class="ident">TokenStream</span>, <span class="ident">item</span>: <span class="ident">TokenStream</span>) -&gt; <span class="ident">TokenStream</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span> <span class="op">=</span> <span class="macro">syn::parse_macro_input!</span>(<span class="ident">item</span> <span class="kw">as</span> <span class="ident">syn::ItemFn</span>);
-    <span class="kw">let</span> <span class="ident">attrs</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">attrs</span>;
-    <span class="kw">let</span> <span class="ident">vis</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">vis</span>;
-    <span class="kw">let</span> <span class="ident">sig</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">input</span>.<span class="ident">sig</span>;
-    <span class="kw">let</span> <span class="ident">body</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">block</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">has_test_attr</span> <span class="op">=</span> <span class="bool-val">false</span>;
+<span class="doccomment">/// Marks async test function to be executed by Actix system.
+///
+/// # Examples
+/// ```ignore
+/// #[actix::test]
+/// async fn my_test() {
+///     assert!(true);
+/// }
+/// ```
+</span><span class="attribute">#[proc_macro_attribute]
+</span><span class="kw">pub fn </span>test(<span class="kw">_</span>: TokenStream, item: TokenStream) -&gt; TokenStream {
+    <span class="kw">let </span><span class="kw-2">mut </span>input = <span class="macro">syn::parse_macro_input!</span>(item <span class="kw">as </span>syn::ItemFn);
+    <span class="kw">let </span>attrs = <span class="kw-2">&amp;</span>input.attrs;
+    <span class="kw">let </span>vis = <span class="kw-2">&amp;</span>input.vis;
+    <span class="kw">let </span>sig = <span class="kw-2">&amp;mut </span>input.sig;
+    <span class="kw">let </span>body = <span class="kw-2">&amp;</span>input.block;
+    <span class="kw">let </span><span class="kw-2">mut </span>has_test_attr = <span class="bool-val">false</span>;
 
-    <span class="kw">for</span> <span class="ident">attr</span> <span class="kw">in</span> <span class="ident">attrs</span> {
-        <span class="kw">if</span> <span class="ident">attr</span>.<span class="ident">path</span>.<span class="ident">is_ident</span>(<span class="string">&quot;test&quot;</span>) {
-            <span class="ident">has_test_attr</span> <span class="op">=</span> <span class="bool-val">true</span>;
+    <span class="kw">for </span>attr <span class="kw">in </span>attrs {
+        <span class="kw">if </span>attr.path.is_ident(<span class="string">&quot;test&quot;</span>) {
+            has_test_attr = <span class="bool-val">true</span>;
         }
     }
 
-    <span class="kw">if</span> <span class="ident">sig</span>.<span class="ident">asyncness</span>.<span class="ident">is_none</span>() {
-        <span class="kw">return</span> <span class="ident">syn::Error::new_spanned</span>(
-            <span class="ident">input</span>.<span class="ident">sig</span>.<span class="ident">fn_token</span>,
+    <span class="kw">if </span>sig.asyncness.is_none() {
+        <span class="kw">return </span>syn::Error::new_spanned(
+            input.sig.fn_token,
             <span class="string">&quot;the async keyword is missing from the function declaration&quot;</span>,
         )
-        .<span class="ident">to_compile_error</span>()
-        .<span class="ident">into</span>();
+        .to_compile_error()
+        .into();
     }
 
-    <span class="ident">sig</span>.<span class="ident">asyncness</span> <span class="op">=</span> <span class="prelude-val">None</span>;
+    sig.asyncness = <span class="prelude-val">None</span>;
 
-    <span class="kw">let</span> <span class="ident">missing_test_attr</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">has_test_attr</span> {
+    <span class="kw">let </span>missing_test_attr = <span class="kw">if </span>has_test_attr {
         <span class="macro">quote!</span>()
-    } <span class="kw">else</span> {
-        <span class="macro">quote!</span>(<span class="attribute">#[<span class="ident">test</span>]</span>)
+    } <span class="kw">else </span>{
+        <span class="macro">quote!</span>(<span class="attribute">#[test]</span>)
     };
 
-    (<span class="macro">quote!</span> {
-        #<span class="ident">missing_test_attr</span>
-        #(#<span class="ident">attrs</span>)<span class="op">*</span>
-        #<span class="ident">vis</span> #<span class="ident">sig</span> {
-            <span class="ident">actix::System::new</span>()
-                .<span class="ident">block_on</span>(<span class="kw">async</span> { #<span class="ident">body</span> })
+    (<span class="macro">quote! </span>{
+        #missing_test_attr
+        #(#attrs)*
+        #vis #sig {
+            actix::System::new()
+                .block_on(<span class="kw">async </span>{ #body })
         }
     })
-    .<span class="ident">into</span>()
+    .into()
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_derive" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix_derive" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

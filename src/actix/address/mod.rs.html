@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/address/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../actix/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/address/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../actix/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -519,521 +513,520 @@
 <span id="513">513</span>
 <span id="514">514</span>
 <span id="515">515</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">error</span>, <span class="ident">fmt</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::hash::{Hash, Hasher};
+<span class="kw">use </span>std::{error, fmt};
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod</span> <span class="ident">channel</span>;
-<span class="kw">mod</span> <span class="ident">envelope</span>;
-<span class="kw">mod</span> <span class="ident">message</span>;
-<span class="kw">mod</span> <span class="ident">queue</span>;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>channel;
+<span class="kw">mod </span>envelope;
+<span class="kw">mod </span>message;
+<span class="kw">mod </span>queue;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor::Actor</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::handler</span>::{<span class="ident">Handler</span>, <span class="ident">Message</span>};
+<span class="kw">use </span><span class="kw">crate</span>::actor::Actor;
+<span class="kw">use </span><span class="kw">crate</span>::handler::{Handler, Message};
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::envelope</span>::{<span class="ident">Envelope</span>, <span class="ident">EnvelopeProxy</span>, <span class="ident">ToEnvelope</span>};
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident"><span class="self">self</span>::message</span>::{<span class="ident">RecipientRequest</span>, <span class="ident">Request</span>};
+<span class="kw">pub use </span><span class="self">self</span>::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
+<span class="kw">pub use </span><span class="self">self</span>::message::{RecipientRequest, Request};
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::channel</span>::{<span class="ident">AddressReceiver</span>, <span class="ident">AddressSenderProducer</span>};
-<span class="kw">use</span> <span class="ident"><span class="self">self</span>::channel</span>::{<span class="ident">AddressSender</span>, <span class="ident">Sender</span>, <span class="ident">WeakAddressSender</span>, <span class="ident">WeakSender</span>};
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span><span class="self">self</span>::channel::{AddressReceiver, AddressSenderProducer};
+<span class="kw">use </span><span class="self">self</span>::channel::{AddressSender, Sender, WeakAddressSender, WeakSender};
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">Full</span>(<span class="ident">T</span>),
-    <span class="ident">Closed</span>(<span class="ident">T</span>),
+<span class="kw">pub enum </span>SendError&lt;T&gt; {
+    Full(T),
+    Closed(T),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="doccomment">/// The errors that can occur during the message delivery process.</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">MailboxError</span> {
-    <span class="ident">Closed</span>,
-    <span class="ident">Timeout</span>,
+<span class="attribute">#[derive(Clone, Copy, PartialEq, Eq)]
+</span><span class="doccomment">/// The errors that can occur during the message delivery process.
+</span><span class="kw">pub enum </span>MailboxError {
+    Closed,
+    Timeout,
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">MailboxError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;MailboxError({})&quot;</span>, <span class="self">self</span>)
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>MailboxError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(fmt, <span class="string">&quot;MailboxError({})&quot;</span>, <span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">MailboxError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">MailboxError::Closed</span> =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Mailbox has closed&quot;</span>),
-            <span class="ident">MailboxError::Timeout</span> =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Message delivery timed out&quot;</span>),
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>MailboxError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">match </span><span class="self">self </span>{
+            MailboxError::Closed =&gt; <span class="macro">write!</span>(fmt, <span class="string">&quot;Mailbox has closed&quot;</span>),
+            MailboxError::Timeout =&gt; <span class="macro">write!</span>(fmt, <span class="string">&quot;Message delivery timed out&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">error::Error</span> <span class="kw">for</span> <span class="ident">MailboxError</span> {}
+<span class="kw">impl </span>error::Error <span class="kw">for </span>MailboxError {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_inner</span>(<span class="self">self</span>) -&gt; <span class="ident">T</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">SendError::Full</span>(<span class="ident">msg</span>) <span class="op">|</span> <span class="ident">SendError::Closed</span>(<span class="ident">msg</span>) =&gt; <span class="ident">msg</span>,
+<span class="kw">impl</span>&lt;T&gt; SendError&lt;T&gt; {
+    <span class="kw">pub fn </span>into_inner(<span class="self">self</span>) -&gt; T {
+        <span class="kw">match </span><span class="self">self </span>{
+            SendError::Full(msg) | SendError::Closed(msg) =&gt; msg,
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">error::Error</span> <span class="kw">for</span> <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;T&gt; error::Error <span class="kw">for </span>SendError&lt;T&gt; {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-            <span class="ident">SendError::Full</span>(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;SendError::Full(..)&quot;</span>),
-            <span class="ident">SendError::Closed</span>(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;SendError::Closed(..)&quot;</span>),
+<span class="kw">impl</span>&lt;T&gt; fmt::Debug <span class="kw">for </span>SendError&lt;T&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+            SendError::Full(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(fmt, <span class="string">&quot;SendError::Full(..)&quot;</span>),
+            SendError::Closed(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(fmt, <span class="string">&quot;SendError::Closed(..)&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">match</span> <span class="kw-2">*</span><span class="self">self</span> {
-            <span class="ident">SendError::Full</span>(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;send failed because receiver is full&quot;</span>),
-            <span class="ident">SendError::Closed</span>(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;send failed because receiver is gone&quot;</span>),
+<span class="kw">impl</span>&lt;T&gt; fmt::Display <span class="kw">for </span>SendError&lt;T&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">match </span><span class="kw-2">*</span><span class="self">self </span>{
+            SendError::Full(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(fmt, <span class="string">&quot;send failed because receiver is full&quot;</span>),
+            SendError::Closed(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(fmt, <span class="string">&quot;send failed because receiver is gone&quot;</span>),
         }
     }
 }
 
-<span class="doccomment">/// The address of an actor.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="ident">tx</span>: <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="doccomment">/// The address of an actor.
+</span><span class="kw">pub struct </span>Addr&lt;A: Actor&gt; {
+    tx: AddressSender&lt;A&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">tx</span>: <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="ident">Addr</span> { <span class="ident">tx</span> }
+<span class="kw">impl</span>&lt;A: Actor&gt; Addr&lt;A&gt; {
+    <span class="kw">pub fn </span>new(tx: AddressSender&lt;A&gt;) -&gt; Addr&lt;A&gt; {
+        Addr { tx }
     }
 
-    <span class="doccomment">/// Returns whether the actor is still alive.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">connected</span>()
+    <span class="doccomment">/// Returns whether the actor is still alive.
+    </span><span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.tx.connected()
     }
 
-    <span class="doccomment">/// Sends a message unconditionally, ignoring any potential errors.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The message is always queued, even if the mailbox for the receiver is full. If the mailbox</span>
-    <span class="doccomment">/// is closed, the message is silently dropped.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>)
-    <span class="kw">where</span>
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Sends a message unconditionally, ignoring any potential errors.
+    ///
+    /// The message is always queued, even if the mailbox for the receiver is full. If the mailbox
+    /// is closed, the message is silently dropped.
+    </span><span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>do_send&lt;M&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M)
+    <span class="kw">where
+        </span>M: Message + Send,
+        M::Result: Send,
+        A: Handler&lt;M&gt;,
+        A::Context: ToEnvelope&lt;A, M&gt;,
     {
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">do_send</span>(<span class="ident">msg</span>);
+        <span class="kw">let _ </span>= <span class="self">self</span>.tx.do_send(msg);
     }
 
-    <span class="doccomment">/// Tries to send a message.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method fails if actor&#39;s mailbox is full or closed. This</span>
-    <span class="doccomment">/// method registers the current task in the receiver&#39;s queue.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Tries to send a message.
+    ///
+    /// This method fails if actor&#39;s mailbox is full or closed. This
+    /// method registers the current task in the receiver&#39;s queue.
+    </span><span class="kw">pub fn </span>try_send&lt;M&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt;
+    <span class="kw">where
+        </span>M: Message + Send + <span class="lifetime">&#39;static</span>,
+        M::Result: Send,
+        A: Handler&lt;M&gt;,
+        A::Context: ToEnvelope&lt;A, M&gt;,
     {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>, <span class="bool-val">true</span>)
+        <span class="self">self</span>.tx.try_send(msg, <span class="bool-val">true</span>)
     }
 
-    <span class="doccomment">/// Sends an asynchronous message and waits for a response.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The communication channel to the actor is bounded. If the returned request future gets</span>
-    <span class="doccomment">/// dropped, the message is cancelled.</span>
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="ident">Request</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Sends an asynchronous message and waits for a response.
+    ///
+    /// The communication channel to the actor is bounded. If the returned request future gets
+    /// dropped, the message is cancelled.
+    </span><span class="attribute">#[inline]
+    </span><span class="kw">pub fn </span>send&lt;M&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; Request&lt;A, M&gt;
+    <span class="kw">where
+        </span>M: Message + Send + <span class="lifetime">&#39;static</span>,
+        M::Result: Send,
+        A: Handler&lt;M&gt;,
+        A::Context: ToEnvelope&lt;A, M&gt;,
     {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">msg</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">rx</span>) =&gt; <span class="ident">Request::new</span>(<span class="prelude-val">Some</span>(<span class="ident">rx</span>), <span class="prelude-val">None</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">SendError::Full</span>(<span class="ident">msg</span>)) =&gt; <span class="ident">Request::new</span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">clone</span>(), <span class="ident">msg</span>))),
-            <span class="prelude-val">Err</span>(<span class="ident">SendError::Closed</span>(<span class="kw">_</span>)) =&gt; <span class="ident">Request::new</span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>),
+        <span class="kw">match </span><span class="self">self</span>.tx.send(msg) {
+            <span class="prelude-val">Ok</span>(rx) =&gt; Request::new(<span class="prelude-val">Some</span>(rx), <span class="prelude-val">None</span>),
+            <span class="prelude-val">Err</span>(SendError::Full(msg)) =&gt; Request::new(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>((<span class="self">self</span>.tx.clone(), msg))),
+            <span class="prelude-val">Err</span>(SendError::Closed(<span class="kw">_</span>)) =&gt; Request::new(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>),
         }
     }
 
-    <span class="doccomment">/// Returns the [`Recipient`] for a specific message type.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">recipient</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="lifetime">&#39;static</span><span class="op">&gt;</span>(<span class="self">self</span>) -&gt; <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+    <span class="doccomment">/// Returns the [`Recipient`] for a specific message type.
+    </span><span class="kw">pub fn </span>recipient&lt;M: <span class="lifetime">&#39;static</span>&gt;(<span class="self">self</span>) -&gt; Recipient&lt;M&gt;
+    <span class="kw">where
+        </span>A: Handler&lt;M&gt;,
+        A::Context: ToEnvelope&lt;A, M&gt;,
+        M: Message + Send,
+        M::Result: Send,
     {
-        <span class="self">self</span>.<span class="ident">into</span>()
+        <span class="self">self</span>.into()
     }
 
-    <span class="doccomment">/// Returns a downgraded [`WeakAddr`].</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="ident">WeakAddr</span> {
-            <span class="ident">wtx</span>: <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">downgrade</span>(),
-        }
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="ident">Addr</span> {
-            <span class="ident">tx</span>: <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">clone</span>(),
+    <span class="doccomment">/// Returns a downgraded [`WeakAddr`].
+    </span><span class="kw">pub fn </span>downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WeakAddr&lt;A&gt; {
+        WeakAddr {
+            wtx: <span class="self">self</span>.tx.downgrade(),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">tx</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">tx</span>
+<span class="kw">impl</span>&lt;A: Actor&gt; Clone <span class="kw">for </span>Addr&lt;A&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Addr&lt;A&gt; {
+        Addr {
+            tx: <span class="self">self</span>.tx.clone(),
+        }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Hash</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">hash</span><span class="op">&lt;</span><span class="ident">H</span>: <span class="ident">Hasher</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">H</span>) {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">hash</span>(<span class="ident">state</span>)
+<span class="kw">impl</span>&lt;A: Actor&gt; PartialEq <span class="kw">for </span>Addr&lt;A&gt; {
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+        <span class="self">self</span>.tx == other.tx
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;Addr&quot;</span>).<span class="ident">field</span>(<span class="string">&quot;tx&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">tx</span>).<span class="ident">finish</span>()
+<span class="kw">impl</span>&lt;A: Actor&gt; Eq <span class="kw">for </span>Addr&lt;A&gt; {}
+
+<span class="kw">impl</span>&lt;A: Actor&gt; Hash <span class="kw">for </span>Addr&lt;A&gt; {
+    <span class="kw">fn </span>hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
+        <span class="self">self</span>.tx.hash(state)
     }
 }
 
-<span class="doccomment">/// A weakly referenced counterpart to `Addr&lt;A&gt;`.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="ident">wtx</span>: <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A: Actor&gt; fmt::Debug <span class="kw">for </span>Addr&lt;A&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        fmt.debug_struct(<span class="string">&quot;Addr&quot;</span>).field(<span class="string">&quot;tx&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.tx).finish()
+    }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Attempts to upgrade the [`WeakAddr&lt;A&gt;`] pointer to an [`Addr&lt;A&gt;`].</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns `None` if the actor has since been dropped or the</span>
-    <span class="doccomment">/// underlying address is disconnected.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">upgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">wtx</span>.<span class="ident">upgrade</span>() {
-            <span class="prelude-val">Some</span>(<span class="ident">tx</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">tx</span>.<span class="ident">connected</span>() {
-                    <span class="prelude-val">Some</span>(<span class="ident">Addr::new</span>(<span class="ident">tx</span>))
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                }
+<span class="doccomment">/// A weakly referenced counterpart to `Addr&lt;A&gt;`.
+</span><span class="kw">pub struct </span>WeakAddr&lt;A: Actor&gt; {
+    wtx: WeakAddressSender&lt;A&gt;,
+}
+
+<span class="kw">impl</span>&lt;A: Actor&gt; WeakAddr&lt;A&gt; {
+    <span class="doccomment">/// Attempts to upgrade the [`WeakAddr&lt;A&gt;`] pointer to an [`Addr&lt;A&gt;`].
+    ///
+    /// Returns `None` if the actor has since been dropped or the
+    /// underlying address is disconnected.
+    </span><span class="kw">pub fn </span>upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Addr&lt;A&gt;&gt; {
+        <span class="kw">match </span><span class="self">self</span>.wtx.upgrade() {
+            <span class="prelude-val">Some</span>(tx) =&gt; {
+                <span class="kw">if </span>tx.connected() {
+                    <span class="prelude-val">Some</span>(Addr::new(tx))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
             }
-            <span class="prelude-val">None</span> =&gt; <span class="prelude-val">None</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">recipient</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="lifetime">&#39;static</span><span class="op">&gt;</span>(<span class="self">self</span>) -&gt; <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+    <span class="kw">pub fn </span>recipient&lt;M: <span class="lifetime">&#39;static</span>&gt;(<span class="self">self</span>) -&gt; WeakRecipient&lt;M&gt;
+    <span class="kw">where
+        </span>A: Handler&lt;M&gt;,
+        A::Context: ToEnvelope&lt;A, M&gt;,
+        M: Message + Send,
+        M::Result: Send,
     {
-        <span class="self">self</span>.<span class="ident">into</span>()
+        <span class="self">self</span>.into()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="ident">WeakAddr</span> {
-            <span class="ident">wtx</span>: <span class="self">self</span>.<span class="ident">wtx</span>.<span class="ident">clone</span>(),
+<span class="kw">impl</span>&lt;A: Actor&gt; Clone <span class="kw">for </span>WeakAddr&lt;A&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WeakAddr&lt;A&gt; {
+        WeakAddr {
+            wtx: <span class="self">self</span>.wtx.clone(),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;WeakAddr&quot;</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;wtx&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">wtx</span>)
-            .<span class="ident">finish</span>()
+<span class="kw">impl</span>&lt;A: Actor&gt; fmt::Debug <span class="kw">for </span>WeakAddr&lt;A&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        fmt.debug_struct(<span class="string">&quot;WeakAddr&quot;</span>)
+            .field(<span class="string">&quot;wtx&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.wtx)
+            .finish()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">wtx</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">wtx</span>
+<span class="kw">impl</span>&lt;A: Actor&gt; PartialEq <span class="kw">for </span>WeakAddr&lt;A&gt; {
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+        <span class="self">self</span>.wtx == other.wtx
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">std::cmp::Eq</span> <span class="kw">for</span> <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;A: Actor&gt; std::cmp::Eq <span class="kw">for </span>WeakAddr&lt;A&gt; {}
 
-<span class="doccomment">/// The [`Recipient`] type allows to send one specific message to an actor.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// You can get a recipient using the `Addr::recipient()` method. It is possible</span>
-<span class="doccomment">/// to use the `Clone::clone()` method to get a cloned recipient.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+<span class="doccomment">/// The [`Recipient`] type allows to send one specific message to an actor.
+///
+/// You can get a recipient using the `Addr::recipient()` method. It is possible
+/// to use the `Clone::clone()` method to get a cloned recipient.
+</span><span class="kw">pub struct </span>Recipient&lt;M: Message&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
 {
-    <span class="ident">tx</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>,
+    tx: Box&lt;<span class="kw">dyn </span>Sender&lt;M&gt; + Sync&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+<span class="kw">impl</span>&lt;M&gt; Recipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
 {
-    <span class="doccomment">/// Creates a new recipient.</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">tx</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>) -&gt; <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">Recipient</span> { <span class="ident">tx</span> }
+    <span class="doccomment">/// Creates a new recipient.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(tx: Box&lt;<span class="kw">dyn </span>Sender&lt;M&gt; + Sync&gt;) -&gt; Recipient&lt;M&gt; {
+        Recipient { tx }
     }
 
-    <span class="doccomment">/// Sends a message.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The message is always queued, even if the mailbox for the receiver is full. If the mailbox</span>
-    <span class="doccomment">/// is closed, the message is silently dropped.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) {
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">do_send</span>(<span class="ident">msg</span>);
+    <span class="doccomment">/// Sends a message.
+    ///
+    /// The message is always queued, even if the mailbox for the receiver is full. If the mailbox
+    /// is closed, the message is silently dropped.
+    </span><span class="kw">pub fn </span>do_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) {
+        <span class="kw">let _ </span>= <span class="self">self</span>.tx.do_send(msg);
     }
 
-    <span class="doccomment">/// Attempts to send a message.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method fails if the actor&#39;s mailbox is full or closed. This method registers the</span>
-    <span class="doccomment">/// current task in the receivers queue.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>)
+    <span class="doccomment">/// Attempts to send a message.
+    ///
+    /// This method fails if the actor&#39;s mailbox is full or closed. This method registers the
+    /// current task in the receivers queue.
+    </span><span class="kw">pub fn </span>try_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt; {
+        <span class="self">self</span>.tx.try_send(msg)
     }
 
-    <span class="doccomment">/// Sends a message and asynchronously wait for a response.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The communication channel to the actor is bounded. If the returned `RecipientRequest` object</span>
-    <span class="doccomment">/// gets dropped, the message is cancelled.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="ident">RecipientRequest</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">send</span>(<span class="ident">msg</span>) {
-            <span class="prelude-val">Ok</span>(<span class="ident">rx</span>) =&gt; <span class="ident">RecipientRequest::new</span>(<span class="prelude-val">Some</span>(<span class="ident">rx</span>), <span class="prelude-val">None</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">SendError::Full</span>(<span class="ident">msg</span>)) =&gt; {
-                <span class="ident">RecipientRequest::new</span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>((<span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">boxed</span>(), <span class="ident">msg</span>)))
+    <span class="doccomment">/// Sends a message and asynchronously wait for a response.
+    ///
+    /// The communication channel to the actor is bounded. If the returned `RecipientRequest` object
+    /// gets dropped, the message is cancelled.
+    </span><span class="kw">pub fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; RecipientRequest&lt;M&gt; {
+        <span class="kw">match </span><span class="self">self</span>.tx.send(msg) {
+            <span class="prelude-val">Ok</span>(rx) =&gt; RecipientRequest::new(<span class="prelude-val">Some</span>(rx), <span class="prelude-val">None</span>),
+            <span class="prelude-val">Err</span>(SendError::Full(msg)) =&gt; {
+                RecipientRequest::new(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>((<span class="self">self</span>.tx.boxed(), msg)))
             }
-            <span class="prelude-val">Err</span>(<span class="ident">SendError::Closed</span>(<span class="kw">_</span>)) =&gt; <span class="ident">RecipientRequest::new</span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>),
+            <span class="prelude-val">Err</span>(SendError::Closed(<span class="kw">_</span>)) =&gt; RecipientRequest::new(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">connected</span>()
+    <span class="kw">pub fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.tx.connected()
     }
 
-    <span class="doccomment">/// Returns a downgraded `WeakRecipient`</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">WeakRecipient</span> {
-            <span class="ident">wtx</span>: <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">downgrade</span>(),
-        }
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-{
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">Recipient::new</span>(<span class="ident">Box::new</span>(<span class="ident">addr</span>.<span class="ident">tx</span>))
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-{
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">Recipient</span> {
-            <span class="ident">tx</span>: <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">boxed</span>(),
+    <span class="doccomment">/// Returns a downgraded `WeakRecipient`
+    </span><span class="kw">pub fn </span>downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WeakRecipient&lt;M&gt; {
+        WeakRecipient {
+            wtx: <span class="self">self</span>.tx.downgrade(),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+<span class="kw">impl</span>&lt;A: Actor, M: Message + Send + <span class="lifetime">&#39;static</span>&gt; From&lt;Addr&lt;A&gt;&gt; <span class="kw">for </span>Recipient&lt;M&gt;
+<span class="kw">where
+    </span>A: Handler&lt;M&gt;,
+    M::Result: Send,
+    A::Context: ToEnvelope&lt;A, M&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">hash</span>() <span class="op">==</span> <span class="ident">other</span>.<span class="ident">tx</span>.<span class="ident">hash</span>()
+    <span class="kw">fn </span>from(addr: Addr&lt;A&gt;) -&gt; <span class="self">Self </span>{
+        Recipient::new(Box::new(addr.tx))
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+<span class="kw">impl</span>&lt;M&gt; Clone <span class="kw">for </span>Recipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
 {
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Hash</span> <span class="kw">for</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-{
-    <span class="kw">fn</span> <span class="ident">hash</span><span class="op">&lt;</span><span class="ident">H</span>: <span class="ident">Hasher</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">H</span>) {
-        <span class="self">self</span>.<span class="ident">tx</span>.<span class="ident">hash</span>().<span class="ident">hash</span>(<span class="ident">state</span>)
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-{
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;Recipient {{ /* omitted */ }}&quot;</span>)
-    }
-}
-
-<span class="doccomment">/// A weakly referenced counterpart to `Recipient&lt;M&gt;`</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span>: <span class="ident">Message</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-{
-    <span class="ident">wtx</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>,
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-{
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">fmt</span>, <span class="string">&quot;WeakRecipient {{ /* omitted */ }}&quot;</span>)
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-{
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">wtx</span>: <span class="self">self</span>.<span class="ident">wtx</span>.<span class="ident">boxed</span>(),
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Recipient&lt;M&gt; {
+        Recipient {
+            tx: <span class="self">self</span>.tx.boxed(),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+<span class="kw">impl</span>&lt;M&gt; PartialEq <span class="kw">for </span>Recipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
 {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">recipient</span>: <span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">recipient</span>.<span class="ident">downgrade</span>()
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+        <span class="self">self</span>.tx.hash() == other.tx.hash()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
+<span class="kw">impl</span>&lt;M&gt; Eq <span class="kw">for </span>Recipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
 {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">wtx</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>) -&gt; <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">WeakRecipient</span> { <span class="ident">wtx</span> }
-    }
+}
 
-    <span class="doccomment">/// Attempts to upgrade the `WeakRecipient&lt;M&gt;` pointer to an `Recipient&lt;M&gt;`, similar to `WeakAddr&lt;A&gt;`</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">upgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Recipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">wtx</span>.<span class="ident">upgrade</span>().<span class="ident">map</span>(<span class="ident">Recipient::new</span>)
+<span class="kw">impl</span>&lt;M&gt; Hash <span class="kw">for </span>Recipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
+{
+    <span class="kw">fn </span>hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
+        <span class="self">self</span>.tx.hash().hash(state)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;M&gt; fmt::Debug <span class="kw">for </span>Recipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
 {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) -&gt; <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">addr</span>.<span class="ident">downgrade</span>().<span class="ident">recipient</span>()
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(fmt, <span class="string">&quot;Recipient {{ /* omitted */ }}&quot;</span>)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span>, <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A weakly referenced counterpart to `Recipient&lt;M&gt;`
+</span><span class="kw">pub struct </span>WeakRecipient&lt;M: Message&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
 {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addr</span>: <span class="ident">WeakAddr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) -&gt; <span class="ident">WeakRecipient</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> {
-        <span class="ident">WeakRecipient::new</span>(<span class="ident">Box::new</span>(<span class="ident">addr</span>.<span class="ident">wtx</span>))
+    wtx: Box&lt;<span class="kw">dyn </span>WeakSender&lt;M&gt; + Sync&gt;,
+}
+
+<span class="kw">impl</span>&lt;M&gt; fmt::Debug <span class="kw">for </span>WeakRecipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
+{
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(fmt, <span class="string">&quot;WeakRecipient {{ /* omitted */ }}&quot;</span>)
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+<span class="kw">impl</span>&lt;M&gt; Clone <span class="kw">for </span>WeakRecipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
+{
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            wtx: <span class="self">self</span>.wtx.boxed(),
+        }
+    }
+}
 
-    <span class="kw">use</span> <span class="ident">std::sync::atomic</span>::{<span class="ident">AtomicUsize</span>, <span class="ident">Ordering</span>};
-    <span class="kw">use</span> <span class="ident">std::sync::Arc</span>;
+<span class="kw">impl</span>&lt;M&gt; From&lt;Recipient&lt;M&gt;&gt; <span class="kw">for </span>WeakRecipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
+{
+    <span class="kw">fn </span>from(recipient: Recipient&lt;M&gt;) -&gt; <span class="self">Self </span>{
+        recipient.downgrade()
+    }
+}
 
-    <span class="kw">struct</span> <span class="ident">ActorWithSmallMailBox</span>(<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">AtomicUsize</span><span class="op">&gt;</span>);
+<span class="kw">impl</span>&lt;M&gt; WeakRecipient&lt;M&gt;
+<span class="kw">where
+    </span>M: Message + Send,
+    M::Result: Send,
+{
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(wtx: Box&lt;<span class="kw">dyn </span>WeakSender&lt;M&gt; + Sync&gt;) -&gt; WeakRecipient&lt;M&gt; {
+        WeakRecipient { wtx }
+    }
 
-    <span class="kw">impl</span> <span class="ident">Actor</span> <span class="kw">for</span> <span class="ident">ActorWithSmallMailBox</span> {
-        <span class="kw">type</span> <span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// Attempts to upgrade the `WeakRecipient&lt;M&gt;` pointer to an `Recipient&lt;M&gt;`, similar to `WeakAddr&lt;A&gt;`
+    </span><span class="kw">pub fn </span>upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Recipient&lt;M&gt;&gt; {
+        <span class="self">self</span>.wtx.upgrade().map(Recipient::new)
+    }
+}
 
-        <span class="kw">fn</span> <span class="ident">started</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
-            <span class="ident">ctx</span>.<span class="ident">set_mailbox_capacity</span>(<span class="number">1</span>);
+<span class="kw">impl</span>&lt;A: Actor, M: Message + Send + <span class="lifetime">&#39;static</span>&gt; From&lt;Addr&lt;A&gt;&gt; <span class="kw">for </span>WeakRecipient&lt;M&gt;
+<span class="kw">where
+    </span>A: Handler&lt;M&gt;,
+    M::Result: Send,
+    A::Context: ToEnvelope&lt;A, M&gt;,
+{
+    <span class="kw">fn </span>from(addr: Addr&lt;A&gt;) -&gt; WeakRecipient&lt;M&gt; {
+        addr.downgrade().recipient()
+    }
+}
+
+<span class="kw">impl</span>&lt;A: Actor, M: Message + Send + <span class="lifetime">&#39;static</span>&gt; From&lt;WeakAddr&lt;A&gt;&gt; <span class="kw">for </span>WeakRecipient&lt;M&gt;
+<span class="kw">where
+    </span>A: Handler&lt;M&gt;,
+    M::Result: Send,
+    A::Context: ToEnvelope&lt;A, M&gt;,
+{
+    <span class="kw">fn </span>from(addr: WeakAddr&lt;A&gt;) -&gt; WeakRecipient&lt;M&gt; {
+        WeakRecipient::new(Box::new(addr.wtx))
+    }
+}
+
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
+
+    <span class="kw">use </span>std::sync::atomic::{AtomicUsize, Ordering};
+    <span class="kw">use </span>std::sync::Arc;
+
+    <span class="kw">struct </span>ActorWithSmallMailBox(Arc&lt;AtomicUsize&gt;);
+
+    <span class="kw">impl </span>Actor <span class="kw">for </span>ActorWithSmallMailBox {
+        <span class="kw">type </span>Context = Context&lt;<span class="self">Self</span>&gt;;
+
+        <span class="kw">fn </span>started(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {
+            ctx.set_mailbox_capacity(<span class="number">1</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SetCounter</span>(<span class="ident">usize</span>);
+    <span class="kw">pub struct </span>SetCounter(usize);
 
-    <span class="kw">impl</span> <span class="ident">Message</span> <span class="kw">for</span> <span class="ident">SetCounter</span> {
-        <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> ();
+    <span class="kw">impl </span>Message <span class="kw">for </span>SetCounter {
+        <span class="kw">type </span><span class="prelude-ty">Result </span>= ();
     }
 
-    <span class="kw">impl</span> <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">SetCounter</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorWithSmallMailBox</span> {
-        <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">SetCounter</span> <span class="kw">as</span> <span class="ident">Message</span><span class="op">&gt;</span><span class="ident">::Result</span>;
+    <span class="kw">impl </span>Handler&lt;SetCounter&gt; <span class="kw">for </span>ActorWithSmallMailBox {
+        <span class="kw">type </span><span class="prelude-ty">Result </span>= &lt;SetCounter <span class="kw">as </span>Message&gt;::Result;
 
-        <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ping</span>: <span class="ident">SetCounter</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="ident"><span class="self">Self</span>::Result</span> {
-            <span class="self">self</span>.<span class="number">0</span>.<span class="ident">store</span>(<span class="ident">ping</span>.<span class="number">0</span>, <span class="ident">Ordering::Relaxed</span>)
+        <span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ping: SetCounter, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;<span class="self">Self</span>&gt;) -&gt; <span class="self">Self</span>::Result {
+            <span class="self">self</span>.<span class="number">0</span>.store(ping.<span class="number">0</span>, Ordering::Relaxed)
         }
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_send_over_limit</span>() {
-        <span class="kw">let</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">Arc::new</span>(<span class="ident">AtomicUsize::new</span>(<span class="number">0</span>));
-        <span class="kw">let</span> <span class="ident">count2</span> <span class="op">=</span> <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">count</span>);
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_send_over_limit() {
+        <span class="kw">let </span>count = Arc::new(AtomicUsize::new(<span class="number">0</span>));
+        <span class="kw">let </span>count2 = Arc::clone(<span class="kw-2">&amp;</span>count);
 
-        <span class="kw">let</span> <span class="ident">sys</span> <span class="op">=</span> <span class="ident">System::new</span>();
+        <span class="kw">let </span>sys = System::new();
 
-        <span class="ident">sys</span>.<span class="ident">block_on</span>(<span class="kw">async</span> <span class="kw">move</span> {
-            <span class="comment">//Actor::started gets called after we relinquish</span>
-            <span class="comment">//control to event loop so we just set it ourself.</span>
-            <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">ActorWithSmallMailBox::create</span>(<span class="op">|</span><span class="ident">ctx</span><span class="op">|</span> {
-                <span class="ident">ctx</span>.<span class="ident">set_mailbox_capacity</span>(<span class="number">1</span>);
-                <span class="ident">ActorWithSmallMailBox</span>(<span class="ident">count2</span>)
+        sys.block_on(<span class="kw">async move </span>{
+            <span class="comment">//Actor::started gets called after we relinquish
+            //control to event loop so we just set it ourself.
+            </span><span class="kw">let </span>addr = ActorWithSmallMailBox::create(|ctx| {
+                ctx.set_mailbox_capacity(<span class="number">1</span>);
+                ActorWithSmallMailBox(count2)
             });
 
-            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="kw">async</span> <span class="kw">move</span> {
-                <span class="kw">let</span> <span class="ident">send</span> <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">clone</span>().<span class="ident">send</span>(<span class="ident">SetCounter</span>(<span class="number">1</span>));
-                <span class="macro">assert!</span>(<span class="ident">send</span>.<span class="ident">rx_is_some</span>());
-                <span class="kw">let</span> <span class="ident">addr2</span> <span class="op">=</span> <span class="ident">addr</span>.<span class="ident">clone</span>();
-                <span class="kw">let</span> <span class="ident">send2</span> <span class="op">=</span> <span class="ident">addr2</span>.<span class="ident">send</span>(<span class="ident">SetCounter</span>(<span class="number">2</span>));
-                <span class="macro">assert!</span>(<span class="ident">send2</span>.<span class="ident">rx_is_some</span>());
-                <span class="kw">let</span> <span class="ident">send3</span> <span class="op">=</span> <span class="ident">addr2</span>.<span class="ident">send</span>(<span class="ident">SetCounter</span>(<span class="number">3</span>));
-                <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">send3</span>.<span class="ident">rx_is_some</span>());
+            <span class="kw">let </span>fut = <span class="kw">async move </span>{
+                <span class="kw">let </span>send = addr.clone().send(SetCounter(<span class="number">1</span>));
+                <span class="macro">assert!</span>(send.rx_is_some());
+                <span class="kw">let </span>addr2 = addr.clone();
+                <span class="kw">let </span>send2 = addr2.send(SetCounter(<span class="number">2</span>));
+                <span class="macro">assert!</span>(send2.rx_is_some());
+                <span class="kw">let </span>send3 = addr2.send(SetCounter(<span class="number">3</span>));
+                <span class="macro">assert!</span>(!send3.rx_is_some());
 
-                <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">send</span>.<span class="kw">await</span>;
-                <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">send2</span>.<span class="kw">await</span>;
-                <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">send3</span>.<span class="kw">await</span>;
+                <span class="kw">let _ </span>= send.<span class="kw">await</span>;
+                <span class="kw">let _ </span>= send2.<span class="kw">await</span>;
+                <span class="kw">let _ </span>= send3.<span class="kw">await</span>;
 
-                <span class="ident">System::current</span>().<span class="ident">stop</span>();
+                System::current().stop();
             };
-            <span class="ident">actix_rt::spawn</span>(<span class="ident">fut</span>);
+            actix_rt::spawn(fut);
         });
 
-        <span class="comment">// run til system stop</span>
-        <span class="ident">sys</span>.<span class="ident">run</span>().<span class="ident">unwrap</span>();
+        <span class="comment">// run til system stop
+        </span>sys.run().unwrap();
 
-        <span class="macro">assert_eq!</span>(<span class="ident">count</span>.<span class="ident">load</span>(<span class="ident">Ordering::Relaxed</span>), <span class="number">3</span>);
+        <span class="macro">assert_eq!</span>(count.load(Ordering::Relaxed), <span class="number">3</span>);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

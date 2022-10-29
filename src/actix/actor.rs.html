@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/actor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>actor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/actor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>actor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -482,484 +476,483 @@
 <span id="476">476</span>
 <span id="477">477</span>
 <span id="478">478</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::time::Duration</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
-<span class="kw">use</span> <span class="ident">actix_rt::ArbiterHandle</span>;
-<span class="kw">use</span> <span class="ident">futures_core::stream::Stream</span>;
-<span class="kw">use</span> <span class="ident">log::error</span>;
+<span class="kw">use </span>actix_rt::ArbiterHandle;
+<span class="kw">use </span>futures_core::stream::Stream;
+<span class="kw">use </span>log::error;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::{<span class="ident">channel</span>, <span class="ident">Addr</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::context::Context</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::contextitems</span>::{<span class="ident">ActorDelayedMessageItem</span>, <span class="ident">ActorMessageItem</span>, <span class="ident">ActorMessageStreamItem</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut</span>::{<span class="ident">ActorFuture</span>, <span class="ident">ActorStreamExt</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::handler</span>::{<span class="ident">Handler</span>, <span class="ident">Message</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::mailbox::DEFAULT_CAPACITY</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::stream::StreamHandler</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::utils</span>::{<span class="ident">IntervalFunc</span>, <span class="ident">TimerFunc</span>};
+<span class="kw">use </span><span class="kw">crate</span>::address::{channel, Addr};
+<span class="kw">use </span><span class="kw">crate</span>::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
+<span class="kw">use </span><span class="kw">crate</span>::fut::{ActorFuture, ActorStreamExt};
+<span class="kw">use </span><span class="kw">crate</span>::handler::{Handler, Message};
+<span class="kw">use </span><span class="kw">crate</span>::mailbox::DEFAULT_CAPACITY;
+<span class="kw">use </span><span class="kw">crate</span>::stream::StreamHandler;
+<span class="kw">use </span><span class="kw">crate</span>::utils::{IntervalFunc, TimerFunc};
 
-<span class="doccomment">/// Actors are objects which encapsulate state and behavior.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Actors run within a specific execution context</span>
-<span class="doccomment">/// [`Context&lt;A&gt;`](struct.Context.html). The context object is available</span>
-<span class="doccomment">/// only during execution. Each actor has a separate execution</span>
-<span class="doccomment">/// context. The execution context also controls the lifecycle of an</span>
-<span class="doccomment">/// actor.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Actors communicate exclusively by exchanging messages. The sender</span>
-<span class="doccomment">/// actor can wait for a response. Actors are not referenced directly,</span>
-<span class="doccomment">/// but by address [`Addr`](struct.Addr.html) To be able to handle a</span>
-<span class="doccomment">/// specific message actor has to provide a</span>
-<span class="doccomment">/// [`Handler&lt;M&gt;`](trait.Handler.html) implementation for this</span>
-<span class="doccomment">/// message. All messages are statically typed. A message can be</span>
-<span class="doccomment">/// handled in asynchronous fashion. An actor can spawn other actors</span>
-<span class="doccomment">/// or add futures or streams to the execution context. The actor</span>
-<span class="doccomment">/// trait provides several methods that allow controlling the actor</span>
-<span class="doccomment">/// lifecycle.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Actor lifecycle</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ## Started</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// An actor starts in the `Started` state, during this state the</span>
-<span class="doccomment">/// `started` method gets called.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ## Running</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// After an actor&#39;s `started` method got called, the actor</span>
-<span class="doccomment">/// transitions to the `Running` state. An actor can stay in the</span>
-<span class="doccomment">/// `running` state for an indefinite amount of time.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ## Stopping</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The actor&#39;s execution state changes to `stopping` in the following</span>
-<span class="doccomment">/// situations:</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// * `Context::stop` gets called by actor itself</span>
-<span class="doccomment">/// * all addresses to the actor get dropped</span>
-<span class="doccomment">/// * no evented objects are registered in its context.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// An actor can return from the `stopping` state to the `running`</span>
-<span class="doccomment">/// state by creating a new address or adding an evented object, like</span>
-<span class="doccomment">/// a future or stream, in its `Actor::stopping` method.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If an actor changed to a `stopping` state because</span>
-<span class="doccomment">/// `Context::stop()` got called, the context then immediately stops</span>
-<span class="doccomment">/// processing incoming messages and calls the `Actor::stopping()`</span>
-<span class="doccomment">/// method. If an actor does not return back to a `running` state,</span>
-<span class="doccomment">/// all unprocessed messages get dropped.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// ## Stopped</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If an actor does not modify execution context while in stopping</span>
-<span class="doccomment">/// state, the actor state changes to `Stopped`. This state is</span>
-<span class="doccomment">/// considered final and at this point the actor gets dropped.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Actor</span>: <span class="ident">Sized</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="lifetime">&#39;static</span> {
-    <span class="doccomment">/// Actor execution context type</span>
-    <span class="kw">type</span> <span class="ident">Context</span>: <span class="ident">ActorContext</span>;
+<span class="doccomment">/// Actors are objects which encapsulate state and behavior.
+///
+/// Actors run within a specific execution context
+/// [`Context&lt;A&gt;`](struct.Context.html). The context object is available
+/// only during execution. Each actor has a separate execution
+/// context. The execution context also controls the lifecycle of an
+/// actor.
+///
+/// Actors communicate exclusively by exchanging messages. The sender
+/// actor can wait for a response. Actors are not referenced directly,
+/// but by address [`Addr`](struct.Addr.html) To be able to handle a
+/// specific message actor has to provide a
+/// [`Handler&lt;M&gt;`](trait.Handler.html) implementation for this
+/// message. All messages are statically typed. A message can be
+/// handled in asynchronous fashion. An actor can spawn other actors
+/// or add futures or streams to the execution context. The actor
+/// trait provides several methods that allow controlling the actor
+/// lifecycle.
+///
+/// # Actor lifecycle
+///
+/// ## Started
+///
+/// An actor starts in the `Started` state, during this state the
+/// `started` method gets called.
+///
+/// ## Running
+///
+/// After an actor&#39;s `started` method got called, the actor
+/// transitions to the `Running` state. An actor can stay in the
+/// `running` state for an indefinite amount of time.
+///
+/// ## Stopping
+///
+/// The actor&#39;s execution state changes to `stopping` in the following
+/// situations:
+///
+/// * `Context::stop` gets called by actor itself
+/// * all addresses to the actor get dropped
+/// * no evented objects are registered in its context.
+///
+/// An actor can return from the `stopping` state to the `running`
+/// state by creating a new address or adding an evented object, like
+/// a future or stream, in its `Actor::stopping` method.
+///
+/// If an actor changed to a `stopping` state because
+/// `Context::stop()` got called, the context then immediately stops
+/// processing incoming messages and calls the `Actor::stopping()`
+/// method. If an actor does not return back to a `running` state,
+/// all unprocessed messages get dropped.
+///
+/// ## Stopped
+///
+/// If an actor does not modify execution context while in stopping
+/// state, the actor state changes to `Stopped`. This state is
+/// considered final and at this point the actor gets dropped.
+</span><span class="attribute">#[allow(unused_variables)]
+</span><span class="kw">pub trait </span>Actor: Sized + Unpin + <span class="lifetime">&#39;static </span>{
+    <span class="doccomment">/// Actor execution context type
+    </span><span class="kw">type </span>Context: ActorContext;
 
-    <span class="doccomment">/// Called when an actor gets polled the first time.</span>
-    <span class="kw">fn</span> <span class="ident">started</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {}
+    <span class="doccomment">/// Called when an actor gets polled the first time.
+    </span><span class="kw">fn </span>started(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {}
 
-    <span class="doccomment">/// Called after an actor is in `Actor::Stopping` state.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// There can be several reasons for stopping:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// - `Context::stop` gets called by the actor itself.</span>
-    <span class="doccomment">/// - All addresses to the current actor get dropped and no more</span>
-    <span class="doccomment">///   evented objects are left in the context.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// An actor can return from the stopping state to the running</span>
-    <span class="doccomment">/// state by returning `Running::Continue`.</span>
-    <span class="kw">fn</span> <span class="ident">stopping</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) -&gt; <span class="ident">Running</span> {
-        <span class="ident">Running::Stop</span>
+    <span class="doccomment">/// Called after an actor is in `Actor::Stopping` state.
+    ///
+    /// There can be several reasons for stopping:
+    ///
+    /// - `Context::stop` gets called by the actor itself.
+    /// - All addresses to the current actor get dropped and no more
+    ///   evented objects are left in the context.
+    ///
+    /// An actor can return from the stopping state to the running
+    /// state by returning `Running::Continue`.
+    </span><span class="kw">fn </span>stopping(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) -&gt; Running {
+        Running::Stop
     }
 
-    <span class="doccomment">/// Called after an actor is stopped.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method can be used to perform any needed cleanup work or</span>
-    <span class="doccomment">/// to spawn more actors. This is the final state, after this</span>
-    <span class="doccomment">/// method got called, the actor will be dropped.</span>
-    <span class="kw">fn</span> <span class="ident">stopped</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {}
+    <span class="doccomment">/// Called after an actor is stopped.
+    ///
+    /// This method can be used to perform any needed cleanup work or
+    /// to spawn more actors. This is the final state, after this
+    /// method got called, the actor will be dropped.
+    </span><span class="kw">fn </span>stopped(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {}
 
-    <span class="doccomment">/// Start a new asynchronous actor, returning its address.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use actix::*;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// struct MyActor;</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// fn main() {</span>
-    <span class="doccomment">///     // initialize system</span>
-    <span class="doccomment">///     System::new().block_on(async {</span>
-    <span class="doccomment">///         let addr = MyActor.start(); // &lt;- start actor and get its address</span>
-    <span class="doccomment">/// #       System::current().stop();</span>
-    <span class="doccomment">///     });</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">start</span>(<span class="self">self</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Start a new asynchronous actor, returning its address.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use actix::*;
+    ///
+    /// struct MyActor;
+    /// impl Actor for MyActor {
+    ///     type Context = Context&lt;Self&gt;;
+    /// }
+    ///
+    /// fn main() {
+    ///     // initialize system
+    ///     System::new().block_on(async {
+    ///         let addr = MyActor.start(); // &lt;- start actor and get its address
+    /// #       System::current().stop();
+    ///     });
+    /// }
+    /// ```
+    </span><span class="kw">fn </span>start(<span class="self">self</span>) -&gt; Addr&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Actor&lt;Context = Context&lt;<span class="self">Self</span>&gt;&gt;,
     {
-        <span class="ident">Context::new</span>().<span class="ident">run</span>(<span class="self">self</span>)
+        Context::new().run(<span class="self">self</span>)
     }
 
-    <span class="doccomment">/// Construct and start a new asynchronous actor, returning its</span>
-    <span class="doccomment">/// address.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This is constructs a new actor using the `Default` trait, and</span>
-    <span class="doccomment">/// invokes its `start` method.</span>
-    <span class="kw">fn</span> <span class="ident">start_default</span>() -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Default</span>,
+    <span class="doccomment">/// Construct and start a new asynchronous actor, returning its
+    /// address.
+    ///
+    /// This is constructs a new actor using the `Default` trait, and
+    /// invokes its `start` method.
+    </span><span class="kw">fn </span>start_default() -&gt; Addr&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Actor&lt;Context = Context&lt;<span class="self">Self</span>&gt;&gt; + Default,
     {
-        <span class="ident"><span class="self">Self</span>::default</span>().<span class="ident">start</span>()
+        <span class="self">Self</span>::default().start()
     }
 
-    <span class="doccomment">/// Start new actor in arbiter&#39;s thread.</span>
-    <span class="kw">fn</span> <span class="ident">start_in_arbiter</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">wrk</span>: <span class="kw-2">&amp;</span><span class="ident">ArbiterHandle</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Start new actor in arbiter&#39;s thread.
+    </span><span class="kw">fn </span>start_in_arbiter&lt;F&gt;(wrk: <span class="kw-2">&amp;</span>ArbiterHandle, f: F) -&gt; Addr&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Actor&lt;Context = Context&lt;<span class="self">Self</span>&gt;&gt;,
+        F: FnOnce(<span class="kw-2">&amp;mut </span>Context&lt;<span class="self">Self</span>&gt;) -&gt; <span class="self">Self </span>+ Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">channel::channel</span>(<span class="ident">DEFAULT_CAPACITY</span>);
+        <span class="kw">let </span>(tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
-        <span class="comment">// create actor</span>
-        <span class="ident">wrk</span>.<span class="ident">spawn_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">Context::with_receiver</span>(<span class="ident">rx</span>);
-            <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>);
-            <span class="kw">let</span> <span class="ident">fut</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">into_future</span>(<span class="ident">act</span>);
+        <span class="comment">// create actor
+        </span>wrk.spawn_fn(<span class="kw">move </span>|| {
+            <span class="kw">let </span><span class="kw-2">mut </span>ctx = Context::with_receiver(rx);
+            <span class="kw">let </span>act = f(<span class="kw-2">&amp;mut </span>ctx);
+            <span class="kw">let </span>fut = ctx.into_future(act);
 
-            <span class="ident">actix_rt::spawn</span>(<span class="ident">fut</span>);
+            actix_rt::spawn(fut);
         });
 
-        <span class="ident">Addr::new</span>(<span class="ident">tx</span>)
+        Addr::new(tx)
     }
 
-    <span class="doccomment">/// Start a new asynchronous actor given a `Context`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Use this method if you need the `Context` object during actor</span>
-    <span class="doccomment">/// initialization.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Examples</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use actix::*;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// struct MyActor {</span>
-    <span class="doccomment">///     val: usize,</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// fn main() {</span>
-    <span class="doccomment">///     // initialize system</span>
-    <span class="doccomment">///     System::new().block_on(async {</span>
-    <span class="doccomment">///         let addr = MyActor::create(|ctx: &amp;mut Context&lt;MyActor&gt;| MyActor { val: 10 });</span>
-    <span class="doccomment">/// #       System::current().stop();</span>
-    <span class="doccomment">///     });</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">create</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="self">Self</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span>,
+    <span class="doccomment">/// Start a new asynchronous actor given a `Context`.
+    ///
+    /// Use this method if you need the `Context` object during actor
+    /// initialization.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use actix::*;
+    ///
+    /// struct MyActor {
+    ///     val: usize,
+    /// }
+    /// impl Actor for MyActor {
+    ///     type Context = Context&lt;Self&gt;;
+    /// }
+    ///
+    /// fn main() {
+    ///     // initialize system
+    ///     System::new().block_on(async {
+    ///         let addr = MyActor::create(|ctx: &amp;mut Context&lt;MyActor&gt;| MyActor { val: 10 });
+    /// #       System::current().stop();
+    ///     });
+    /// }
+    /// ```
+    </span><span class="kw">fn </span>create&lt;F&gt;(f: F) -&gt; Addr&lt;<span class="self">Self</span>&gt;
+    <span class="kw">where
+        </span><span class="self">Self</span>: Actor&lt;Context = Context&lt;<span class="self">Self</span>&gt;&gt;,
+        F: FnOnce(<span class="kw-2">&amp;mut </span>Context&lt;<span class="self">Self</span>&gt;) -&gt; <span class="self">Self</span>,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ctx</span> <span class="op">=</span> <span class="ident">Context::new</span>();
-        <span class="kw">let</span> <span class="ident">act</span> <span class="op">=</span> <span class="ident">f</span>(<span class="kw-2">&amp;mut</span> <span class="ident">ctx</span>);
-        <span class="ident">ctx</span>.<span class="ident">run</span>(<span class="ident">act</span>)
+        <span class="kw">let </span><span class="kw-2">mut </span>ctx = Context::new();
+        <span class="kw">let </span>act = f(<span class="kw-2">&amp;mut </span>ctx);
+        ctx.run(act)
     }
 }
 
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-<span class="doccomment">/// Actors with the ability to restart after failure.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Supervised actors can be managed by a</span>
-<span class="doccomment">/// [`Supervisor`](struct.Supervisor.html). As an additional lifecycle</span>
-<span class="doccomment">/// event, the `restarting` method can be implemented.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// If a supervised actor fails, its supervisor creates new execution</span>
-<span class="doccomment">/// context and restarts the actor, invoking its `restarting` method.</span>
-<span class="doccomment">/// After a call to this method, the actor&#39;s execution state changes</span>
-<span class="doccomment">/// to `Started` and the regular lifecycle process starts.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The `restarting` method gets called with the newly constructed</span>
-<span class="doccomment">/// `Context` object.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Supervised</span>: <span class="ident">Actor</span> {
-    <span class="doccomment">/// Called when the supervisor restarts a failed actor.</span>
-    <span class="kw">fn</span> <span class="ident">restarting</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="op">&lt;</span><span class="self">Self</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>) {}
+<span class="attribute">#[allow(unused_variables)]
+</span><span class="doccomment">/// Actors with the ability to restart after failure.
+///
+/// Supervised actors can be managed by a
+/// [`Supervisor`](struct.Supervisor.html). As an additional lifecycle
+/// event, the `restarting` method can be implemented.
+///
+/// If a supervised actor fails, its supervisor creates new execution
+/// context and restarts the actor, invoking its `restarting` method.
+/// After a call to this method, the actor&#39;s execution state changes
+/// to `Started` and the regular lifecycle process starts.
+///
+/// The `restarting` method gets called with the newly constructed
+/// `Context` object.
+</span><span class="kw">pub trait </span>Supervised: Actor {
+    <span class="doccomment">/// Called when the supervisor restarts a failed actor.
+    </span><span class="kw">fn </span>restarting(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>&lt;<span class="self">Self </span><span class="kw">as </span>Actor&gt;::Context) {}
 }
 
-<span class="doccomment">/// Actor execution state</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">PartialEq</span>, <span class="ident">Debug</span>, <span class="ident">Copy</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ActorState</span> {
-    <span class="doccomment">/// Actor is started.</span>
-    <span class="ident">Started</span>,
-    <span class="doccomment">/// Actor is running.</span>
-    <span class="ident">Running</span>,
-    <span class="doccomment">/// Actor is stopping.</span>
-    <span class="ident">Stopping</span>,
-    <span class="doccomment">/// Actor is stopped.</span>
-    <span class="ident">Stopped</span>,
+<span class="doccomment">/// Actor execution state
+</span><span class="attribute">#[derive(PartialEq, Debug, Copy, Clone)]
+</span><span class="kw">pub enum </span>ActorState {
+    <span class="doccomment">/// Actor is started.
+    </span>Started,
+    <span class="doccomment">/// Actor is running.
+    </span>Running,
+    <span class="doccomment">/// Actor is stopping.
+    </span>Stopping,
+    <span class="doccomment">/// Actor is stopped.
+    </span>Stopped,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Running</span> {
-    <span class="ident">Stop</span>,
-    <span class="ident">Continue</span>,
+<span class="attribute">#[derive(Clone, Copy, Debug, PartialEq)]
+</span><span class="kw">pub enum </span>Running {
+    Stop,
+    Continue,
 }
 
-<span class="kw">impl</span> <span class="ident">ActorState</span> {
-    <span class="doccomment">/// Indicates whether the actor is alive.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">alive</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span> <span class="op">==</span> <span class="ident">ActorState::Started</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span> <span class="op">==</span> <span class="ident">ActorState::Running</span>
+<span class="kw">impl </span>ActorState {
+    <span class="doccomment">/// Indicates whether the actor is alive.
+    </span><span class="kw">pub fn </span>alive(<span class="self">self</span>) -&gt; bool {
+        <span class="self">self </span>== ActorState::Started || <span class="self">self </span>== ActorState::Running
     }
-    <span class="doccomment">/// Indicates whether the actor is stopped or stopping.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stopping</span>(<span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span> <span class="op">==</span> <span class="ident">ActorState::Stopping</span> <span class="op">|</span><span class="op">|</span> <span class="self">self</span> <span class="op">==</span> <span class="ident">ActorState::Stopped</span>
+    <span class="doccomment">/// Indicates whether the actor is stopped or stopping.
+    </span><span class="kw">pub fn </span>stopping(<span class="self">self</span>) -&gt; bool {
+        <span class="self">self </span>== ActorState::Stopping || <span class="self">self </span>== ActorState::Stopped
     }
 }
 
-<span class="doccomment">/// Actor execution context.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Each actor runs within a specific execution context. The actor&#39;s</span>
-<span class="doccomment">/// associated type `Actor::Context` defines the context to use for</span>
-<span class="doccomment">/// the actor, and must implement the `ActorContext` trait.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The execution context defines the type of execution, and the</span>
-<span class="doccomment">/// actor&#39;s communication channels (message handling).</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorContext</span>: <span class="ident">Sized</span> {
-    <span class="doccomment">/// Immediately stop processing incoming messages and switch to a</span>
-    <span class="doccomment">/// `stopping` state. This only affects actors that are currently</span>
-    <span class="doccomment">/// `running`. Future attempts to queue messages will fail.</span>
-    <span class="kw">fn</span> <span class="ident">stop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>);
+<span class="doccomment">/// Actor execution context.
+///
+/// Each actor runs within a specific execution context. The actor&#39;s
+/// associated type `Actor::Context` defines the context to use for
+/// the actor, and must implement the `ActorContext` trait.
+///
+/// The execution context defines the type of execution, and the
+/// actor&#39;s communication channels (message handling).
+</span><span class="kw">pub trait </span>ActorContext: Sized {
+    <span class="doccomment">/// Immediately stop processing incoming messages and switch to a
+    /// `stopping` state. This only affects actors that are currently
+    /// `running`. Future attempts to queue messages will fail.
+    </span><span class="kw">fn </span>stop(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
 
-    <span class="doccomment">/// Terminate actor execution unconditionally. This sets the actor</span>
-    <span class="doccomment">/// into the `stopped` state. This causes future attempts to queue</span>
-    <span class="doccomment">/// messages to fail.</span>
-    <span class="kw">fn</span> <span class="ident">terminate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>);
+    <span class="doccomment">/// Terminate actor execution unconditionally. This sets the actor
+    /// into the `stopped` state. This causes future attempts to queue
+    /// messages to fail.
+    </span><span class="kw">fn </span>terminate(<span class="kw-2">&amp;mut </span><span class="self">self</span>);
 
-    <span class="doccomment">/// Retrieve the current Actor execution state.</span>
-    <span class="kw">fn</span> <span class="ident">state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ActorState</span>;
+    <span class="doccomment">/// Retrieve the current Actor execution state.
+    </span><span class="kw">fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ActorState;
 }
 
-<span class="doccomment">/// Asynchronous execution context.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>: <span class="ident">ActorContext</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="self">Self</span><span class="op">&gt;</span>,
+<span class="doccomment">/// Asynchronous execution context.
+</span><span class="kw">pub trait </span>AsyncContext&lt;A&gt;: ActorContext
+<span class="kw">where
+    </span>A: Actor&lt;Context = <span class="self">Self</span>&gt;,
 {
-    <span class="doccomment">/// Returns the address of the context.</span>
-    <span class="kw">fn</span> <span class="ident">address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Addr</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// Returns the address of the context.
+    </span><span class="kw">fn </span>address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Addr&lt;A&gt;;
 
-    <span class="doccomment">/// Spawns a future into the context.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns a handle of the spawned future, which can be used for</span>
-    <span class="doccomment">/// cancelling its execution.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// All futures spawned into an actor&#39;s context are cancelled</span>
-    <span class="doccomment">/// during the actor&#39;s stopping stage.</span>
-    <span class="kw">fn</span> <span class="ident">spawn</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>;
+    <span class="doccomment">/// Spawns a future into the context.
+    ///
+    /// Returns a handle of the spawned future, which can be used for
+    /// cancelling its execution.
+    ///
+    /// All futures spawned into an actor&#39;s context are cancelled
+    /// during the actor&#39;s stopping stage.
+    </span><span class="kw">fn </span>spawn&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: F) -&gt; SpawnHandle
+    <span class="kw">where
+        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>;
 
-    <span class="doccomment">/// Spawns a future into the context, waiting for it to resolve.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This stops processing any incoming events until the future</span>
-    <span class="doccomment">/// resolves.</span>
-    <span class="kw">fn</span> <span class="ident">wait</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">F</span>)
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>;
+    <span class="doccomment">/// Spawns a future into the context, waiting for it to resolve.
+    ///
+    /// This stops processing any incoming events until the future
+    /// resolves.
+    </span><span class="kw">fn </span>wait&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: F)
+    <span class="kw">where
+        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>;
 
-    <span class="doccomment">/// Checks if the context is paused (waiting for future completion or stopping).</span>
-    <span class="kw">fn</span> <span class="ident">waiting</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span>;
+    <span class="doccomment">/// Checks if the context is paused (waiting for future completion or stopping).
+    </span><span class="kw">fn </span>waiting(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
 
-    <span class="doccomment">/// Cancels a spawned future.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The `handle` is a value returned by the `spawn` method.</span>
-    <span class="kw">fn</span> <span class="ident">cancel_future</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">handle</span>: <span class="ident">SpawnHandle</span>) -&gt; <span class="ident">bool</span>;
+    <span class="doccomment">/// Cancels a spawned future.
+    ///
+    /// The `handle` is a value returned by the `spawn` method.
+    </span><span class="kw">fn </span>cancel_future(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handle: SpawnHandle) -&gt; bool;
 
-    <span class="doccomment">/// Registers a stream with the context.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This allows handling a `Stream` in a way similar to normal</span>
-    <span class="doccomment">/// actor messages.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// # use std::io;</span>
-    <span class="doccomment">/// use actix::prelude::*;</span>
-    <span class="doccomment">/// use futures_util::stream::once;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// #[derive(Message)]</span>
-    <span class="doccomment">/// #[rtype(result = &quot;()&quot;)]</span>
-    <span class="doccomment">/// struct Ping;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// struct MyActor;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl StreamHandler&lt;Ping&gt; for MyActor {</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn handle(&amp;mut self, item: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {</span>
-    <span class="doccomment">///         println!(&quot;PING&quot;);</span>
-    <span class="doccomment">///         System::current().stop();</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn finished(&amp;mut self, ctx: &amp;mut Self::Context) {</span>
-    <span class="doccomment">///         println!(&quot;finished&quot;);</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///    fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {</span>
-    <span class="doccomment">///        // add stream</span>
-    <span class="doccomment">///        ctx.add_stream(once(async { Ping }));</span>
-    <span class="doccomment">///    }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// fn main() {</span>
-    <span class="doccomment">///     let mut sys = System::new();</span>
-    <span class="doccomment">///     let addr = sys.block_on(async { MyActor.start() });</span>
-    <span class="doccomment">///     sys.run();</span>
-    <span class="doccomment">///  }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">add_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">S</span>) -&gt; <span class="ident">SpawnHandle</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Stream</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-        <span class="ident">A</span>: <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Registers a stream with the context.
+    ///
+    /// This allows handling a `Stream` in a way similar to normal
+    /// actor messages.
+    ///
+    /// ```
+    /// # use std::io;
+    /// use actix::prelude::*;
+    /// use futures_util::stream::once;
+    ///
+    /// #[derive(Message)]
+    /// #[rtype(result = &quot;()&quot;)]
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl StreamHandler&lt;Ping&gt; for MyActor {
+    ///
+    ///     fn handle(&amp;mut self, item: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {
+    ///         println!(&quot;PING&quot;);
+    ///         System::current().stop();
+    ///     }
+    ///
+    ///     fn finished(&amp;mut self, ctx: &amp;mut Self::Context) {
+    ///         println!(&quot;finished&quot;);
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///    type Context = Context&lt;Self&gt;;
+    ///
+    ///    fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {
+    ///        // add stream
+    ///        ctx.add_stream(once(async { Ping }));
+    ///    }
+    /// }
+    ///
+    /// fn main() {
+    ///     let mut sys = System::new();
+    ///     let addr = sys.block_on(async { MyActor.start() });
+    ///     sys.run();
+    ///  }
+    /// ```
+    </span><span class="kw">fn </span>add_stream&lt;S&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: S) -&gt; SpawnHandle
+    <span class="kw">where
+        </span>S: Stream + <span class="lifetime">&#39;static</span>,
+        A: StreamHandler&lt;S::Item&gt;,
     {
-        <span class="op">&lt;</span><span class="ident">A</span> <span class="kw">as</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::add_stream</span>(<span class="ident">fut</span>, <span class="self">self</span>)
+        &lt;A <span class="kw">as </span>StreamHandler&lt;S::Item&gt;&gt;::add_stream(fut, <span class="self">self</span>)
     }
 
-    <span class="doccomment">/// Registers a stream with the context, ignoring errors.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method is similar to `add_stream` but it skips stream</span>
-    <span class="doccomment">/// errors.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use actix::prelude::*;</span>
-    <span class="doccomment">/// use futures_util::stream::once;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// #[derive(Message)]</span>
-    <span class="doccomment">/// #[rtype(result = &quot;()&quot;)]</span>
-    <span class="doccomment">/// struct Ping;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// struct MyActor;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl Handler&lt;Ping&gt; for MyActor {</span>
-    <span class="doccomment">///     type Result = ();</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn handle(&amp;mut self, msg: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {</span>
-    <span class="doccomment">///         println!(&quot;PING&quot;);</span>
-    <span class="doccomment">/// #       System::current().stop();</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// impl Actor for MyActor {</span>
-    <span class="doccomment">///     type Context = Context&lt;Self&gt;;</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">///     fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {</span>
-    <span class="doccomment">///         // add messages stream</span>
-    <span class="doccomment">///         ctx.add_message_stream(once(async { Ping }));</span>
-    <span class="doccomment">///     }</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// fn main() {</span>
-    <span class="doccomment">///    System::new().block_on(async {</span>
-    <span class="doccomment">///        let addr = MyActor.start();</span>
-    <span class="doccomment">///    });</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">fn</span> <span class="ident">add_message_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">fut</span>: <span class="ident">S</span>)
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Stream</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-        <span class="ident">S::Item</span>: <span class="ident">Message</span>,
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Registers a stream with the context, ignoring errors.
+    ///
+    /// This method is similar to `add_stream` but it skips stream
+    /// errors.
+    ///
+    /// ```
+    /// use actix::prelude::*;
+    /// use futures_util::stream::once;
+    ///
+    /// #[derive(Message)]
+    /// #[rtype(result = &quot;()&quot;)]
+    /// struct Ping;
+    ///
+    /// struct MyActor;
+    ///
+    /// impl Handler&lt;Ping&gt; for MyActor {
+    ///     type Result = ();
+    ///
+    ///     fn handle(&amp;mut self, msg: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {
+    ///         println!(&quot;PING&quot;);
+    /// #       System::current().stop();
+    ///     }
+    /// }
+    ///
+    /// impl Actor for MyActor {
+    ///     type Context = Context&lt;Self&gt;;
+    ///
+    ///     fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {
+    ///         // add messages stream
+    ///         ctx.add_message_stream(once(async { Ping }));
+    ///     }
+    /// }
+    ///
+    /// fn main() {
+    ///    System::new().block_on(async {
+    ///        let addr = MyActor.start();
+    ///    });
+    /// }
+    /// ```
+    </span><span class="kw">fn </span>add_message_stream&lt;S&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: S)
+    <span class="kw">where
+        </span>S: Stream + <span class="lifetime">&#39;static</span>,
+        S::Item: Message,
+        A: Handler&lt;S::Item&gt;,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>() <span class="op">==</span> <span class="ident">ActorState::Stopped</span> {
+        <span class="kw">if </span><span class="self">self</span>.state() == ActorState::Stopped {
             <span class="macro">error!</span>(<span class="string">&quot;Context::add_message_stream called for stopped actor.&quot;</span>);
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">ActorMessageStreamItem::new</span>(<span class="ident">fut</span>));
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.spawn(ActorMessageStreamItem::new(fut));
         }
     }
 
-    <span class="doccomment">/// Sends the message `msg` to self. This bypasses the mailbox capacity, and</span>
-    <span class="doccomment">/// will always queue the message. If the actor is in the `stopped` state, an</span>
-    <span class="doccomment">/// error will be raised.</span>
-    <span class="kw">fn</span> <span class="ident">notify</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>)
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Sends the message `msg` to self. This bypasses the mailbox capacity, and
+    /// will always queue the message. If the actor is in the `stopped` state, an
+    /// error will be raised.
+    </span><span class="kw">fn </span>notify&lt;M&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: M)
+    <span class="kw">where
+        </span>A: Handler&lt;M&gt;,
+        M: Message + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>() <span class="op">==</span> <span class="ident">ActorState::Stopped</span> {
+        <span class="kw">if </span><span class="self">self</span>.state() == ActorState::Stopped {
             <span class="macro">error!</span>(<span class="string">&quot;Context::notify called for stopped actor.&quot;</span>);
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">ActorMessageItem::new</span>(<span class="ident">msg</span>));
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.spawn(ActorMessageItem::new(msg));
         }
     }
 
-    <span class="doccomment">/// Sends the message `msg` to self after a specified period of time.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns a spawn handle which can be used for cancellation. The</span>
-    <span class="doccomment">/// notification gets cancelled if the context&#39;s stop method gets</span>
-    <span class="doccomment">/// called. This bypasses the mailbox capacity, and</span>
-    <span class="doccomment">/// will always queue the message. If the actor is in the `stopped` state, an</span>
-    <span class="doccomment">/// error will be raised.</span>
-    <span class="kw">fn</span> <span class="ident">notify_later</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">after</span>: <span class="ident">Duration</span>) -&gt; <span class="ident">SpawnHandle</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Sends the message `msg` to self after a specified period of time.
+    ///
+    /// Returns a spawn handle which can be used for cancellation. The
+    /// notification gets cancelled if the context&#39;s stop method gets
+    /// called. This bypasses the mailbox capacity, and
+    /// will always queue the message. If the actor is in the `stopped` state, an
+    /// error will be raised.
+    </span><span class="kw">fn </span>notify_later&lt;M&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: M, after: Duration) -&gt; SpawnHandle
+    <span class="kw">where
+        </span>A: Handler&lt;M&gt;,
+        M: Message + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">state</span>() <span class="op">==</span> <span class="ident">ActorState::Stopped</span> {
+        <span class="kw">if </span><span class="self">self</span>.state() == ActorState::Stopped {
             <span class="macro">error!</span>(<span class="string">&quot;Context::notify_later called for stopped actor.&quot;</span>);
-            <span class="ident">SpawnHandle::default</span>()
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">ActorDelayedMessageItem::new</span>(<span class="ident">msg</span>, <span class="ident">after</span>))
+            SpawnHandle::default()
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.spawn(ActorDelayedMessageItem::new(msg, after))
         }
     }
 
-    <span class="doccomment">/// Executes a closure after a specified period of time.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The closure gets passed the same actor and its</span>
-    <span class="doccomment">/// context. Execution gets cancelled if the context&#39;s stop method</span>
-    <span class="doccomment">/// gets called.</span>
-    <span class="kw">fn</span> <span class="ident">run_later</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">dur</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Executes a closure after a specified period of time.
+    ///
+    /// The closure gets passed the same actor and its
+    /// context. Execution gets cancelled if the context&#39;s stop method
+    /// gets called.
+    </span><span class="kw">fn </span>run_later&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dur: Duration, f: F) -&gt; SpawnHandle
+    <span class="kw">where
+        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">TimerFunc::new</span>(<span class="ident">dur</span>, <span class="ident">f</span>))
+        <span class="self">self</span>.spawn(TimerFunc::new(dur, f))
     }
 
-    <span class="doccomment">/// Spawns a job to execute the given closure periodically, at a</span>
-    <span class="doccomment">/// specified fixed interval.</span>
-    <span class="kw">fn</span> <span class="ident">run_interval</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">dur</span>: <span class="ident">Duration</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">SpawnHandle</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Spawns a job to execute the given closure periodically, at a
+    /// specified fixed interval.
+    </span><span class="kw">fn </span>run_interval&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dur: Duration, f: F) -&gt; SpawnHandle
+    <span class="kw">where
+        </span>F: FnMut(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">&#39;static</span>,
     {
-        <span class="self">self</span>.<span class="ident">spawn</span>(<span class="ident">IntervalFunc::new</span>(<span class="ident">dur</span>, <span class="ident">f</span>).<span class="ident">finish</span>())
+        <span class="self">self</span>.spawn(IntervalFunc::new(dur, f).finish())
     }
 }
 
-<span class="doccomment">/// A handle to a spawned future.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Can be used to cancel the future.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">Default</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SpawnHandle</span>(<span class="ident">usize</span>);
+<span class="doccomment">/// A handle to a spawned future.
+///
+/// Can be used to cancel the future.
+</span><span class="attribute">#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>SpawnHandle(usize);
 
-<span class="kw">impl</span> <span class="ident">SpawnHandle</span> {
-    <span class="doccomment">/// Gets the next handle.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">next</span>(<span class="self">self</span>) -&gt; <span class="ident">SpawnHandle</span> {
-        <span class="ident">SpawnHandle</span>(<span class="self">self</span>.<span class="number">0</span> <span class="op">+</span> <span class="number">1</span>)
+<span class="kw">impl </span>SpawnHandle {
+    <span class="doccomment">/// Gets the next handle.
+    </span><span class="kw">pub fn </span>next(<span class="self">self</span>) -&gt; SpawnHandle {
+        SpawnHandle(<span class="self">self</span>.<span class="number">0 </span>+ <span class="number">1</span>)
     }
-    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">hidden</span>)]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_usize</span>(<span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="number">0</span>
-    }
+    <span class="attribute">#[doc(hidden)]
+    </span><span class="kw">pub fn </span>into_usize(<span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.<span class="number">0
+    </span>}
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

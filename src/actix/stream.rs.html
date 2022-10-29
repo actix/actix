@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/stream.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/stream.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>stream.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -153,155 +147,154 @@
 <span id="147">147</span>
 <span id="148">148</span>
 <span id="149">149</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::pin::Pin</span>;
-<span class="kw">use</span> <span class="ident">std::task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::task::{Context, Poll};
 
-<span class="kw">use</span> <span class="ident">futures_core</span>::{<span class="ident">ready</span>, <span class="ident">stream::Stream</span>};
-<span class="kw">use</span> <span class="ident">log::error</span>;
-<span class="kw">use</span> <span class="ident">pin_project_lite::pin_project</span>;
+<span class="kw">use </span>futures_core::{ready, stream::Stream};
+<span class="kw">use </span>log::error;
+<span class="kw">use </span>pin_project_lite::pin_project;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">ActorState</span>, <span class="ident">AsyncContext</span>, <span class="ident">SpawnHandle</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut::ActorFuture</span>;
+<span class="kw">use </span><span class="kw">crate</span>::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
+<span class="kw">use </span><span class="kw">crate</span>::fut::ActorFuture;
 
-<span class="doccomment">/// Stream handling for Actors.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is helper trait that allows handling [`Stream`]s in a similar way to normal actor messages.</span>
-<span class="doccomment">/// When stream resolves its next item, `handle()` is called with that item.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// When the stream completes, `finished()` is called. By default, it stops Actor execution.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">/// use actix::prelude::*;</span>
-<span class="doccomment">/// use futures_util::stream::once;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// #[derive(Message)]</span>
-<span class="doccomment">/// #[rtype(result = &quot;()&quot;)]</span>
-<span class="doccomment">/// struct Ping;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// struct MyActor;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl StreamHandler&lt;Ping&gt; for MyActor {</span>
-<span class="doccomment">///     fn handle(&amp;mut self, item: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {</span>
-<span class="doccomment">///         println!(&quot;PING&quot;);</span>
-<span class="doccomment">///         System::current().stop()</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///     fn finished(&amp;mut self, ctx: &amp;mut Self::Context) {</span>
-<span class="doccomment">///         println!(&quot;finished&quot;);</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// impl Actor for MyActor {</span>
-<span class="doccomment">///    type Context = Context&lt;Self&gt;;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///    fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {</span>
-<span class="doccomment">///        Self::add_stream(once(async { Ping }), ctx);</span>
-<span class="doccomment">///    }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// fn main() {</span>
-<span class="doccomment">///     let mut sys = System::new();</span>
-<span class="doccomment">///     let addr = sys.block_on(async { MyActor.start() });</span>
-<span class="doccomment">///     sys.run();</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="self">Self</span>: <span class="ident">Actor</span>,
+<span class="doccomment">/// Stream handling for Actors.
+///
+/// This is helper trait that allows handling [`Stream`]s in a similar way to normal actor messages.
+/// When stream resolves its next item, `handle()` is called with that item.
+///
+/// When the stream completes, `finished()` is called. By default, it stops Actor execution.
+///
+/// # Examples
+/// ```
+/// use actix::prelude::*;
+/// use futures_util::stream::once;
+///
+/// #[derive(Message)]
+/// #[rtype(result = &quot;()&quot;)]
+/// struct Ping;
+///
+/// struct MyActor;
+///
+/// impl StreamHandler&lt;Ping&gt; for MyActor {
+///     fn handle(&amp;mut self, item: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {
+///         println!(&quot;PING&quot;);
+///         System::current().stop()
+///     }
+///
+///     fn finished(&amp;mut self, ctx: &amp;mut Self::Context) {
+///         println!(&quot;finished&quot;);
+///     }
+/// }
+///
+/// impl Actor for MyActor {
+///    type Context = Context&lt;Self&gt;;
+///
+///    fn started(&amp;mut self, ctx: &amp;mut Context&lt;Self&gt;) {
+///        Self::add_stream(once(async { Ping }), ctx);
+///    }
+/// }
+///
+/// fn main() {
+///     let mut sys = System::new();
+///     let addr = sys.block_on(async { MyActor.start() });
+///     sys.run();
+/// }
+/// ```
+</span><span class="attribute">#[allow(unused_variables)]
+</span><span class="kw">pub trait </span>StreamHandler&lt;I&gt;
+<span class="kw">where
+    </span><span class="self">Self</span>: Actor,
 {
-    <span class="doccomment">/// Called for every message emitted by the stream.</span>
-    <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">I</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>);
+    <span class="doccomment">/// Called for every message emitted by the stream.
+    </span><span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: I, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context);
 
-    <span class="doccomment">/// Called when stream emits first item.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Default implementation does nothing.</span>
-    <span class="kw">fn</span> <span class="ident">started</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {}
+    <span class="doccomment">/// Called when stream emits first item.
+    ///
+    /// Default implementation does nothing.
+    </span><span class="kw">fn </span>started(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {}
 
-    <span class="doccomment">/// Called when stream finishes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Default implementation stops Actor execution.</span>
-    <span class="kw">fn</span> <span class="ident">finished</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
-        <span class="ident">ctx</span>.<span class="ident">stop</span>()
+    <span class="doccomment">/// Called when stream finishes.
+    ///
+    /// Default implementation stops Actor execution.
+    </span><span class="kw">fn </span>finished(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {
+        ctx.stop()
     }
 
-    <span class="doccomment">/// Register a Stream to the actor context.</span>
-    <span class="kw">fn</span> <span class="ident">add_stream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>(<span class="ident">stream</span>: <span class="ident">S</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) -&gt; <span class="ident">SpawnHandle</span>
-    <span class="kw">where</span>
-        <span class="ident">S</span>: <span class="ident">Stream</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
-        <span class="self">Self</span>: <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span>,
-        <span class="ident"><span class="self">Self</span>::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Register a Stream to the actor context.
+    </span><span class="kw">fn </span>add_stream&lt;S&gt;(stream: S, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) -&gt; SpawnHandle
+    <span class="kw">where
+        </span>S: Stream + <span class="lifetime">&#39;static</span>,
+        <span class="self">Self</span>: StreamHandler&lt;S::Item&gt;,
+        <span class="self">Self</span>::Context: AsyncContext&lt;<span class="self">Self</span>&gt;,
     {
-        <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">state</span>() <span class="op">==</span> <span class="ident">ActorState::Stopped</span> {
+        <span class="kw">if </span>ctx.state() == ActorState::Stopped {
             <span class="macro">error!</span>(<span class="string">&quot;Context::add_stream called for stopped actor.&quot;</span>);
-            <span class="ident">SpawnHandle::default</span>()
-        } <span class="kw">else</span> {
-            <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">ActorStream::new</span>(<span class="ident">stream</span>))
+            SpawnHandle::default()
+        } <span class="kw">else </span>{
+            ctx.spawn(ActorStream::new(stream))
         }
     }
 }
 
-<span class="macro">pin_project!</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span> {
-        <span class="attribute">#[<span class="ident">pin</span>]</span>
-        <span class="ident">stream</span>: <span class="ident">S</span>,
-        <span class="ident">started</span>: <span class="ident">bool</span>,
+<span class="macro">pin_project! </span>{
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ActorStream&lt;S&gt; {
+        <span class="attribute">#[pin]
+        </span>stream: S,
+        started: bool,
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">fut</span>: <span class="ident">S</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">stream</span>: <span class="ident">fut</span>,
-            <span class="ident">started</span>: <span class="bool-val">false</span>,
+<span class="kw">impl</span>&lt;S&gt; ActorStream&lt;S&gt; {
+    <span class="kw">pub fn </span>new(fut: S) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            stream: fut,
+            started: <span class="bool-val">false</span>,
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">S</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ActorStream</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Stream</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span> <span class="op">+</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;A, S&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>ActorStream&lt;S&gt;
+<span class="kw">where
+    </span>S: Stream,
+    A: Actor + StreamHandler&lt;S::Item&gt;,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">project</span>();
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>this = <span class="self">self</span>.project();
 
-        <span class="kw">if</span> <span class="op">!</span><span class="kw-2">*</span><span class="ident">this</span>.<span class="ident">started</span> {
-            <span class="kw-2">*</span><span class="ident">this</span>.<span class="ident">started</span> <span class="op">=</span> <span class="bool-val">true</span>;
-            <span class="op">&lt;</span><span class="ident">A</span> <span class="kw">as</span> <span class="ident">StreamHandler</span><span class="op">&lt;</span><span class="ident">S::Item</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::started</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
+        <span class="kw">if </span>!<span class="kw-2">*</span>this.started {
+            <span class="kw-2">*</span>this.started = <span class="bool-val">true</span>;
+            &lt;A <span class="kw">as </span>StreamHandler&lt;S::Item&gt;&gt;::started(act, ctx);
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">polled</span> <span class="op">=</span> <span class="number">0</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>polled = <span class="number">0</span>;
 
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">msg</span>) <span class="op">=</span> <span class="macro">ready!</span>(<span class="ident">this</span>.<span class="ident">stream</span>.<span class="ident">as_mut</span>().<span class="ident">poll_next</span>(<span class="ident">task</span>)) {
-            <span class="ident">A::handle</span>(<span class="ident">act</span>, <span class="ident">msg</span>, <span class="ident">ctx</span>);
+        <span class="kw">while let </span><span class="prelude-val">Some</span>(msg) = <span class="macro">ready!</span>(this.stream.as_mut().poll_next(task)) {
+            A::handle(act, msg, ctx);
 
-            <span class="ident">polled</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            polled += <span class="number">1</span>;
 
-            <span class="kw">if</span> <span class="ident">ctx</span>.<span class="ident">waiting</span>() {
-                <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
-            } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">polled</span> <span class="op">==</span> <span class="number">16</span> {
-                <span class="comment">// Yield after 16 consecutive polls on this stream and self wake up.</span>
-                <span class="comment">// This is to prevent starvation of other actor futures when this stream yield</span>
-                <span class="comment">// too many item in short period of time.</span>
-                <span class="ident">task</span>.<span class="ident">waker</span>().<span class="ident">wake_by_ref</span>();
-                <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
+            <span class="kw">if </span>ctx.waiting() {
+                <span class="kw">return </span>Poll::Pending;
+            } <span class="kw">else if </span>polled == <span class="number">16 </span>{
+                <span class="comment">// Yield after 16 consecutive polls on this stream and self wake up.
+                // This is to prevent starvation of other actor futures when this stream yield
+                // too many item in short period of time.
+                </span>task.waker().wake_by_ref();
+                <span class="kw">return </span>Poll::Pending;
             }
         }
 
-        <span class="ident">A::finished</span>(<span class="ident">act</span>, <span class="ident">ctx</span>);
-        <span class="ident">Poll::Ready</span>(())
+        A::finished(act, ctx);
+        Poll::Ready(())
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

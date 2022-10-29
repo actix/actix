@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/address/queue.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>queue.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../actix/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/address/queue.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>queue.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../actix/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -211,163 +205,162 @@
  * The views and conclusions contained in the software and documentation are
  * those of the authors and should not be interpreted as representing official
  * policies, either expressed or implied, of Dmitry Vyukov.
- */</span>
+ */
 
-<span class="doccomment">//! A mostly lock-free multi-producer, single consumer queue for sending</span>
-<span class="doccomment">//! messages between asynchronous tasks.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! The queue implementation is essentially the same one used for mpsc channels</span>
-<span class="doccomment">//! in the standard library.</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! Note that the current implementation of this queue has a caveat of the `pop`</span>
-<span class="doccomment">//! method, and see the method for more information about it. Due to this</span>
-<span class="doccomment">//! caveat, this queue may not be appropriate for all use-cases.</span>
+</span><span class="doccomment">//! A mostly lock-free multi-producer, single consumer queue for sending
+//! messages between asynchronous tasks.
+//!
+//! The queue implementation is essentially the same one used for mpsc channels
+//! in the standard library.
+//!
+//! Note that the current implementation of this queue has a caveat of the `pop`
+//! method, and see the method for more information about it. Due to this
+//! caveat, this queue may not be appropriate for all use-cases.
 
-<span class="comment">// http://www.1024cores.net/home/lock-free-algorithms</span>
-<span class="comment">//                         /queues/non-intrusive-mpsc-node-based-queue</span>
+</span><span class="comment">// http://www.1024cores.net/home/lock-free-algorithms
+//                         /queues/non-intrusive-mpsc-node-based-queue
 
-<span class="comment">// NOTE: this implementation is lifted from the standard library and only</span>
-<span class="comment">//       slightly modified</span>
+// NOTE: this implementation is lifted from the standard library and only
+//       slightly modified
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use</span> <span class="ident"><span class="self">self</span>::PopResult</span>::<span class="kw-2">*</span>;
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">use </span><span class="self">self</span>::PopResult::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident">std::cell::UnsafeCell</span>;
-<span class="kw">use</span> <span class="ident">std::ptr</span>;
-<span class="kw">use</span> <span class="ident">std::sync::atomic</span>::{<span class="ident">AtomicPtr</span>, <span class="ident">Ordering</span>};
-<span class="kw">use</span> <span class="ident">std::thread</span>;
+<span class="kw">use </span>std::cell::UnsafeCell;
+<span class="kw">use </span>std::ptr;
+<span class="kw">use </span>std::sync::atomic::{AtomicPtr, Ordering};
+<span class="kw">use </span>std::thread;
 
-<span class="doccomment">/// A result of the `pop` function.</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">enum</span> <span class="ident">PopResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Some data has been popped</span>
-    <span class="ident">Data</span>(<span class="ident">T</span>),
-    <span class="doccomment">/// The queue is empty</span>
-    <span class="ident">Empty</span>,
-    <span class="doccomment">/// The queue is in an inconsistent state. Popping data should succeed, but</span>
-    <span class="doccomment">/// some pushers have yet to make enough progress in order allow a pop to</span>
-    <span class="doccomment">/// succeed. It is recommended that a pop() occur &quot;in the near future&quot; in</span>
-    <span class="doccomment">/// order to see if the sender has made progress or not</span>
-    <span class="ident">Inconsistent</span>,
+<span class="doccomment">/// A result of the `pop` function.
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">enum </span>PopResult&lt;T&gt; {
+    <span class="doccomment">/// Some data has been popped
+    </span>Data(T),
+    <span class="doccomment">/// The queue is empty
+    </span>Empty,
+    <span class="doccomment">/// The queue is in an inconsistent state. Popping data should succeed, but
+    /// some pushers have yet to make enough progress in order allow a pop to
+    /// succeed. It is recommended that a pop() occur &quot;in the near future&quot; in
+    /// order to see if the sender has made progress or not
+    </span>Inconsistent,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">Node</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">next</span>: <span class="ident">AtomicPtr</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>,
-    <span class="ident">value</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">struct </span>Node&lt;T&gt; {
+    next: AtomicPtr&lt;<span class="self">Self</span>&gt;,
+    value: <span class="prelude-ty">Option</span>&lt;T&gt;,
 }
 
-<span class="doccomment">/// The multi-producer single-consumer structure. This is not cloneable, but it</span>
-<span class="doccomment">/// may be safely shared so long as it is guaranteed that there is only one</span>
-<span class="doccomment">/// popper at a time (many pushers are allowed).</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct</span> <span class="ident">Queue</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="ident">head</span>: <span class="ident">AtomicPtr</span><span class="op">&lt;</span><span class="ident">Node</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">tail</span>: <span class="ident">UnsafeCell</span><span class="op">&lt;</span><span class="kw-2">*mut</span> <span class="ident">Node</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// The multi-producer single-consumer structure. This is not cloneable, but it
+/// may be safely shared so long as it is guaranteed that there is only one
+/// popper at a time (many pushers are allowed).
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>Queue&lt;T&gt; {
+    head: AtomicPtr&lt;Node&lt;T&gt;&gt;,
+    tail: UnsafeCell&lt;<span class="kw-2">*mut </span>Node&lt;T&gt;&gt;,
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Send</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Queue</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {}
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Send</span><span class="op">&gt;</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Queue</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {}
+<span class="kw">unsafe impl</span>&lt;T: Send&gt; Send <span class="kw">for </span>Queue&lt;T&gt; {}
+<span class="kw">unsafe impl</span>&lt;T: Send&gt; Sync <span class="kw">for </span>Queue&lt;T&gt; {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Node</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">v</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">*mut</span> <span class="self">Self</span> {
-        <span class="ident">Box::into_raw</span>(<span class="ident">Box::new</span>(<span class="self">Self</span> {
-            <span class="ident">next</span>: <span class="ident">AtomicPtr::new</span>(<span class="ident">ptr::null_mut</span>()),
-            <span class="ident">value</span>: <span class="ident">v</span>,
+<span class="kw">impl</span>&lt;T&gt; Node&lt;T&gt; {
+    <span class="kw">unsafe fn </span>new(v: <span class="prelude-ty">Option</span>&lt;T&gt;) -&gt; <span class="kw-2">*mut </span><span class="self">Self </span>{
+        Box::into_raw(Box::new(<span class="self">Self </span>{
+            next: AtomicPtr::new(ptr::null_mut()),
+            value: v,
         }))
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Queue</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Creates a new queue that is safe to share among multiple producers and</span>
-    <span class="doccomment">/// one consumer.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">stub</span> <span class="op">=</span> <span class="kw">unsafe</span> { <span class="ident">Node::new</span>(<span class="prelude-val">None</span>) };
-        <span class="self">Self</span> {
-            <span class="ident">head</span>: <span class="ident">AtomicPtr::new</span>(<span class="ident">stub</span>),
-            <span class="ident">tail</span>: <span class="ident">UnsafeCell::new</span>(<span class="ident">stub</span>),
+<span class="kw">impl</span>&lt;T&gt; Queue&lt;T&gt; {
+    <span class="doccomment">/// Creates a new queue that is safe to share among multiple producers and
+    /// one consumer.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>stub = <span class="kw">unsafe </span>{ Node::new(<span class="prelude-val">None</span>) };
+        <span class="self">Self </span>{
+            head: AtomicPtr::new(stub),
+            tail: UnsafeCell::new(stub),
         }
     }
 
-    <span class="doccomment">/// Pushes a new value onto this queue.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn</span> <span class="ident">push</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">t</span>: <span class="ident">T</span>) {
-        <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="ident">Node::new</span>(<span class="prelude-val">Some</span>(<span class="ident">t</span>));
-            <span class="kw">let</span> <span class="ident">prev</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">head</span>.<span class="ident">swap</span>(<span class="ident">n</span>, <span class="ident">Ordering::AcqRel</span>);
-            (<span class="kw-2">*</span><span class="ident">prev</span>).<span class="ident">next</span>.<span class="ident">store</span>(<span class="ident">n</span>, <span class="ident">Ordering::Release</span>);
+    <span class="doccomment">/// Pushes a new value onto this queue.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>push(<span class="kw-2">&amp;</span><span class="self">self</span>, t: T) {
+        <span class="kw">unsafe </span>{
+            <span class="kw">let </span>n = Node::new(<span class="prelude-val">Some</span>(t));
+            <span class="kw">let </span>prev = <span class="self">self</span>.head.swap(n, Ordering::AcqRel);
+            (<span class="kw-2">*</span>prev).next.store(n, Ordering::Release);
         }
     }
 
-    <span class="doccomment">/// Pops some data from this queue.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note that the current implementation means that this function cannot</span>
-    <span class="doccomment">/// return `Option&lt;T&gt;`. It is possible for this queue to be in an</span>
-    <span class="doccomment">/// inconsistent state where many pushes have succeeded and completely</span>
-    <span class="doccomment">/// finished, but pops cannot return `Some(t)`. This inconsistent state</span>
-    <span class="doccomment">/// happens when a pusher is preempted at an inopportune moment.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This inconsistent state means that this queue does indeed have data, but</span>
-    <span class="doccomment">/// it does not currently have access to it at this time.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This function is unsafe because only one thread can call it at a time.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">pop</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">PopResult</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">tail</span> <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">tail</span>.<span class="ident">get</span>();
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="ident">tail</span>).<span class="ident">next</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>);
+    <span class="doccomment">/// Pops some data from this queue.
+    ///
+    /// Note that the current implementation means that this function cannot
+    /// return `Option&lt;T&gt;`. It is possible for this queue to be in an
+    /// inconsistent state where many pushes have succeeded and completely
+    /// finished, but pops cannot return `Some(t)`. This inconsistent state
+    /// happens when a pusher is preempted at an inopportune moment.
+    ///
+    /// This inconsistent state means that this queue does indeed have data, but
+    /// it does not currently have access to it at this time.
+    ///
+    /// This function is unsafe because only one thread can call it at a time.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>pop(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PopResult&lt;T&gt; {
+        <span class="kw">let </span>tail = <span class="kw-2">*</span><span class="self">self</span>.tail.get();
+        <span class="kw">let </span>next = (<span class="kw-2">*</span>tail).next.load(Ordering::Acquire);
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">next</span>.<span class="ident">is_null</span>() {
-            <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">tail</span>.<span class="ident">get</span>() <span class="op">=</span> <span class="ident">next</span>;
-            <span class="macro">assert!</span>((<span class="kw-2">*</span><span class="ident">tail</span>).<span class="ident">value</span>.<span class="ident">is_none</span>());
-            <span class="macro">assert!</span>((<span class="kw-2">*</span><span class="ident">next</span>).<span class="ident">value</span>.<span class="ident">is_some</span>());
-            <span class="kw">let</span> <span class="ident">ret</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="ident">next</span>).<span class="ident">value</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>();
-            <span class="ident">drop</span>(<span class="ident">Box::from_raw</span>(<span class="ident">tail</span>));
-            <span class="kw">return</span> <span class="ident">Data</span>(<span class="ident">ret</span>);
+        <span class="kw">if </span>!next.is_null() {
+            <span class="kw-2">*</span><span class="self">self</span>.tail.get() = next;
+            <span class="macro">assert!</span>((<span class="kw-2">*</span>tail).value.is_none());
+            <span class="macro">assert!</span>((<span class="kw-2">*</span>next).value.is_some());
+            <span class="kw">let </span>ret = (<span class="kw-2">*</span>next).value.take().unwrap();
+            drop(Box::from_raw(tail));
+            <span class="kw">return </span>Data(ret);
         }
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">head</span>.<span class="ident">load</span>(<span class="ident">Ordering::Acquire</span>) <span class="op">==</span> <span class="ident">tail</span> {
-            <span class="ident">Empty</span>
-        } <span class="kw">else</span> {
-            <span class="ident">Inconsistent</span>
+        <span class="kw">if </span><span class="self">self</span>.head.load(Ordering::Acquire) == tail {
+            Empty
+        } <span class="kw">else </span>{
+            Inconsistent
         }
     }
 
-    <span class="doccomment">/// Pop an element similarly to `pop` function, but spin-wait on inconsistent</span>
-    <span class="doccomment">/// queue state instead of returning `Inconsistent`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This function is unsafe because only one thread can call it at a time.</span>
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe</span> <span class="kw">fn</span> <span class="ident">pop_spin</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">pop</span>() {
-                <span class="ident">Empty</span> =&gt; <span class="kw">return</span> <span class="prelude-val">None</span>,
-                <span class="ident">Data</span>(<span class="ident">t</span>) =&gt; <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">t</span>),
-                <span class="comment">// Inconsistent means that there will be a message to pop</span>
-                <span class="comment">// in a short time. This branch can only be reached if</span>
-                <span class="comment">// values are being produced from another thread, so there</span>
-                <span class="comment">// are a few ways that we can deal with this:</span>
-                <span class="comment">//</span>
-                <span class="comment">// 1) Spin</span>
-                <span class="comment">// 2) thread::yield_now()</span>
-                <span class="comment">// 3) task::current().unwrap() &amp; return Pending</span>
-                <span class="comment">//</span>
-                <span class="comment">// For now, thread::yield_now() is used, but it would</span>
-                <span class="comment">// probably be better to spin a few times then yield.</span>
-                <span class="ident">Inconsistent</span> =&gt; {
-                    <span class="ident">thread::yield_now</span>();
+    <span class="doccomment">/// Pop an element similarly to `pop` function, but spin-wait on inconsistent
+    /// queue state instead of returning `Inconsistent`.
+    ///
+    /// This function is unsafe because only one thread can call it at a time.
+    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">unsafe fn </span>pop_spin(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;T&gt; {
+        <span class="kw">loop </span>{
+            <span class="kw">match </span><span class="self">self</span>.pop() {
+                Empty =&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
+                Data(t) =&gt; <span class="kw">return </span><span class="prelude-val">Some</span>(t),
+                <span class="comment">// Inconsistent means that there will be a message to pop
+                // in a short time. This branch can only be reached if
+                // values are being produced from another thread, so there
+                // are a few ways that we can deal with this:
+                //
+                // 1) Spin
+                // 2) thread::yield_now()
+                // 3) task::current().unwrap() &amp; return Pending
+                //
+                // For now, thread::yield_now() is used, but it would
+                // probably be better to spin a few times then yield.
+                </span>Inconsistent =&gt; {
+                    thread::yield_now();
                 }
             }
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">Queue</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">unsafe</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">cur</span> <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span>.<span class="ident">tail</span>.<span class="ident">get</span>();
-            <span class="kw">while</span> <span class="op">!</span><span class="ident">cur</span>.<span class="ident">is_null</span>() {
-                <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="ident">cur</span>).<span class="ident">next</span>.<span class="ident">load</span>(<span class="ident">Ordering::Relaxed</span>);
-                <span class="ident">drop</span>(<span class="ident">Box::from_raw</span>(<span class="ident">cur</span>));
-                <span class="ident">cur</span> <span class="op">=</span> <span class="ident">next</span>;
+<span class="kw">impl</span>&lt;T&gt; Drop <span class="kw">for </span>Queue&lt;T&gt; {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">unsafe </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>cur = <span class="kw-2">*</span><span class="self">self</span>.tail.get();
+            <span class="kw">while </span>!cur.is_null() {
+                <span class="kw">let </span>next = (<span class="kw-2">*</span>cur).next.load(Ordering::Relaxed);
+                drop(Box::from_raw(cur));
+                cur = next;
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

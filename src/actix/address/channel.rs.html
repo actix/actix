@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/address/channel.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>channel.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../actix/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/address/channel.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>channel.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../actix/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -968,970 +962,969 @@
 <span id="962">962</span>
 <span id="963">963</span>
 <span id="964">964</span>
-</pre><pre class="rust"><code><span class="doccomment">//! This is copy of [sync/mpsc/](https://github.com/rust-lang/futures-rs)</span>
+</pre><pre class="rust"><code><span class="doccomment">//! This is copy of [sync/mpsc/](https://github.com/rust-lang/futures-rs)
 
-<span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">fmt</span>,
-    <span class="ident">hash</span>::{<span class="ident">Hash</span>, <span class="ident">Hasher</span>},
-    <span class="ident">pin::Pin</span>,
-    <span class="ident">sync</span>::{
-        <span class="ident">atomic</span>::{
-            <span class="ident">AtomicBool</span>, <span class="ident">AtomicUsize</span>,
-            <span class="ident">Ordering</span>::{<span class="ident">Relaxed</span>, <span class="ident">SeqCst</span>},
+</span><span class="kw">use </span>std::{
+    fmt,
+    hash::{Hash, Hasher},
+    pin::Pin,
+    sync::{
+        atomic::{
+            AtomicBool, AtomicUsize,
+            Ordering::{Relaxed, SeqCst},
         },
-        <span class="ident">Arc</span>, <span class="ident">Weak</span>,
+        Arc, Weak,
     },
-    <span class="ident">task</span>::{<span class="self">self</span>, <span class="ident">Poll</span>},
-    <span class="ident">thread</span>,
+    task::{<span class="self">self</span>, Poll},
+    thread,
 };
 
-<span class="kw">use</span> <span class="ident">futures_core</span>::{<span class="ident">stream::Stream</span>, <span class="ident">task::__internal::AtomicWaker</span>};
-<span class="kw">use</span> <span class="ident">parking_lot::Mutex</span>;
-<span class="kw">use</span> <span class="ident">tokio::sync::oneshot</span>::{<span class="ident">channel</span> <span class="kw">as</span> <span class="ident">oneshot_channel</span>, <span class="ident">Receiver</span> <span class="kw">as</span> <span class="ident">OneshotReceiver</span>};
+<span class="kw">use </span>futures_core::{stream::Stream, task::__internal::AtomicWaker};
+<span class="kw">use </span>parking_lot::Mutex;
+<span class="kw">use </span>tokio::sync::oneshot::{channel <span class="kw">as </span>oneshot_channel, Receiver <span class="kw">as </span>OneshotReceiver};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor::Actor</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::handler</span>::{<span class="ident">Handler</span>, <span class="ident">Message</span>};
+<span class="kw">use </span><span class="kw">crate</span>::actor::Actor;
+<span class="kw">use </span><span class="kw">crate</span>::handler::{Handler, Message};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::envelope</span>::{<span class="ident">Envelope</span>, <span class="ident">ToEnvelope</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::queue::Queue</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::SendError</span>;
+<span class="kw">use </span><span class="kw">super</span>::envelope::{Envelope, ToEnvelope};
+<span class="kw">use </span><span class="kw">super</span>::queue::Queue;
+<span class="kw">use </span><span class="kw">super</span>::SendError;
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>: <span class="ident">Send</span>
-<span class="kw">where</span>
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
+<span class="kw">pub trait </span>Sender&lt;M&gt;: Send
+<span class="kw">where
+    </span>M::Result: Send,
+    M: Message + Send,
 {
-    <span class="kw">fn</span> <span class="ident">do_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>do_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt;;
 
-    <span class="kw">fn</span> <span class="ident">try_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>try_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt;;
 
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">OneshotReceiver</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span>, <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;OneshotReceiver&lt;M::Result&gt;, SendError&lt;M&gt;&gt;;
 
-    <span class="kw">fn</span> <span class="ident">boxed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>boxed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>Sender&lt;M&gt; + Sync&gt;;
 
-    <span class="kw">fn</span> <span class="ident">hash</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span>;
+    <span class="kw">fn </span>hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
 
-    <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span>;
+    <span class="kw">fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
 
-    <span class="doccomment">/// Returns a downgraded sender, where the sender is downgraded into its weak counterpart.</span>
-    <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// Returns a downgraded sender, where the sender is downgraded into its weak counterpart.
+    </span><span class="kw">fn </span>downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>WeakSender&lt;M&gt; + Sync + <span class="lifetime">&#39;static</span>&gt;;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">S</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">S</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
+<span class="kw">impl</span>&lt;S, M&gt; Sender&lt;M&gt; <span class="kw">for </span>Box&lt;S&gt;
+<span class="kw">where
+    </span>S: Sender&lt;M&gt; + <span class="question-mark">?</span>Sized,
+    M::Result: Send,
+    M: Message + Send,
 {
-    <span class="kw">fn</span> <span class="ident">do_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">do_send</span>(<span class="ident">msg</span>)
+    <span class="kw">fn </span>do_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt; {
+        (<span class="kw-2">**</span><span class="self">self</span>).do_send(msg)
     }
 
-    <span class="kw">fn</span> <span class="ident">try_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">try_send</span>(<span class="ident">msg</span>)
+    <span class="kw">fn </span>try_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt; {
+        (<span class="kw-2">**</span><span class="self">self</span>).try_send(msg)
     }
 
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">OneshotReceiver</span><span class="op">&lt;</span><span class="op">&lt;</span><span class="ident">M</span> <span class="kw">as</span> <span class="ident">Message</span><span class="op">&gt;</span><span class="ident">::Result</span><span class="op">&gt;</span>, <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">send</span>(<span class="ident">msg</span>)
+    <span class="kw">fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;OneshotReceiver&lt;&lt;M <span class="kw">as </span>Message&gt;::Result&gt;, SendError&lt;M&gt;&gt; {
+        (<span class="kw-2">**</span><span class="self">self</span>).send(msg)
     }
 
-    <span class="kw">fn</span> <span class="ident">boxed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span> {
-        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">boxed</span>()
+    <span class="kw">fn </span>boxed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>Sender&lt;M&gt; + Sync&gt; {
+        (<span class="kw-2">**</span><span class="self">self</span>).boxed()
     }
 
-    <span class="kw">fn</span> <span class="ident">hash</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">hash</span>()
+    <span class="kw">fn </span>hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        (<span class="kw-2">**</span><span class="self">self</span>).hash()
     }
 
-    <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">connected</span>()
+    <span class="kw">fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        (<span class="kw-2">**</span><span class="self">self</span>).connected()
     }
 
-    <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span> {
-        (<span class="kw-2">*</span><span class="kw-2">*</span><span class="self">self</span>).<span class="ident">downgrade</span>()
+    <span class="kw">fn </span>downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>WeakSender&lt;M&gt; + Sync&gt; {
+        (<span class="kw-2">**</span><span class="self">self</span>).downgrade()
     }
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>: <span class="ident">Send</span>
-<span class="kw">where</span>
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
+<span class="kw">pub trait </span>WeakSender&lt;M&gt;: Send
+<span class="kw">where
+    </span>M::Result: Send,
+    M: Message + Send,
 {
-    <span class="doccomment">/// Attempts to upgrade a `WeakAddressSender&lt;A&gt;` to a [`Sender&lt;M&gt;`]</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns [`None`] if the actor has since been dropped.</span>
-    <span class="kw">fn</span> <span class="ident">upgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// Attempts to upgrade a `WeakAddressSender&lt;A&gt;` to a [`Sender&lt;M&gt;`]
+    ///
+    /// Returns [`None`] if the actor has since been dropped.
+    </span><span class="kw">fn </span>upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>Sender&lt;M&gt; + Sync&gt;&gt;;
 
-    <span class="kw">fn</span> <span class="ident">boxed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>boxed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>WeakSender&lt;M&gt; + Sync&gt;;
 }
 
-<span class="doccomment">/// The transmission end of a channel which is used to send values.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is created by the `channel` method.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="comment">// Channel state shared between the sender and receiver.</span>
-    <span class="ident">inner</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// The transmission end of a channel which is used to send values.
+///
+/// This is created by the `channel` method.
+</span><span class="kw">pub struct </span>AddressSender&lt;A: Actor&gt; {
+    <span class="comment">// Channel state shared between the sender and receiver.
+    </span>inner: Arc&lt;Inner&lt;A&gt;&gt;,
 
-    <span class="comment">// Handle to the task that is blocked on this sender. This handle is sent</span>
-    <span class="comment">// to the receiver half in order to be notified when the sender becomes</span>
-    <span class="comment">// unblocked.</span>
-    <span class="ident">sender_task</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">SenderTask</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="comment">// Handle to the task that is blocked on this sender. This handle is sent
+    // to the receiver half in order to be notified when the sender becomes
+    // unblocked.
+    </span>sender_task: Arc&lt;Mutex&lt;SenderTask&gt;&gt;,
 
-    <span class="comment">// True if the sender might be blocked. This is an optimization to avoid</span>
-    <span class="comment">// having to lock the mutex most of the time.</span>
-    <span class="ident">maybe_parked</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">AtomicBool</span><span class="op">&gt;</span>,
+    <span class="comment">// True if the sender might be blocked. This is an optimization to avoid
+    // having to lock the mutex most of the time.
+    </span>maybe_parked: Arc&lt;AtomicBool&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;AddressSender&quot;</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;sender_task&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">sender_task</span>)
-            .<span class="ident">field</span>(<span class="string">&quot;maybe_parked&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">maybe_parked</span>)
-            .<span class="ident">finish</span>()
+<span class="kw">impl</span>&lt;A: Actor&gt; fmt::Debug <span class="kw">for </span>AddressSender&lt;A&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        fmt.debug_struct(<span class="string">&quot;AddressSender&quot;</span>)
+            .field(<span class="string">&quot;sender_task&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.sender_task)
+            .field(<span class="string">&quot;maybe_parked&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.maybe_parked)
+            .finish()
     }
 }
 
-<span class="doccomment">/// A weakly referenced version of `AddressSender`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is created by the `AddressSender::downgrade` method.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">Weak</span><span class="op">&lt;</span><span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A weakly referenced version of `AddressSender`.
+///
+/// This is created by the `AddressSender::downgrade` method.
+</span><span class="kw">pub struct </span>WeakAddressSender&lt;A: Actor&gt; {
+    inner: Weak&lt;Inner&lt;A&gt;&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="ident">WeakAddressSender</span> {
-            <span class="ident">inner</span>: <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>(),
+<span class="kw">impl</span>&lt;A: Actor&gt; Clone <span class="kw">for </span>WeakAddressSender&lt;A&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WeakAddressSender&lt;A&gt; {
+        WeakAddressSender {
+            inner: <span class="self">self</span>.inner.clone(),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">fmt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="ident">fmt</span>.<span class="ident">debug_struct</span>(<span class="string">&quot;WeakAddressSender&quot;</span>).<span class="ident">finish</span>()
+<span class="kw">impl</span>&lt;A: Actor&gt; fmt::Debug <span class="kw">for </span>WeakAddressSender&lt;A&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        fmt.debug_struct(<span class="string">&quot;WeakAddressSender&quot;</span>).finish()
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">ptr_eq</span>(<span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="ident">inner</span>)
+<span class="kw">impl</span>&lt;A: Actor&gt; PartialEq <span class="kw">for </span>WeakAddressSender&lt;A&gt; {
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+        <span class="self">self</span>.inner.ptr_eq(<span class="kw-2">&amp;</span>other.inner)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;A: Actor&gt; Eq <span class="kw">for </span>WeakAddressSender&lt;A&gt; {}
 
-<span class="kw">trait</span> <span class="ident">AssertKinds</span>: <span class="ident">Send</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="ident">Clone</span> {}
+<span class="kw">trait </span>AssertKinds: Send + Sync + Clone {}
 
-<span class="doccomment">/// The receiving end of a channel which implements the `Stream` trait.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This is a concrete implementation of a stream which can be used to represent</span>
-<span class="doccomment">/// a stream of values being computed elsewhere. This is created by the</span>
-<span class="doccomment">/// `channel` method.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// The receiving end of a channel which implements the `Stream` trait.
+///
+/// This is a concrete implementation of a stream which can be used to represent
+/// a stream of values being computed elsewhere. This is created by the
+/// `channel` method.
+</span><span class="kw">pub struct </span>AddressReceiver&lt;A: Actor&gt; {
+    inner: Arc&lt;Inner&lt;A&gt;&gt;,
 }
 
-<span class="doccomment">/// Generate `AddressSenders` for the channel</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AddressSenderProducer</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// Generate `AddressSenders` for the channel
+</span><span class="kw">pub struct </span>AddressSenderProducer&lt;A: Actor&gt; {
+    inner: Arc&lt;Inner&lt;A&gt;&gt;,
 }
 
-<span class="kw">struct</span> <span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> {
-    <span class="comment">// Max buffer size of the channel. If `0` then the channel is unbounded.</span>
-    <span class="ident">buffer</span>: <span class="ident">AtomicUsize</span>,
+<span class="kw">struct </span>Inner&lt;A: Actor&gt; {
+    <span class="comment">// Max buffer size of the channel. If `0` then the channel is unbounded.
+    </span>buffer: AtomicUsize,
 
-    <span class="comment">// Internal channel state. Consists of the number of messages stored in the</span>
-    <span class="comment">// channel as well as a flag signalling that the channel is closed.</span>
-    <span class="ident">state</span>: <span class="ident">AtomicUsize</span>,
+    <span class="comment">// Internal channel state. Consists of the number of messages stored in the
+    // channel as well as a flag signalling that the channel is closed.
+    </span>state: AtomicUsize,
 
-    <span class="comment">// Atomic, FIFO queue used to send messages to the receiver.</span>
-    <span class="ident">message_queue</span>: <span class="ident">Queue</span><span class="op">&lt;</span><span class="ident">Envelope</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="comment">// Atomic, FIFO queue used to send messages to the receiver.
+    </span>message_queue: Queue&lt;Envelope&lt;A&gt;&gt;,
 
-    <span class="comment">// Atomic, FIFO queue used to send parked task handles to the receiver.</span>
-    <span class="ident">parked_queue</span>: <span class="ident">Queue</span><span class="op">&lt;</span><span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">Mutex</span><span class="op">&lt;</span><span class="ident">SenderTask</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="comment">// Atomic, FIFO queue used to send parked task handles to the receiver.
+    </span>parked_queue: Queue&lt;Arc&lt;Mutex&lt;SenderTask&gt;&gt;&gt;,
 
-    <span class="comment">// Number of senders in existence.</span>
-    <span class="ident">num_senders</span>: <span class="ident">AtomicUsize</span>,
+    <span class="comment">// Number of senders in existence.
+    </span>num_senders: AtomicUsize,
 
-    <span class="comment">// Handle to the receiver&#39;s task.</span>
-    <span class="ident">recv_task</span>: <span class="ident">AtomicWaker</span>,
+    <span class="comment">// Handle to the receiver&#39;s task.
+    </span>recv_task: AtomicWaker,
 }
 
-<span class="comment">// Struct representation of `Inner::state`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>)]</span>
-<span class="kw">struct</span> <span class="ident">State</span> {
-    <span class="comment">// `true` when the channel is open</span>
-    <span class="ident">is_open</span>: <span class="ident">bool</span>,
+<span class="comment">// Struct representation of `Inner::state`.
+</span><span class="attribute">#[derive(Debug, Clone, Copy)]
+</span><span class="kw">struct </span>State {
+    <span class="comment">// `true` when the channel is open
+    </span>is_open: bool,
 
-    <span class="comment">// Number of messages in the channel</span>
-    <span class="ident">num_messages</span>: <span class="ident">usize</span>,
+    <span class="comment">// Number of messages in the channel
+    </span>num_messages: usize,
 }
 
-<span class="kw">impl</span> <span class="ident">State</span> {
-    <span class="kw">fn</span> <span class="ident">is_closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="op">!</span><span class="self">self</span>.<span class="ident">is_open</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">num_messages</span> <span class="op">==</span> <span class="number">0</span>
-    }
+<span class="kw">impl </span>State {
+    <span class="kw">fn </span>is_closed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        !<span class="self">self</span>.is_open &amp;&amp; <span class="self">self</span>.num_messages == <span class="number">0
+    </span>}
 }
 
-<span class="comment">// The `is_open` flag is stored in the left-most bit of `Inner::state`</span>
-<span class="kw">const</span> <span class="ident">OPEN_MASK</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">usize::MAX</span> <span class="op">-</span> (<span class="ident">usize::MAX</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">1</span>);
+<span class="comment">// The `is_open` flag is stored in the left-most bit of `Inner::state`
+</span><span class="kw">const </span>OPEN_MASK: usize = usize::MAX - (usize::MAX &gt;&gt; <span class="number">1</span>);
 
-<span class="comment">// When a new channel is created, it is created in the open state with no</span>
-<span class="comment">// pending messages.</span>
-<span class="kw">const</span> <span class="ident">INIT_STATE</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">OPEN_MASK</span>;
+<span class="comment">// When a new channel is created, it is created in the open state with no
+// pending messages.
+</span><span class="kw">const </span>INIT_STATE: usize = OPEN_MASK;
 
-<span class="comment">// The maximum number of messages that a channel can track is `usize::MAX &gt;&gt; 1`</span>
-<span class="kw">const</span> <span class="ident">MAX_CAPACITY</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="op">!</span>(<span class="ident">OPEN_MASK</span>);
+<span class="comment">// The maximum number of messages that a channel can track is `usize::MAX &gt;&gt; 1`
+</span><span class="kw">const </span>MAX_CAPACITY: usize = !(OPEN_MASK);
 
-<span class="comment">// The maximum requested buffer size must be less than the maximum capacity of</span>
-<span class="comment">// a channel. This is because each sender gets a guaranteed slot.</span>
-<span class="kw">const</span> <span class="ident">MAX_BUFFER</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">MAX_CAPACITY</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="number">1</span>;
+<span class="comment">// The maximum requested buffer size must be less than the maximum capacity of
+// a channel. This is because each sender gets a guaranteed slot.
+</span><span class="kw">const </span>MAX_BUFFER: usize = MAX_CAPACITY &gt;&gt; <span class="number">1</span>;
 
-<span class="comment">// Sent to the consumer to wake up blocked producers</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">struct</span> <span class="ident">SenderTask</span> {
-    <span class="ident">task</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">task::Waker</span><span class="op">&gt;</span>,
-    <span class="ident">is_parked</span>: <span class="ident">bool</span>,
+<span class="comment">// Sent to the consumer to wake up blocked producers
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">struct </span>SenderTask {
+    task: <span class="prelude-ty">Option</span>&lt;task::Waker&gt;,
+    is_parked: bool,
 }
 
-<span class="kw">impl</span> <span class="ident">SenderTask</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">SenderTask</span> {
-            <span class="ident">task</span>: <span class="prelude-val">None</span>,
-            <span class="ident">is_parked</span>: <span class="bool-val">false</span>,
+<span class="kw">impl </span>SenderTask {
+    <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+        SenderTask {
+            task: <span class="prelude-val">None</span>,
+            is_parked: <span class="bool-val">false</span>,
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">notify</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">is_parked</span> <span class="op">=</span> <span class="bool-val">false</span>;
+    <span class="kw">fn </span>notify(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.is_parked = <span class="bool-val">false</span>;
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">task</span>.<span class="ident">take</span>() {
-            <span class="ident">task</span>.<span class="ident">wake</span>();
-            <span class="bool-val">true</span>
-        } <span class="kw">else</span> {
-            <span class="bool-val">false</span>
-        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(task) = <span class="self">self</span>.task.take() {
+            task.wake();
+            <span class="bool-val">true
+        </span>} <span class="kw">else </span>{
+            <span class="bool-val">false
+        </span>}
     }
 }
 
-<span class="doccomment">/// Creates an in-memory channel implementation of the `Stream` trait with</span>
-<span class="doccomment">/// bounded capacity.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// This method creates a concrete implementation of the `Stream` trait which</span>
-<span class="doccomment">/// can be used to send values across threads in a streaming fashion. This</span>
-<span class="doccomment">/// channel is unique in that it implements back pressure to ensure that the</span>
-<span class="doccomment">/// sender never outpaces the receiver. The channel capacity is equal to</span>
-<span class="doccomment">/// `buffer + num-senders`. In other words, each sender gets a guaranteed slot</span>
-<span class="doccomment">/// in the channel capacity, and on top of that there are `buffer` &quot;first come,</span>
-<span class="doccomment">/// first serve&quot; slots available to all senders.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// The `Receiver` returned implements the `Stream` trait and has access to any</span>
-<span class="doccomment">/// number of the associated combinators for transforming the result.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channel</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>(<span class="ident">buffer</span>: <span class="ident">usize</span>) -&gt; (<span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>, <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) {
-    <span class="comment">// Check that the requested buffer size does not exceed the maximum buffer</span>
-    <span class="comment">// size permitted by the system.</span>
-    <span class="macro">assert!</span>(<span class="ident">buffer</span> <span class="op">&lt;</span> <span class="ident">MAX_BUFFER</span>, <span class="string">&quot;requested buffer size too large&quot;</span>);
+<span class="doccomment">/// Creates an in-memory channel implementation of the `Stream` trait with
+/// bounded capacity.
+///
+/// This method creates a concrete implementation of the `Stream` trait which
+/// can be used to send values across threads in a streaming fashion. This
+/// channel is unique in that it implements back pressure to ensure that the
+/// sender never outpaces the receiver. The channel capacity is equal to
+/// `buffer + num-senders`. In other words, each sender gets a guaranteed slot
+/// in the channel capacity, and on top of that there are `buffer` &quot;first come,
+/// first serve&quot; slots available to all senders.
+///
+/// The `Receiver` returned implements the `Stream` trait and has access to any
+/// number of the associated combinators for transforming the result.
+</span><span class="kw">pub fn </span>channel&lt;A: Actor&gt;(buffer: usize) -&gt; (AddressSender&lt;A&gt;, AddressReceiver&lt;A&gt;) {
+    <span class="comment">// Check that the requested buffer size does not exceed the maximum buffer
+    // size permitted by the system.
+    </span><span class="macro">assert!</span>(buffer &lt; MAX_BUFFER, <span class="string">&quot;requested buffer size too large&quot;</span>);
 
-    <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">Arc::new</span>(<span class="ident">Inner</span> {
-        <span class="ident">buffer</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">buffer</span>),
-        <span class="ident">state</span>: <span class="ident">AtomicUsize::new</span>(<span class="ident">INIT_STATE</span>),
-        <span class="ident">message_queue</span>: <span class="ident">Queue::new</span>(),
-        <span class="ident">parked_queue</span>: <span class="ident">Queue::new</span>(),
-        <span class="ident">num_senders</span>: <span class="ident">AtomicUsize::new</span>(<span class="number">1</span>),
-        <span class="ident">recv_task</span>: <span class="ident">AtomicWaker::new</span>(),
+    <span class="kw">let </span>inner = Arc::new(Inner {
+        buffer: AtomicUsize::new(buffer),
+        state: AtomicUsize::new(INIT_STATE),
+        message_queue: Queue::new(),
+        parked_queue: Queue::new(),
+        num_senders: AtomicUsize::new(<span class="number">1</span>),
+        recv_task: AtomicWaker::new(),
     });
 
-    <span class="kw">let</span> <span class="ident">tx</span> <span class="op">=</span> <span class="ident">AddressSender</span> {
-        <span class="ident">inner</span>: <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="ident">inner</span>),
-        <span class="ident">sender_task</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">SenderTask::new</span>())),
-        <span class="ident">maybe_parked</span>: <span class="ident">Arc::new</span>(<span class="ident">AtomicBool::new</span>(<span class="bool-val">false</span>)),
+    <span class="kw">let </span>tx = AddressSender {
+        inner: Arc::clone(<span class="kw-2">&amp;</span>inner),
+        sender_task: Arc::new(Mutex::new(SenderTask::new())),
+        maybe_parked: Arc::new(AtomicBool::new(<span class="bool-val">false</span>)),
     };
 
-    <span class="kw">let</span> <span class="ident">rx</span> <span class="op">=</span> <span class="ident">AddressReceiver</span> { <span class="ident">inner</span> };
+    <span class="kw">let </span>rx = AddressReceiver { inner };
 
-    (<span class="ident">tx</span>, <span class="ident">rx</span>)
+    (tx, rx)
 }
 
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="comment">// ===== impl Sender =====</span>
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Is the channel still open</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
-        <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="ident">curr</span>);
+<span class="comment">//
+//
+// ===== impl Sender =====
+//
+//
+</span><span class="kw">impl</span>&lt;A: Actor&gt; AddressSender&lt;A&gt; {
+    <span class="doccomment">/// Is the channel still open
+    </span><span class="kw">pub fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">let </span>curr = <span class="self">self</span>.inner.state.load(SeqCst);
+        <span class="kw">let </span>state = decode_state(curr);
 
-        <span class="ident">state</span>.<span class="ident">is_open</span>
+        state.is_open
     }
 
-    <span class="doccomment">/// Attempts to send a message on this `Sender&lt;A&gt;` with blocking.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This function must be called from inside of a task.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">OneshotReceiver</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span>, <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
+    <span class="doccomment">/// Attempts to send a message on this `Sender&lt;A&gt;` with blocking.
+    ///
+    /// This function must be called from inside of a task.
+    </span><span class="kw">pub fn </span>send&lt;M&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;OneshotReceiver&lt;M::Result&gt;, SendError&lt;M&gt;&gt;
+    <span class="kw">where
+        </span>A: Handler&lt;M&gt;,
+        A::Context: ToEnvelope&lt;A, M&gt;,
+        M::Result: Send,
+        M: Message + Send,
     {
-        <span class="comment">// If the sender is currently blocked, reject the message</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">poll_unparked</span>(<span class="bool-val">false</span>, <span class="prelude-val">None</span>).<span class="ident">is_ready</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">SendError::Full</span>(<span class="ident">msg</span>));
+        <span class="comment">// If the sender is currently blocked, reject the message
+        </span><span class="kw">if </span>!<span class="self">self</span>.poll_unparked(<span class="bool-val">false</span>, <span class="prelude-val">None</span>).is_ready() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(SendError::Full(msg));
         }
 
-        <span class="comment">// First, increment the number of messages contained by the channel.</span>
-        <span class="comment">// This operation will also atomically determine if the sender task</span>
-        <span class="comment">// should be parked.</span>
-        <span class="comment">//</span>
-        <span class="comment">// None is returned in the case that the channel has been closed by the</span>
-        <span class="comment">// receiver. This happens when `Receiver::close` is called or the</span>
-        <span class="comment">// receiver is dropped.</span>
-        <span class="kw">let</span> <span class="ident">park_self</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">inc_num_messages</span>() {
-            <span class="prelude-val">Some</span>(<span class="ident">num_messages</span>) =&gt; {
-                <span class="comment">// receiver is full</span>
-                <span class="kw">let</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>);
-                <span class="ident">buffer</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">num_messages</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">buffer</span>
+        <span class="comment">// First, increment the number of messages contained by the channel.
+        // This operation will also atomically determine if the sender task
+        // should be parked.
+        //
+        // None is returned in the case that the channel has been closed by the
+        // receiver. This happens when `Receiver::close` is called or the
+        // receiver is dropped.
+        </span><span class="kw">let </span>park_self = <span class="kw">match </span><span class="self">self</span>.inc_num_messages() {
+            <span class="prelude-val">Some</span>(num_messages) =&gt; {
+                <span class="comment">// receiver is full
+                </span><span class="kw">let </span>buffer = <span class="self">self</span>.inner.buffer.load(Relaxed);
+                buffer != <span class="number">0 </span>&amp;&amp; num_messages &gt;= buffer
             }
-            <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">SendError::Closed</span>(<span class="ident">msg</span>)),
+            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(SendError::Closed(msg)),
         };
 
-        <span class="comment">// If the channel has reached capacity, then the sender task needs to</span>
-        <span class="comment">// be parked. This will send the task handle on the parked task queue.</span>
-        <span class="kw">if</span> <span class="ident">park_self</span> {
-            <span class="self">self</span>.<span class="ident">park</span>();
+        <span class="comment">// If the channel has reached capacity, then the sender task needs to
+        // be parked. This will send the task handle on the parked task queue.
+        </span><span class="kw">if </span>park_self {
+            <span class="self">self</span>.park();
         }
-        <span class="kw">let</span> (<span class="ident">tx</span>, <span class="ident">rx</span>) <span class="op">=</span> <span class="ident">oneshot_channel</span>();
-        <span class="kw">let</span> <span class="ident">env</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">A::Context</span> <span class="kw">as</span> <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::pack</span>(<span class="ident">msg</span>, <span class="prelude-val">Some</span>(<span class="ident">tx</span>));
-        <span class="self">self</span>.<span class="ident">queue_push_and_signal</span>(<span class="ident">env</span>);
-        <span class="prelude-val">Ok</span>(<span class="ident">rx</span>)
+        <span class="kw">let </span>(tx, rx) = oneshot_channel();
+        <span class="kw">let </span>env = &lt;A::Context <span class="kw">as </span>ToEnvelope&lt;A, M&gt;&gt;::pack(msg, <span class="prelude-val">Some</span>(tx));
+        <span class="self">self</span>.queue_push_and_signal(env);
+        <span class="prelude-val">Ok</span>(rx)
     }
 
-    <span class="doccomment">/// Attempts to send a message on this `Sender&lt;A&gt;` without blocking.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>, <span class="ident">park</span>: <span class="ident">bool</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="op">&lt;</span><span class="ident">A</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="doccomment">/// Attempts to send a message on this `Sender&lt;A&gt;` without blocking.
+    </span><span class="kw">pub fn </span>try_send&lt;M&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M, park: bool) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt;
+    <span class="kw">where
+        </span>A: Handler&lt;M&gt;,
+        &lt;A <span class="kw">as </span>Actor&gt;::Context: ToEnvelope&lt;A, M&gt;,
+        M::Result: Send,
+        M: Message + Send + <span class="lifetime">&#39;static</span>,
     {
-        <span class="comment">// If the sender is currently blocked, reject the message</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">poll_unparked</span>(<span class="bool-val">false</span>, <span class="prelude-val">None</span>).<span class="ident">is_ready</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">SendError::Full</span>(<span class="ident">msg</span>));
+        <span class="comment">// If the sender is currently blocked, reject the message
+        </span><span class="kw">if </span>!<span class="self">self</span>.poll_unparked(<span class="bool-val">false</span>, <span class="prelude-val">None</span>).is_ready() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(SendError::Full(msg));
         }
 
-        <span class="kw">let</span> <span class="ident">park_self</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span>.<span class="ident">inc_num_messages</span>() {
-            <span class="prelude-val">Some</span>(<span class="ident">num_messages</span>) =&gt; {
-                <span class="comment">// receiver is full</span>
-                <span class="kw">let</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>);
-                <span class="ident">buffer</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">num_messages</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">buffer</span>
+        <span class="kw">let </span>park_self = <span class="kw">match </span><span class="self">self</span>.inc_num_messages() {
+            <span class="prelude-val">Some</span>(num_messages) =&gt; {
+                <span class="comment">// receiver is full
+                </span><span class="kw">let </span>buffer = <span class="self">self</span>.inner.buffer.load(Relaxed);
+                buffer != <span class="number">0 </span>&amp;&amp; num_messages &gt;= buffer
             }
-            <span class="prelude-val">None</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">SendError::Closed</span>(<span class="ident">msg</span>)),
+            <span class="prelude-val">None </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(SendError::Closed(msg)),
         };
 
-        <span class="kw">if</span> <span class="ident">park_self</span> <span class="op">&amp;&amp;</span> <span class="ident">park</span> {
-            <span class="self">self</span>.<span class="ident">park</span>();
+        <span class="kw">if </span>park_self &amp;&amp; park {
+            <span class="self">self</span>.park();
         }
-        <span class="kw">let</span> <span class="ident">env</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">A::Context</span> <span class="kw">as</span> <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::pack</span>(<span class="ident">msg</span>, <span class="prelude-val">None</span>);
-        <span class="self">self</span>.<span class="ident">queue_push_and_signal</span>(<span class="ident">env</span>);
+        <span class="kw">let </span>env = &lt;A::Context <span class="kw">as </span>ToEnvelope&lt;A, M&gt;&gt;::pack(msg, <span class="prelude-val">None</span>);
+        <span class="self">self</span>.queue_push_and_signal(env);
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// Send a message on this `Sender&lt;A&gt;` without blocking.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This function does not park current task.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">do_send</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="op">&lt;</span><span class="ident">A</span> <span class="kw">as</span> <span class="ident">Actor</span><span class="op">&gt;</span><span class="ident">::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-        <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-        <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span>,
+    <span class="doccomment">/// Send a message on this `Sender&lt;A&gt;` without blocking.
+    ///
+    /// This function does not park current task.
+    </span><span class="kw">pub fn </span>do_send&lt;M&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt;
+    <span class="kw">where
+        </span>A: Handler&lt;M&gt;,
+        &lt;A <span class="kw">as </span>Actor&gt;::Context: ToEnvelope&lt;A, M&gt;,
+        M::Result: Send,
+        M: Message + Send,
     {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">inc_num_messages</span>().<span class="ident">is_none</span>() {
-            <span class="prelude-val">Err</span>(<span class="ident">SendError::Closed</span>(<span class="ident">msg</span>))
-        } <span class="kw">else</span> {
-            <span class="comment">// If inc_num_messages returned Some(park_self), then the mailbox is still active.</span>
-            <span class="comment">// We ignore the boolean (indicating to park and wait) in the Some, and queue the</span>
-            <span class="comment">// message regardless.</span>
-            <span class="kw">let</span> <span class="ident">env</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">A::Context</span> <span class="kw">as</span> <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::pack</span>(<span class="ident">msg</span>, <span class="prelude-val">None</span>);
-            <span class="self">self</span>.<span class="ident">queue_push_and_signal</span>(<span class="ident">env</span>);
+        <span class="kw">if </span><span class="self">self</span>.inc_num_messages().is_none() {
+            <span class="prelude-val">Err</span>(SendError::Closed(msg))
+        } <span class="kw">else </span>{
+            <span class="comment">// If inc_num_messages returned Some(park_self), then the mailbox is still active.
+            // We ignore the boolean (indicating to park and wait) in the Some, and queue the
+            // message regardless.
+            </span><span class="kw">let </span>env = &lt;A::Context <span class="kw">as </span>ToEnvelope&lt;A, M&gt;&gt;::pack(msg, <span class="prelude-val">None</span>);
+            <span class="self">self</span>.queue_push_and_signal(env);
             <span class="prelude-val">Ok</span>(())
         }
     }
 
-    <span class="doccomment">/// Downgrade to `WeakAddressSender` which can later be upgraded</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="ident">WeakAddressSender</span> {
-            <span class="ident">inner</span>: <span class="ident">Arc::downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>),
+    <span class="doccomment">/// Downgrade to `WeakAddressSender` which can later be upgraded
+    </span><span class="kw">pub fn </span>downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; WeakAddressSender&lt;A&gt; {
+        WeakAddressSender {
+            inner: Arc::downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.inner),
         }
     }
 
-    <span class="comment">// Push message to the queue and signal to the receiver</span>
-    <span class="kw">fn</span> <span class="ident">queue_push_and_signal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">Envelope</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>) {
-        <span class="comment">// Push the message onto the message queue</span>
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">message_queue</span>.<span class="ident">push</span>(<span class="ident">msg</span>);
+    <span class="comment">// Push message to the queue and signal to the receiver
+    </span><span class="kw">fn </span>queue_push_and_signal(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: Envelope&lt;A&gt;) {
+        <span class="comment">// Push the message onto the message queue
+        </span><span class="self">self</span>.inner.message_queue.push(msg);
 
-        <span class="comment">// Signal to the receiver that a message has been enqueued. If the</span>
-        <span class="comment">// receiver is parked, this will unpark the task.</span>
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">recv_task</span>.<span class="ident">wake</span>();
+        <span class="comment">// Signal to the receiver that a message has been enqueued. If the
+        // receiver is parked, this will unpark the task.
+        </span><span class="self">self</span>.inner.recv_task.wake();
     }
 
-    <span class="comment">// Increment the number of queued messages. Returns if the sender should</span>
-    <span class="comment">// block.</span>
-    <span class="kw">fn</span> <span class="ident">inc_num_messages</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
-        <span class="kw">loop</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="ident">curr</span>);
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">state</span>.<span class="ident">is_open</span> {
-                <span class="kw">return</span> <span class="prelude-val">None</span>;
+    <span class="comment">// Increment the number of queued messages. Returns if the sender should
+    // block.
+    </span><span class="kw">fn </span>inc_num_messages(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;usize&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>curr = <span class="self">self</span>.inner.state.load(SeqCst);
+        <span class="kw">loop </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>state = decode_state(curr);
+            <span class="kw">if </span>!state.is_open {
+                <span class="kw">return </span><span class="prelude-val">None</span>;
             }
-            <span class="ident">state</span>.<span class="ident">num_messages</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
+            state.num_messages += <span class="number">1</span>;
 
-            <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">encode_state</span>(<span class="kw-2">&amp;</span><span class="ident">state</span>);
-            <span class="kw">match</span> <span class="self">self</span>
-                .<span class="ident">inner</span>
-                .<span class="ident">state</span>
-                .<span class="ident">compare_exchange</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">SeqCst</span>, <span class="ident">SeqCst</span>)
+            <span class="kw">let </span>next = encode_state(<span class="kw-2">&amp;</span>state);
+            <span class="kw">match </span><span class="self">self
+                </span>.inner
+                .state
+                .compare_exchange(curr, next, SeqCst, SeqCst)
             {
                 <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-                    <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">state</span>.<span class="ident">num_messages</span>);
+                    <span class="kw">return </span><span class="prelude-val">Some</span>(state.num_messages);
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">actual</span>) =&gt; <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>,
+                <span class="prelude-val">Err</span>(actual) =&gt; curr = actual,
             }
         }
     }
 
-    <span class="comment">// TODO: Not sure about this one, I modified code to match the futures one, might still be buggy</span>
-    <span class="kw">fn</span> <span class="ident">park</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+    <span class="comment">// TODO: Not sure about this one, I modified code to match the futures one, might still be buggy
+    </span><span class="kw">fn </span>park(<span class="kw-2">&amp;</span><span class="self">self</span>) {
         {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">sender</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">sender_task</span>.<span class="ident">lock</span>();
-            <span class="ident">sender</span>.<span class="ident">task</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-            <span class="ident">sender</span>.<span class="ident">is_parked</span> <span class="op">=</span> <span class="bool-val">true</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>sender = <span class="self">self</span>.sender_task.lock();
+            sender.task = <span class="prelude-val">None</span>;
+            sender.is_parked = <span class="bool-val">true</span>;
         }
 
-        <span class="comment">// Send handle over queue</span>
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">push</span>(<span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">sender_task</span>));
+        <span class="comment">// Send handle over queue
+        </span><span class="self">self</span>.inner.parked_queue.push(Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.sender_task));
 
-        <span class="comment">// Check to make sure we weren&#39;t closed after we sent our task on the queue</span>
-        <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>));
-        <span class="self">self</span>.<span class="ident">maybe_parked</span>.<span class="ident">store</span>(<span class="ident">state</span>.<span class="ident">is_open</span>, <span class="ident">Relaxed</span>);
+        <span class="comment">// Check to make sure we weren&#39;t closed after we sent our task on the queue
+        </span><span class="kw">let </span>state = decode_state(<span class="self">self</span>.inner.state.load(SeqCst));
+        <span class="self">self</span>.maybe_parked.store(state.is_open, Relaxed);
     }
 
-    <span class="kw">fn</span> <span class="ident">poll_unparked</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">do_park</span>: <span class="ident">bool</span>, <span class="ident">cx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span><span class="op">&gt;</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
-        <span class="comment">// First check the `maybe_parked` variable. This avoids acquiring the</span>
-        <span class="comment">// lock in most cases</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">maybe_parked</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>) {
-            <span class="comment">// Get a lock on the task handle</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">task</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">sender_task</span>.<span class="ident">lock</span>();
+    <span class="kw">fn </span>poll_unparked(<span class="kw-2">&amp;</span><span class="self">self</span>, do_park: bool, cx: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;&gt;) -&gt; Poll&lt;()&gt; {
+        <span class="comment">// First check the `maybe_parked` variable. This avoids acquiring the
+        // lock in most cases
+        </span><span class="kw">if </span><span class="self">self</span>.maybe_parked.load(Relaxed) {
+            <span class="comment">// Get a lock on the task handle
+            </span><span class="kw">let </span><span class="kw-2">mut </span>task = <span class="self">self</span>.sender_task.lock();
 
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">task</span>.<span class="ident">is_parked</span> {
-                <span class="self">self</span>.<span class="ident">maybe_parked</span>.<span class="ident">store</span>(<span class="bool-val">false</span>, <span class="ident">Relaxed</span>);
-                <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+            <span class="kw">if </span>!task.is_parked {
+                <span class="self">self</span>.maybe_parked.store(<span class="bool-val">false</span>, Relaxed);
+                <span class="kw">return </span>Poll::Ready(());
             }
 
-            <span class="comment">// At this point, an unpark request is pending, so there will be an</span>
-            <span class="comment">// unpark sometime in the future. We just need to make sure that</span>
-            <span class="comment">// the correct task will be notified.</span>
-            <span class="comment">//</span>
-            <span class="comment">// Update the task in case the `Sender` has been moved to another</span>
-            <span class="comment">// task</span>
-            <span class="ident">task</span>.<span class="ident">task</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">do_park</span> {
-                <span class="ident">cx</span>.<span class="ident">map</span>(<span class="op">|</span><span class="ident">cx</span><span class="op">|</span> <span class="ident">cx</span>.<span class="ident">waker</span>().<span class="ident">clone</span>())
-            } <span class="kw">else</span> {
-                <span class="prelude-val">None</span>
-            };
+            <span class="comment">// At this point, an unpark request is pending, so there will be an
+            // unpark sometime in the future. We just need to make sure that
+            // the correct task will be notified.
+            //
+            // Update the task in case the `Sender` has been moved to another
+            // task
+            </span>task.task = <span class="kw">if </span>do_park {
+                cx.map(|cx| cx.waker().clone())
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>};
 
-            <span class="ident">Poll::Pending</span>
-        } <span class="kw">else</span> {
-            <span class="ident">Poll::Ready</span>(())
+            Poll::Pending
+        } <span class="kw">else </span>{
+            Poll::Ready(())
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M&gt; Sender&lt;M&gt; <span class="kw">for </span>AddressSender&lt;A&gt;
+<span class="kw">where
+    </span>A: Handler&lt;M&gt;,
+    A::Context: ToEnvelope&lt;A, M&gt;,
+    M::Result: Send,
+    M: Message + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">do_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">do_send</span>(<span class="ident">msg</span>)
+    <span class="kw">fn </span>do_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt; {
+        <span class="self">self</span>.do_send(msg)
     }
-    <span class="kw">fn</span> <span class="ident">try_send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">try_send</span>(<span class="ident">msg</span>, <span class="bool-val">true</span>)
+    <span class="kw">fn </span>try_send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;(), SendError&lt;M&gt;&gt; {
+        <span class="self">self</span>.try_send(msg, <span class="bool-val">true</span>)
     }
-    <span class="kw">fn</span> <span class="ident">send</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">msg</span>: <span class="ident">M</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">OneshotReceiver</span><span class="op">&lt;</span><span class="ident">M::Result</span><span class="op">&gt;</span>, <span class="ident">SendError</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">send</span>(<span class="ident">msg</span>)
+    <span class="kw">fn </span>send(<span class="kw-2">&amp;</span><span class="self">self</span>, msg: M) -&gt; <span class="prelude-ty">Result</span>&lt;OneshotReceiver&lt;M::Result&gt;, SendError&lt;M&gt;&gt; {
+        <span class="self">self</span>.send(msg)
     }
-    <span class="kw">fn</span> <span class="ident">boxed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span> {
-        <span class="ident">Box::new</span>(<span class="self">self</span>.<span class="ident">clone</span>())
-    }
-
-    <span class="kw">fn</span> <span class="ident">hash</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="kw">let</span> <span class="ident">hash</span>: <span class="kw-2">*const</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">as_ref</span>();
-        <span class="ident">hash</span> <span class="kw">as</span> <span class="ident">usize</span>
+    <span class="kw">fn </span>boxed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>Sender&lt;M&gt; + Sync&gt; {
+        Box::new(<span class="self">self</span>.clone())
     }
 
-    <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">connected</span>()
+    <span class="kw">fn </span>hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="kw">let </span>hash: <span class="kw-2">*const </span><span class="kw">_ </span>= <span class="self">self</span>.inner.as_ref();
+        hash <span class="kw">as </span>usize
     }
 
-    <span class="kw">fn</span> <span class="ident">downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> {
-        <span class="ident">Box::new</span>(<span class="ident">WeakAddressSender</span> {
-            <span class="ident">inner</span>: <span class="ident">Arc::downgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>),
+    <span class="kw">fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.connected()
+    }
+
+    <span class="kw">fn </span>downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>WeakSender&lt;M&gt; + Sync + <span class="lifetime">&#39;static</span>&gt; {
+        Box::new(WeakAddressSender {
+            inner: Arc::downgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.inner),
         })
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="comment">// Since this atomic op isn&#39;t actually guarding any memory and we don&#39;t</span>
-        <span class="comment">// care about any orderings besides the ordering on the single atomic</span>
-        <span class="comment">// variable, a relaxed ordering is acceptable.</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+<span class="kw">impl</span>&lt;A: Actor&gt; Clone <span class="kw">for </span>AddressSender&lt;A&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AddressSender&lt;A&gt; {
+        <span class="comment">// Since this atomic op isn&#39;t actually guarding any memory and we don&#39;t
+        // care about any orderings besides the ordering on the single atomic
+        // variable, a relaxed ordering is acceptable.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>curr = <span class="self">self</span>.inner.num_senders.load(SeqCst);
 
-        <span class="kw">loop</span> {
-            <span class="comment">// If the maximum number of senders has been reached, then fail</span>
-            <span class="kw">if</span> <span class="ident">curr</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>() {
+        <span class="kw">loop </span>{
+            <span class="comment">// If the maximum number of senders has been reached, then fail
+            </span><span class="kw">if </span>curr == <span class="self">self</span>.inner.max_senders() {
                 <span class="macro">panic!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
             }
 
-            <span class="macro">debug_assert!</span>(<span class="ident">curr</span> <span class="op">&lt;</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>());
+            <span class="macro">debug_assert!</span>(curr &lt; <span class="self">self</span>.inner.max_senders());
 
-            <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">+</span> <span class="number">1</span>;
-            <span class="kw">let</span> <span class="ident">actual</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">compare_and_swap</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">SeqCst</span>);
+            <span class="kw">let </span>next = curr + <span class="number">1</span>;
+            <span class="kw">let </span>actual = <span class="self">self</span>.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
-            <span class="comment">// The ABA problem doesn&#39;t matter here. We only care that the</span>
-            <span class="comment">// number of senders never exceeds the maximum.</span>
-            <span class="kw">if</span> <span class="ident">actual</span> <span class="op">==</span> <span class="ident">curr</span> {
-                <span class="kw">return</span> <span class="ident">AddressSender</span> {
-                    <span class="ident">inner</span>: <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>),
-                    <span class="ident">sender_task</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">SenderTask::new</span>())),
-                    <span class="ident">maybe_parked</span>: <span class="ident">Arc::new</span>(<span class="ident">AtomicBool::new</span>(<span class="bool-val">false</span>)),
+            <span class="comment">// The ABA problem doesn&#39;t matter here. We only care that the
+            // number of senders never exceeds the maximum.
+            </span><span class="kw">if </span>actual == curr {
+                <span class="kw">return </span>AddressSender {
+                    inner: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.inner),
+                    sender_task: Arc::new(Mutex::new(SenderTask::new())),
+                    maybe_parked: Arc::new(AtomicBool::new(<span class="bool-val">false</span>)),
                 };
             }
 
-            <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>;
+            curr = actual;
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="comment">// Ordering between variables don&#39;t matter here</span>
-        <span class="kw">let</span> <span class="ident">prev</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">fetch_sub</span>(<span class="number">1</span>, <span class="ident">SeqCst</span>);
-        <span class="comment">// last sender, notify receiver task</span>
-        <span class="kw">if</span> <span class="ident">prev</span> <span class="op">==</span> <span class="number">1</span> {
-            <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">recv_task</span>.<span class="ident">wake</span>();
+<span class="kw">impl</span>&lt;A: Actor&gt; Drop <span class="kw">for </span>AddressSender&lt;A&gt; {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// Ordering between variables don&#39;t matter here
+        </span><span class="kw">let </span>prev = <span class="self">self</span>.inner.num_senders.fetch_sub(<span class="number">1</span>, SeqCst);
+        <span class="comment">// last sender, notify receiver task
+        </span><span class="kw">if </span>prev == <span class="number">1 </span>{
+            <span class="self">self</span>.inner.recv_task.wake();
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="ident">Arc::ptr_eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>, <span class="kw-2">&amp;</span><span class="ident">other</span>.<span class="ident">inner</span>)
+<span class="kw">impl</span>&lt;A: Actor&gt; PartialEq <span class="kw">for </span>AddressSender&lt;A&gt; {
+    <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
+        Arc::ptr_eq(<span class="kw-2">&amp;</span><span class="self">self</span>.inner, <span class="kw-2">&amp;</span>other.inner)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {}
+<span class="kw">impl</span>&lt;A: Actor&gt; Eq <span class="kw">for </span>AddressSender&lt;A&gt; {}
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Hash</span> <span class="kw">for</span> <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">hash</span><span class="op">&lt;</span><span class="ident">H</span>: <span class="ident">Hasher</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">state</span>: <span class="kw-2">&amp;mut</span> <span class="ident">H</span>) {
-        <span class="kw">let</span> <span class="ident">hash</span>: <span class="kw-2">*const</span> <span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">as_ref</span>();
-        <span class="ident">hash</span>.<span class="ident">hash</span>(<span class="ident">state</span>);
+<span class="kw">impl</span>&lt;A: Actor&gt; Hash <span class="kw">for </span>AddressSender&lt;A&gt; {
+    <span class="kw">fn </span>hash&lt;H: Hasher&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, state: <span class="kw-2">&amp;mut </span>H) {
+        <span class="kw">let </span>hash: <span class="kw-2">*const </span>Inner&lt;A&gt; = <span class="self">self</span>.inner.as_ref();
+        hash.hash(state);
     }
 }
 
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="comment">// ===== impl WeakSender =====</span>
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Attempts to upgrade the `WeakAddressSender&lt;A&gt;` pointer to an [`AddressSender&lt;A&gt;`]</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns [`None`] if the actor has since been dropped.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">upgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">Weak::upgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">inner</span><span class="op">|</span> <span class="ident">AddressSenderProducer</span> { <span class="ident">inner</span> }.<span class="ident">sender</span>())
+<span class="comment">//
+//
+// ===== impl WeakSender =====
+//
+//
+</span><span class="kw">impl</span>&lt;A: Actor&gt; WeakAddressSender&lt;A&gt; {
+    <span class="doccomment">/// Attempts to upgrade the `WeakAddressSender&lt;A&gt;` pointer to an [`AddressSender&lt;A&gt;`]
+    ///
+    /// Returns [`None`] if the actor has since been dropped.
+    </span><span class="kw">pub fn </span>upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;AddressSender&lt;A&gt;&gt; {
+        Weak::upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>.inner).map(|inner| AddressSenderProducer { inner }.sender())
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WeakAddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">ToEnvelope</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">M</span><span class="op">&gt;</span>,
-    <span class="ident">M::Result</span>: <span class="ident">Send</span>,
-    <span class="ident">M</span>: <span class="ident">Message</span> <span class="op">+</span> <span class="ident">Send</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;A, M&gt; WeakSender&lt;M&gt; <span class="kw">for </span>WeakAddressSender&lt;A&gt;
+<span class="kw">where
+    </span>A: Handler&lt;M&gt;,
+    A::Context: ToEnvelope&lt;A, M&gt;,
+    M::Result: Send,
+    M: Message + Send + <span class="lifetime">&#39;static</span>,
 {
-    <span class="kw">fn</span> <span class="ident">upgrade</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Sender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">inner</span>) <span class="op">=</span> <span class="ident">WeakAddressSender::upgrade</span>(<span class="self">self</span>) {
-            <span class="prelude-val">Some</span>(<span class="ident">Box::new</span>(<span class="ident">inner</span>))
-        } <span class="kw">else</span> {
-            <span class="prelude-val">None</span>
-        }
+    <span class="kw">fn </span>upgrade(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>Sender&lt;M&gt; + Sync&gt;&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(inner) = WeakAddressSender::upgrade(<span class="self">self</span>) {
+            <span class="prelude-val">Some</span>(Box::new(inner))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>}
     }
 
-    <span class="kw">fn</span> <span class="ident">boxed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">WeakSender</span><span class="op">&lt;</span><span class="ident">M</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Sync</span><span class="op">&gt;</span> {
-        <span class="ident">Box::new</span>(<span class="self">self</span>.<span class="ident">clone</span>())
-    }
-}
-
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="comment">// ===== impl SenderProducer =====</span>
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">AddressSenderProducer</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Are any senders connected</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>) <span class="op">!</span><span class="op">=</span> <span class="number">0</span>
-    }
-
-    <span class="doccomment">/// Get channel capacity</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">capacity</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>)
-    }
-
-    <span class="doccomment">/// Set channel capacity</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method wakes up all waiting senders if new capacity is greater</span>
-    <span class="doccomment">/// than current</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_capacity</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">cap</span>: <span class="ident">usize</span>) {
-        <span class="kw">let</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>);
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">store</span>(<span class="ident">cap</span>, <span class="ident">Relaxed</span>);
-
-        <span class="comment">// wake up all</span>
-        <span class="kw">if</span> <span class="ident">cap</span> <span class="op">&gt;</span> <span class="ident">buffer</span> {
-            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop_spin</span>() } {
-                <span class="ident">task</span>.<span class="ident">lock</span>().<span class="ident">notify</span>();
-            }
-        }
-    }
-
-    <span class="doccomment">/// Get sender side of the channel</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sender</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="comment">// this code same as Sender::clone</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
-
-        <span class="kw">loop</span> {
-            <span class="comment">// If the maximum number of senders has been reached, then fail</span>
-            <span class="kw">if</span> <span class="ident">curr</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>() {
-                <span class="macro">panic!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
-            }
-
-            <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">+</span> <span class="number">1</span>;
-            <span class="kw">let</span> <span class="ident">actual</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">compare_and_swap</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">SeqCst</span>);
-
-            <span class="comment">// The ABA problem doesn&#39;t matter here. We only care that the</span>
-            <span class="comment">// number of senders never exceeds the maximum.</span>
-            <span class="kw">if</span> <span class="ident">actual</span> <span class="op">==</span> <span class="ident">curr</span> {
-                <span class="kw">return</span> <span class="ident">AddressSender</span> {
-                    <span class="ident">inner</span>: <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>),
-                    <span class="ident">sender_task</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">SenderTask::new</span>())),
-                    <span class="ident">maybe_parked</span>: <span class="ident">Arc::new</span>(<span class="ident">AtomicBool::new</span>(<span class="bool-val">false</span>)),
-                };
-            }
-
-            <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>;
-        }
+    <span class="kw">fn </span>boxed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Box&lt;<span class="kw">dyn </span>WeakSender&lt;M&gt; + Sync&gt; {
+        Box::new(<span class="self">self</span>.clone())
     }
 }
 
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="comment">// ===== impl Receiver =====</span>
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Returns whether any senders are still connected.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">connected</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>) <span class="op">!</span><span class="op">=</span> <span class="number">0</span>
+<span class="comment">//
+//
+// ===== impl SenderProducer =====
+//
+//
+</span><span class="kw">impl</span>&lt;A: Actor&gt; AddressSenderProducer&lt;A&gt; {
+    <span class="doccomment">/// Are any senders connected
+    </span><span class="kw">pub fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.inner.num_senders.load(SeqCst) != <span class="number">0
+    </span>}
+
+    <span class="doccomment">/// Get channel capacity
+    </span><span class="kw">pub fn </span>capacity(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.inner.buffer.load(Relaxed)
     }
 
-    <span class="doccomment">/// Returns the channel capacity.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">capacity</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>)
-    }
+    <span class="doccomment">/// Set channel capacity
+    ///
+    /// This method wakes up all waiting senders if new capacity is greater
+    /// than current
+    </span><span class="kw">pub fn </span>set_capacity(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cap: usize) {
+        <span class="kw">let </span>buffer = <span class="self">self</span>.inner.buffer.load(Relaxed);
+        <span class="self">self</span>.inner.buffer.store(cap, Relaxed);
 
-    <span class="doccomment">/// Sets the channel capacity.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method wakes up all waiting senders if the new capacity</span>
-    <span class="doccomment">/// is greater than the current one.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_capacity</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">cap</span>: <span class="ident">usize</span>) {
-        <span class="kw">let</span> <span class="ident">buffer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>);
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">store</span>(<span class="ident">cap</span>, <span class="ident">Relaxed</span>);
-
-        <span class="comment">// wake up all</span>
-        <span class="kw">if</span> <span class="ident">cap</span> <span class="op">&gt;</span> <span class="ident">buffer</span> {
-            <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop_spin</span>() } {
-                <span class="ident">task</span>.<span class="ident">lock</span>().<span class="ident">notify</span>();
+        <span class="comment">// wake up all
+        </span><span class="kw">if </span>cap &gt; buffer {
+            <span class="kw">while let </span><span class="prelude-val">Some</span>(task) = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.parked_queue.pop_spin() } {
+                task.lock().notify();
             }
         }
     }
 
-    <span class="doccomment">/// Returns the sender side of the channel.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sender</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AddressSender</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="comment">// this code same as Sender::clone</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
+    <span class="doccomment">/// Get sender side of the channel
+    </span><span class="kw">pub fn </span>sender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AddressSender&lt;A&gt; {
+        <span class="comment">// this code same as Sender::clone
+        </span><span class="kw">let </span><span class="kw-2">mut </span>curr = <span class="self">self</span>.inner.num_senders.load(SeqCst);
 
-        <span class="kw">loop</span> {
-            <span class="comment">// If the maximum number of senders has been reached, then fail</span>
-            <span class="kw">if</span> <span class="ident">curr</span> <span class="op">==</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">max_senders</span>() {
+        <span class="kw">loop </span>{
+            <span class="comment">// If the maximum number of senders has been reached, then fail
+            </span><span class="kw">if </span>curr == <span class="self">self</span>.inner.max_senders() {
                 <span class="macro">panic!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
             }
 
-            <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="ident">curr</span> <span class="op">+</span> <span class="number">1</span>;
-            <span class="kw">let</span> <span class="ident">actual</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">num_senders</span>.<span class="ident">compare_and_swap</span>(<span class="ident">curr</span>, <span class="ident">next</span>, <span class="ident">SeqCst</span>);
+            <span class="kw">let </span>next = curr + <span class="number">1</span>;
+            <span class="kw">let </span>actual = <span class="self">self</span>.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
-            <span class="comment">// The ABA problem doesn&#39;t matter here. We only care that the</span>
-            <span class="comment">// number of senders never exceeds the maximum.</span>
-            <span class="kw">if</span> <span class="ident">actual</span> <span class="op">==</span> <span class="ident">curr</span> {
-                <span class="kw">return</span> <span class="ident">AddressSender</span> {
-                    <span class="ident">inner</span>: <span class="ident">Arc::clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>),
-                    <span class="ident">sender_task</span>: <span class="ident">Arc::new</span>(<span class="ident">Mutex::new</span>(<span class="ident">SenderTask::new</span>())),
-                    <span class="ident">maybe_parked</span>: <span class="ident">Arc::new</span>(<span class="ident">AtomicBool::new</span>(<span class="bool-val">false</span>)),
+            <span class="comment">// The ABA problem doesn&#39;t matter here. We only care that the
+            // number of senders never exceeds the maximum.
+            </span><span class="kw">if </span>actual == curr {
+                <span class="kw">return </span>AddressSender {
+                    inner: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.inner),
+                    sender_task: Arc::new(Mutex::new(SenderTask::new())),
+                    maybe_parked: Arc::new(AtomicBool::new(<span class="bool-val">false</span>)),
                 };
             }
 
-            <span class="ident">curr</span> <span class="op">=</span> <span class="ident">actual</span>;
+            curr = actual;
         }
     }
+}
 
-    <span class="doccomment">/// Creates the sender producer.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sender_producer</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">AddressSenderProducer</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-        <span class="ident">AddressSenderProducer</span> {
-            <span class="ident">inner</span>: <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">clone</span>(),
-        }
+<span class="comment">//
+//
+// ===== impl Receiver =====
+//
+//
+</span><span class="kw">impl</span>&lt;A: Actor&gt; AddressReceiver&lt;A&gt; {
+    <span class="doccomment">/// Returns whether any senders are still connected.
+    </span><span class="kw">pub fn </span>connected(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.inner.num_senders.load(SeqCst) != <span class="number">0
+    </span>}
+
+    <span class="doccomment">/// Returns the channel capacity.
+    </span><span class="kw">pub fn </span>capacity(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.inner.buffer.load(Relaxed)
     }
 
-    <span class="kw">fn</span> <span class="ident">next_message</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Envelope</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="comment">// Pop off a message</span>
-        <span class="kw">match</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">message_queue</span>.<span class="ident">pop_spin</span>() } {
-            <span class="prelude-val">Some</span>(<span class="ident">msg</span>) =&gt; {
-                <span class="comment">// If there are any parked task handles in the parked queue,</span>
-                <span class="comment">// pop one and unpark it.</span>
-                <span class="self">self</span>.<span class="ident">unpark_one</span>();
+    <span class="doccomment">/// Sets the channel capacity.
+    ///
+    /// This method wakes up all waiting senders if the new capacity
+    /// is greater than the current one.
+    </span><span class="kw">pub fn </span>set_capacity(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cap: usize) {
+        <span class="kw">let </span>buffer = <span class="self">self</span>.inner.buffer.load(Relaxed);
+        <span class="self">self</span>.inner.buffer.store(cap, Relaxed);
 
-                <span class="comment">// Decrement number of messages</span>
-                <span class="self">self</span>.<span class="ident">dec_num_messages</span>();
-
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="ident">msg</span>))
+        <span class="comment">// wake up all
+        </span><span class="kw">if </span>cap &gt; buffer {
+            <span class="kw">while let </span><span class="prelude-val">Some</span>(task) = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.parked_queue.pop_spin() } {
+                task.lock().notify();
             }
-            <span class="prelude-val">None</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>));
-                <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">is_closed</span>() {
-                    <span class="comment">// If closed flag is set AND there are no pending messages</span>
-                    <span class="comment">// it means end of stream</span>
-                    <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>)
-                } <span class="kw">else</span> {
-                    <span class="comment">// If queue is open, we need to return Pending</span>
-                    <span class="comment">// to be woken up when new messages arrive.</span>
-                    <span class="comment">// If queue is closed but num_messages is non-zero,</span>
-                    <span class="comment">// it means that senders updated the state,</span>
-                    <span class="comment">// but didn&#39;t put message to queue yet,</span>
-                    <span class="comment">// so we need to park until sender unparks the task</span>
-                    <span class="comment">// after queueing the message.</span>
-                    <span class="ident">Poll::Pending</span>
+        }
+    }
+
+    <span class="doccomment">/// Returns the sender side of the channel.
+    </span><span class="kw">pub fn </span>sender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AddressSender&lt;A&gt; {
+        <span class="comment">// this code same as Sender::clone
+        </span><span class="kw">let </span><span class="kw-2">mut </span>curr = <span class="self">self</span>.inner.num_senders.load(SeqCst);
+
+        <span class="kw">loop </span>{
+            <span class="comment">// If the maximum number of senders has been reached, then fail
+            </span><span class="kw">if </span>curr == <span class="self">self</span>.inner.max_senders() {
+                <span class="macro">panic!</span>(<span class="string">&quot;cannot clone `Sender` -- too many outstanding senders&quot;</span>);
+            }
+
+            <span class="kw">let </span>next = curr + <span class="number">1</span>;
+            <span class="kw">let </span>actual = <span class="self">self</span>.inner.num_senders.compare_and_swap(curr, next, SeqCst);
+
+            <span class="comment">// The ABA problem doesn&#39;t matter here. We only care that the
+            // number of senders never exceeds the maximum.
+            </span><span class="kw">if </span>actual == curr {
+                <span class="kw">return </span>AddressSender {
+                    inner: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.inner),
+                    sender_task: Arc::new(Mutex::new(SenderTask::new())),
+                    maybe_parked: Arc::new(AtomicBool::new(<span class="bool-val">false</span>)),
+                };
+            }
+
+            curr = actual;
+        }
+    }
+
+    <span class="doccomment">/// Creates the sender producer.
+    </span><span class="kw">pub fn </span>sender_producer(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; AddressSenderProducer&lt;A&gt; {
+        AddressSenderProducer {
+            inner: <span class="self">self</span>.inner.clone(),
+        }
+    }
+
+    <span class="kw">fn </span>next_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;Envelope&lt;A&gt;&gt;&gt; {
+        <span class="comment">// Pop off a message
+        </span><span class="kw">match unsafe </span>{ <span class="self">self</span>.inner.message_queue.pop_spin() } {
+            <span class="prelude-val">Some</span>(msg) =&gt; {
+                <span class="comment">// If there are any parked task handles in the parked queue,
+                // pop one and unpark it.
+                </span><span class="self">self</span>.unpark_one();
+
+                <span class="comment">// Decrement number of messages
+                </span><span class="self">self</span>.dec_num_messages();
+
+                Poll::Ready(<span class="prelude-val">Some</span>(msg))
+            }
+            <span class="prelude-val">None </span>=&gt; {
+                <span class="kw">let </span>state = decode_state(<span class="self">self</span>.inner.state.load(SeqCst));
+                <span class="kw">if </span>state.is_closed() {
+                    <span class="comment">// If closed flag is set AND there are no pending messages
+                    // it means end of stream
+                    </span>Poll::Ready(<span class="prelude-val">None</span>)
+                } <span class="kw">else </span>{
+                    <span class="comment">// If queue is open, we need to return Pending
+                    // to be woken up when new messages arrive.
+                    // If queue is closed but num_messages is non-zero,
+                    // it means that senders updated the state,
+                    // but didn&#39;t put message to queue yet,
+                    // so we need to park until sender unparks the task
+                    // after queueing the message.
+                    </span>Poll::Pending
                 }
             }
         }
     }
 
-    <span class="comment">// Unpark a single task handle if there is one pending in the parked queue</span>
-    <span class="kw">fn</span> <span class="ident">unpark_one</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop_spin</span>() } {
-            <span class="ident">task</span>.<span class="ident">lock</span>().<span class="ident">notify</span>();
+    <span class="comment">// Unpark a single task handle if there is one pending in the parked queue
+    </span><span class="kw">fn </span>unpark_one(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(task) = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.parked_queue.pop_spin() } {
+            task.lock().notify();
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">dec_num_messages</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="comment">// OPEN_MASK is highest bit, so it&#39;s unaffected by subtraction</span>
-        <span class="comment">// unless there&#39;s underflow, and we know there&#39;s no underflow</span>
-        <span class="comment">// because number of messages at this point is always &gt; 0.</span>
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">fetch_sub</span>(<span class="number">1</span>, <span class="ident">SeqCst</span>);
+    <span class="kw">fn </span>dec_num_messages(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="comment">// OPEN_MASK is highest bit, so it&#39;s unaffected by subtraction
+        // unless there&#39;s underflow, and we know there&#39;s no underflow
+        // because number of messages at this point is always &gt; 0.
+        </span><span class="self">self</span>.inner.state.fetch_sub(<span class="number">1</span>, SeqCst);
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Stream</span> <span class="kw">for</span> <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">type</span> <span class="ident">Item</span> <span class="op">=</span> <span class="ident">Envelope</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>;
+<span class="kw">impl</span>&lt;A: Actor&gt; Stream <span class="kw">for </span>AddressReceiver&lt;A&gt; {
+    <span class="kw">type </span>Item = Envelope&lt;A&gt;;
 
-    <span class="kw">fn</span> <span class="ident">poll_next</span>(<span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>, <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">task::Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Item</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
-        <span class="kw">match</span> <span class="ident">this</span>.<span class="ident">next_message</span>() {
-            <span class="ident">Poll::Ready</span>(<span class="ident">msg</span>) =&gt; <span class="ident">Poll::Ready</span>(<span class="ident">msg</span>),
-            <span class="ident">Poll::Pending</span> =&gt; {
-                <span class="comment">// There are no messages to read, in this case, park.</span>
-                <span class="ident">this</span>.<span class="ident">inner</span>.<span class="ident">recv_task</span>.<span class="ident">register</span>(<span class="ident">cx</span>.<span class="ident">waker</span>());
-                <span class="comment">// Check queue again after parking to prevent race condition:</span>
-                <span class="comment">// a message could be added to the queue after previous `next_message`</span>
-                <span class="comment">// before `register` call.</span>
-                <span class="ident">this</span>.<span class="ident">next_message</span>()
+    <span class="kw">fn </span>poll_next(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::Item&gt;&gt; {
+        <span class="kw">let </span>this = <span class="self">self</span>.get_mut();
+        <span class="kw">match </span>this.next_message() {
+            Poll::Ready(msg) =&gt; Poll::Ready(msg),
+            Poll::Pending =&gt; {
+                <span class="comment">// There are no messages to read, in this case, park.
+                </span>this.inner.recv_task.register(cx.waker());
+                <span class="comment">// Check queue again after parking to prevent race condition:
+                // a message could be added to the queue after previous `next_message`
+                // before `register` call.
+                </span>this.next_message()
             }
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">AddressReceiver</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="comment">// close</span>
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">set_closed</span>();
+<span class="kw">impl</span>&lt;A: Actor&gt; Drop <span class="kw">for </span>AddressReceiver&lt;A&gt; {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// close
+        </span><span class="self">self</span>.inner.set_closed();
 
-        <span class="comment">// Wake up any threads waiting as they&#39;ll see that we&#39;ve closed the</span>
-        <span class="comment">// channel and will continue on their merry way.</span>
-        <span class="kw">while</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="kw">unsafe</span> { <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop_spin</span>() } {
-            <span class="ident">task</span>.<span class="ident">lock</span>().<span class="ident">notify</span>();
+        <span class="comment">// Wake up any threads waiting as they&#39;ll see that we&#39;ve closed the
+        // channel and will continue on their merry way.
+        </span><span class="kw">while let </span><span class="prelude-val">Some</span>(task) = <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.parked_queue.pop_spin() } {
+            task.lock().notify();
         }
 
-        <span class="comment">// Drain the channel of all pending messages</span>
-        <span class="kw">loop</span> {
-            <span class="kw">match</span> <span class="self">self</span>.<span class="ident">next_message</span>() {
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {}
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">None</span>) =&gt; <span class="kw">break</span>,
-                <span class="ident">Poll::Pending</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>));
+        <span class="comment">// Drain the channel of all pending messages
+        </span><span class="kw">loop </span>{
+            <span class="kw">match </span><span class="self">self</span>.next_message() {
+                Poll::Ready(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; {}
+                Poll::Ready(<span class="prelude-val">None</span>) =&gt; <span class="kw">break</span>,
+                Poll::Pending =&gt; {
+                    <span class="kw">let </span>state = decode_state(<span class="self">self</span>.inner.state.load(SeqCst));
 
-                    <span class="comment">// If the channel is closed, then there is no need to park.</span>
-                    <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">is_closed</span>() {
+                    <span class="comment">// If the channel is closed, then there is no need to park.
+                    </span><span class="kw">if </span>state.is_closed() {
                         <span class="kw">break</span>;
                     }
 
-                    <span class="comment">// TODO: Spinning isn&#39;t ideal, it might be worth</span>
-                    <span class="comment">// investigating using a condvar or some other strategy</span>
-                    <span class="comment">// here. That said, if this case is hit, then another thread</span>
-                    <span class="comment">// is about to push the value into the queue and this isn&#39;t</span>
-                    <span class="comment">// the only spinlock in the impl right now.</span>
-                    <span class="ident">thread::yield_now</span>();
+                    <span class="comment">// TODO: Spinning isn&#39;t ideal, it might be worth
+                    // investigating using a condvar or some other strategy
+                    // here. That said, if this case is hit, then another thread
+                    // is about to push the value into the queue and this isn&#39;t
+                    // the only spinlock in the impl right now.
+                    </span>thread::yield_now();
                 }
             }
         }
     }
 }
 
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="comment">// ===== impl Inner =====</span>
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="comment">// The return value is such that the total number of messages that can be</span>
-    <span class="comment">// enqueued into the channel will never exceed MAX_CAPACITY</span>
-    <span class="kw">fn</span> <span class="ident">max_senders</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="ident">MAX_CAPACITY</span> <span class="op">-</span> <span class="self">self</span>.<span class="ident">buffer</span>.<span class="ident">load</span>(<span class="ident">Relaxed</span>)
+<span class="comment">//
+//
+// ===== impl Inner =====
+//
+//
+</span><span class="kw">impl</span>&lt;A: Actor&gt; Inner&lt;A&gt; {
+    <span class="comment">// The return value is such that the total number of messages that can be
+    // enqueued into the channel will never exceed MAX_CAPACITY
+    </span><span class="kw">fn </span>max_senders(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        MAX_CAPACITY - <span class="self">self</span>.buffer.load(Relaxed)
     }
 
-    <span class="comment">// Clear `open` flag in the state, keep `num_messages` intact.</span>
-    <span class="kw">fn</span> <span class="ident">set_closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="kw">let</span> <span class="ident">curr</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>);
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">decode_state</span>(<span class="ident">curr</span>).<span class="ident">is_open</span> {
+    <span class="comment">// Clear `open` flag in the state, keep `num_messages` intact.
+    </span><span class="kw">fn </span>set_closed(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="kw">let </span>curr = <span class="self">self</span>.state.load(SeqCst);
+        <span class="kw">if </span>!decode_state(curr).is_open {
             <span class="kw">return</span>;
         }
 
-        <span class="self">self</span>.<span class="ident">state</span>.<span class="ident">fetch_and</span>(<span class="op">!</span><span class="ident">OPEN_MASK</span>, <span class="ident">SeqCst</span>);
+        <span class="self">self</span>.state.fetch_and(!OPEN_MASK, SeqCst);
     }
 }
 
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Send</span> <span class="kw">for</span> <span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {}
-<span class="kw">unsafe</span> <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span> <span class="ident">Sync</span> <span class="kw">for</span> <span class="ident">Inner</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {}
+<span class="kw">unsafe impl</span>&lt;A: Actor&gt; Send <span class="kw">for </span>Inner&lt;A&gt; {}
+<span class="kw">unsafe impl</span>&lt;A: Actor&gt; Sync <span class="kw">for </span>Inner&lt;A&gt; {}
 
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="comment">// ===== Helpers =====</span>
-<span class="comment">//</span>
-<span class="comment">//</span>
-<span class="kw">fn</span> <span class="ident">decode_state</span>(<span class="ident">num</span>: <span class="ident">usize</span>) -&gt; <span class="ident">State</span> {
-    <span class="ident">State</span> {
-        <span class="ident">is_open</span>: <span class="ident">num</span> <span class="op">&amp;</span> <span class="ident">OPEN_MASK</span> <span class="op">==</span> <span class="ident">OPEN_MASK</span>,
-        <span class="ident">num_messages</span>: <span class="ident">num</span> <span class="op">&amp;</span> <span class="ident">MAX_CAPACITY</span>,
+<span class="comment">//
+//
+// ===== Helpers =====
+//
+//
+</span><span class="kw">fn </span>decode_state(num: usize) -&gt; State {
+    State {
+        is_open: num &amp; OPEN_MASK == OPEN_MASK,
+        num_messages: num &amp; MAX_CAPACITY,
     }
 }
 
-<span class="kw">fn</span> <span class="ident">encode_state</span>(<span class="ident">state</span>: <span class="kw-2">&amp;</span><span class="ident">State</span>) -&gt; <span class="ident">usize</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">num</span> <span class="op">=</span> <span class="ident">state</span>.<span class="ident">num_messages</span>;
+<span class="kw">fn </span>encode_state(state: <span class="kw-2">&amp;</span>State) -&gt; usize {
+    <span class="kw">let </span><span class="kw-2">mut </span>num = state.num_messages;
 
-    <span class="kw">if</span> <span class="ident">state</span>.<span class="ident">is_open</span> {
-        <span class="ident">num</span> <span class="op">|</span><span class="op">=</span> <span class="ident">OPEN_MASK</span>;
+    <span class="kw">if </span>state.is_open {
+        num |= OPEN_MASK;
     }
 
-    <span class="ident">num</span>
+    num
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">thread</span>, <span class="ident">time</span>};
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::{thread, time};
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address::queue::PopResult</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::prelude</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::address::queue::PopResult;
+    <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
 
-    <span class="kw">struct</span> <span class="ident">Act</span>;
-    <span class="kw">impl</span> <span class="ident">Actor</span> <span class="kw">for</span> <span class="ident">Act</span> {
-        <span class="kw">type</span> <span class="ident">Context</span> <span class="op">=</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>;
+    <span class="kw">struct </span>Act;
+    <span class="kw">impl </span>Actor <span class="kw">for </span>Act {
+        <span class="kw">type </span>Context = Context&lt;Act&gt;;
     }
 
-    <span class="kw">struct</span> <span class="ident">Ping</span>;
-    <span class="kw">impl</span> <span class="ident">Message</span> <span class="kw">for</span> <span class="ident">Ping</span> {
-        <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> ();
+    <span class="kw">struct </span>Ping;
+    <span class="kw">impl </span>Message <span class="kw">for </span>Ping {
+        <span class="kw">type </span><span class="prelude-ty">Result </span>= ();
     }
 
-    <span class="kw">impl</span> <span class="ident">Handler</span><span class="op">&lt;</span><span class="ident">Ping</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Act</span> {
-        <span class="kw">type</span> <span class="prelude-ty">Result</span> <span class="op">=</span> ();
-        <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="kw">_</span>: <span class="ident">Ping</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>) {}
+    <span class="kw">impl </span>Handler&lt;Ping&gt; <span class="kw">for </span>Act {
+        <span class="kw">type </span><span class="prelude-ty">Result </span>= ();
+        <span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw">_</span>: Ping, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>Context&lt;Act&gt;) {}
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_cap</span>() {
-        <span class="ident">System::new</span>().<span class="ident">block_on</span>(<span class="kw">async</span> {
-            <span class="kw">let</span> (<span class="ident">s1</span>, <span class="kw-2">mut</span> <span class="ident">recv</span>) <span class="op">=</span> <span class="ident">channel</span>::<span class="op">&lt;</span><span class="ident">Act</span><span class="op">&gt;</span>(<span class="number">1</span>);
-            <span class="kw">let</span> <span class="ident">s2</span> <span class="op">=</span> <span class="ident">recv</span>.<span class="ident">sender</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_cap() {
+        System::new().block_on(<span class="kw">async </span>{
+            <span class="kw">let </span>(s1, <span class="kw-2">mut </span>recv) = channel::&lt;Act&gt;(<span class="number">1</span>);
+            <span class="kw">let </span>s2 = recv.sender();
 
-            <span class="kw">let</span> <span class="ident">arb</span> <span class="op">=</span> <span class="ident">Arbiter::new</span>();
-            <span class="ident">arb</span>.<span class="ident">spawn_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">s1</span>.<span class="ident">send</span>(<span class="ident">Ping</span>);
+            <span class="kw">let </span>arb = Arbiter::new();
+            arb.spawn_fn(<span class="kw">move </span>|| {
+                <span class="kw">let _ </span>= s1.send(Ping);
             });
-            <span class="ident">thread::sleep</span>(<span class="ident">time::Duration::from_millis</span>(<span class="number">100</span>));
-            <span class="kw">let</span> <span class="ident">arb2</span> <span class="op">=</span> <span class="ident">Arbiter::new</span>();
-            <span class="ident">arb2</span>.<span class="ident">spawn_fn</span>(<span class="kw">move</span> <span class="op">|</span><span class="op">|</span> {
-                <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">s2</span>.<span class="ident">send</span>(<span class="ident">Ping</span>);
-                <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">s2</span>.<span class="ident">send</span>(<span class="ident">Ping</span>);
+            thread::sleep(time::Duration::from_millis(<span class="number">100</span>));
+            <span class="kw">let </span>arb2 = Arbiter::new();
+            arb2.spawn_fn(<span class="kw">move </span>|| {
+                <span class="kw">let _ </span>= s2.send(Ping);
+                <span class="kw">let _ </span>= s2.send(Ping);
             });
 
-            <span class="ident">thread::sleep</span>(<span class="ident">time::Duration::from_millis</span>(<span class="number">100</span>));
-            <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>));
-            <span class="macro">assert_eq!</span>(<span class="ident">state</span>.<span class="ident">num_messages</span>, <span class="number">2</span>);
+            thread::sleep(time::Duration::from_millis(<span class="number">100</span>));
+            <span class="kw">let </span>state = decode_state(recv.inner.state.load(SeqCst));
+            <span class="macro">assert_eq!</span>(state.num_messages, <span class="number">2</span>);
 
-            <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="kw">loop</span> {
-                <span class="kw">match</span> <span class="kw">unsafe</span> { <span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop</span>() } {
-                    <span class="ident">PopResult::Data</span>(<span class="ident">task</span>) =&gt; <span class="kw">break</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>),
-                    <span class="ident">PopResult::Empty</span> =&gt; <span class="kw">break</span> <span class="prelude-val">None</span>,
-                    <span class="ident">PopResult::Inconsistent</span> =&gt; <span class="ident">thread::yield_now</span>(),
+            <span class="kw">let </span>p = <span class="kw">loop </span>{
+                <span class="kw">match unsafe </span>{ recv.inner.parked_queue.pop() } {
+                    PopResult::Data(task) =&gt; <span class="kw">break </span><span class="prelude-val">Some</span>(task),
+                    PopResult::Empty =&gt; <span class="kw">break </span><span class="prelude-val">None</span>,
+                    PopResult::Inconsistent =&gt; thread::yield_now(),
                 }
             };
 
-            <span class="macro">assert!</span>(<span class="ident">p</span>.<span class="ident">is_some</span>());
-            <span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">push</span>(<span class="ident">p</span>.<span class="ident">unwrap</span>());
+            <span class="macro">assert!</span>(p.is_some());
+            recv.inner.parked_queue.push(p.unwrap());
 
-            <span class="ident">recv</span>.<span class="ident">set_capacity</span>(<span class="number">10</span>);
+            recv.set_capacity(<span class="number">10</span>);
 
-            <span class="ident">thread::sleep</span>(<span class="ident">time::Duration::from_millis</span>(<span class="number">100</span>));
-            <span class="kw">let</span> <span class="ident">state</span> <span class="op">=</span> <span class="ident">decode_state</span>(<span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">state</span>.<span class="ident">load</span>(<span class="ident">SeqCst</span>));
-            <span class="macro">assert_eq!</span>(<span class="ident">state</span>.<span class="ident">num_messages</span>, <span class="number">2</span>);
+            thread::sleep(time::Duration::from_millis(<span class="number">100</span>));
+            <span class="kw">let </span>state = decode_state(recv.inner.state.load(SeqCst));
+            <span class="macro">assert_eq!</span>(state.num_messages, <span class="number">2</span>);
 
-            <span class="kw">let</span> <span class="ident">p</span> <span class="op">=</span> <span class="kw">loop</span> {
-                <span class="kw">match</span> <span class="kw">unsafe</span> { <span class="ident">recv</span>.<span class="ident">inner</span>.<span class="ident">parked_queue</span>.<span class="ident">pop</span>() } {
-                    <span class="ident">PopResult::Data</span>(<span class="ident">task</span>) =&gt; <span class="kw">break</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>),
-                    <span class="ident">PopResult::Empty</span> =&gt; <span class="kw">break</span> <span class="prelude-val">None</span>,
-                    <span class="ident">PopResult::Inconsistent</span> =&gt; <span class="ident">thread::yield_now</span>(),
+            <span class="kw">let </span>p = <span class="kw">loop </span>{
+                <span class="kw">match unsafe </span>{ recv.inner.parked_queue.pop() } {
+                    PopResult::Data(task) =&gt; <span class="kw">break </span><span class="prelude-val">Some</span>(task),
+                    PopResult::Empty =&gt; <span class="kw">break </span><span class="prelude-val">None</span>,
+                    PopResult::Inconsistent =&gt; thread::yield_now(),
                 }
             };
-            <span class="macro">assert!</span>(<span class="ident">p</span>.<span class="ident">is_none</span>());
+            <span class="macro">assert!</span>(p.is_none());
 
-            <span class="ident">System::current</span>().<span class="ident">stop</span>();
+            System::current().stop();
         });
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

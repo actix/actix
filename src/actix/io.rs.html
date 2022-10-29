@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/io.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>io.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/io.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>io.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -565,567 +559,566 @@
 <span id="559">559</span>
 <span id="560">560</span>
 <span id="561">561</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std::cell::RefCell</span>;
-<span class="kw">use</span> <span class="ident">std::marker::PhantomData</span>;
-<span class="kw">use</span> <span class="ident">std::ops::DerefMut</span>;
-<span class="kw">use</span> <span class="ident">std::pin::Pin</span>;
-<span class="kw">use</span> <span class="ident">std::rc::Rc</span>;
-<span class="kw">use</span> <span class="ident">std::task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>};
-<span class="kw">use</span> <span class="ident">std</span>::{<span class="ident">collections::VecDeque</span>, <span class="ident">io</span>, <span class="ident">task</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::marker::PhantomData;
+<span class="kw">use </span>std::ops::DerefMut;
+<span class="kw">use </span>std::pin::Pin;
+<span class="kw">use </span>std::rc::Rc;
+<span class="kw">use </span>std::task::{Context, Poll};
+<span class="kw">use </span>std::{collections::VecDeque, io, task};
 
-<span class="kw">use</span> <span class="ident">bitflags::bitflags</span>;
-<span class="kw">use</span> <span class="ident">bytes::BytesMut</span>;
-<span class="kw">use</span> <span class="ident">futures_sink::Sink</span>;
-<span class="kw">use</span> <span class="ident">tokio::io</span>::{<span class="ident">AsyncWrite</span>, <span class="ident">AsyncWriteExt</span>};
-<span class="kw">use</span> <span class="ident">tokio_util::codec::Encoder</span>;
+<span class="kw">use </span>bitflags::bitflags;
+<span class="kw">use </span>bytes::BytesMut;
+<span class="kw">use </span>futures_sink::Sink;
+<span class="kw">use </span>tokio::io::{AsyncWrite, AsyncWriteExt};
+<span class="kw">use </span>tokio_util::codec::Encoder;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::actor</span>::{<span class="ident">Actor</span>, <span class="ident">ActorContext</span>, <span class="ident">AsyncContext</span>, <span class="ident">Running</span>, <span class="ident">SpawnHandle</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fut::ActorFuture</span>;
+<span class="kw">use </span><span class="kw">crate</span>::actor::{Actor, ActorContext, AsyncContext, Running, SpawnHandle};
+<span class="kw">use </span><span class="kw">crate</span>::fut::ActorFuture;
 
-<span class="doccomment">/// A helper trait for write handling.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// `WriteHandler` is a helper for `AsyncWrite` types. Implementation</span>
-<span class="doccomment">/// of this trait is required for `Writer` and `FramedWrite` support.</span>
-<span class="attribute">#[<span class="ident">allow</span>(<span class="ident">unused_variables</span>)]</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="self">Self</span>: <span class="ident">Actor</span>,
-    <span class="ident"><span class="self">Self</span>::Context</span>: <span class="ident">ActorContext</span>,
+<span class="doccomment">/// A helper trait for write handling.
+///
+/// `WriteHandler` is a helper for `AsyncWrite` types. Implementation
+/// of this trait is required for `Writer` and `FramedWrite` support.
+</span><span class="attribute">#[allow(unused_variables)]
+</span><span class="kw">pub trait </span>WriteHandler&lt;E&gt;
+<span class="kw">where
+    </span><span class="self">Self</span>: Actor,
+    <span class="self">Self</span>::Context: ActorContext,
 {
-    <span class="doccomment">/// Called when the writer emits error.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If this method returns `ErrorAction::Continue` writer processing</span>
-    <span class="doccomment">/// continues otherwise stream processing stops.</span>
-    <span class="kw">fn</span> <span class="ident">error</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">err</span>: <span class="ident">E</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) -&gt; <span class="ident">Running</span> {
-        <span class="ident">Running::Stop</span>
+    <span class="doccomment">/// Called when the writer emits error.
+    ///
+    /// If this method returns `ErrorAction::Continue` writer processing
+    /// continues otherwise stream processing stops.
+    </span><span class="kw">fn </span>error(<span class="kw-2">&amp;mut </span><span class="self">self</span>, err: E, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) -&gt; Running {
+        Running::Stop
     }
 
-    <span class="doccomment">/// Called when the writer finishes.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// By default this method stops actor&#39;s `Context`.</span>
-    <span class="kw">fn</span> <span class="ident">finished</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident"><span class="self">Self</span>::Context</span>) {
-        <span class="ident">ctx</span>.<span class="ident">stop</span>()
-    }
-}
-
-<span class="macro">bitflags!</span> {
-    <span class="kw">struct</span> <span class="ident">Flags</span>: <span class="ident">u8</span> {
-        <span class="kw">const</span> <span class="ident">CLOSING</span> <span class="op">=</span> <span class="number">0b0000_0001</span>;
-        <span class="kw">const</span> <span class="ident">CLOSED</span> <span class="op">=</span> <span class="number">0b0000_0010</span>;
+    <span class="doccomment">/// Called when the writer finishes.
+    ///
+    /// By default this method stops actor&#39;s `Context`.
+    </span><span class="kw">fn </span>finished(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) {
+        ctx.stop()
     }
 }
 
-<span class="kw">const</span> <span class="ident">LOW_WATERMARK</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">4</span> <span class="op">*</span> <span class="number">1024</span>;
-<span class="kw">const</span> <span class="ident">HIGH_WATERMARK</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="number">4</span> <span class="op">*</span> <span class="ident">LOW_WATERMARK</span>;
-
-<span class="doccomment">/// A wrapper for `AsyncWrite` types.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Writer</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">AsyncWrite</span>, <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>,
+<span class="macro">bitflags! </span>{
+    <span class="kw">struct </span>Flags: u8 {
+        <span class="kw">const </span>CLOSING = <span class="number">0b0000_0001</span>;
+        <span class="kw">const </span>CLOSED = <span class="number">0b0000_0010</span>;
+    }
 }
 
-<span class="kw">struct</span> <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">AsyncWrite</span>, <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>(
-    <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">InnerWriter</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">const </span>LOW_WATERMARK: usize = <span class="number">4 </span>* <span class="number">1024</span>;
+<span class="kw">const </span>HIGH_WATERMARK: usize = <span class="number">4 </span>* LOW_WATERMARK;
+
+<span class="doccomment">/// A wrapper for `AsyncWrite` types.
+</span><span class="kw">pub struct </span>Writer&lt;T: AsyncWrite, E: From&lt;io::Error&gt;&gt; {
+    inner: UnsafeWriter&lt;T, E&gt;,
+}
+
+<span class="kw">struct </span>UnsafeWriter&lt;T: AsyncWrite, E: From&lt;io::Error&gt;&gt;(
+    Rc&lt;RefCell&lt;InnerWriter&lt;E&gt;&gt;&gt;,
+    Rc&lt;RefCell&lt;T&gt;&gt;,
 );
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">AsyncWrite</span>, <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">UnsafeWriter</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>(), <span class="self">self</span>.<span class="number">1</span>.<span class="ident">clone</span>())
+<span class="kw">impl</span>&lt;T: AsyncWrite, E: From&lt;io::Error&gt;&gt; Clone <span class="kw">for </span>UnsafeWriter&lt;T, E&gt; {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        UnsafeWriter(<span class="self">self</span>.<span class="number">0</span>.clone(), <span class="self">self</span>.<span class="number">1</span>.clone())
     }
 }
 
-<span class="kw">struct</span> <span class="ident">InnerWriter</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">flags</span>: <span class="ident">Flags</span>,
-    <span class="ident">buffer</span>: <span class="ident">BytesMut</span>,
-    <span class="ident">error</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span>,
-    <span class="ident">low</span>: <span class="ident">usize</span>,
-    <span class="ident">high</span>: <span class="ident">usize</span>,
-    <span class="ident">handle</span>: <span class="ident">SpawnHandle</span>,
-    <span class="ident">task</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">task::Waker</span><span class="op">&gt;</span>,
+<span class="kw">struct </span>InnerWriter&lt;E: From&lt;io::Error&gt;&gt; {
+    flags: Flags,
+    buffer: BytesMut,
+    error: <span class="prelude-ty">Option</span>&lt;E&gt;,
+    low: usize,
+    high: usize,
+    handle: SpawnHandle,
+    task: <span class="prelude-ty">Option</span>&lt;task::Waker&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">AsyncWrite</span>, <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">Writer</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">C</span><span class="op">&gt;</span>(<span class="ident">io</span>: <span class="ident">T</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">C</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">C</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span>,
-        <span class="ident">C</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-        <span class="ident">T</span>: <span class="ident">Unpin</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;T: AsyncWrite, E: From&lt;io::Error&gt; + <span class="lifetime">&#39;static</span>&gt; Writer&lt;T, E&gt; {
+    <span class="kw">pub fn </span>new&lt;A, C&gt;(io: T, ctx: <span class="kw-2">&amp;mut </span>C) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>A: Actor&lt;Context = C&gt; + WriteHandler&lt;E&gt;,
+        C: AsyncContext&lt;A&gt;,
+        T: Unpin + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">UnsafeWriter</span>(
-            <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">InnerWriter</span> {
-                <span class="ident">flags</span>: <span class="ident">Flags::empty</span>(),
-                <span class="ident">buffer</span>: <span class="ident">BytesMut::new</span>(),
-                <span class="ident">error</span>: <span class="prelude-val">None</span>,
-                <span class="ident">low</span>: <span class="ident">LOW_WATERMARK</span>,
-                <span class="ident">high</span>: <span class="ident">HIGH_WATERMARK</span>,
-                <span class="ident">handle</span>: <span class="ident">SpawnHandle::default</span>(),
-                <span class="ident">task</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>inner = UnsafeWriter(
+            Rc::new(RefCell::new(InnerWriter {
+                flags: Flags::empty(),
+                buffer: BytesMut::new(),
+                error: <span class="prelude-val">None</span>,
+                low: LOW_WATERMARK,
+                high: HIGH_WATERMARK,
+                handle: SpawnHandle::default(),
+                task: <span class="prelude-val">None</span>,
             })),
-            <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">io</span>)),
+            Rc::new(RefCell::new(io)),
         );
-        <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">WriterFut</span> {
-            <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
+        <span class="kw">let </span>h = ctx.spawn(WriterFut {
+            inner: inner.clone(),
         });
 
-        <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="self">Self</span> { <span class="ident">inner</span> };
-        <span class="ident">writer</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>().<span class="ident">handle</span> <span class="op">=</span> <span class="ident">h</span>;
-        <span class="ident">writer</span>
+        <span class="kw">let </span>writer = <span class="self">Self </span>{ inner };
+        writer.inner.<span class="number">0</span>.borrow_mut().handle = h;
+        writer
     }
 
-    <span class="doccomment">/// Gracefully closes the sink.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The closing happens asynchronously.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">close</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>().<span class="ident">flags</span>.<span class="ident">insert</span>(<span class="ident">Flags::CLOSING</span>);
+    <span class="doccomment">/// Gracefully closes the sink.
+    ///
+    /// The closing happens asynchronously.
+    </span><span class="kw">pub fn </span>close(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut().flags.insert(Flags::CLOSING);
     }
 
-    <span class="doccomment">/// Checks if the sink is closed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow</span>().<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">Flags::CLOSED</span>)
+    <span class="doccomment">/// Checks if the sink is closed.
+    </span><span class="kw">pub fn </span>closed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.inner.<span class="number">0</span>.borrow().flags.contains(Flags::CLOSED)
     }
 
-    <span class="doccomment">/// Sets the write buffer capacity.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_buffer_capacity</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">low_watermark</span>: <span class="ident">usize</span>, <span class="ident">high_watermark</span>: <span class="ident">usize</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>();
-        <span class="ident">inner</span>.<span class="ident">low</span> <span class="op">=</span> <span class="ident">low_watermark</span>;
-        <span class="ident">inner</span>.<span class="ident">high</span> <span class="op">=</span> <span class="ident">high_watermark</span>;
+    <span class="doccomment">/// Sets the write buffer capacity.
+    </span><span class="kw">pub fn </span>set_buffer_capacity(<span class="kw-2">&amp;mut </span><span class="self">self</span>, low_watermark: usize, high_watermark: usize) {
+        <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut();
+        inner.low = low_watermark;
+        inner.high = high_watermark;
     }
 
-    <span class="doccomment">/// Sends an item to the sink.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">msg</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>();
-        <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">extend_from_slice</span>(<span class="ident">msg</span>);
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">task</span>.<span class="ident">take</span>() {
-            <span class="ident">task</span>.<span class="ident">wake_by_ref</span>();
+    <span class="doccomment">/// Sends an item to the sink.
+    </span><span class="kw">pub fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: <span class="kw-2">&amp;</span>[u8]) {
+        <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut();
+        inner.buffer.extend_from_slice(msg);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(task) = inner.task.take() {
+            task.wake_by_ref();
         }
     }
 
-    <span class="doccomment">/// Returns the `SpawnHandle` for this writer.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SpawnHandle</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow</span>().<span class="ident">handle</span>
+    <span class="doccomment">/// Returns the `SpawnHandle` for this writer.
+    </span><span class="kw">pub fn </span>handle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SpawnHandle {
+        <span class="self">self</span>.inner.<span class="number">0</span>.borrow().handle
     }
 }
 
-<span class="kw">struct</span> <span class="ident">WriterFut</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span>,
+<span class="kw">struct </span>WriterFut&lt;T, E&gt;
+<span class="kw">where
+    </span>T: AsyncWrite + Unpin,
+    E: From&lt;io::Error&gt;,
 {
-    <span class="ident">inner</span>: <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>,
+    inner: UnsafeWriter&lt;T, E&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="lifetime">&#39;static</span>, <span class="ident">E</span>: <span class="lifetime">&#39;static</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WriterFut</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span> <span class="op">+</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;T: <span class="lifetime">&#39;static</span>, E: <span class="lifetime">&#39;static</span>, A&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>WriterFut&lt;T, E&gt;
+<span class="kw">where
+    </span>T: AsyncWrite + Unpin,
+    E: From&lt;io::Error&gt;,
+    A: Actor + WriteHandler&lt;E&gt;,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>();
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">err</span>) <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">error</span>.<span class="ident">take</span>() {
-            <span class="kw">if</span> <span class="ident">act</span>.<span class="ident">error</span>(<span class="ident">err</span>, <span class="ident">ctx</span>) <span class="op">==</span> <span class="ident">Running::Stop</span> {
-                <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctx</span>);
-                <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span>this = <span class="self">self</span>.get_mut();
+        <span class="kw">let </span><span class="kw-2">mut </span>inner = this.inner.<span class="number">0</span>.borrow_mut();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = inner.error.take() {
+            <span class="kw">if </span>act.error(err, ctx) == Running::Stop {
+                act.finished(ctx);
+                <span class="kw">return </span>Poll::Ready(());
             }
         }
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">io</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>.<span class="number">1</span>.<span class="ident">borrow_mut</span>();
-        <span class="ident">inner</span>.<span class="ident">task</span> <span class="op">=</span> <span class="prelude-val">None</span>;
-        <span class="kw">while</span> <span class="op">!</span><span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">match</span> <span class="ident">Pin::new</span>(<span class="ident">io</span>.<span class="ident">deref_mut</span>()).<span class="ident">poll_write</span>(<span class="ident">task</span>, <span class="kw-2">&amp;</span><span class="ident">inner</span>.<span class="ident">buffer</span>) {
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Ok</span>(<span class="ident">n</span>)) =&gt; {
-                    <span class="kw">if</span> <span class="ident">n</span> <span class="op">==</span> <span class="number">0</span>
-                        <span class="op">&amp;&amp;</span> <span class="ident">act</span>.<span class="ident">error</span>(
-                            <span class="ident">io::Error::new</span>(
-                                <span class="ident">io::ErrorKind::WriteZero</span>,
+        <span class="kw">let </span><span class="kw-2">mut </span>io = this.inner.<span class="number">1</span>.borrow_mut();
+        inner.task = <span class="prelude-val">None</span>;
+        <span class="kw">while </span>!inner.buffer.is_empty() {
+            <span class="kw">match </span>Pin::new(io.deref_mut()).poll_write(task, <span class="kw-2">&amp;</span>inner.buffer) {
+                Poll::Ready(<span class="prelude-val">Ok</span>(n)) =&gt; {
+                    <span class="kw">if </span>n == <span class="number">0
+                        </span>&amp;&amp; act.error(
+                            io::Error::new(
+                                io::ErrorKind::WriteZero,
                                 <span class="string">&quot;failed to write frame to transport&quot;</span>,
                             )
-                            .<span class="ident">into</span>(),
-                            <span class="ident">ctx</span>,
-                        ) <span class="op">==</span> <span class="ident">Running::Stop</span>
+                            .into(),
+                            ctx,
+                        ) == Running::Stop
                     {
-                        <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctx</span>);
-                        <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+                        act.finished(ctx);
+                        <span class="kw">return </span>Poll::Ready(());
                     }
-                    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">split_to</span>(<span class="ident">n</span>);
+                    <span class="kw">let _ </span>= inner.buffer.split_to(n);
                 }
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>)) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
-                    <span class="kw">if</span> <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">inner</span>.<span class="ident">high</span> {
-                        <span class="ident">ctx</span>.<span class="ident">wait</span>(<span class="ident">WriterDrain</span> {
-                            <span class="ident">inner</span>: <span class="ident">this</span>.<span class="ident">inner</span>.<span class="ident">clone</span>(),
+                Poll::Ready(<span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e)) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
+                    <span class="kw">if </span>inner.buffer.len() &gt; inner.high {
+                        ctx.wait(WriterDrain {
+                            inner: this.inner.clone(),
                         });
                     }
-                    <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
+                    <span class="kw">return </span>Poll::Pending;
                 }
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) =&gt; {
-                    <span class="kw">if</span> <span class="ident">act</span>.<span class="ident">error</span>(<span class="ident">e</span>.<span class="ident">into</span>(), <span class="ident">ctx</span>) <span class="op">==</span> <span class="ident">Running::Stop</span> {
-                        <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctx</span>);
-                        <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+                Poll::Ready(<span class="prelude-val">Err</span>(e)) =&gt; {
+                    <span class="kw">if </span>act.error(e.into(), ctx) == Running::Stop {
+                        act.finished(ctx);
+                        <span class="kw">return </span>Poll::Ready(());
                     }
                 }
-                <span class="ident">Poll::Pending</span> =&gt; <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
+                Poll::Pending =&gt; <span class="kw">return </span>Poll::Pending,
             }
         }
 
-        <span class="comment">// Try flushing the underlying IO</span>
-        <span class="kw">match</span> <span class="ident">Pin::new</span>(<span class="ident">io</span>.<span class="ident">deref_mut</span>()).<span class="ident">poll_flush</span>(<span class="ident">task</span>) {
-            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; (),
-            <span class="ident">Poll::Pending</span> =&gt; <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
-            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>)) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
-                <span class="kw">return</span> <span class="ident">Poll::Pending</span>;
+        <span class="comment">// Try flushing the underlying IO
+        </span><span class="kw">match </span>Pin::new(io.deref_mut()).poll_flush(task) {
+            Poll::Ready(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; (),
+            Poll::Pending =&gt; <span class="kw">return </span>Poll::Pending,
+            Poll::Ready(<span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e)) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
+                <span class="kw">return </span>Poll::Pending;
             }
-            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) =&gt; {
-                <span class="kw">if</span> <span class="ident">act</span>.<span class="ident">error</span>(<span class="ident">e</span>.<span class="ident">into</span>(), <span class="ident">ctx</span>) <span class="op">==</span> <span class="ident">Running::Stop</span> {
-                    <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctx</span>);
-                    <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+            Poll::Ready(<span class="prelude-val">Err</span>(e)) =&gt; {
+                <span class="kw">if </span>act.error(e.into(), ctx) == Running::Stop {
+                    act.finished(ctx);
+                    <span class="kw">return </span>Poll::Ready(());
                 }
             }
         }
 
-        <span class="comment">// close if closing and we don&#39;t need to flush any data</span>
-        <span class="kw">if</span> <span class="ident">inner</span>.<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">Flags::CLOSING</span>) {
-            <span class="ident">inner</span>.<span class="ident">flags</span> <span class="op">|</span><span class="op">=</span> <span class="ident">Flags::CLOSED</span>;
-            <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctx</span>);
-            <span class="ident">Poll::Ready</span>(())
-        } <span class="kw">else</span> {
-            <span class="ident">inner</span>.<span class="ident">task</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>.<span class="ident">waker</span>().<span class="ident">clone</span>());
-            <span class="ident">Poll::Pending</span>
+        <span class="comment">// close if closing and we don&#39;t need to flush any data
+        </span><span class="kw">if </span>inner.flags.contains(Flags::CLOSING) {
+            inner.flags |= Flags::CLOSED;
+            act.finished(ctx);
+            Poll::Ready(())
+        } <span class="kw">else </span>{
+            inner.task = <span class="prelude-val">Some</span>(task.waker().clone());
+            Poll::Pending
         }
     }
 }
 
-<span class="kw">struct</span> <span class="ident">WriterDrain</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span>,
+<span class="kw">struct </span>WriterDrain&lt;T, E&gt;
+<span class="kw">where
+    </span>T: AsyncWrite + Unpin,
+    E: From&lt;io::Error&gt;,
 {
-    <span class="ident">inner</span>: <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>,
+    inner: UnsafeWriter&lt;T, E&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WriterDrain</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">E</span>: <span class="ident">From</span><span class="op">&lt;</span><span class="ident">io::Error</span><span class="op">&gt;</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;T, E, A&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>WriterDrain&lt;T, E&gt;
+<span class="kw">where
+    </span>T: AsyncWrite + Unpin,
+    E: From&lt;io::Error&gt;,
+    A: Actor,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="kw">_</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>();
-        <span class="kw">if</span> <span class="ident">inner</span>.<span class="ident">error</span>.<span class="ident">is_some</span>() {
-            <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A,
+        <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span>this = <span class="self">self</span>.get_mut();
+        <span class="kw">let </span><span class="kw-2">mut </span>inner = this.inner.<span class="number">0</span>.borrow_mut();
+        <span class="kw">if </span>inner.error.is_some() {
+            <span class="kw">return </span>Poll::Ready(());
         }
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">io</span> <span class="op">=</span> <span class="ident">this</span>.<span class="ident">inner</span>.<span class="number">1</span>.<span class="ident">borrow_mut</span>();
-        <span class="kw">while</span> <span class="op">!</span><span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">match</span> <span class="ident">Pin::new</span>(<span class="ident">io</span>.<span class="ident">deref_mut</span>()).<span class="ident">poll_write</span>(<span class="ident">task</span>, <span class="kw-2">&amp;</span><span class="ident">inner</span>.<span class="ident">buffer</span>) {
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Ok</span>(<span class="ident">n</span>)) =&gt; {
-                    <span class="kw">if</span> <span class="ident">n</span> <span class="op">==</span> <span class="number">0</span> {
-                        <span class="ident">inner</span>.<span class="ident">error</span> <span class="op">=</span> <span class="prelude-val">Some</span>(
-                            <span class="ident">io::Error::new</span>(
-                                <span class="ident">io::ErrorKind::WriteZero</span>,
+        <span class="kw">let </span><span class="kw-2">mut </span>io = this.inner.<span class="number">1</span>.borrow_mut();
+        <span class="kw">while </span>!inner.buffer.is_empty() {
+            <span class="kw">match </span>Pin::new(io.deref_mut()).poll_write(task, <span class="kw-2">&amp;</span>inner.buffer) {
+                Poll::Ready(<span class="prelude-val">Ok</span>(n)) =&gt; {
+                    <span class="kw">if </span>n == <span class="number">0 </span>{
+                        inner.error = <span class="prelude-val">Some</span>(
+                            io::Error::new(
+                                io::ErrorKind::WriteZero,
                                 <span class="string">&quot;failed to write frame to transport&quot;</span>,
                             )
-                            .<span class="ident">into</span>(),
+                            .into(),
                         );
-                        <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+                        <span class="kw">return </span>Poll::Ready(());
                     }
-                    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">split_to</span>(<span class="ident">n</span>);
+                    <span class="kw">let _ </span>= inner.buffer.split_to(n);
                 }
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="kw-2">ref</span> <span class="ident">e</span>)) <span class="kw">if</span> <span class="ident">e</span>.<span class="ident">kind</span>() <span class="op">==</span> <span class="ident">io::ErrorKind::WouldBlock</span> =&gt; {
-                    <span class="kw">return</span> <span class="kw">if</span> <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">inner</span>.<span class="ident">low</span> {
-                        <span class="ident">Poll::Ready</span>(())
-                    } <span class="kw">else</span> {
-                        <span class="ident">Poll::Pending</span>
+                Poll::Ready(<span class="prelude-val">Err</span>(<span class="kw-2">ref </span>e)) <span class="kw">if </span>e.kind() == io::ErrorKind::WouldBlock =&gt; {
+                    <span class="kw">return if </span>inner.buffer.len() &lt; inner.low {
+                        Poll::Ready(())
+                    } <span class="kw">else </span>{
+                        Poll::Pending
                     };
                 }
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) =&gt; {
-                    <span class="ident">inner</span>.<span class="ident">error</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">e</span>.<span class="ident">into</span>());
-                    <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+                Poll::Ready(<span class="prelude-val">Err</span>(e)) =&gt; {
+                    inner.error = <span class="prelude-val">Some</span>(e.into());
+                    <span class="kw">return </span>Poll::Ready(());
                 }
-                <span class="ident">Poll::Pending</span> =&gt; <span class="kw">return</span> <span class="ident">Poll::Pending</span>,
+                Poll::Pending =&gt; <span class="kw">return </span>Poll::Pending,
             }
         }
-        <span class="ident">Poll::Ready</span>(())
+        Poll::Ready(())
     }
 }
 
-<span class="doccomment">/// A wrapper for the `AsyncWrite` and `Encoder` types. The [`AsyncWrite`] will be flushed when this</span>
-<span class="doccomment">/// struct is dropped.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FramedWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>, <span class="ident">U</span>: <span class="ident">Encoder</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">enc</span>: <span class="ident">U</span>,
-    <span class="ident">inner</span>: <span class="ident">UnsafeWriter</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">U::Error</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A wrapper for the `AsyncWrite` and `Encoder` types. The [`AsyncWrite`] will be flushed when this
+/// struct is dropped.
+</span><span class="kw">pub struct </span>FramedWrite&lt;I, T: AsyncWrite + Unpin, U: Encoder&lt;I&gt;&gt; {
+    enc: U,
+    inner: UnsafeWriter&lt;T, U::Error&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>, <span class="ident">U</span>: <span class="ident">Encoder</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">FramedWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">C</span><span class="op">&gt;</span>(<span class="ident">io</span>: <span class="ident">T</span>, <span class="ident">enc</span>: <span class="ident">U</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">C</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">C</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">U::Error</span><span class="op">&gt;</span>,
-        <span class="ident">C</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-        <span class="ident">U::Error</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">T</span>: <span class="ident">Unpin</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+<span class="kw">impl</span>&lt;I, T: AsyncWrite + Unpin, U: Encoder&lt;I&gt;&gt; FramedWrite&lt;I, T, U&gt; {
+    <span class="kw">pub fn </span>new&lt;A, C&gt;(io: T, enc: U, ctx: <span class="kw-2">&amp;mut </span>C) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>A: Actor&lt;Context = C&gt; + WriteHandler&lt;U::Error&gt;,
+        C: AsyncContext&lt;A&gt;,
+        U::Error: <span class="lifetime">&#39;static</span>,
+        T: Unpin + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">UnsafeWriter</span>(
-            <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">InnerWriter</span> {
-                <span class="ident">flags</span>: <span class="ident">Flags::empty</span>(),
-                <span class="ident">buffer</span>: <span class="ident">BytesMut::new</span>(),
-                <span class="ident">error</span>: <span class="prelude-val">None</span>,
-                <span class="ident">low</span>: <span class="ident">LOW_WATERMARK</span>,
-                <span class="ident">high</span>: <span class="ident">HIGH_WATERMARK</span>,
-                <span class="ident">handle</span>: <span class="ident">SpawnHandle::default</span>(),
-                <span class="ident">task</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>inner = UnsafeWriter(
+            Rc::new(RefCell::new(InnerWriter {
+                flags: Flags::empty(),
+                buffer: BytesMut::new(),
+                error: <span class="prelude-val">None</span>,
+                low: LOW_WATERMARK,
+                high: HIGH_WATERMARK,
+                handle: SpawnHandle::default(),
+                task: <span class="prelude-val">None</span>,
             })),
-            <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">io</span>)),
+            Rc::new(RefCell::new(io)),
         );
-        <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">WriterFut</span> {
-            <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
+        <span class="kw">let </span>h = ctx.spawn(WriterFut {
+            inner: inner.clone(),
         });
 
-        <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="self">Self</span> { <span class="ident">enc</span>, <span class="ident">inner</span> };
-        <span class="ident">writer</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>().<span class="ident">handle</span> <span class="op">=</span> <span class="ident">h</span>;
-        <span class="ident">writer</span>
+        <span class="kw">let </span>writer = <span class="self">Self </span>{ enc, inner };
+        writer.inner.<span class="number">0</span>.borrow_mut().handle = h;
+        writer
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_buffer</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">C</span><span class="op">&gt;</span>(<span class="ident">io</span>: <span class="ident">T</span>, <span class="ident">enc</span>: <span class="ident">U</span>, <span class="ident">buffer</span>: <span class="ident">BytesMut</span>, <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">C</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">C</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">U::Error</span><span class="op">&gt;</span>,
-        <span class="ident">C</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
-        <span class="ident">U::Error</span>: <span class="lifetime">&#39;static</span>,
-        <span class="ident">T</span>: <span class="ident">Unpin</span> <span class="op">+</span> <span class="lifetime">&#39;static</span>,
+    <span class="kw">pub fn </span>from_buffer&lt;A, C&gt;(io: T, enc: U, buffer: BytesMut, ctx: <span class="kw-2">&amp;mut </span>C) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>A: Actor&lt;Context = C&gt; + WriteHandler&lt;U::Error&gt;,
+        C: AsyncContext&lt;A&gt;,
+        U::Error: <span class="lifetime">&#39;static</span>,
+        T: Unpin + <span class="lifetime">&#39;static</span>,
     {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">UnsafeWriter</span>(
-            <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">InnerWriter</span> {
-                <span class="ident">buffer</span>,
-                <span class="ident">flags</span>: <span class="ident">Flags::empty</span>(),
-                <span class="ident">error</span>: <span class="prelude-val">None</span>,
-                <span class="ident">low</span>: <span class="ident">LOW_WATERMARK</span>,
-                <span class="ident">high</span>: <span class="ident">HIGH_WATERMARK</span>,
-                <span class="ident">handle</span>: <span class="ident">SpawnHandle::default</span>(),
-                <span class="ident">task</span>: <span class="prelude-val">None</span>,
+        <span class="kw">let </span>inner = UnsafeWriter(
+            Rc::new(RefCell::new(InnerWriter {
+                buffer,
+                flags: Flags::empty(),
+                error: <span class="prelude-val">None</span>,
+                low: LOW_WATERMARK,
+                high: HIGH_WATERMARK,
+                handle: SpawnHandle::default(),
+                task: <span class="prelude-val">None</span>,
             })),
-            <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">io</span>)),
+            Rc::new(RefCell::new(io)),
         );
-        <span class="kw">let</span> <span class="ident">h</span> <span class="op">=</span> <span class="ident">ctx</span>.<span class="ident">spawn</span>(<span class="ident">WriterFut</span> {
-            <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
+        <span class="kw">let </span>h = ctx.spawn(WriterFut {
+            inner: inner.clone(),
         });
 
-        <span class="kw">let</span> <span class="ident">writer</span> <span class="op">=</span> <span class="self">Self</span> { <span class="ident">enc</span>, <span class="ident">inner</span> };
-        <span class="ident">writer</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>().<span class="ident">handle</span> <span class="op">=</span> <span class="ident">h</span>;
-        <span class="ident">writer</span>
+        <span class="kw">let </span>writer = <span class="self">Self </span>{ enc, inner };
+        writer.inner.<span class="number">0</span>.borrow_mut().handle = h;
+        writer
     }
 
-    <span class="doccomment">/// Gracefully closes the sink.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The closing happens asynchronously.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">close</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>().<span class="ident">flags</span>.<span class="ident">insert</span>(<span class="ident">Flags::CLOSING</span>);
+    <span class="doccomment">/// Gracefully closes the sink.
+    ///
+    /// The closing happens asynchronously.
+    </span><span class="kw">pub fn </span>close(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut().flags.insert(Flags::CLOSING);
     }
 
-    <span class="doccomment">/// Checks if the sink is closed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow</span>().<span class="ident">flags</span>.<span class="ident">contains</span>(<span class="ident">Flags::CLOSED</span>)
+    <span class="doccomment">/// Checks if the sink is closed.
+    </span><span class="kw">pub fn </span>closed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.inner.<span class="number">0</span>.borrow().flags.contains(Flags::CLOSED)
     }
 
-    <span class="doccomment">/// Sets the write buffer capacity.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_buffer_capacity</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">low</span>: <span class="ident">usize</span>, <span class="ident">high</span>: <span class="ident">usize</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>();
-        <span class="ident">inner</span>.<span class="ident">low</span> <span class="op">=</span> <span class="ident">low</span>;
-        <span class="ident">inner</span>.<span class="ident">high</span> <span class="op">=</span> <span class="ident">high</span>;
+    <span class="doccomment">/// Sets the write buffer capacity.
+    </span><span class="kw">pub fn </span>set_buffer_capacity(<span class="kw-2">&amp;mut </span><span class="self">self</span>, low: usize, high: usize) {
+        <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut();
+        inner.low = low;
+        inner.high = high;
     }
 
-    <span class="doccomment">/// Writes an item to the sink.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">I</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>();
-        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">enc</span>.<span class="ident">encode</span>(<span class="ident">item</span>, <span class="kw-2">&amp;mut</span> <span class="ident">inner</span>.<span class="ident">buffer</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-            <span class="ident">inner</span>.<span class="ident">error</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">e</span>);
+    <span class="doccomment">/// Writes an item to the sink.
+    </span><span class="kw">pub fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: I) {
+        <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut();
+        <span class="kw">let _ </span>= <span class="self">self</span>.enc.encode(item, <span class="kw-2">&amp;mut </span>inner.buffer).map_err(|e| {
+            inner.error = <span class="prelude-val">Some</span>(e);
         });
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">task</span>.<span class="ident">take</span>() {
-            <span class="ident">task</span>.<span class="ident">wake_by_ref</span>();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(task) = inner.task.take() {
+            task.wake_by_ref();
         }
     }
 
-    <span class="doccomment">/// Returns the `SpawnHandle` for this writer.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SpawnHandle</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow</span>().<span class="ident">handle</span>
+    <span class="doccomment">/// Returns the `SpawnHandle` for this writer.
+    </span><span class="kw">pub fn </span>handle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SpawnHandle {
+        <span class="self">self</span>.inner.<span class="number">0</span>.borrow().handle
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span>: <span class="ident">AsyncWrite</span> <span class="op">+</span> <span class="ident">Unpin</span>, <span class="ident">U</span>: <span class="ident">Encoder</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">FramedWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">T</span>, <span class="ident">U</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="comment">// Attempts to write any remaining bytes to the stream and flush it</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">async_writer</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">1</span>.<span class="ident">borrow_mut</span>();
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="number">0</span>.<span class="ident">borrow_mut</span>();
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">is_empty</span>() {
-            <span class="comment">// Results must be ignored during drop, as the errors cannot be handled meaningfully</span>
-            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">async_writer</span>.<span class="ident">write</span>(<span class="kw-2">&amp;</span><span class="ident">inner</span>.<span class="ident">buffer</span>);
-            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">async_writer</span>.<span class="ident">flush</span>();
+<span class="kw">impl</span>&lt;I, T: AsyncWrite + Unpin, U: Encoder&lt;I&gt;&gt; Drop <span class="kw">for </span>FramedWrite&lt;I, T, U&gt; {
+    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="comment">// Attempts to write any remaining bytes to the stream and flush it
+        </span><span class="kw">let </span><span class="kw-2">mut </span>async_writer = <span class="self">self</span>.inner.<span class="number">1</span>.borrow_mut();
+        <span class="kw">let </span>inner = <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut();
+        <span class="kw">if </span>!inner.buffer.is_empty() {
+            <span class="comment">// Results must be ignored during drop, as the errors cannot be handled meaningfully
+            </span><span class="kw">let _ </span>= async_writer.write(<span class="kw-2">&amp;</span>inner.buffer);
+            <span class="kw">let _ </span>= async_writer.flush();
         }
     }
 }
 
-<span class="doccomment">/// A wrapper for the `Sink` type.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SinkWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">InnerSinkWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A wrapper for the `Sink` type.
+</span><span class="kw">pub struct </span>SinkWrite&lt;I, S: Sink&lt;I&gt; + Unpin&gt; {
+    inner: Rc&lt;RefCell&lt;InnerSinkWrite&lt;I, S&gt;&gt;&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="lifetime">&#39;static</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span> <span class="op">+</span> <span class="lifetime">&#39;static</span><span class="op">&gt;</span> <span class="ident">SinkWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">C</span><span class="op">&gt;</span>(<span class="ident">sink</span>: <span class="ident">S</span>, <span class="ident">ctxt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">C</span>) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&lt;</span><span class="ident">Context</span> <span class="op">=</span> <span class="ident">C</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">S::Error</span><span class="op">&gt;</span>,
-        <span class="ident">C</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;I: <span class="lifetime">&#39;static</span>, S: Sink&lt;I&gt; + Unpin + <span class="lifetime">&#39;static</span>&gt; SinkWrite&lt;I, S&gt; {
+    <span class="kw">pub fn </span>new&lt;A, C&gt;(sink: S, ctxt: <span class="kw-2">&amp;mut </span>C) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>A: Actor&lt;Context = C&gt; + WriteHandler&lt;S::Error&gt;,
+        C: AsyncContext&lt;A&gt;,
     {
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">InnerSinkWrite</span> {
-            <span class="ident">_i</span>: <span class="ident">PhantomData</span>,
-            <span class="ident">closing_flag</span>: <span class="ident">Flags::empty</span>(),
-            <span class="ident">sink</span>,
-            <span class="ident">task</span>: <span class="prelude-val">None</span>,
-            <span class="ident">handle</span>: <span class="ident">SpawnHandle::default</span>(),
-            <span class="ident">buffer</span>: <span class="ident">VecDeque::new</span>(),
+        <span class="kw">let </span>inner = Rc::new(RefCell::new(InnerSinkWrite {
+            _i: PhantomData,
+            closing_flag: Flags::empty(),
+            sink,
+            task: <span class="prelude-val">None</span>,
+            handle: SpawnHandle::default(),
+            buffer: VecDeque::new(),
         }));
 
-        <span class="kw">let</span> <span class="ident">handle</span> <span class="op">=</span> <span class="ident">ctxt</span>.<span class="ident">spawn</span>(<span class="ident">SinkWriteFuture</span> {
-            <span class="ident">inner</span>: <span class="ident">inner</span>.<span class="ident">clone</span>(),
+        <span class="kw">let </span>handle = ctxt.spawn(SinkWriteFuture {
+            inner: inner.clone(),
         });
 
-        <span class="ident">inner</span>.<span class="ident">borrow_mut</span>().<span class="ident">handle</span> <span class="op">=</span> <span class="ident">handle</span>;
-        <span class="ident">SinkWrite</span> { <span class="ident">inner</span> }
+        inner.borrow_mut().handle = handle;
+        SinkWrite { inner }
     }
 
-    <span class="doccomment">/// Queues an item to be sent to the sink.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns unsent item if sink is closing or closed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">item</span>: <span class="ident">I</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">I</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow</span>().<span class="ident">closing_flag</span>.<span class="ident">is_empty</span>() {
-            <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow_mut</span>().<span class="ident">buffer</span>.<span class="ident">push_back</span>(<span class="ident">item</span>);
-            <span class="self">self</span>.<span class="ident">notify_task</span>();
+    <span class="doccomment">/// Queues an item to be sent to the sink.
+    ///
+    /// Returns unsent item if sink is closing or closed.
+    </span><span class="kw">pub fn </span>write(<span class="kw-2">&amp;mut </span><span class="self">self</span>, item: I) -&gt; <span class="prelude-ty">Result</span>&lt;(), I&gt; {
+        <span class="kw">if </span><span class="self">self</span>.inner.borrow().closing_flag.is_empty() {
+            <span class="self">self</span>.inner.borrow_mut().buffer.push_back(item);
+            <span class="self">self</span>.notify_task();
             <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">item</span>)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(item)
         }
     }
 
-    <span class="doccomment">/// Gracefully closes the sink.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The closing happens asynchronously.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">close</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow_mut</span>().<span class="ident">closing_flag</span>.<span class="ident">insert</span>(<span class="ident">Flags::CLOSING</span>);
-        <span class="self">self</span>.<span class="ident">notify_task</span>();
+    <span class="doccomment">/// Gracefully closes the sink.
+    ///
+    /// The closing happens asynchronously.
+    </span><span class="kw">pub fn </span>close(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.inner.borrow_mut().closing_flag.insert(Flags::CLOSING);
+        <span class="self">self</span>.notify_task();
     }
 
-    <span class="doccomment">/// Checks if the sink is closed.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">closed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow_mut</span>().<span class="ident">closing_flag</span>.<span class="ident">contains</span>(<span class="ident">Flags::CLOSED</span>)
+    <span class="doccomment">/// Checks if the sink is closed.
+    </span><span class="kw">pub fn </span>closed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.inner.borrow_mut().closing_flag.contains(Flags::CLOSED)
     }
 
-    <span class="kw">fn</span> <span class="ident">notify_task</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">task</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow</span>().<span class="ident">task</span> {
-            <span class="ident">task</span>.<span class="ident">wake_by_ref</span>()
+    <span class="kw">fn </span>notify_task(<span class="kw-2">&amp;</span><span class="self">self</span>) {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(task) = <span class="kw-2">&amp;</span><span class="self">self</span>.inner.borrow().task {
+            task.wake_by_ref()
         }
     }
 
-    <span class="doccomment">/// Returns the `SpawnHandle` for this writer.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">handle</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">SpawnHandle</span> {
-        <span class="self">self</span>.<span class="ident">inner</span>.<span class="ident">borrow</span>().<span class="ident">handle</span>
+    <span class="doccomment">/// Returns the `SpawnHandle` for this writer.
+    </span><span class="kw">pub fn </span>handle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; SpawnHandle {
+        <span class="self">self</span>.inner.borrow().handle
     }
 }
 
-<span class="kw">struct</span> <span class="ident">InnerSinkWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">_i</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-    <span class="ident">closing_flag</span>: <span class="ident">Flags</span>,
-    <span class="ident">sink</span>: <span class="ident">S</span>,
-    <span class="ident">task</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">task::Waker</span><span class="op">&gt;</span>,
-    <span class="ident">handle</span>: <span class="ident">SpawnHandle</span>,
+<span class="kw">struct </span>InnerSinkWrite&lt;I, S: Sink&lt;I&gt;&gt; {
+    _i: PhantomData&lt;I&gt;,
+    closing_flag: Flags,
+    sink: S,
+    task: <span class="prelude-ty">Option</span>&lt;task::Waker&gt;,
+    handle: SpawnHandle,
 
-    <span class="comment">// buffer of items to be sent so that multiple</span>
-    <span class="comment">// calls to start_send don&#39;t silently skip items</span>
-    <span class="ident">buffer</span>: <span class="ident">VecDeque</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
+    <span class="comment">// buffer of items to be sent so that multiple
+    // calls to start_send don&#39;t silently skip items
+    </span>buffer: VecDeque&lt;I&gt;,
 }
 
-<span class="kw">struct</span> <span class="ident">SinkWriteFuture</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="lifetime">&#39;static</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-    <span class="ident">inner</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">InnerSinkWrite</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="kw">struct </span>SinkWriteFuture&lt;I: <span class="lifetime">&#39;static</span>, S: Sink&lt;I&gt;&gt; {
+    inner: Rc&lt;RefCell&lt;InnerSinkWrite&lt;I, S&gt;&gt;&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">I</span>: <span class="lifetime">&#39;static</span>, <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>, <span class="ident">A</span><span class="op">&gt;</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SinkWriteFuture</span><span class="op">&lt;</span><span class="ident">I</span>, <span class="ident">S</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">Sink</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Unpin</span>,
-    <span class="ident">A</span>: <span class="ident">Actor</span> <span class="op">+</span> <span class="ident">WriteHandler</span><span class="op">&lt;</span><span class="ident">S::Error</span><span class="op">&gt;</span>,
-    <span class="ident">A::Context</span>: <span class="ident">AsyncContext</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;I: <span class="lifetime">&#39;static</span>, S: Sink&lt;I&gt;, A&gt; ActorFuture&lt;A&gt; <span class="kw">for </span>SinkWriteFuture&lt;I, S&gt;
+<span class="kw">where
+    </span>S: Sink&lt;I&gt; + Unpin,
+    A: Actor + WriteHandler&lt;S::Error&gt;,
+    A::Context: AsyncContext&lt;A&gt;,
 {
-    <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> ();
+    <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn</span> <span class="ident">poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">act</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctxt</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">cx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Output</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">this</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_mut</span>();
-        <span class="kw">let</span> <span class="ident">inner</span> <span class="op">=</span> <span class="kw-2">&amp;mut</span> <span class="ident">this</span>.<span class="ident">inner</span>.<span class="ident">borrow_mut</span>();
+    <span class="kw">fn </span>poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        act: <span class="kw-2">&amp;mut </span>A,
+        ctxt: <span class="kw-2">&amp;mut </span>A::Context,
+        cx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+        <span class="kw">let </span>this = <span class="self">self</span>.get_mut();
+        <span class="kw">let </span>inner = <span class="kw-2">&amp;mut </span>this.inner.borrow_mut();
 
-        <span class="comment">// ensure sink is ready to receive next item</span>
-        <span class="kw">match</span> <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">inner</span>.<span class="ident">sink</span>).<span class="ident">poll_ready</span>(<span class="ident">cx</span>) {
-            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Ok</span>(())) =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">item</span>) <span class="op">=</span> <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">pop_front</span>() {
-                    <span class="comment">// send front of buffer to sink</span>
-                    <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">inner</span>.<span class="ident">sink</span>).<span class="ident">start_send</span>(<span class="ident">item</span>);
+        <span class="comment">// ensure sink is ready to receive next item
+        </span><span class="kw">match </span>Pin::new(<span class="kw-2">&amp;mut </span>inner.sink).poll_ready(cx) {
+            Poll::Ready(<span class="prelude-val">Ok</span>(())) =&gt; {
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(item) = inner.buffer.pop_front() {
+                    <span class="comment">// send front of buffer to sink
+                    </span><span class="kw">let _ </span>= Pin::new(<span class="kw-2">&amp;mut </span>inner.sink).start_send(item);
                 }
             }
-            <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">_err</span>)) =&gt; {}
-            <span class="ident">Poll::Pending</span> =&gt; {}
+            Poll::Ready(<span class="prelude-val">Err</span>(_err)) =&gt; {}
+            Poll::Pending =&gt; {}
         }
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">inner</span>.<span class="ident">closing_flag</span>.<span class="ident">contains</span>(<span class="ident">Flags::CLOSING</span>) {
-            <span class="kw">match</span> <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">inner</span>.<span class="ident">sink</span>).<span class="ident">poll_flush</span>(<span class="ident">cx</span>) {
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) =&gt; {
-                    <span class="kw">if</span> <span class="ident">act</span>.<span class="ident">error</span>(<span class="ident">e</span>, <span class="ident">ctxt</span>) <span class="op">==</span> <span class="ident">Running::Stop</span> {
-                        <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctxt</span>);
-                        <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+        <span class="kw">if </span>!inner.closing_flag.contains(Flags::CLOSING) {
+            <span class="kw">match </span>Pin::new(<span class="kw-2">&amp;mut </span>inner.sink).poll_flush(cx) {
+                Poll::Ready(<span class="prelude-val">Err</span>(e)) =&gt; {
+                    <span class="kw">if </span>act.error(e, ctxt) == Running::Stop {
+                        act.finished(ctxt);
+                        <span class="kw">return </span>Poll::Ready(());
                     }
                 }
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Ok</span>(())) =&gt; {}
-                <span class="ident">Poll::Pending</span> =&gt; {}
+                Poll::Ready(<span class="prelude-val">Ok</span>(())) =&gt; {}
+                Poll::Pending =&gt; {}
             }
-        } <span class="kw">else</span> {
-            <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">inner</span>.<span class="ident">closing_flag</span>.<span class="ident">contains</span>(<span class="ident">Flags::CLOSED</span>));
-            <span class="kw">match</span> <span class="ident">Pin::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">inner</span>.<span class="ident">sink</span>).<span class="ident">poll_close</span>(<span class="ident">cx</span>) {
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Err</span>(<span class="ident">e</span>)) =&gt; {
-                    <span class="kw">if</span> <span class="ident">act</span>.<span class="ident">error</span>(<span class="ident">e</span>, <span class="ident">ctxt</span>) <span class="op">==</span> <span class="ident">Running::Stop</span> {
-                        <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctxt</span>);
-                        <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+        } <span class="kw">else </span>{
+            <span class="macro">assert!</span>(!inner.closing_flag.contains(Flags::CLOSED));
+            <span class="kw">match </span>Pin::new(<span class="kw-2">&amp;mut </span>inner.sink).poll_close(cx) {
+                Poll::Ready(<span class="prelude-val">Err</span>(e)) =&gt; {
+                    <span class="kw">if </span>act.error(e, ctxt) == Running::Stop {
+                        act.finished(ctxt);
+                        <span class="kw">return </span>Poll::Ready(());
                     }
                 }
-                <span class="ident">Poll::Ready</span>(<span class="prelude-val">Ok</span>(())) =&gt; {
-                    <span class="comment">// ensure all items in buffer have been sent before closing</span>
-                    <span class="kw">if</span> <span class="ident">inner</span>.<span class="ident">buffer</span>.<span class="ident">is_empty</span>() {
-                        <span class="ident">inner</span>.<span class="ident">closing_flag</span> <span class="op">|</span><span class="op">=</span> <span class="ident">Flags::CLOSED</span>;
-                        <span class="ident">act</span>.<span class="ident">finished</span>(<span class="ident">ctxt</span>);
-                        <span class="kw">return</span> <span class="ident">Poll::Ready</span>(());
+                Poll::Ready(<span class="prelude-val">Ok</span>(())) =&gt; {
+                    <span class="comment">// ensure all items in buffer have been sent before closing
+                    </span><span class="kw">if </span>inner.buffer.is_empty() {
+                        inner.closing_flag |= Flags::CLOSED;
+                        act.finished(ctxt);
+                        <span class="kw">return </span>Poll::Ready(());
                     }
                 }
-                <span class="ident">Poll::Pending</span> =&gt; {}
+                Poll::Pending =&gt; {}
             }
         }
 
-        <span class="ident">inner</span>.<span class="ident">task</span>.<span class="ident">replace</span>(<span class="ident">cx</span>.<span class="ident">waker</span>().<span class="ident">clone</span>());
+        inner.task.replace(cx.waker().clone());
 
-        <span class="ident">Poll::Pending</span>
+        Poll::Pending
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>

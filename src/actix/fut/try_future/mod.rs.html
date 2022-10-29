@@ -1,10 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/try_future/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../actix/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1">
-                                <a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div>
-                        </div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/try_future/mod.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><div class="width-limiter"><nav class="sub"><a class="sub-logo-container" href="../../../../actix/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -143,145 +137,144 @@
 <span id="137">137</span>
 <span id="138">138</span>
 <span id="139">139</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">std</span>::{
-    <span class="ident">pin::Pin</span>,
-    <span class="ident">task</span>::{<span class="ident">Context</span>, <span class="ident">Poll</span>},
+</pre><pre class="rust"><code><span class="kw">use </span>std::{
+    pin::Pin,
+    task::{Context, Poll},
 };
 
-<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">actor::Actor</span>, <span class="ident">fut::future::ActorFuture</span>};
+<span class="kw">use crate</span>::{actor::Actor, fut::future::ActorFuture};
 
-<span class="kw">mod</span> <span class="ident">and_then</span>;
-<span class="kw">mod</span> <span class="ident">map_err</span>;
-<span class="kw">mod</span> <span class="ident">map_ok</span>;
+<span class="kw">mod </span>and_then;
+<span class="kw">mod </span>map_err;
+<span class="kw">mod </span>map_ok;
 
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">and_then::AndThen</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">map_err::MapErr</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="ident">map_ok::MapOk</span>;
+<span class="kw">pub use </span>and_then::AndThen;
+<span class="kw">pub use </span>map_err::MapErr;
+<span class="kw">pub use </span>map_ok::MapOk;
 
-<span class="kw">mod</span> <span class="ident">private_try_act_future</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::{<span class="ident">Actor</span>, <span class="ident">ActorFuture</span>};
+<span class="kw">mod </span>private_try_act_future {
+    <span class="kw">use super</span>::{Actor, ActorFuture};
 
-    <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Sealed</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {}
+    <span class="kw">pub trait </span>Sealed&lt;A&gt; {}
 
-    <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">F</span>, <span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> <span class="ident">Sealed</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span>
-    <span class="kw">where</span>
-        <span class="ident">A</span>: <span class="ident">Actor</span>,
-        <span class="ident">F</span>: <span class="question-mark">?</span><span class="ident">Sized</span> <span class="op">+</span> <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    <span class="kw">impl</span>&lt;A, F, T, E&gt; Sealed&lt;A&gt; <span class="kw">for </span>F
+    <span class="kw">where
+        </span>A: Actor,
+        F: <span class="question-mark">?</span>Sized + ActorFuture&lt;A, Output = <span class="prelude-ty">Result</span>&lt;T, E&gt;&gt;,
     {
     }
 }
 
-<span class="doccomment">/// A convenience for actor futures that return `Result` values that includes</span>
-<span class="doccomment">/// a variety of adapters tailored to such actor futures.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">+</span> <span class="ident">private_try_act_future::Sealed</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// The type of successful values yielded by this actor future</span>
-    <span class="kw">type</span> <span class="prelude-val">Ok</span>;
+<span class="doccomment">/// A convenience for actor futures that return `Result` values that includes
+/// a variety of adapters tailored to such actor futures.
+</span><span class="kw">pub trait </span>ActorTryFuture&lt;A: Actor&gt;: ActorFuture&lt;A&gt; + private_try_act_future::Sealed&lt;A&gt; {
+    <span class="doccomment">/// The type of successful values yielded by this actor future
+    </span><span class="kw">type </span><span class="prelude-val">Ok</span>;
 
-    <span class="doccomment">/// The type of failures yielded by this actor  future</span>
-    <span class="kw">type</span> <span class="ident">Error</span>;
+    <span class="doccomment">/// The type of failures yielded by this actor  future
+    </span><span class="kw">type </span>Error;
 
-    <span class="doccomment">/// Poll this `ActorTryFuture` as if it were a `ActorFuture`.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method is a stopgap for a compiler limitation that prevents us from</span>
-    <span class="doccomment">/// directly inheriting from the `ActorFuture` trait; in the actor future it</span>
-    <span class="doccomment">/// won&#39;t be needed.</span>
-    <span class="kw">fn</span> <span class="ident">try_poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Ok</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+    <span class="doccomment">/// Poll this `ActorTryFuture` as if it were a `ActorFuture`.
+    ///
+    /// This method is a stopgap for a compiler limitation that prevents us from
+    /// directly inheriting from the `ActorFuture` trait; in the actor future it
+    /// won&#39;t be needed.
+    </span><span class="kw">fn </span>try_poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        srv: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;<span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Ok, <span class="self">Self</span>::Error&gt;&gt;;
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">F</span>, <span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">F</span>: <span class="ident">ActorFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Output</span> <span class="op">=</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span>,
+<span class="kw">impl</span>&lt;A, F, T, E&gt; ActorTryFuture&lt;A&gt; <span class="kw">for </span>F
+<span class="kw">where
+    </span>A: Actor,
+    F: ActorFuture&lt;A, Output = <span class="prelude-ty">Result</span>&lt;T, E&gt;&gt; + <span class="question-mark">?</span>Sized,
 {
-    <span class="kw">type</span> <span class="prelude-val">Ok</span> <span class="op">=</span> <span class="ident">T</span>;
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">E</span>;
+    <span class="kw">type </span><span class="prelude-val">Ok </span>= T;
+    <span class="kw">type </span>Error = E;
 
-    <span class="kw">fn</span> <span class="ident">try_poll</span>(
-        <span class="self">self</span>: <span class="ident">Pin</span><span class="op">&lt;</span><span class="kw-2">&amp;mut</span> <span class="self">Self</span><span class="op">&gt;</span>,
-        <span class="ident">srv</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A</span>,
-        <span class="ident">ctx</span>: <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>,
-        <span class="ident">task</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Context</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">Poll</span><span class="op">&lt;</span><span class="ident">F::Output</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">poll</span>(<span class="ident">srv</span>, <span class="ident">ctx</span>, <span class="ident">task</span>)
+    <span class="kw">fn </span>try_poll(
+        <span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;,
+        srv: <span class="kw-2">&amp;mut </span>A,
+        ctx: <span class="kw-2">&amp;mut </span>A::Context,
+        task: <span class="kw-2">&amp;mut </span>Context&lt;<span class="lifetime">&#39;_</span>&gt;,
+    ) -&gt; Poll&lt;F::Output&gt; {
+        <span class="self">self</span>.poll(srv, ctx, task)
     }
 }
 
-<span class="doccomment">/// Adapters specific to [`Result`]-returning actor futures</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ActorTryFutureExt</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Actor</span><span class="op">&gt;</span>: <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Executes another actor future after this one resolves successfully.</span>
-    <span class="doccomment">/// The success value is passed to a closure to create this subsequent</span>
-    <span class="doccomment">/// actor future.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The provided closure `f` will only be called if this actor future is</span>
-    <span class="doccomment">/// resolved to an [`Ok`]. If this actor future resolves to an  [`Err`],</span>
-    <span class="doccomment">/// panics, or is dropped, then the provided closure will never</span>
-    <span class="doccomment">/// be invoked. The [`Error`](ActorTryFuture::Error) type of</span>
-    <span class="doccomment">/// this actor future and the actor future returned by `f` have to match.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note that this method consumes the actor future it is called on and</span>
-    <span class="doccomment">/// returns a wrapped version of it.</span>
-    <span class="kw">fn</span> <span class="ident">and_then</span><span class="op">&lt;</span><span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">AndThen</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Fut</span>, <span class="ident">F</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident"><span class="self">Self</span>::Ok</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">Fut</span>,
-        <span class="ident">Fut</span>: <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">Error</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+<span class="doccomment">/// Adapters specific to [`Result`]-returning actor futures
+</span><span class="kw">pub trait </span>ActorTryFutureExt&lt;A: Actor&gt;: ActorTryFuture&lt;A&gt; {
+    <span class="doccomment">/// Executes another actor future after this one resolves successfully.
+    /// The success value is passed to a closure to create this subsequent
+    /// actor future.
+    ///
+    /// The provided closure `f` will only be called if this actor future is
+    /// resolved to an [`Ok`]. If this actor future resolves to an  [`Err`],
+    /// panics, or is dropped, then the provided closure will never
+    /// be invoked. The [`Error`](ActorTryFuture::Error) type of
+    /// this actor future and the actor future returned by `f` have to match.
+    ///
+    /// Note that this method consumes the actor future it is called on and
+    /// returns a wrapped version of it.
+    </span><span class="kw">fn </span>and_then&lt;Fut, F&gt;(<span class="self">self</span>, f: F) -&gt; AndThen&lt;<span class="self">Self</span>, Fut, F&gt;
+    <span class="kw">where
+        </span>F: FnOnce(<span class="self">Self</span>::Ok, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; Fut,
+        Fut: ActorTryFuture&lt;A, Error = <span class="self">Self</span>::Error&gt;,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">and_then::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        and_then::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Maps this actor future&#39;s success value to a different value.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method can be used to change the [`Ok`](ActorTryFuture::Ok) type</span>
-    <span class="doccomment">/// of the actor future into a different type. It is similar to the</span>
-    <span class="doccomment">/// [`Result::map`]  method. You can use this method to chain along a</span>
-    <span class="doccomment">/// computation once the actor future has been resolved.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The provided closure `f` will only be called if this actor future is</span>
-    <span class="doccomment">/// resolved to an [`Ok`]. If it resolves to an [`Err`], panics, or is</span>
-    <span class="doccomment">/// dropped, then the provided closure will never be invoked.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note that this method consumes the actor future it is called on and</span>
-    <span class="doccomment">/// returns a wrapped version of it.</span>
-    <span class="kw">fn</span> <span class="ident">map_ok</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">MapOk</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident"><span class="self">Self</span>::Ok</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">T</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Maps this actor future&#39;s success value to a different value.
+    ///
+    /// This method can be used to change the [`Ok`](ActorTryFuture::Ok) type
+    /// of the actor future into a different type. It is similar to the
+    /// [`Result::map`]  method. You can use this method to chain along a
+    /// computation once the actor future has been resolved.
+    ///
+    /// The provided closure `f` will only be called if this actor future is
+    /// resolved to an [`Ok`]. If it resolves to an [`Err`], panics, or is
+    /// dropped, then the provided closure will never be invoked.
+    ///
+    /// Note that this method consumes the actor future it is called on and
+    /// returns a wrapped version of it.
+    </span><span class="kw">fn </span>map_ok&lt;T, F&gt;(<span class="self">self</span>, f: F) -&gt; MapOk&lt;<span class="self">Self</span>, F&gt;
+    <span class="kw">where
+        </span>F: FnOnce(<span class="self">Self</span>::Ok, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; T,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">MapOk::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        MapOk::new(<span class="self">self</span>, f)
     }
 
-    <span class="doccomment">/// Maps this actor future&#39;s error value to a different value.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method can be used to change the [`Error`](ActorTryFuture::Error)</span>
-    <span class="doccomment">/// type of the actor future into a different type. It is similar to the</span>
-    <span class="doccomment">/// [`Result::map_err`] method.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// The provided closure `f` will only be called if this actor future is</span>
-    <span class="doccomment">/// resolved to an [`Err`]. If it resolves to an [`Ok`], panics, or is</span>
-    <span class="doccomment">/// dropped, then the provided closure will never be invoked.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note that this method consumes the actor future it is called on and</span>
-    <span class="doccomment">/// returns a wrapped version of it.</span>
-    <span class="kw">fn</span> <span class="ident">map_err</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">MapErr</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">F</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="ident"><span class="self">Self</span>::Error</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A</span>, <span class="kw-2">&amp;mut</span> <span class="ident">A::Context</span>) -&gt; <span class="ident">T</span>,
-        <span class="self">Self</span>: <span class="ident">Sized</span>,
+    <span class="doccomment">/// Maps this actor future&#39;s error value to a different value.
+    ///
+    /// This method can be used to change the [`Error`](ActorTryFuture::Error)
+    /// type of the actor future into a different type. It is similar to the
+    /// [`Result::map_err`] method.
+    ///
+    /// The provided closure `f` will only be called if this actor future is
+    /// resolved to an [`Err`]. If it resolves to an [`Ok`], panics, or is
+    /// dropped, then the provided closure will never be invoked.
+    ///
+    /// Note that this method consumes the actor future it is called on and
+    /// returns a wrapped version of it.
+    </span><span class="kw">fn </span>map_err&lt;T, F&gt;(<span class="self">self</span>, f: F) -&gt; MapErr&lt;<span class="self">Self</span>, F&gt;
+    <span class="kw">where
+        </span>F: FnOnce(<span class="self">Self</span>::Error, <span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) -&gt; T,
+        <span class="self">Self</span>: Sized,
     {
-        <span class="ident">MapErr::new</span>(<span class="self">self</span>, <span class="ident">f</span>)
+        MapErr::new(<span class="self">self</span>, f)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">A</span>, <span class="ident">F</span><span class="op">&gt;</span> <span class="ident">ActorTryFutureExt</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">F</span>
-<span class="kw">where</span>
-    <span class="ident">A</span>: <span class="ident">Actor</span>,
-    <span class="ident">F</span>: <span class="ident">ActorTryFuture</span><span class="op">&lt;</span><span class="ident">A</span><span class="op">&gt;</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span>,
+<span class="kw">impl</span>&lt;A, F&gt; ActorTryFutureExt&lt;A&gt; <span class="kw">for </span>F
+<span class="kw">where
+    </span>A: Actor,
+    F: ActorTryFuture&lt;A&gt; + <span class="question-mark">?</span>Sized,
 {
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.64.0-nightly (06754d885 2022-07-08)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="actix" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.0-nightly (9565dfeb4 2022-10-28)" ></div></body></html>
