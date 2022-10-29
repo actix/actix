@@ -18,7 +18,7 @@ pub type RecipientRequest<M> = MsgRequest<Box<dyn Sender<M>>, M>;
 
 pin_project! {
     /// A `Future` which represents an asynchronous message sending process.
-    #[must_use = "You have to wait on request otherwise the Message wont be delivered"]
+    #[must_use = "You must wait on the request otherwise the Message will not be delivered"]
     pub struct MsgRequest<S, M>
     where
         S: Sender<M>,
