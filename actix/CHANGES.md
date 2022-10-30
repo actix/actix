@@ -8,6 +8,7 @@
 
 [#527]: https://github.com/actix/actix/pull/527
 
+
 ## 0.13.0 - 2022-03-01
 ### Added
 - Add `Sender::downgrade` trait method. [#518]
