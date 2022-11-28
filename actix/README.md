@@ -21,7 +21,7 @@
 
 ## Documentation
 
-- [User Guide](https://actix.rs/book/actix)
+- [User Guide](https://actix.rs/docs/actix)
 - [API Documentation](https://docs.rs/actix)
 - [API Documentation (master branch)](https://actix.rs/actix/actix)
 
