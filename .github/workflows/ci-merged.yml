@@ -20,38 +20,30 @@ jobs:
     runs-on: ${{ matrix.target.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install ${{ matrix.version }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.version }}-${{ matrix.target.triple }}
-          profile: minimal
-          override: true
+        run: |
+          rustup set profile minimal
+          rustup install ${{ matrix.version }}-${{ matrix.target.triple }}
+          rustup override set ${{ matrix.version }}-${{ matrix.target.triple }}
 
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
 
       - name: Generate Cargo.lock
-        uses: actions-rs/cargo@v1
-        with:
-          command: generate-lockfile
+        run: cargo generate-lockfile
       - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v1.2.0
+        uses: Swatinem/rust-cache@v2.2.0
 
       - name: check minimal
-        uses: actions-rs/cargo@v1
-        with:
-          command: hack
-          args: --clean-per-run check --workspace --no-default-features
+        run: cargo hack --clean-per-run check --workspace --no-default-features
 
       - name: tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -v --workspace --all-features --no-fail-fast -- --nocapture
+        run: cargo test -v --workspace --all-features --no-fail-fast -- --nocapture
 
       - name: Clear the cargo caches
         run: |
-          cargo install cargo-cache --version 0.6.2 --no-default-features --features ci-autoclean
+          rustup override set stable
+          cargo install cargo-cache --version 0.8.3 --no-default-features --features ci-autoclean
           cargo-cache
