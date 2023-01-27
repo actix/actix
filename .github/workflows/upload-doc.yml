@@ -9,27 +9,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-x86_64-unknown-linux-gnu
-          profile: minimal
-          override: true
+        run: |
+          rustup set profile minimal
+          rustup install nightly-x86_64-unknown-linux-gnu
+          rustup override set nightly
 
       - name: Build Docs
-        uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --workspace --all-features --no-deps
+        run: cargo doc --workspace --all-features --no-deps
 
       - name: Tweak HTML
         run: echo '<meta http-equiv="refresh" content="0;url=actix/index.html">' > target/doc/index.html
 
+      # TODO(JohnTitor): deploy via GHA directly instead.
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@3.7.1
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: target/doc
+          folder: target/doc
