@@ -121,22 +121,28 @@ impl Registry {
     /// If actor is not registered, starts new actor and
     /// return address of newly created actor.
     pub fn get<A: ArbiterService + Actor<Context = Context<A>>>(&self) -> Addr<A> {
-        let id = TypeId::of::<A>();
-        if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<Addr<A>>() {
-                return addr.clone();
-            }
-        }
-        let addr: Addr<A> = A::start_service();
+        let addr = self.try_get::<A>().unwrap_or_else(A::start_service);
 
         self.registry
             .borrow_mut()
-            .insert(id, Box::new(addr.clone()));
+            .insert(TypeId::of::<A>(), Box::new(addr.clone()));
         addr
     }
 
+    /// Query registry for specific actor. Returns address of the actor.
+    /// If actor is not registered, returns `None`.
+    pub fn try_get<A: Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
+        let id = TypeId::of::<A>();
+        if let Some(addr) = self.registry.borrow().get(&id) {
+            if let Some(addr) = addr.downcast_ref::<Addr<A>>() {
+                return Some(addr.clone());
+            }
+        }
+        None
+    }
+
     /// Check if actor is in registry, if so, return its address
-    pub fn query<A: ArbiterService + Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
+    pub fn query<A: Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
         let id = TypeId::of::<A>();
         if let Some(addr) = self.registry.borrow().get(&id) {
             if let Some(addr) = addr.downcast_ref::<Addr<A>>() {
@@ -147,7 +153,7 @@ impl Registry {
     }
 
     /// Add new actor to the registry by address, panic if actor is already running
-    pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(addr: Addr<A>) {
+    pub fn set<A: Actor<Context = Context<A>>>(addr: Addr<A>) {
         AREG.with(|reg| {
             let id = TypeId::of::<A>();
             if let Some(addr) = reg.registry.borrow().get(&id) {
