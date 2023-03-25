@@ -1,6 +1,6 @@
 # CHANGES
 
-## Unreleased - 2022-xx-xx
+## Unreleased - 2023-xx-xx
 
 ### Added
 - Derive `PartialEq` and `Eq` for `MailboxError`. [#527]
