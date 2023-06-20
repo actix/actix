@@ -80,7 +80,7 @@ mod timeout;
 ///
 /// impl Handler<DeferredWork> for OriginalActor {
 ///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
-///     type Result = ResponseActFuture<Self, Result<OriginalActorResponse, MessageError>>;
+///     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 ///
 ///     fn handle(&mut self, _msg: DeferredWork, _ctx: &mut Context<Self>) -> Self::Result {
 ///         // this creates a `Future` representing the `.send` and subsequent `Result` from
