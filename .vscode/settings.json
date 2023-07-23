@@ -1,5 +1,10 @@
 {
     "cSpell.words": [
-        "actix"
+        "actix",
+        "codecov",
+        "println",
+        "rtype",
+        "struct",
+        "usize"
     ]
 }
