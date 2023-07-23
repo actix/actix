@@ -48,6 +48,7 @@ jobs:
 
       - name: tests
         run: cargo test -v --workspace --all-features --no-fail-fast -- --nocapture
+        timeout-minutes: 10
 
       # disable coverage for now
       # - name: Generate coverage file

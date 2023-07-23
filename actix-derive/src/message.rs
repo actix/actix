@@ -1,5 +1,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, ToTokens};
+use syn::parse::Parser as _;
+
+type AttributeArgs = syn::punctuated::Punctuated<syn::Meta, syn::Token![,]>;
 
 pub const MESSAGE_ATTR: &str = "rtype";
 
@@ -45,61 +48,92 @@ fn get_attribute_type_multiple(
     let attr = ast
         .attrs
         .iter()
-        .find_map(|a| {
-            let a = a.parse_meta();
-            match a {
-                Ok(meta) => {
-                    if meta.path().is_ident(name) {
-                        Some(meta)
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
+        .find_map(|attr| {
+            if attr.path().is_ident(name) {
+                attr.parse_args().ok()
+            } else {
+                None
             }
         })
         .ok_or_else(|| {
-            syn::Error::new(Span::call_site(), format!("Expect an attribute `{}`", name))
+            syn::Error::new(Span::call_site(), format!("Expect an attribute `{name}`"))
         })?;
 
-    if let syn::Meta::List(ref list) = attr {
-        Ok(list
-            .nested
-            .iter()
-            .map(|m| meta_item_to_ty(m).ok())
-            .collect())
-    } else {
-        Err(syn::Error::new_spanned(
-            attr,
-            format!("The correct syntax is #[{}(type, type, ...)]", name),
-        ))
+    match attr {
+        syn::Meta::List(ref list) => {
+            let parser = AttributeArgs::parse_terminated;
+            let args = match parser.parse2(list.tokens.clone()) {
+                Ok(args) => args,
+                Err(_) => {
+                    return Err(syn::Error::new_spanned(
+                        attr,
+                        format!("The correct syntax is #[{name}(type, type, ...)]"),
+                    ))
+                }
+            };
+
+            Ok(args.iter().map(|m| meta_item_to_ty(m).ok()).collect())
+        }
+
+        syn::Meta::NameValue(ref nv) => match nv.path.get_ident() {
+            Some(ident) if ident == "result" => {
+                if let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(lit),
+                    ..
+                }) = nv.value.clone()
+                {
+                    if let Ok(ty) = syn::parse_str::<syn::Type>(&lit.value()) {
+                        return Ok(vec![Some(ty)]);
+                    }
+                }
+                Err(syn::Error::new_spanned(&nv.value, "Expect type"))
+            }
+            _ => Err(syn::Error::new_spanned(
+                &nv.value,
+                r#"Expect `result = "TYPE"`"#,
+            )),
+        },
+
+        syn::Meta::Path(path) => match path.get_ident() {
+            Some(ident) => syn::parse_str::<syn::Type>(&ident.to_string())
+                .map(|ty| vec![Some(ty)])
+                .map_err(|_| syn::Error::new_spanned(ident, "Expect type")),
+            None => Err(syn::Error::new_spanned(path, "Expect type")),
+        },
     }
 }
 
-fn meta_item_to_ty(meta_item: &syn::NestedMeta) -> syn::Result<syn::Type> {
+fn meta_item_to_ty(meta_item: &syn::Meta) -> syn::Result<syn::Type> {
     match meta_item {
-        syn::NestedMeta::Meta(syn::Meta::Path(ref path)) => match path.get_ident() {
+        syn::Meta::Path(path) => match path.get_ident() {
             Some(ident) => syn::parse_str::<syn::Type>(&ident.to_string())
                 .map_err(|_| syn::Error::new_spanned(ident, "Expect type")),
             None => Err(syn::Error::new_spanned(path, "Expect type")),
         },
-        syn::NestedMeta::Meta(syn::Meta::NameValue(val)) => match val.path.get_ident() {
+        syn::Meta::NameValue(nv) => match nv.path.get_ident() {
             Some(ident) if ident == "result" => {
-                if let syn::Lit::Str(ref s) = val.lit {
-                    if let Ok(ty) = syn::parse_str::<syn::Type>(&s.value()) {
+                if let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(lit),
+                    ..
+                }) = nv.value.clone()
+                {
+                    if let Ok(ty) = syn::parse_str::<syn::Type>(&lit.value()) {
                         return Ok(ty);
                     }
                 }
-                Err(syn::Error::new_spanned(&val.lit, "Expect type"))
+                Err(syn::Error::new_spanned(&nv.value, "Expect type"))
             }
             _ => Err(syn::Error::new_spanned(
-                &val.lit,
+                &nv.value,
                 r#"Expect `result = "TYPE"`"#,
             )),
         },
-        syn::NestedMeta::Lit(syn::Lit::Str(ref s)) => syn::parse_str::<syn::Type>(&s.value())
-            .map_err(|_| syn::Error::new_spanned(s, "Expect type")),
+        syn::Meta::List(list) => {
+            let lit_str = syn::parse2::<syn::LitStr>(list.tokens.clone())
+                .map_err(|_| syn::Error::new_spanned(list, "Expect type"))?;
 
-        meta => Err(syn::Error::new_spanned(meta, "Expect type")),
+            syn::parse_str(&lit_str.value())
+                .map_err(|_| syn::Error::new_spanned(list, "Expect type"))
+        }
     }
 }
