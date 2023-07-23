@@ -4,10 +4,8 @@
 
 ### Added
 
-- Derive `PartialEq` and `Eq` for `MailboxError`. [#527]
-- Minimum supported Rust version (MSRV) is now 1.57.
-
-[#527]: https://github.com/actix/actix/pull/527
+- Derive `PartialEq` and `Eq` for `MailboxError`.
+- Minimum supported Rust version (MSRV) is now 1.65.
 
 ## 0.13.0 - 2022-03-01
 
