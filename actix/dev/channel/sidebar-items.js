@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["channel","Creates an in-memory channel implementation of the `Stream` trait with bounded capacity."]],"struct":[["AddressReceiver","The receiving end of a channel which implements the `Stream` trait."],["AddressSender","The transmission end of a channel which is used to send values."]]};
+window.SIDEBAR_ITEMS = {"fn":["channel"],"struct":["AddressReceiver","AddressSender"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["Condition",""],["IntervalFunc","An `ActorStream` that periodically runs a function in the actor’s context."],["TimerFunc","An `ActorFuture` that runs a function in the actor’s context after a specified amount of time."]]};
+window.SIDEBAR_ITEMS = {"struct":["Condition","IntervalFunc","TimerFunc"]};

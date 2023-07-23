@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":[["mocker","Mocking utility actor."]]};
+window.SIDEBAR_ITEMS = {"mod":["mocker"]};
