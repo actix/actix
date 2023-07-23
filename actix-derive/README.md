@@ -2,11 +2,15 @@
 
 > Derive macros for `actix` actors.
 
+<!-- prettier-ignore-start -->
+
 [![crates.io](https://img.shields.io/crates/v/actix-derive?label=latest)](https://crates.io/crates/actix-derive)
 [![Documentation](https://docs.rs/actix-derive/badge.svg?version=0.6.0)](https://docs.rs/actix-derive/0.6.0)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.57+-ab6000.svg)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.65+-ab6000.svg)
 ![License](https://img.shields.io/crates/l/actix-derive.svg)
 [![Dependency Status](https://deps.rs/crate/actix/0.6.0/status.svg)](https://deps.rs/crate/actix/0.6.0)
+
+<!-- prettier-ignore-end -->
 
 ## Documentation
 
@@ -62,9 +66,7 @@ fn main() {}
 
 This project is licensed under either of
 
-- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
-  https://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or
-  https://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or https://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or https://opensource.org/licenses/MIT)
 
 at your option.
