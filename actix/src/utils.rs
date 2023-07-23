@@ -166,6 +166,7 @@ pin_project! {
     /// # }
     /// ```
     #[must_use = "future do nothing unless polled"]
+    #[allow(clippy::type_complexity)]
     pub struct IntervalFunc<A: Actor> {
         f: Box<dyn FnMut(&mut A, &mut A::Context)>,
         dur: Duration,
