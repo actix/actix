@@ -47,7 +47,7 @@ jobs:
         run: cargo hack --clean-per-run check --workspace --no-default-features
 
       - name: tests
-        run: cargo test -v --workspace --all-features --no-fail-fast -- --nocapture
+        run: cargo test --workspace --all-features --no-fail-fast -- --nocapture
         timeout-minutes: 10
 
       # disable coverage for now
