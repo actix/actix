@@ -5,12 +5,12 @@ edition = "2018"
 authors = [
     "Callym <hi@callym.com>",
     "Nikolay Kim <fafhrd91@gmail.com>",
+    "Rob Ede <robjtede@icloud.com>",
 ]
 description = "Derive macros for `actix` actors"
 readme = "README.md"
 keywords = ["actix", "actors", "derive", "macro"]
 repository = "https://github.com/actix/actix"
-documentation = "https://docs.rs/actix-derive"
 license = "MIT OR Apache-2.0"
 
 [lib]
@@ -18,8 +18,10 @@ proc-macro = true
 
 [dependencies]
 quote = "1"
-syn = { version = "1", features = ["full"] }
+syn = { version = "2", features = ["full"] }
 proc-macro2 = "1"
 
 [dev-dependencies]
-actix = { version = "0.13", default-features = false }
+actix = "0.13"
+trybuild = "1"
+rustversion = "1"
