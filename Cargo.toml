@@ -4,6 +4,11 @@ members = [
     "actix-broker",
     "actix-derive",
 ]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.65"
 
 [patch.crates-io]
 actix = { path = "actix" }

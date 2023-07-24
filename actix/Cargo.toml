@@ -6,14 +6,12 @@ authors = [
     "fakeshadow <24548779@qq.com>",
 ]
 description = "Actor framework for Rust"
-readme = "README.md"
 keywords = ["actor", "futures", "actix", "async", "tokio"]
 repository = "https://github.com/actix/actix"
-documentation = "https://docs.rs/actix"
 categories = ["network-programming", "asynchronous"]
 license = "MIT OR Apache-2.0"
-exclude = [".gitignore", ".cargo/config", ".github/**", "codecov.yml"]
-edition = "2018"
+edition.workspace = true
+rust-version.workspace = true
 
 [lib]
 name = "actix"
