@@ -27,7 +27,7 @@ then updating the initiating actor’s state:</p>
 
 <span class="kw">impl </span>Handler&lt;DeferredWork&gt; <span class="kw">for </span>OriginalActor {
     <span class="comment">// Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
-    </span><span class="kw">type </span><span class="prelude-ty">Result </span>= ResponseActFuture&lt;<span class="self">Self</span>, <span class="prelude-ty">Result</span>&lt;OriginalActorResponse, MessageError&gt;&gt;;
+    </span><span class="kw">type </span><span class="prelude-ty">Result </span>= ResponseActFuture&lt;<span class="self">Self</span>, DeferredWorkResult&gt;;
 
     <span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _msg: DeferredWork, _ctx: <span class="kw-2">&amp;mut </span>Context&lt;<span class="self">Self</span>&gt;) -&gt; <span class="self">Self</span>::Result {
         <span class="comment">// this creates a `Future` representing the `.send` and subsequent `Result` from

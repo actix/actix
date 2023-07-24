@@ -369,7 +369,7 @@
 ///
 /// impl Handler&lt;DeferredWork&gt; for OriginalActor {
 ///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
-///     type Result = ResponseActFuture&lt;Self, Result&lt;OriginalActorResponse, MessageError&gt;&gt;;
+///     type Result = ResponseActFuture&lt;Self, DeferredWorkResult&gt;;
 ///
 ///     fn handle(&amp;mut self, _msg: DeferredWork, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
 ///         // this creates a `Future` representing the `.send` and subsequent `Result` from
