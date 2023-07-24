@@ -13,7 +13,7 @@
 ![License](https://img.shields.io/crates/l/actix.svg)
 [![Dependency Status](https://deps.rs/crate/actix/0.13.0/status.svg)](https://deps.rs/crate/actix/0.13.0)
 <br />
-[![build status](https://github.com/actix/actix/workflows/CI%20%28Linux%29/badge.svg?branch=master&event=push)](https://github.com/actix/actix/actions)
+[![CI](https://github.com/actix/actix/actions/workflows/ci.yml/badge.svg)](https://github.com/actix/actix/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix)
 ![Downloads](https://img.shields.io/crates/d/actix.svg)
 [![Chat on Discord](https://img.shields.io/discord/771444961383153695?label=chat&logo=discord)](https://discord.gg/GMuKN5b8aR)
@@ -27,7 +27,6 @@
 
 - [User Guide](https://actix.rs/docs/actix)
 - [API Documentation](https://docs.rs/actix)
-- [API Documentation (master branch)](https://actix.rs/actix/actix)
 
 ## Features
 

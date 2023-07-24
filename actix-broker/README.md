@@ -13,11 +13,6 @@
 
 <!-- prettier-ignore-end -->
 
-## Documentation
-
-- [API Documentation](https://docs.rs/actix-broker)
-- [API Documentation (master branch)](https://actix.rs/actix/actix_broker)
-
 ## Credit
 
 [Original code](https://github.com/chris-ricketts/actix-broker) by [@chris-ricketts](https://github.com/chris-ricketts).
