@@ -405,8 +405,8 @@ impl<I, T: AsyncWrite + Unpin, U: Encoder<I>> Drop for FramedWrite<I, T, U> {
         let inner = self.inner.0.borrow_mut();
         if !inner.buffer.is_empty() {
             // Results must be ignored during drop, as the errors cannot be handled meaningfully
-            let _ = async_writer.write(&inner.buffer);
-            let _ = async_writer.flush();
+            drop(async_writer.write(&inner.buffer));
+            drop(async_writer.flush());
         }
     }
 }

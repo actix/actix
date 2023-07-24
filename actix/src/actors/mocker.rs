@@ -27,7 +27,6 @@
 
 use std::any::Any;
 use std::marker::PhantomData;
-use std::mem;
 
 use crate::handler::MessageResponse;
 use crate::prelude::*;
@@ -75,11 +74,10 @@ where
     type Result = M::Result;
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> M::Result {
         let mut ret = (self.mock)(Box::new(msg), ctx);
-        let out = mem::replace(
-            ret.downcast_mut::<Option<M::Result>>()
-                .expect("wrong return type for message"),
-            None,
-        );
+        let out = ret
+            .downcast_mut::<Option<M::Result>>()
+            .expect("wrong return type for message")
+            .take();
         match out {
             Some(a) => a,
             _ => panic!(),
