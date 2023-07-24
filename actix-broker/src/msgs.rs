@@ -1,6 +1,6 @@
-use actix::prelude::*;
-
 use std::any::TypeId;
+
+use actix::prelude::*;
 
 pub trait BrokerMsg: Message<Result = ()> + Send + Clone + 'static {}
 

@@ -1,8 +1,10 @@
 use tokio::sync::oneshot::Sender;
 
-use crate::actor::{Actor, AsyncContext};
-use crate::context::Context;
-use crate::handler::{Handler, Message, MessageResponse};
+use crate::{
+    actor::{Actor, AsyncContext},
+    context::Context,
+    handler::{Handler, Message, MessageResponse},
+};
 
 /// Converter trait, packs message into a suitable envelope.
 pub trait ToEnvelope<A, M: Message>

@@ -25,11 +25,9 @@
 //!
 //! See the mock example to see how it can be used.
 
-use std::any::Any;
-use std::marker::PhantomData;
+use std::{any::Any, marker::PhantomData};
 
-use crate::handler::MessageResponse;
-use crate::prelude::*;
+use crate::{handler::MessageResponse, prelude::*};
 
 /// This actor is able to wrap another actor and accept all the messages the
 /// wrapped actor can, passing it to a closure which can mock the response of

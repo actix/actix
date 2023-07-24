@@ -1,10 +1,11 @@
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use futures_util::future::Either;
 
-use crate::actor::Actor;
-use crate::fut::ActorFuture;
+use crate::{actor::Actor, fut::ActorFuture};
 
 impl<A, B, Act> ActorFuture<Act> for Either<A, B>
 where

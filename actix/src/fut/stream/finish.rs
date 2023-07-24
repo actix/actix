@@ -1,11 +1,15 @@
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use futures_core::ready;
 use pin_project_lite::pin_project;
 
-use crate::actor::Actor;
-use crate::fut::{ActorFuture, ActorStream};
+use crate::{
+    actor::Actor,
+    fut::{ActorFuture, ActorStream},
+};
 
 pin_project! {
     /// Future for the [`finish`](super::ActorStreamExt::finish) method.

@@ -1,12 +1,16 @@
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use futures_core::{ready, stream::Stream};
 use log::error;
 use pin_project_lite::pin_project;
 
-use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
-use crate::fut::ActorFuture;
+use crate::{
+    actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle},
+    fut::ActorFuture,
+};
 
 /// Stream handling for Actors.
 ///

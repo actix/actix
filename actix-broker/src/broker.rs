@@ -1,11 +1,13 @@
+use std::{
+    any::{Any, TypeId},
+    collections::HashMap,
+    hash::BuildHasherDefault,
+    marker::PhantomData,
+};
+
 use actix::prelude::*;
 use ahash::AHasher;
 use log::trace;
-
-use std::any::{Any, TypeId};
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
-use std::marker::PhantomData;
 
 use crate::msgs::*;
 

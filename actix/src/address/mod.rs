@@ -1,19 +1,23 @@
-use std::hash::{Hash, Hasher};
-use std::{error, fmt};
+use std::{
+    error, fmt,
+    hash::{Hash, Hasher},
+};
 
 pub(crate) mod channel;
 mod envelope;
 mod message;
 mod queue;
 
-use crate::actor::Actor;
-use crate::handler::{Handler, Message};
-
-pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
-pub use self::message::{RecipientRequest, Request};
-
 pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
 use self::channel::{AddressSender, Sender, WeakAddressSender, WeakSender};
+pub use self::{
+    envelope::{Envelope, EnvelopeProxy, ToEnvelope},
+    message::{RecipientRequest, Request},
+};
+use crate::{
+    actor::Actor,
+    handler::{Handler, Message},
+};
 
 pub enum SendError<T> {
     Full(T),
@@ -286,9 +290,7 @@ where
     pub fn send(&self, msg: M) -> RecipientRequest<M> {
         match self.tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) => {
-                RecipientRequest::new(None, Some((self.tx.boxed(), msg)))
-            }
+            Err(SendError::Full(msg)) => RecipientRequest::new(None, Some((self.tx.boxed(), msg))),
             Err(SendError::Closed(_)) => RecipientRequest::new(None, None),
         }
     }
@@ -445,10 +447,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
 
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::Arc;
+    use crate::prelude::*;
 
     struct ActorWithSmallMailBox(Arc<AtomicUsize>);
 

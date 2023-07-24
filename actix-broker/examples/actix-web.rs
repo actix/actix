@@ -1,7 +1,8 @@
+use std::io;
+
 use actix::prelude::*;
 use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
 use actix_web::{get, App, Error, HttpRequest, HttpResponse, HttpServer};
-use std::io;
 
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]

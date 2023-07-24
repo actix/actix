@@ -19,12 +19,15 @@ use futures_core::{stream::Stream, task::__internal::AtomicWaker};
 use parking_lot::Mutex;
 use tokio::sync::oneshot::{channel as oneshot_channel, Receiver as OneshotReceiver};
 
-use crate::actor::Actor;
-use crate::handler::{Handler, Message};
-
-use super::envelope::{Envelope, ToEnvelope};
-use super::queue::Queue;
-use super::SendError;
+use super::{
+    envelope::{Envelope, ToEnvelope},
+    queue::Queue,
+    SendError,
+};
+use crate::{
+    actor::Actor,
+    handler::{Handler, Message},
+};
 
 pub trait Sender<M>: Send
 where
@@ -892,9 +895,7 @@ mod tests {
     use std::{thread, time};
 
     use super::*;
-
-    use crate::address::queue::PopResult;
-    use crate::prelude::*;
+    use crate::{address::queue::PopResult, prelude::*};
 
     struct Act;
     impl Actor for Act {
