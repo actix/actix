@@ -76,14 +76,13 @@ type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 ///    }
 /// }
 ///
-/// fn main() {
-///     // initialize system
-///     let code = System::new().block_on(async {
-///         // Start MyActor2 in new Arbiter
-///         Arbiter::new().spawn_fn(|| {
-///             MyActor2.start();
-///         });
+/// #[actix::main]
+/// async fn main() {
+///     // Start MyActor2 in new Arbiter
+///     Arbiter::new().spawn_fn(|| {
+///         MyActor2.start();
 ///     });
+///     # System::current().stop();
 /// }
 /// ```
 #[derive(Clone)]
@@ -213,12 +212,10 @@ impl Registry {
 ///     }
 /// }
 ///
-/// fn main() {
-///     // initialize system
-///     let code = System::new().block_on(async {
-///         // Start MyActor2
-///         let addr = MyActor2.start();
-///     });
+/// #[actix::main]
+/// async fn main() {
+///     // Start MyActor2
+///     let addr = MyActor2.start();
 /// }
 /// ```
 #[derive(Debug)]

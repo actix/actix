@@ -49,10 +49,10 @@ use crate::{
 ///    }
 /// }
 ///
-/// fn main() {
-///     let mut sys = System::new();
-///     let addr = sys.block_on(async { MyActor.start() });
-///     sys.run();
+/// #[actix::main]
+/// async fn main() {
+///     MyActor.start();
+///     # System::current().stop();
 /// }
 /// ```
 #[allow(unused_variables)]

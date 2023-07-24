@@ -105,19 +105,18 @@ pub trait Actor: Sized + Unpin + 'static {
     /// # Examples
     ///
     /// ```
-    /// use actix::*;
+    /// use actix::prelude::*;
     ///
     /// struct MyActor;
     /// impl Actor for MyActor {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// fn main() {
-    ///     // initialize system
-    ///     System::new().block_on(async {
-    ///         let addr = MyActor.start(); // <- start actor and get its address
-    /// #       System::current().stop();
-    ///     });
+    /// #[actix::main]
+    /// async fn main() {
+    ///     // start actor and get its address
+    ///     let addr = MyActor.start();
+    ///     # System::current().stop();
     /// }
     /// ```
     fn start(self) -> Addr<Self>
@@ -167,7 +166,7 @@ pub trait Actor: Sized + Unpin + 'static {
     /// # Examples
     ///
     /// ```
-    /// use actix::*;
+    /// use actix::prelude::*;
     ///
     /// struct MyActor {
     ///     val: usize,
@@ -176,12 +175,10 @@ pub trait Actor: Sized + Unpin + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// fn main() {
-    ///     // initialize system
-    ///     System::new().block_on(async {
-    ///         let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
-    /// #       System::current().stop();
-    ///     });
+    /// #[actix::main]
+    /// async fn main() {
+    ///     let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    ///     # System::current().stop();
     /// }
     /// ```
     fn create<F>(f: F) -> Addr<Self>
@@ -386,11 +383,8 @@ where
     ///     }
     /// }
     ///
-    /// fn main() {
-    ///    System::new().block_on(async {
-    ///        let addr = MyActor.start();
-    ///    });
-    /// }
+    /// let addr = MyActor.start();
+    /// # System::current().stop();
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
     where
