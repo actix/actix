@@ -33,7 +33,7 @@ actix-macros = { version = "0.2", optional = true }
 actix-rt = { version = "2", default-features = false }
 actix_derive = { version = "0.6", optional = true }
 
-bitflags = "1.2"
+bitflags = "2"
 bytes = "1"
 crossbeam-channel = "0.5"
 futures-core = { version = "0.3.22", default-features = false }

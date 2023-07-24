@@ -94,14 +94,16 @@ where
         match ret.downcast::<M::Result>() {
             // The result was returned directly.
             Ok(response) => *response,
+
             // Note: We also handle the case where Option<M::Result> is returned
             // for backwards compatibility.
             Err(other) => match other.downcast::<Option<M::Result>>() {
                 Ok(mut response) => response.take().expect("No response provided"),
+
                 // We got something else, blow up with a useful error message.
                 Err(_) => {
                     panic!(
-                        "Wrong return type for message. Expected a {} when responding to {}",
+                        "Wrong return type for message. Expected a `{}` when responding to `{}`.",
                         any::type_name::<M::Result>(),
                         any::type_name::<M>(),
                     );
@@ -114,7 +116,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dev::ResponseChannel;
+    use dev::OneshotSender;
 
     struct ActorBeingMocked;
 
@@ -133,9 +135,9 @@ mod tests {
     struct Pong(u32);
 
     impl<A: Actor> MessageResponse<A, Ping> for Pong {
-        fn handle<R: ResponseChannel<Ping>>(self, _ctx: &mut A::Context, tx: Option<R>) {
+        fn handle(self, _ctx: &mut A::Context, tx: Option<OneshotSender<Pong>>) {
             if let Some(tx) = tx {
-                tx.send(self);
+                let _ = tx.send(self);
             }
         }
     }
@@ -153,7 +155,7 @@ mod tests {
         expected = "Wrong return type for message. Expected a actix::actors::mocker::tests::Pong when responding to actix::actors::mocker::tests::Ping"
     )]
     fn users_get_a_useful_panic_message_when_mocking_fails() {
-        System::new("test").block_on(async {
+        System::new().block_on(async {
             let bad_mocker =
                 Mocker::<ActorBeingMocked>::mock(Box::new(|_, _| Box::new(42))).start();
 
@@ -172,9 +174,8 @@ mod tests {
             Box::new(Pong(msg.0 + 123))
         }
 
-        System::new("test").block_on(async {
-            let mocker =
-                Mocker::<ActorBeingMocked>::mock(Box::new(example_handler)).start();
+        System::new().block_on(async {
+            let mocker = Mocker::<ActorBeingMocked>::mock(Box::new(example_handler)).start();
 
             let response = mocker.send(Ping(1)).await.unwrap();
 
@@ -184,10 +185,9 @@ mod tests {
 
     #[test]
     fn ping_pong_with_mock_one() {
-        System::new("test").block_on(async {
+        System::new().block_on(async {
             let mocker =
-                Mocker::<ActorBeingMocked>::mock_one(|msg: Ping, _| Pong(msg.0 + 123))
-                    .start();
+                Mocker::<ActorBeingMocked>::mock_one(|msg: Ping, _| Pong(msg.0 + 123)).start();
 
             let response = mocker.send(Ping(1)).await.unwrap();
 
