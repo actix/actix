@@ -4,6 +4,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   fmt:
     runs-on: ubuntu-latest
@@ -11,26 +18,31 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install Rust
-        run: |
-          rustup override set stable
-          rustup update nightly
-          rustup component add rustfmt
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt
+
       - name: Check with rustfmt
         run: cargo fmt --all -- --check
 
   clippy:
     runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
+
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Rust
-        run: |
-          rustup override set stable
-          rustup update nightly
-          rustup component add clippy
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy
+
       - name: Check with Clippy
         uses: giraffate/clippy-action@v1
         with:
-          reporter: 'github-pr-review'
+          reporter: github-pr-review
           github_token: ${{ secrets.GITHUB_TOKEN }}
           clippy_flags: --workspace --tests --all-features

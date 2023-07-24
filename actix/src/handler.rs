@@ -2,9 +2,11 @@ use std::{fmt, future::Future, pin::Pin, sync::Arc};
 
 pub use tokio::sync::oneshot::Sender as OneshotSender;
 
-use crate::actor::{Actor, AsyncContext};
-use crate::address::Addr;
-use crate::fut::{ActorFuture, ActorFutureExt, LocalBoxActorFuture};
+use crate::{
+    actor::{Actor, AsyncContext},
+    address::Addr,
+    fut::{ActorFuture, ActorFutureExt, LocalBoxActorFuture},
+};
 
 /// Describes how to handle messages of a specific type.
 ///

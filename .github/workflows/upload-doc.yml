@@ -4,18 +4,27 @@ on:
   push:
     branches: [master]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Rust
-        run: |
-          rustup set profile minimal
-          rustup install nightly-x86_64-unknown-linux-gnu
-          rustup override set nightly
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
 
       - name: Build Docs
         run: cargo doc --workspace --all-features --no-deps

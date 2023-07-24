@@ -1,6 +1,7 @@
+use std::time::Duration;
+
 use actix::prelude::*;
 use actix_broker::{BrokerIssue, BrokerSubscribe, SystemBroker};
-use std::time::Duration;
 
 struct ActorOne;
 struct ActorTwo;

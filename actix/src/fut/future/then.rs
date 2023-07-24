@@ -1,11 +1,12 @@
-use std::pin::Pin;
-use std::task::{self, Poll};
+use std::{
+    pin::Pin,
+    task::{self, Poll},
+};
 
 use futures_core::ready;
 use pin_project_lite::pin_project;
 
-use crate::actor::Actor;
-use crate::fut::ActorFuture;
+use crate::{actor::Actor, fut::ActorFuture};
 
 pin_project! {
     /// Future for the [`then`](super::ActorFutureExt::then) combinator, chaining computations on the end of

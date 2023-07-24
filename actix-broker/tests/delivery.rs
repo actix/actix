@@ -1,11 +1,10 @@
 extern crate actix;
 extern crate actix_broker;
 
-use actix::clock::sleep;
-use actix::prelude::*;
-use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
-
 use std::time::Duration;
+
+use actix::{clock::sleep, prelude::*};
+use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]

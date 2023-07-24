@@ -1,6 +1,8 @@
-use std::sync::{Arc, Mutex};
 use std::{
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
     time::Duration,
 };
 

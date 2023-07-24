@@ -1,12 +1,11 @@
-use std::pin::Pin;
-use std::task::Poll;
-use std::{fmt, task};
+use std::{fmt, pin::Pin, task, task::Poll};
 
 use futures_core::stream::Stream;
 
-use crate::actor::{Actor, AsyncContext};
-use crate::address::EnvelopeProxy;
-use crate::address::{channel, Addr, AddressReceiver, AddressSenderProducer};
+use crate::{
+    actor::{Actor, AsyncContext},
+    address::{channel, Addr, AddressReceiver, AddressSenderProducer, EnvelopeProxy},
+};
 
 /// Default address channel capacity
 pub const DEFAULT_CAPACITY: usize = 16;

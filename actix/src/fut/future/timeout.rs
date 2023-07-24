@@ -1,13 +1,17 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
-use std::time::Duration;
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
+};
 
 use pin_project_lite::pin_project;
 
-use crate::actor::Actor;
-use crate::clock::{sleep, Sleep};
-use crate::fut::ActorFuture;
+use crate::{
+    actor::Actor,
+    clock::{sleep, Sleep},
+    fut::ActorFuture,
+};
 
 pin_project! {
     /// Future for the [`timeout`](super::ActorFutureExt::timeout) combinator, interrupts computations if it takes

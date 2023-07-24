@@ -1,9 +1,12 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 
-use actix::clock::sleep;
-use actix::prelude::*;
+use actix::{clock::sleep, prelude::*};
 
 struct MyActor {
     timeout: Arc<AtomicBool>,

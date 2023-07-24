@@ -69,15 +69,20 @@
 //! # }
 //! # fn main() {}
 //! ```
+
+#![deny(rust_2018_idioms, nonstandard_style, future_incompatible)]
+#![doc(html_logo_url = "https://actix.rs/img/logo.png")]
+#![doc(html_favicon_url = "https://actix.rs/favicon.ico")]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
 mod broker;
 mod issue;
 mod msgs;
 mod subscribe;
 
-pub use crate::msgs::BrokerMsg;
-
-pub use crate::broker::{ArbiterBroker, Broker, SystemBroker};
-
-pub use crate::subscribe::BrokerSubscribe;
-
-pub use crate::issue::BrokerIssue;
+pub use crate::{
+    broker::{ArbiterBroker, Broker, SystemBroker},
+    issue::BrokerIssue,
+    msgs::BrokerMsg,
+    subscribe::BrokerSubscribe,
+};

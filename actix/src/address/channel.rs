@@ -19,12 +19,15 @@ use futures_core::{stream::Stream, task::__internal::AtomicWaker};
 use parking_lot::Mutex;
 use tokio::sync::oneshot::{channel as oneshot_channel, Receiver as OneshotReceiver};
 
-use crate::actor::Actor;
-use crate::handler::{Handler, Message};
-
-use super::envelope::{Envelope, ToEnvelope};
-use super::queue::Queue;
-use super::SendError;
+use super::{
+    envelope::{Envelope, ToEnvelope},
+    queue::Queue,
+    SendError,
+};
+use crate::{
+    actor::Actor,
+    handler::{Handler, Message},
+};
 
 pub trait Sender<M>: Send
 where
@@ -531,6 +534,7 @@ impl<A: Actor> Clone for AddressSender<A> {
             debug_assert!(curr < self.inner.max_senders());
 
             let next = curr + 1;
+            #[allow(deprecated)]
             let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
@@ -652,6 +656,7 @@ impl<A: Actor> AddressSenderProducer<A> {
             }
 
             let next = curr + 1;
+            #[allow(deprecated)]
             let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
@@ -713,6 +718,7 @@ impl<A: Actor> AddressReceiver<A> {
             }
 
             let next = curr + 1;
+            #[allow(deprecated)]
             let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
@@ -892,9 +898,7 @@ mod tests {
     use std::{thread, time};
 
     use super::*;
-
-    use crate::address::queue::PopResult;
-    use crate::prelude::*;
+    use crate::{address::queue::PopResult, prelude::*};
 
     struct Act;
     impl Actor for Act {

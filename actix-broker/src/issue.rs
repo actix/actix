@@ -1,9 +1,11 @@
-use actix::prelude::*;
-
 use std::any::TypeId;
 
-use crate::broker::{ArbiterBroker, RegisteredBroker, SystemBroker};
-use crate::msgs::*;
+use actix::prelude::*;
+
+use crate::{
+    broker::{ArbiterBroker, RegisteredBroker, SystemBroker},
+    msgs::*,
+};
 
 /// The `BrokerIssue` provides functions to issue messages to subscribers.
 ///

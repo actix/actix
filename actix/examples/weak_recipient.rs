@@ -5,10 +5,9 @@
 //! stopped. In contrast to a `WeakAddr` the Service is not bound to know
 //! exactly which type of client actor is registering itself.
 
-use actix::{prelude::*, WeakRecipient};
-use actix::{Actor, Context};
-
 use std::time::{Duration, Instant};
+
+use actix::{prelude::*, Actor, Context, WeakRecipient};
 
 #[derive(Message, Debug)]
 #[rtype(result = "()")]
