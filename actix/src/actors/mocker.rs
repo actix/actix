@@ -25,10 +25,7 @@
 //!
 //! See the mock example to see how it can be used.
 
-use std::{
-    any::{self, Any},
-    marker::PhantomData,
-};
+use std::{any::Any, marker::PhantomData};
 
 use crate::{handler::MessageResponse, prelude::*};
 
