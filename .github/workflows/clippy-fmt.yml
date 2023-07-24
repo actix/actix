@@ -4,6 +4,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   fmt:
     runs-on: ubuntu-latest
@@ -21,6 +28,10 @@ jobs:
 
   clippy:
     runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
+
     steps:
       - uses: actions/checkout@v3
 

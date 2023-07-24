@@ -4,7 +4,9 @@
         "codecov",
         "println",
         "rtype",
+        "rustversion",
         "struct",
+        "trybuild",
         "usize"
     ]
 }
