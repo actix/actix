@@ -103,8 +103,45 @@
 <a href="#103" id="103">103</a>
 <a href="#104" id="104">104</a>
 <a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::{quote, ToTokens};
+<span class="kw">use </span>syn::parse::Parser <span class="kw">as _</span>;
+
+<span class="kw">type </span>AttributeArgs = syn::punctuated::Punctuated&lt;syn::Meta, <span class="macro">syn::Token!</span>[,]&gt;;
 
 <span class="kw">pub const </span>MESSAGE_ATTR: <span class="kw-2">&amp;</span>str = <span class="string">&quot;rtype&quot;</span>;
 
@@ -150,62 +187,93 @@
     <span class="kw">let </span>attr = ast
         .attrs
         .iter()
-        .find_map(|a| {
-            <span class="kw">let </span>a = a.parse_meta();
-            <span class="kw">match </span>a {
-                <span class="prelude-val">Ok</span>(meta) =&gt; {
-                    <span class="kw">if </span>meta.path().is_ident(name) {
-                        <span class="prelude-val">Some</span>(meta)
-                    } <span class="kw">else </span>{
-                        <span class="prelude-val">None
-                    </span>}
-                }
-                <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
-            }
+        .find_map(|attr| {
+            <span class="kw">if </span>attr.path().is_ident(name) {
+                attr.parse_args().ok()
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>}
         })
         .ok_or_else(|| {
-            syn::Error::new(Span::call_site(), <span class="macro">format!</span>(<span class="string">&quot;Expect an attribute `{}`&quot;</span>, name))
+            syn::Error::new(Span::call_site(), <span class="macro">format!</span>(<span class="string">&quot;Expect an attribute `{name}`&quot;</span>))
         })<span class="question-mark">?</span>;
 
-    <span class="kw">if let </span>syn::Meta::List(<span class="kw-2">ref </span>list) = attr {
-        <span class="prelude-val">Ok</span>(list
-            .nested
-            .iter()
-            .map(|m| meta_item_to_ty(m).ok())
-            .collect())
-    } <span class="kw">else </span>{
-        <span class="prelude-val">Err</span>(syn::Error::new_spanned(
-            attr,
-            <span class="macro">format!</span>(<span class="string">&quot;The correct syntax is #[{}(type, type, ...)]&quot;</span>, name),
-        ))
+    <span class="kw">match </span>attr {
+        syn::Meta::List(<span class="kw-2">ref </span>list) =&gt; {
+            <span class="kw">let </span>parser = AttributeArgs::parse_terminated;
+            <span class="kw">let </span>args = <span class="kw">match </span>parser.parse2(list.tokens.clone()) {
+                <span class="prelude-val">Ok</span>(args) =&gt; args,
+                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(syn::Error::new_spanned(
+                        attr,
+                        <span class="macro">format!</span>(<span class="string">&quot;The correct syntax is #[{name}(type, type, ...)]&quot;</span>),
+                    ))
+                }
+            };
+
+            <span class="prelude-val">Ok</span>(args.iter().map(|m| meta_item_to_ty(m).ok()).collect())
+        }
+
+        syn::Meta::NameValue(<span class="kw-2">ref </span>nv) =&gt; <span class="kw">match </span>nv.path.get_ident() {
+            <span class="prelude-val">Some</span>(ident) <span class="kw">if </span>ident == <span class="string">&quot;result&quot; </span>=&gt; {
+                <span class="kw">if let </span>syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(lit),
+                    ..
+                }) = nv.value.clone()
+                {
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(ty) = syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>lit.value()) {
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(ty)]);
+                    }
+                }
+                <span class="prelude-val">Err</span>(syn::Error::new_spanned(<span class="kw-2">&amp;</span>nv.value, <span class="string">&quot;Expect type&quot;</span>))
+            }
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(
+                <span class="kw-2">&amp;</span>nv.value,
+                <span class="string">r#&quot;Expect `result = &quot;TYPE&quot;`&quot;#</span>,
+            )),
+        },
+
+        syn::Meta::Path(path) =&gt; <span class="kw">match </span>path.get_ident() {
+            <span class="prelude-val">Some</span>(ident) =&gt; syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>ident.to_string())
+                .map(|ty| <span class="macro">vec!</span>[<span class="prelude-val">Some</span>(ty)])
+                .map_err(|<span class="kw">_</span>| syn::Error::new_spanned(ident, <span class="string">&quot;Expect type&quot;</span>)),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(path, <span class="string">&quot;Expect type&quot;</span>)),
+        },
     }
 }
 
-<span class="kw">fn </span>meta_item_to_ty(meta_item: <span class="kw-2">&amp;</span>syn::NestedMeta) -&gt; syn::Result&lt;syn::Type&gt; {
+<span class="kw">fn </span>meta_item_to_ty(meta_item: <span class="kw-2">&amp;</span>syn::Meta) -&gt; syn::Result&lt;syn::Type&gt; {
     <span class="kw">match </span>meta_item {
-        syn::NestedMeta::Meta(syn::Meta::Path(<span class="kw-2">ref </span>path)) =&gt; <span class="kw">match </span>path.get_ident() {
+        syn::Meta::Path(path) =&gt; <span class="kw">match </span>path.get_ident() {
             <span class="prelude-val">Some</span>(ident) =&gt; syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>ident.to_string())
                 .map_err(|<span class="kw">_</span>| syn::Error::new_spanned(ident, <span class="string">&quot;Expect type&quot;</span>)),
             <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(path, <span class="string">&quot;Expect type&quot;</span>)),
         },
-        syn::NestedMeta::Meta(syn::Meta::NameValue(val)) =&gt; <span class="kw">match </span>val.path.get_ident() {
+        syn::Meta::NameValue(nv) =&gt; <span class="kw">match </span>nv.path.get_ident() {
             <span class="prelude-val">Some</span>(ident) <span class="kw">if </span>ident == <span class="string">&quot;result&quot; </span>=&gt; {
-                <span class="kw">if let </span>syn::Lit::Str(<span class="kw-2">ref </span>s) = val.lit {
-                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(ty) = syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>s.value()) {
+                <span class="kw">if let </span>syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(lit),
+                    ..
+                }) = nv.value.clone()
+                {
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(ty) = syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>lit.value()) {
                         <span class="kw">return </span><span class="prelude-val">Ok</span>(ty);
                     }
                 }
-                <span class="prelude-val">Err</span>(syn::Error::new_spanned(<span class="kw-2">&amp;</span>val.lit, <span class="string">&quot;Expect type&quot;</span>))
+                <span class="prelude-val">Err</span>(syn::Error::new_spanned(<span class="kw-2">&amp;</span>nv.value, <span class="string">&quot;Expect type&quot;</span>))
             }
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(
-                <span class="kw-2">&amp;</span>val.lit,
+                <span class="kw-2">&amp;</span>nv.value,
                 <span class="string">r#&quot;Expect `result = &quot;TYPE&quot;`&quot;#</span>,
             )),
         },
-        syn::NestedMeta::Lit(syn::Lit::Str(<span class="kw-2">ref </span>s)) =&gt; syn::parse_str::&lt;syn::Type&gt;(<span class="kw-2">&amp;</span>s.value())
-            .map_err(|<span class="kw">_</span>| syn::Error::new_spanned(s, <span class="string">&quot;Expect type&quot;</span>)),
+        syn::Meta::List(list) =&gt; {
+            <span class="kw">let </span>lit_str = syn::parse2::&lt;syn::LitStr&gt;(list.tokens.clone())
+                .map_err(|<span class="kw">_</span>| syn::Error::new_spanned(list, <span class="string">&quot;Expect type&quot;</span>))<span class="question-mark">?</span>;
 
-        meta =&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(meta, <span class="string">&quot;Expect type&quot;</span>)),
+            syn::parse_str(<span class="kw-2">&amp;</span>lit_str.value())
+                .map_err(|<span class="kw">_</span>| syn::Error::new_spanned(list, <span class="string">&quot;Expect type&quot;</span>))
+        }
     }
 }
 </code></pre></div></section></main></body></html>
