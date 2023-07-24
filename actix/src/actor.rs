@@ -383,8 +383,9 @@ where
     ///     }
     /// }
     ///
+    /// # #[actix::main] async fn main () {
     /// let addr = MyActor.start();
-    /// # System::current().stop();
+    /// # System::current().stop(); }
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
     where
