@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (1d56e3a6d 2023-07-22)" data-channel="nightly" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-cb6f1f67f1bcd037.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (8771282d4 2023-07-23)" data-channel="nightly" data-search-js="search-6dfdfced5eff6596.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img src="https://actix.rs/img/logo.png" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -180,15 +180,6 @@
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
 <a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
-<a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Actix is an actor framework.
 //!
 //! [Actors](./trait.Actor.html) are
@@ -211,16 +202,10 @@
 //! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
 //! - Runs on stable Rust 1.65+
 
-</span><span class="attr">#![allow(clippy::needless_doctest_main)]
-#![deny(nonstandard_style, rust_2018_idioms)]
-#![warn(
-    deprecated_in_future,
-    trivial_casts,
-    trivial_numeric_casts,
-    clippy::doc_markdown
-)]
-</span><span class="comment">// TODO: temporary allow deprecated until resolver actor is removed.
-</span><span class="attr">#![allow(deprecated)]
+</span><span class="attr">#![deny(rust_2018_idioms, nonstandard_style, future_incompatible)]
+#![doc(html_logo_url = <span class="string">&quot;https://actix.rs/img/logo.png&quot;</span>)]
+#![doc(html_favicon_url = <span class="string">&quot;https://actix.rs/favicon.ico&quot;</span>)]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[cfg(doctest)]
 </span><span class="macro">doc_comment::doctest!</span>(<span class="string">&quot;../README.md&quot;</span>);
@@ -254,26 +239,25 @@
     </span><span class="kw">pub use </span>actix_macros::{main, test};
 }
 
-<span class="kw">pub use </span><span class="kw">crate</span>::actor::{
-    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
-};
-<span class="kw">pub use </span><span class="kw">crate</span>::address::{Addr, MailboxError, Recipient, WeakAddr, WeakRecipient};
-<span class="kw">pub use </span><span class="kw">crate</span>::context::Context;
-<span class="kw">pub use </span><span class="kw">crate</span>::fut::{
-    ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
-    ActorTryFutureExt, WrapFuture, WrapStream,
-};
-<span class="kw">pub use </span><span class="kw">crate</span>::handler::{
-    ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
-    ResponseActFuture, ResponseFuture,
-};
-<span class="kw">pub use </span><span class="kw">crate</span>::registry::{ArbiterService, Registry, SystemRegistry, SystemService};
-<span class="kw">pub use </span><span class="kw">crate</span>::stream::StreamHandler;
-<span class="kw">pub use </span><span class="kw">crate</span>::supervisor::Supervisor;
-<span class="kw">pub use </span><span class="kw">crate</span>::sync::{SyncArbiter, SyncContext};
-
 <span class="attr">#[doc(hidden)]
 </span><span class="kw">pub use </span><span class="kw">crate</span>::context::ContextFutureSpawner;
+<span class="kw">pub use crate</span>::{
+    actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised},
+    address::{Addr, MailboxError, Recipient, WeakAddr, WeakRecipient},
+    context::Context,
+    fut::{
+        ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
+        ActorTryFutureExt, WrapFuture, WrapStream,
+    },
+    handler::{
+        ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
+        ResponseActFuture, ResponseFuture,
+    },
+    registry::{ArbiterService, Registry, SystemRegistry, SystemService},
+    stream::StreamHandler,
+    supervisor::Supervisor,
+    sync::{SyncArbiter, SyncContext},
+};
 
 <span class="kw">pub mod </span>prelude {
     <span class="doccomment">//! The `actix` prelude.
@@ -289,37 +273,32 @@
     </span><span class="attr">#[doc(hidden)]
     #[cfg(feature = <span class="string">&quot;macros&quot;</span>)]
     </span><span class="kw">pub use </span>actix_derive::{Message, MessageResponse};
-
     <span class="kw">pub use </span>actix_rt::{Arbiter, ArbiterHandle, System, SystemRunner};
+    <span class="kw">pub use </span>futures_core::stream::Stream;
 
-    <span class="kw">pub use </span><span class="kw">crate</span>::actor::{
-        Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+    <span class="attr">#[allow(deprecated)]
+    </span><span class="kw">pub use </span><span class="kw">crate</span>::utils::Condition;
+    <span class="kw">pub use crate</span>::{
+        actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised},
+        actors,
+        address::{Addr, MailboxError, Recipient, RecipientRequest, Request, SendError},
+        context::{Context, ContextFutureSpawner},
+        dev, fut,
+        fut::{
+            ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
+            ActorTryFutureExt, WrapFuture, WrapStream,
+        },
+        handler::{
+            ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
+            ResponseActFuture, ResponseFuture,
+        },
+        io,
+        registry::{ArbiterService, SystemService},
+        stream::StreamHandler,
+        supervisor::Supervisor,
+        sync::{SyncArbiter, SyncContext},
+        utils::{IntervalFunc, TimerFunc},
     };
-    <span class="kw">pub use </span><span class="kw">crate</span>::address::{
-        Addr, MailboxError, Recipient, RecipientRequest, Request, SendError,
-    };
-    <span class="kw">pub use </span><span class="kw">crate</span>::context::{Context, ContextFutureSpawner};
-    <span class="kw">pub use </span><span class="kw">crate</span>::fut::{
-        ActorFuture, ActorFutureExt, ActorStream, ActorStreamExt, ActorTryFuture,
-        ActorTryFutureExt, WrapFuture, WrapStream,
-    };
-    <span class="kw">pub use </span><span class="kw">crate</span>::handler::{
-        ActorResponse, AtomicResponse, Handler, Message, MessageResult, Response,
-        ResponseActFuture, ResponseFuture,
-    };
-    <span class="kw">pub use </span><span class="kw">crate</span>::registry::{ArbiterService, SystemService};
-    <span class="kw">pub use </span><span class="kw">crate</span>::stream::StreamHandler;
-    <span class="kw">pub use </span><span class="kw">crate</span>::supervisor::Supervisor;
-    <span class="kw">pub use </span><span class="kw">crate</span>::sync::{SyncArbiter, SyncContext};
-
-    <span class="kw">pub use </span><span class="kw">crate</span>::actors;
-    <span class="kw">pub use </span><span class="kw">crate</span>::dev;
-    <span class="kw">pub use </span><span class="kw">crate</span>::fut;
-    <span class="kw">pub use </span><span class="kw">crate</span>::io;
-    <span class="kw">pub use </span><span class="kw">crate</span>::utils::{Condition, IntervalFunc, TimerFunc};
-
-    <span class="comment">// TODO: remove Stream re-export when it reaches std
-    </span><span class="kw">pub use </span>futures_core::stream::Stream;
 }
 
 <span class="kw">pub mod </span>dev {
@@ -333,16 +312,19 @@
     //! use actix::dev::*;
     //! ```
 
-    </span><span class="kw">pub use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
-
-    <span class="kw">pub use </span><span class="kw">crate</span>::address::{Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope};
+    </span><span class="kw">pub use crate</span>::{
+        address::{Envelope, EnvelopeProxy, RecipientRequest, Request, ToEnvelope},
+        prelude::<span class="kw-2">*</span>,
+    };
     <span class="kw">pub mod </span>channel {
         <span class="kw">pub use </span><span class="kw">crate</span>::address::channel::{channel, AddressReceiver, AddressSender};
     }
-    <span class="kw">pub use </span><span class="kw">crate</span>::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
-    <span class="kw">pub use </span><span class="kw">crate</span>::handler::{MessageResponse, OneshotSender};
-    <span class="kw">pub use </span><span class="kw">crate</span>::mailbox::Mailbox;
-    <span class="kw">pub use </span><span class="kw">crate</span>::registry::{Registry, SystemRegistry};
+    <span class="kw">pub use crate</span>::{
+        contextimpl::{AsyncContextParts, ContextFut, ContextParts},
+        handler::{MessageResponse, OneshotSender},
+        mailbox::Mailbox,
+        registry::{Registry, SystemRegistry},
+    };
 }
 
 <span class="doccomment">/// Starts the system and executes the supplied future.
@@ -373,7 +355,7 @@
 /// # Panics
 ///
 /// This function panics if the actix system is already running.
-</span><span class="attr">#[allow(clippy::unit_arg)]
+</span><span class="attr">#[allow(clippy::unit_arg, clippy::needless_doctest_main)]
 </span><span class="kw">pub fn </span>run&lt;R&gt;(f: R) -&gt; std::io::Result&lt;()&gt;
 <span class="kw">where
     </span>R: std::future::Future&lt;Output = ()&gt; + <span class="lifetime">&#39;static</span>,
