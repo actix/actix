@@ -472,6 +472,7 @@
 <a href="#472" id="472">472</a>
 <a href="#473" id="473">473</a>
 <a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
 
 <span class="kw">use </span>actix_rt::ArbiterHandle;
@@ -857,8 +858,9 @@
     ///     }
     /// }
     ///
+    /// # #[actix::main] async fn main () {
     /// let addr = MyActor.start();
-    /// # System::current().stop();
+    /// # System::current().stop(); }
     /// ```
     </span><span class="kw">fn </span>add_message_stream&lt;S&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: S)
     <span class="kw">where
