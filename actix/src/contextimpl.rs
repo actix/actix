@@ -1,19 +1,21 @@
-use std::fmt;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    fmt,
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 use bitflags::bitflags;
 use futures_core::ready;
 use smallvec::SmallVec;
 
-use crate::actor::{
-    Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
+use crate::{
+    actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised},
+    address::{Addr, AddressSenderProducer},
+    contextitems::ActorWaitItem,
+    fut::ActorFuture,
+    mailbox::Mailbox,
 };
-use crate::address::{Addr, AddressSenderProducer};
-use crate::contextitems::ActorWaitItem;
-use crate::fut::ActorFuture;
-use crate::mailbox::Mailbox;
 
 bitflags! {
     /// Internal context state.
@@ -452,9 +454,7 @@ where
             // check state
             if this.ctx.parts().flags.contains(ContextFlags::RUNNING) {
                 // possible stop condition
-                if !this.alive()
-                    && Actor::stopping(&mut this.act, &mut this.ctx) == Running::Stop
-                {
+                if !this.alive() && Actor::stopping(&mut this.act, &mut this.ctx) == Running::Stop {
                     this.ctx.parts().flags = ContextFlags::STOPPED | ContextFlags::STARTED;
                     Actor::stopped(&mut this.act, &mut this.ctx);
                     return Poll::Ready(());

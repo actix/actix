@@ -74,10 +74,9 @@ mod issue;
 mod msgs;
 mod subscribe;
 
-pub use crate::msgs::BrokerMsg;
-
-pub use crate::broker::{ArbiterBroker, Broker, SystemBroker};
-
-pub use crate::subscribe::BrokerSubscribe;
-
-pub use crate::issue::BrokerIssue;
+pub use crate::{
+    broker::{ArbiterBroker, Broker, SystemBroker},
+    issue::BrokerIssue,
+    msgs::BrokerMsg,
+    subscribe::BrokerSubscribe,
+};

@@ -8,9 +8,7 @@ use futures_core::ready;
 use pin_project_lite::pin_project;
 
 use super::ActorStream;
-
-use crate::actor::Actor;
-use crate::fut::future::ActorFuture;
+use crate::{actor::Actor, fut::future::ActorFuture};
 
 pin_project! {
     /// Future for the [`collect`](super::ActorStreamExt::collect) method.

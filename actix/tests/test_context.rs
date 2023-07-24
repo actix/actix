@@ -1,10 +1,15 @@
 #![cfg(feature = "macros")]
 #![allow(clippy::let_unit_value)]
 
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::task::{Context as StdContext, Poll};
-use std::{pin::Pin, time::Duration};
+use std::{
+    pin::Pin,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    task::{Context as StdContext, Poll},
+    time::Duration,
+};
 
 use actix::prelude::*;
 use actix_rt::time::{interval_at, sleep, Instant};
@@ -502,9 +507,7 @@ fn test_cancel_completed_with_no_context_item() {
 }
 
 mod scheduled_task_is_cancelled_properly {
-    use tokio::sync::oneshot;
-    use tokio::task::yield_now;
-    use tokio::time::timeout;
+    use tokio::{sync::oneshot, task::yield_now, time::timeout};
 
     use super::*;
 

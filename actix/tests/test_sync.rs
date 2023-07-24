@@ -1,5 +1,7 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc, Condvar, Mutex,
+};
 
 use actix::prelude::*;
 

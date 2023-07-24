@@ -3,20 +3,24 @@
 //! An Actor can register itself as a service. A Service can be defined as an
 //! `ArbiterService`, which is unique per arbiter, or a `SystemService`, which
 //! is unique per system.
-use std::any::{Any, TypeId};
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::default::Default;
-use std::rc::Rc;
+use std::{
+    any::{Any, TypeId},
+    cell::RefCell,
+    collections::HashMap,
+    default::Default,
+    rc::Rc,
+};
 
 use actix_rt::{ArbiterHandle, System};
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
 
-use crate::actor::{Actor, Supervised};
-use crate::address::Addr;
-use crate::context::Context;
-use crate::supervisor::Supervisor;
+use crate::{
+    actor::{Actor, Supervised},
+    address::Addr,
+    context::Context,
+    supervisor::Supervisor,
+};
 
 type AnyMap = HashMap<TypeId, Box<dyn Any>>;
 
@@ -223,8 +227,7 @@ pub struct SystemRegistry {
     registry: HashMap<TypeId, Box<dyn Any + Send>>,
 }
 
-static SREG: Lazy<Mutex<HashMap<usize, SystemRegistry>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+static SREG: Lazy<Mutex<HashMap<usize, SystemRegistry>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Trait defines system's service.
 #[allow(unused_variables)]

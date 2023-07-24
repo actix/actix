@@ -7,9 +7,8 @@ use std::{
     time::Duration,
 };
 
-use pin_project_lite::pin_project;
-
 pub use map::Map;
+use pin_project_lite::pin_project;
 pub use then::Then;
 pub use timeout::Timeout;
 

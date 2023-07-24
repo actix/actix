@@ -117,7 +117,10 @@ async fn test_different_message_result_types() {
     assert!(count == 2, "2 sessions should have been added");
 
     let sessions: Vec<usize> = actor.send(GetConnectedSessions).await.unwrap();
-    assert!(sessions.len() == 2, "2 sessions should have been added AND returned from the `GetConnectedSessions` message");
+    assert!(
+        sessions.len() == 2,
+        "2 sessions should have been added AND returned from the `GetConnectedSessions` message"
+    );
 
     let id = actor.send(GetSessionById(1)).await.unwrap();
     assert!(id.is_some(), "Session with id `1` should have been added");

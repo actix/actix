@@ -1,9 +1,9 @@
 #![cfg(feature = "macros")]
 
-use actix::clock::sleep;
-use actix::prelude::*;
-use futures_util::stream::StreamExt;
 use std::time::{Duration, Instant};
+
+use actix::{clock::sleep, prelude::*};
+use futures_util::stream::StreamExt;
 
 #[derive(Clone, Copy, Message)]
 #[rtype(result = "usize")]

@@ -4,14 +4,16 @@ use actix_rt::ArbiterHandle;
 use futures_core::stream::Stream;
 use log::error;
 
-use crate::address::{channel, Addr};
-use crate::context::Context;
-use crate::contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
-use crate::fut::{ActorFuture, ActorStreamExt};
-use crate::handler::{Handler, Message};
-use crate::mailbox::DEFAULT_CAPACITY;
-use crate::stream::StreamHandler;
-use crate::utils::{IntervalFunc, TimerFunc};
+use crate::{
+    address::{channel, Addr},
+    context::Context,
+    contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem},
+    fut::{ActorFuture, ActorStreamExt},
+    handler::{Handler, Message},
+    mailbox::DEFAULT_CAPACITY,
+    stream::StreamHandler,
+    utils::{IntervalFunc, TimerFunc},
+};
 
 /// Actors are objects which encapsulate state and behavior.
 ///

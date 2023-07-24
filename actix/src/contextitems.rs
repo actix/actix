@@ -1,15 +1,19 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{self, Poll};
-use std::time::Duration;
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{self, Poll},
+    time::Duration,
+};
 
 use futures_core::{ready, stream::Stream};
 use pin_project_lite::pin_project;
 
-use crate::actor::{Actor, ActorContext, AsyncContext};
-use crate::clock::Sleep;
-use crate::fut::ActorFuture;
-use crate::handler::{Handler, Message, MessageResponse};
+use crate::{
+    actor::{Actor, ActorContext, AsyncContext},
+    clock::Sleep,
+    fut::ActorFuture,
+    handler::{Handler, Message, MessageResponse},
+};
 
 pub(crate) struct ActorWaitItem<A: Actor>(Pin<Box<dyn ActorFuture<A, Output = ()>>>);
 
