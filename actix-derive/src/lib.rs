@@ -1,6 +1,8 @@
+#![deny(rust_2018_idioms, nonstandard_style, future_incompatible)]
+#![doc(html_logo_url = "https://actix.rs/img/logo.png")]
+#![doc(html_favicon_url = "https://actix.rs/favicon.ico")]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![recursion_limit = "128"]
-
-extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -23,49 +25,31 @@ pub fn message_response_derive_rtype(input: TokenStream) -> TokenStream {
     message_response::expand(&ast).into()
 }
 
-/// Marks async function to be executed by Actix system.
+/// Marks async main function as the `actix` system entry-point.
 ///
 /// # Examples
+///
 /// ```ignore
 /// #[actix::main]
 /// async fn main() {
 ///     println!("Hello world");
 /// }
 /// ```
-#[allow(clippy::needless_doctest_main)]
 #[proc_macro_attribute]
-#[cfg(not(test))] // Work around for rust-lang/rust#62127
 pub fn main(_: TokenStream, item: TokenStream) -> TokenStream {
-    let mut input = syn::parse_macro_input!(item as syn::ItemFn);
-    let attrs = &input.attrs;
-    let vis = &input.vis;
-    let sig = &mut input.sig;
-    let body = &input.block;
-
-    if sig.asyncness.is_none() {
-        return syn::Error::new_spanned(
-            sig.fn_token,
-            "the async keyword is missing from the function declaration",
-        )
-        .to_compile_error()
-        .into();
-    }
-
-    sig.asyncness = None;
-
-    (quote! {
-        #(#attrs)*
-        #vis #sig {
-            actix::System::new()
-                .block_on(async move { #body })
-        }
+    let mut output: TokenStream = (quote! {
+        #[::actix::__private::main(system = "::actix::System")]
     })
-    .into()
+    .into();
+
+    output.extend(item);
+    output
 }
 
-/// Marks async test function to be executed by Actix system.
+/// Marks async test functions to use the `actix` system entry-point.
 ///
 /// # Examples
+///
 /// ```ignore
 /// #[actix::test]
 /// async fn my_test() {
@@ -74,43 +58,11 @@ pub fn main(_: TokenStream, item: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn test(_: TokenStream, item: TokenStream) -> TokenStream {
-    let mut input = syn::parse_macro_input!(item as syn::ItemFn);
-    let attrs = &input.attrs;
-    let vis = &input.vis;
-    let sig = &mut input.sig;
-    let body = &input.block;
-    let mut has_test_attr = false;
-
-    for attr in attrs {
-        if attr.path.is_ident("test") {
-            has_test_attr = true;
-        }
-    }
-
-    if sig.asyncness.is_none() {
-        return syn::Error::new_spanned(
-            input.sig.fn_token,
-            "the async keyword is missing from the function declaration",
-        )
-        .to_compile_error()
-        .into();
-    }
-
-    sig.asyncness = None;
-
-    let missing_test_attr = if has_test_attr {
-        quote!()
-    } else {
-        quote!(#[test])
-    };
-
-    (quote! {
-        #missing_test_attr
-        #(#attrs)*
-        #vis #sig {
-            actix::System::new()
-                .block_on(async { #body })
-        }
+    let mut output: TokenStream = (quote! {
+        #[::actix::__private::test(system = "::actix::System")]
     })
-    .into()
+    .into();
+
+    output.extend(item);
+    output
 }

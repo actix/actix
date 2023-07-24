@@ -1,5 +1,12 @@
 {
     "cSpell.words": [
-        "actix"
+        "actix",
+        "codecov",
+        "println",
+        "rtype",
+        "rustversion",
+        "struct",
+        "trybuild",
+        "usize"
     ]
 }

@@ -4,14 +4,16 @@ use actix_rt::ArbiterHandle;
 use futures_core::stream::Stream;
 use log::error;
 
-use crate::address::{channel, Addr};
-use crate::context::Context;
-use crate::contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem};
-use crate::fut::{ActorFuture, ActorStreamExt};
-use crate::handler::{Handler, Message};
-use crate::mailbox::DEFAULT_CAPACITY;
-use crate::stream::StreamHandler;
-use crate::utils::{IntervalFunc, TimerFunc};
+use crate::{
+    address::{channel, Addr},
+    context::Context,
+    contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem},
+    fut::{ActorFuture, ActorStreamExt},
+    handler::{Handler, Message},
+    mailbox::DEFAULT_CAPACITY,
+    stream::StreamHandler,
+    utils::{IntervalFunc, TimerFunc},
+};
 
 /// Actors are objects which encapsulate state and behavior.
 ///
@@ -103,19 +105,18 @@ pub trait Actor: Sized + Unpin + 'static {
     /// # Examples
     ///
     /// ```
-    /// use actix::*;
+    /// use actix::prelude::*;
     ///
     /// struct MyActor;
     /// impl Actor for MyActor {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// fn main() {
-    ///     // initialize system
-    ///     System::new().block_on(async {
-    ///         let addr = MyActor.start(); // <- start actor and get its address
-    /// #       System::current().stop();
-    ///     });
+    /// #[actix::main]
+    /// async fn main() {
+    ///     // start actor and get its address
+    ///     let addr = MyActor.start();
+    ///     # System::current().stop();
     /// }
     /// ```
     fn start(self) -> Addr<Self>
@@ -165,7 +166,7 @@ pub trait Actor: Sized + Unpin + 'static {
     /// # Examples
     ///
     /// ```
-    /// use actix::*;
+    /// use actix::prelude::*;
     ///
     /// struct MyActor {
     ///     val: usize,
@@ -174,12 +175,10 @@ pub trait Actor: Sized + Unpin + 'static {
     ///     type Context = Context<Self>;
     /// }
     ///
-    /// fn main() {
-    ///     // initialize system
-    ///     System::new().block_on(async {
-    ///         let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
-    /// #       System::current().stop();
-    ///     });
+    /// #[actix::main]
+    /// async fn main() {
+    ///     let addr = MyActor::create(|ctx: &mut Context<MyActor>| MyActor { val: 10 });
+    ///     # System::current().stop();
     /// }
     /// ```
     fn create<F>(f: F) -> Addr<Self>
@@ -384,11 +383,8 @@ where
     ///     }
     /// }
     ///
-    /// fn main() {
-    ///    System::new().block_on(async {
-    ///        let addr = MyActor.start();
-    ///    });
-    /// }
+    /// let addr = MyActor.start();
+    /// # System::current().stop();
     /// ```
     fn add_message_stream<S>(&mut self, fut: S)
     where

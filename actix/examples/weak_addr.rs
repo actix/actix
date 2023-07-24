@@ -5,10 +5,9 @@
 //! stopped. Alternatively you'd have to check if the client's mailbox
 //! is still open.
 
-use actix::{prelude::*, WeakAddr};
-use actix::{Actor, Context};
-
 use std::time::{Duration, Instant};
+
+use actix::{prelude::*, Actor, Context, WeakAddr};
 
 #[derive(Message, Debug)]
 #[rtype(result = "()")]

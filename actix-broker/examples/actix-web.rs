@@ -1,7 +1,8 @@
+use std::io;
+
 use actix::prelude::*;
 use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
-use std::io;
+use actix_web::{get, App, Error, HttpRequest, HttpResponse, HttpServer};
 
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
@@ -23,23 +24,20 @@ impl Handler<Hello> for TestActor {
     }
 }
 
+#[get("/")]
 async fn index(_req: HttpRequest) -> Result<HttpResponse, Error> {
     Broker::<SystemBroker>::issue_async(Hello);
-    Ok(HttpResponse::Ok()
-        .content_type("text/plain")
-        .body("Welcome!"))
+
+    Ok(HttpResponse::Ok().body("Welcome!"))
 }
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     TestActor.start();
 
-    HttpServer::new(|| {
-        App::new()
-            .service(web::scope("/").service(web::resource("").route(web::get().to(index))))
-    })
-    .bind("127.0.0.1:8080")
-    .unwrap()
-    .run()
-    .await
+    HttpServer::new(|| App::new().service(index))
+        .bind("127.0.0.1:8080")
+        .unwrap()
+        .run()
+        .await
 }

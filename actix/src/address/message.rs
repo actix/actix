@@ -1,16 +1,18 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{self, Poll};
-use std::time::Duration;
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{self, Poll},
+    time::Duration,
+};
 
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
-use crate::clock::Sleep;
-use crate::handler::Message;
-
-use super::channel::{AddressSender, Sender};
-use super::{MailboxError, SendError};
+use super::{
+    channel::{AddressSender, Sender},
+    MailboxError, SendError,
+};
+use crate::{clock::Sleep, handler::Message};
 
 pub type Request<A, M> = MsgRequest<AddressSender<A>, M>;
 
@@ -18,7 +20,7 @@ pub type RecipientRequest<M> = MsgRequest<Box<dyn Sender<M>>, M>;
 
 pin_project! {
     /// A `Future` which represents an asynchronous message sending process.
-    #[must_use = "You have to wait on request otherwise the Message wont be delivered"]
+    #[must_use = "You must wait on the request otherwise the Message will not be delivered"]
     pub struct MsgRequest<S, M>
     where
         S: Sender<M>,
