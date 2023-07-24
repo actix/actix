@@ -57,6 +57,12 @@ pub mod utils;
 pub use actix_derive::{main, test, Message, MessageResponse};
 pub use actix_rt::{spawn, Arbiter, ArbiterHandle, System, SystemRunner};
 
+#[doc(hidden)]
+pub mod __private {
+    #[cfg(feature = "macros")]
+    pub use actix_macros::{main, test};
+}
+
 pub use crate::actor::{
     Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised,
 };
