@@ -26,6 +26,7 @@ where
     waiters: Vec<oneshot::Sender<T>>,
 }
 
+#[allow(deprecated)]
 impl<T> Condition<T>
 where
     T: Clone,
@@ -43,6 +44,7 @@ where
     }
 }
 
+#[allow(deprecated)]
 impl<T> Default for Condition<T>
 where
     T: Clone,

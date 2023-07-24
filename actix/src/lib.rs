@@ -20,16 +20,10 @@
 //! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
 //! - Runs on stable Rust 1.65+
 
-#![allow(clippy::needless_doctest_main)]
-#![deny(nonstandard_style, rust_2018_idioms)]
-#![warn(
-    deprecated_in_future,
-    trivial_casts,
-    trivial_numeric_casts,
-    clippy::doc_markdown
-)]
-// TODO: temporary allow deprecated until resolver actor is removed.
-#![allow(deprecated)]
+#![deny(rust_2018_idioms, nonstandard_style, future_incompatible)]
+#![doc(html_logo_url = "https://actix.rs/img/logo.png")]
+#![doc(html_favicon_url = "https://actix.rs/favicon.ico")]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[cfg(doctest)]
 doc_comment::doctest!("../README.md");
@@ -98,9 +92,10 @@ pub mod prelude {
     #[cfg(feature = "macros")]
     pub use actix_derive::{Message, MessageResponse};
     pub use actix_rt::{Arbiter, ArbiterHandle, System, SystemRunner};
-    // TODO: remove Stream re-export when it reaches std
     pub use futures_core::stream::Stream;
 
+    #[allow(deprecated)]
+    pub use crate::utils::Condition;
     pub use crate::{
         actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised},
         actors,
@@ -120,7 +115,7 @@ pub mod prelude {
         stream::StreamHandler,
         supervisor::Supervisor,
         sync::{SyncArbiter, SyncContext},
-        utils::{Condition, IntervalFunc, TimerFunc},
+        utils::{IntervalFunc, TimerFunc},
     };
 }
 
@@ -178,7 +173,7 @@ pub mod dev {
 /// # Panics
 ///
 /// This function panics if the actix system is already running.
-#[allow(clippy::unit_arg)]
+#[allow(clippy::unit_arg, clippy::needless_doctest_main)]
 pub fn run<R>(f: R) -> std::io::Result<()>
 where
     R: std::future::Future<Output = ()> + 'static,
