@@ -25,7 +25,10 @@
 //!
 //! See the mock example to see how it can be used.
 
-use std::{any::Any, marker::PhantomData};
+use std::{
+    any::{type_name, Any},
+    marker::PhantomData,
+};
 
 use crate::{handler::MessageResponse, prelude::*};
 
@@ -49,8 +52,8 @@ impl<T: Unpin> Mocker<T> {
         }
     }
 
-    /// A helper for calling [`Mocker::mock()`] when it is known that only
-    /// one message type will ever be sent to the [`Mocker`].
+    /// A helper for calling [`Mocker::mock()`] when it is known that only one message type will
+    /// ever be sent to the [`Mocker`].
     pub fn mock_one<F, M>(mut mock: F) -> Mocker<T>
     where
         M: Message + 'static,
@@ -59,8 +62,8 @@ impl<T: Unpin> Mocker<T> {
         Mocker::mock(Box::new(move |msg, ctx| match msg.downcast::<M>() {
             Ok(msg) => Box::new(mock(*msg, ctx)),
             Err(_) => panic!(
-                "This mocker can only handle messages of type {}",
-                any::type_name::<M>()
+                "This mocker can only handle messages of type `{}`.",
+                type_name::<M>()
             ),
         }))
     }
@@ -102,8 +105,8 @@ where
                 Err(_) => {
                     panic!(
                         "Wrong return type for message. Expected a `{}` when responding to `{}`.",
-                        any::type_name::<M::Result>(),
-                        any::type_name::<M>(),
+                        type_name::<M::Result>(),
+                        type_name::<M>(),
                     );
                 }
             },
@@ -113,9 +116,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use dev::OneshotSender;
-
     use super::*;
+    use crate::dev::OneshotSender;
 
     struct ActorBeingMocked;
 
@@ -151,7 +153,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "Wrong return type for message. Expected a actix::actors::mocker::tests::Pong when responding to actix::actors::mocker::tests::Ping"
+        expected = "Wrong return type for message. Expected a `actix::actors::mocker::tests::Pong` when responding to `actix::actors::mocker::tests::Ping`."
     )]
     fn users_get_a_useful_panic_message_when_mocking_fails() {
         System::new().block_on(async {

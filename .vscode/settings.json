@@ -2,6 +2,7 @@
     "cSpell.words": [
         "actix",
         "codecov",
+        "oneshot",
         "println",
         "rtype",
         "rustversion",
