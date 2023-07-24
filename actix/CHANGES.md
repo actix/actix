@@ -4,7 +4,8 @@
 
 ### Added
 
-- Add `Mocker::mock_one()`.
+- Add `actors::mocker::Mocker::mock_one()`.
+- Mocking closures now support returning `T`s instead of just `Option<T>`s.
 - Derive `PartialEq` and `Eq` for `MailboxError`.
 - Minimum supported Rust version (MSRV) is now 1.65.
 

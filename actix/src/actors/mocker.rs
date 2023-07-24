@@ -89,6 +89,7 @@ where
     <M as Message>::Result: MessageResponse<Mocker<T>, M>,
 {
     type Result = M::Result;
+
     fn handle(&mut self, msg: M, ctx: &mut Self::Context) -> M::Result {
         let ret = (self.mock)(Box::new(msg), ctx);
 
