@@ -1,0 +1,5 @@
+error: Expect type
+ --> tests/trybuild/message-fail-bare-rtype.rs:7:18
+  |
+7 | #[rtype(result = Added)]
+  |                  ^^^^^

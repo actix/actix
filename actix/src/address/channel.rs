@@ -19,12 +19,15 @@ use futures_core::{stream::Stream, task::__internal::AtomicWaker};
 use parking_lot::Mutex;
 use tokio::sync::oneshot::{channel as oneshot_channel, Receiver as OneshotReceiver};
 
-use crate::actor::Actor;
-use crate::handler::{Handler, Message};
-
-use super::envelope::{Envelope, ToEnvelope};
-use super::queue::Queue;
-use super::SendError;
+use super::{
+    envelope::{Envelope, ToEnvelope},
+    queue::Queue,
+    SendError,
+};
+use crate::{
+    actor::Actor,
+    handler::{Handler, Message},
+};
 
 pub trait Sender<M>: Send
 where
@@ -42,6 +45,9 @@ where
     fn hash(&self) -> usize;
 
     fn connected(&self) -> bool;
+
+    /// Returns a downgraded sender, where the sender is downgraded into its weak counterpart.
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static>;
 }
 
 impl<S, M> Sender<M> for Box<S>
@@ -73,9 +79,13 @@ where
     fn connected(&self) -> bool {
         (**self).connected()
     }
+
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync> {
+        (**self).downgrade()
+    }
 }
 
-pub(crate) trait WeakSender<M>: Send
+pub trait WeakSender<M>: Send
 where
     M::Result: Send,
     M: Message + Send,
@@ -84,6 +94,7 @@ where
     ///
     /// Returns [`None`] if the actor has since been dropped.
     fn upgrade(&self) -> Option<Box<dyn Sender<M> + Sync>>;
+
     fn boxed(&self) -> Box<dyn WeakSender<M> + Sync>;
 }
 
@@ -133,6 +144,14 @@ impl<A: Actor> fmt::Debug for WeakAddressSender<A> {
         fmt.debug_struct("WeakAddressSender").finish()
     }
 }
+
+impl<A: Actor> PartialEq for WeakAddressSender<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner.ptr_eq(&other.inner)
+    }
+}
+
+impl<A: Actor> Eq for WeakAddressSender<A> {}
 
 trait AssertKinds: Send + Sync + Clone {}
 
@@ -491,6 +510,12 @@ where
     fn connected(&self) -> bool {
         self.connected()
     }
+
+    fn downgrade(&self) -> Box<dyn WeakSender<M> + Sync + 'static> {
+        Box::new(WeakAddressSender {
+            inner: Arc::downgrade(&self.inner),
+        })
+    }
 }
 
 impl<A: Actor> Clone for AddressSender<A> {
@@ -509,6 +534,7 @@ impl<A: Actor> Clone for AddressSender<A> {
             debug_assert!(curr < self.inner.max_senders());
 
             let next = curr + 1;
+            #[allow(deprecated)]
             let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
@@ -630,6 +656,7 @@ impl<A: Actor> AddressSenderProducer<A> {
             }
 
             let next = curr + 1;
+            #[allow(deprecated)]
             let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
@@ -691,6 +718,7 @@ impl<A: Actor> AddressReceiver<A> {
             }
 
             let next = curr + 1;
+            #[allow(deprecated)]
             let actual = self.inner.num_senders.compare_and_swap(curr, next, SeqCst);
 
             // The ABA problem doesn't matter here. We only care that the
@@ -870,9 +898,7 @@ mod tests {
     use std::{thread, time};
 
     use super::*;
-
-    use crate::address::queue::PopResult;
-    use crate::prelude::*;
+    use crate::{address::queue::PopResult, prelude::*};
 
     struct Act;
     impl Actor for Act {

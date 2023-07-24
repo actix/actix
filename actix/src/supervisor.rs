@@ -1,15 +1,19 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{self, Poll};
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{self, Poll},
+};
 
 use actix_rt::ArbiterHandle;
 use pin_project_lite::pin_project;
 
-use crate::actor::{Actor, AsyncContext, Supervised};
-use crate::address::{channel, Addr};
-use crate::context::Context;
-use crate::contextimpl::ContextFut;
-use crate::mailbox::DEFAULT_CAPACITY;
+use crate::{
+    actor::{Actor, AsyncContext, Supervised},
+    address::{channel, Addr},
+    context::Context,
+    contextimpl::ContextFut,
+    mailbox::DEFAULT_CAPACITY,
+};
 
 pin_project! {
     /// Actor supervisor

@@ -5,21 +5,19 @@ use std::{
     time::Duration,
 };
 
-use futures_core::stream::Stream;
-use pin_project_lite::pin_project;
-
 pub use collect::Collect;
 pub use finish::Finish;
 pub use fold::Fold;
+use futures_core::stream::Stream;
 pub use map::Map;
+use pin_project_lite::pin_project;
 pub use skip_while::SkipWhile;
 pub use take_while::TakeWhile;
 pub use then::Then;
 pub use timeout::Timeout;
 
-use crate::actor::Actor;
-
 use super::future::ActorFuture;
+use crate::actor::Actor;
 
 mod collect;
 mod finish;

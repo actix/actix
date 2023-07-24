@@ -1,10 +1,11 @@
 #![cfg(feature = "macros")]
 
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
-use actix::io::SinkWrite;
-use actix::prelude::*;
+use actix::{io::SinkWrite, prelude::*};
 use bytes::{Buf, Bytes};
 use futures_sink::Sink;
 use tokio::sync::mpsc;

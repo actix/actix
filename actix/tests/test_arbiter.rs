@@ -1,6 +1,9 @@
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
+
 use actix::prelude::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 use tokio::sync::oneshot;
 
 #[derive(Debug)]
@@ -44,7 +47,11 @@ fn test_start_actor_message() {
                 tx.send(addr).ok().unwrap();
             });
 
-            rx.await.unwrap().do_send(Ping(1));
+            // TODO: investigate under CPU stress and/or with a drop impl
+            // original test used this line, but was buggy:
+            // rx.await.unwrap().do_send(Ping(1));
+
+            rx.await.unwrap().send(Ping(1)).await.unwrap();
         });
     });
 

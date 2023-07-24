@@ -1,11 +1,12 @@
 //! messages.
-use actix::dev::ToEnvelope;
-use actix::prelude::*;
-
 use std::any::TypeId;
 
-use crate::broker::{ArbiterBroker, RegisteredBroker, SystemBroker};
-use crate::msgs::*;
+use actix::{dev::ToEnvelope, prelude::*};
+
+use crate::{
+    broker::{ArbiterBroker, RegisteredBroker, SystemBroker},
+    msgs::*,
+};
 
 /// The `BrokerSubscribe` trait has functions to register an actor's interest in different
 /// messages.

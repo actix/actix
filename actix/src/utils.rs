@@ -1,15 +1,19 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
-use std::time::Duration;
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
+};
 
 use futures_core::ready;
 use pin_project_lite::pin_project;
 use tokio::sync::oneshot;
 
-use crate::actor::Actor;
-use crate::clock::{sleep, Sleep};
-use crate::fut::{ActorFuture, ActorStream};
+use crate::{
+    actor::Actor,
+    clock::{sleep, Sleep},
+    fut::{ActorFuture, ActorStream},
+};
 
 #[deprecated(
     since = "0.11.0",
@@ -22,6 +26,7 @@ where
     waiters: Vec<oneshot::Sender<T>>,
 }
 
+#[allow(deprecated)]
 impl<T> Condition<T>
 where
     T: Clone,
@@ -39,6 +44,7 @@ where
     }
 }
 
+#[allow(deprecated)]
 impl<T> Default for Condition<T>
 where
     T: Clone,
@@ -166,6 +172,7 @@ pin_project! {
     /// # }
     /// ```
     #[must_use = "future do nothing unless polled"]
+    #[allow(clippy::type_complexity)]
     pub struct IntervalFunc<A: Actor> {
         f: Box<dyn FnMut(&mut A, &mut A::Context)>,
         dur: Duration,

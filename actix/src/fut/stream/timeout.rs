@@ -1,13 +1,17 @@
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
-use std::time::Duration;
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+    time::Duration,
+};
 
 use pin_project_lite::pin_project;
 
-use crate::actor::Actor;
-use crate::clock::{sleep, Instant, Sleep};
-use crate::fut::ActorStream;
+use crate::{
+    actor::Actor,
+    clock::{sleep, Instant, Sleep},
+    fut::ActorStream,
+};
 
 pin_project! {
     /// Stream for the [`timeout`](super::ActorStreamExt::timeout) method.

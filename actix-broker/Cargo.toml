@@ -1,7 +1,6 @@
 [package]
 name = "actix-broker"
-version = "0.4.1"
-edition = "2018"
+version = "0.4.3"
 authors = [
     "Chris Ricketts <chris.ricketts@steribar.com>",
 ]
@@ -9,11 +8,13 @@ description = "Message broker for the Actix actor framework"
 keywords = ["actix", "message", "broker"]
 repository = "https://github.com/actix/actix"
 license = "MIT OR Apache-2.0"
+edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
-actix = ">=0.11.0, <0.13"
-ahash = { version = "0.7", default-features = false }
+actix = ">=0.11.0, <0.14"
+ahash = { version = "0.8", default-features = false }
 log = "0.4"
 
 [dev-dependencies]
-actix-web = { version = "3", default-features = false }
+actix-web = "4"

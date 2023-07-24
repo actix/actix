@@ -1,9 +1,14 @@
-use std::mem::drop;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::{collections::HashSet, time::Duration};
+use std::{
+    collections::HashSet,
+    mem::drop,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 
-use actix::prelude::*;
+use actix::{prelude::*, WeakRecipient};
 use actix_rt::time::sleep;
 
 #[derive(Debug)]
@@ -39,6 +44,45 @@ impl actix::Handler<Ping> for MyActor3 {
 
     fn handle(&mut self, _: Ping, _: &mut actix::Context<MyActor3>) -> Self::Result {
         System::current().stop();
+    }
+}
+
+#[derive(Debug)]
+struct PingCounterActor {
+    ping_count: Arc<AtomicUsize>,
+}
+
+impl Default for PingCounterActor {
+    fn default() -> Self {
+        Self {
+            ping_count: Arc::new(AtomicUsize::from(0)),
+        }
+    }
+}
+
+impl Actor for PingCounterActor {
+    type Context = Context<Self>;
+}
+
+struct CountPings;
+
+impl Message for CountPings {
+    type Result = usize;
+}
+
+impl actix::Handler<Ping> for PingCounterActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: Ping, _ctx: &mut Self::Context) -> Self::Result {
+        self.ping_count.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+impl actix::Handler<CountPings> for PingCounterActor {
+    type Result = <CountPings as actix::Message>::Result;
+
+    fn handle(&mut self, _msg: CountPings, _ctx: &mut Self::Context) -> Self::Result {
+        self.ping_count.load(Ordering::SeqCst)
     }
 }
 
@@ -155,6 +199,114 @@ fn test_weak_recipient() {
     });
 
     sys.run().unwrap();
+}
+
+#[test]
+fn test_weak_recipient_can_be_cloned() {
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let addr = PingCounterActor::start_default();
+        let weak_recipient = addr.downgrade().recipient();
+        let weak_recipient_clone = weak_recipient.clone();
+
+        weak_recipient
+            .upgrade()
+            .expect("must be able to upgrade the weak recipient here")
+            .send(Ping(0))
+            .await
+            .expect("send must not fail");
+        weak_recipient_clone
+            .upgrade()
+            .expect("must be able to upgrade the cloned weak recipient here")
+            .send(Ping(0))
+            .await
+            .expect("send must not fail");
+        let pings = addr.send(CountPings {}).await.expect("send must not fail");
+        assert_eq!(
+            pings, 2,
+            "both the weak recipient and its clone must have sent a ping"
+        );
+    });
+}
+
+#[test]
+fn test_recipient_can_be_downgraded() {
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let addr = PingCounterActor::start_default();
+        let strong_recipient: Recipient<Ping> = addr.clone().recipient();
+        // test the downgrade method
+        let weak_recipient: WeakRecipient<Ping> = strong_recipient.downgrade();
+        // test the From trait
+        let converted_weak_recipient = WeakRecipient::from(strong_recipient);
+        weak_recipient
+            .upgrade()
+            .expect("upgrade of weak recipient must not fail here")
+            .send(Ping(0))
+            .await
+            .unwrap();
+
+        converted_weak_recipient
+            .upgrade()
+            .expect("upgrade of weak recipient must not fail here")
+            .send(Ping(0))
+            .await
+            .unwrap();
+        let ping_count = addr.send(CountPings {}).await.unwrap();
+        assert_eq!(
+            ping_count, 2,
+            "weak recipients must not fail to send a message"
+        );
+    });
+}
+
+#[test]
+fn test_weak_addr_partial_equality() {
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let actor1 = MyActor3 {}.start();
+        let actor2 = MyActor3 {}.start();
+
+        let weak1 = actor1.downgrade();
+        let weak1_again = actor1.downgrade();
+        let weak2 = actor2.downgrade();
+
+        // if this stops compiling this means that Add::downgrade
+        // now takes self by value and we must clone before downgrading
+
+        assert!(actor1.connected(), "actor 1 must be alive");
+        assert!(actor2.connected(), "actor 2 must be alive");
+        // the assertions we want to hold for partial equality of weak actor addresses
+        // these assertions must hold whether one or both of the actors are connected or not
+        let check_equality_assertions = || {
+            assert_eq!(weak1, weak1);
+            assert_eq!(weak1, weak1_again);
+            assert_eq!(weak2, weak2);
+
+            assert_ne!(weak1, weak2);
+            assert_ne!(weak1_again, weak2);
+        };
+        check_equality_assertions();
+        // make sure that the same results apply when upgrading weak addr to addr and
+        // comparing strong addresses so the results are intuitive and consistent
+        assert_eq!(weak1.upgrade().unwrap(), weak1.upgrade().unwrap());
+        assert_eq!(weak1.upgrade().unwrap(), weak1_again.upgrade().unwrap());
+        assert_eq!(weak2.upgrade().unwrap(), weak2.upgrade().unwrap());
+        assert_ne!(weak1.upgrade().unwrap(), weak2.upgrade().unwrap());
+        assert_ne!(weak1_again.upgrade().unwrap(), weak2.upgrade().unwrap());
+
+        // now drop one of the actors and make sure the same equality comparisons still hold
+        drop(actor1);
+        assert!(actor2.connected());
+        check_equality_assertions();
+
+        // and drop the second actor as well
+        drop(actor2);
+        check_equality_assertions();
+    });
 }
 
 #[test]

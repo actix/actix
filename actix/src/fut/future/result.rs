@@ -6,10 +6,10 @@ use std::{
     task::{self, Poll},
 };
 
-use crate::{actor::Actor, fut::ActorFuture};
-
 // TODO: remove re-export and encourage direct usage of std and/or futures crate types.
 pub use futures_util::future::{ready, Ready};
+
+use crate::{actor::Actor, fut::ActorFuture};
 
 /// Creates a new "leaf future" which will resolve with the given result.
 ///

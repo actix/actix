@@ -1,10 +1,12 @@
 use std::fmt;
 
-use crate::actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle};
-use crate::address::{Addr, AddressReceiver};
-use crate::contextimpl::{AsyncContextParts, ContextFut, ContextParts};
-use crate::fut::ActorFuture;
-use crate::mailbox::Mailbox;
+use crate::{
+    actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle},
+    address::{Addr, AddressReceiver},
+    contextimpl::{AsyncContextParts, ContextFut, ContextParts},
+    fut::ActorFuture,
+    mailbox::Mailbox,
+};
 
 /// An actor execution context.
 pub struct Context<A>
@@ -189,6 +191,16 @@ where
     /// Returns whether any addresses are still connected.
     pub fn connected(&self) -> bool {
         self.parts.connected()
+    }
+}
+
+impl<A> Default for Context<A>
+where
+    A: Actor<Context = Self>,
+{
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -1,26 +1,30 @@
-use std::hash::{Hash, Hasher};
-use std::{error, fmt};
+use std::{
+    error, fmt,
+    hash::{Hash, Hasher},
+};
 
 pub(crate) mod channel;
 mod envelope;
 mod message;
 mod queue;
 
-use crate::actor::Actor;
-use crate::handler::{Handler, Message};
-
-pub use self::envelope::{Envelope, EnvelopeProxy, ToEnvelope};
-pub use self::message::{RecipientRequest, Request};
-
 pub(crate) use self::channel::{AddressReceiver, AddressSenderProducer};
 use self::channel::{AddressSender, Sender, WeakAddressSender, WeakSender};
+pub use self::{
+    envelope::{Envelope, EnvelopeProxy, ToEnvelope},
+    message::{RecipientRequest, Request},
+};
+use crate::{
+    actor::Actor,
+    handler::{Handler, Message},
+};
 
 pub enum SendError<T> {
     Full(T),
     Closed(T),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 /// The errors that can occur during the message delivery process.
 pub enum MailboxError {
     Closed,
@@ -82,17 +86,17 @@ impl<A: Actor> Addr<A> {
         Addr { tx }
     }
 
-    #[inline]
     /// Returns whether the actor is still alive.
+    #[inline]
     pub fn connected(&self) -> bool {
         self.tx.connected()
     }
 
-    #[inline]
     /// Sends a message unconditionally, ignoring any potential errors.
     ///
-    /// The message is always queued, even if the mailbox for the receiver is full.
-    /// If the mailbox is closed, the message is silently dropped.
+    /// The message is always queued, even if the mailbox for the receiver is full. If the mailbox
+    /// is closed, the message is silently dropped.
+    #[inline]
     pub fn do_send<M>(&self, msg: M)
     where
         M: Message + Send,
@@ -117,12 +121,11 @@ impl<A: Actor> Addr<A> {
         self.tx.try_send(msg, true)
     }
 
-    #[inline]
     /// Sends an asynchronous message and waits for a response.
     ///
-    /// The communication channel to the actor is bounded. If the
-    /// returned `Future` object gets dropped, the message is
-    /// cancelled.
+    /// The communication channel to the actor is bounded. If the returned request future gets
+    /// dropped, the message is cancelled.
+    #[inline]
     pub fn send<M>(&self, msg: M) -> Request<A, M>
     where
         M: Message + Send + 'static,
@@ -234,6 +237,14 @@ impl<A: Actor> fmt::Debug for WeakAddr<A> {
     }
 }
 
+impl<A: Actor> PartialEq for WeakAddr<A> {
+    fn eq(&self, other: &Self) -> bool {
+        self.wtx == other.wtx
+    }
+}
+
+impl<A: Actor> std::cmp::Eq for WeakAddr<A> {}
+
 /// The [`Recipient`] type allows to send one specific message to an actor.
 ///
 /// You can get a recipient using the `Addr::recipient()` method. It is possible
@@ -258,37 +269,41 @@ where
 
     /// Sends a message.
     ///
-    /// Deliver the message even if the recipient's mailbox is full.
-    pub fn do_send(&self, msg: M) -> Result<(), SendError<M>> {
-        self.tx.do_send(msg)
+    /// The message is always queued, even if the mailbox for the receiver is full. If the mailbox
+    /// is closed, the message is silently dropped.
+    pub fn do_send(&self, msg: M) {
+        let _ = self.tx.do_send(msg);
     }
 
     /// Attempts to send a message.
     ///
-    /// This method fails if the actor's mailbox is full or
-    /// closed. This method registers the current task in the
-    /// receivers queue.
+    /// This method fails if the actor's mailbox is full or closed. This method registers the
+    /// current task in the receivers queue.
     pub fn try_send(&self, msg: M) -> Result<(), SendError<M>> {
         self.tx.try_send(msg)
     }
 
     /// Sends a message and asynchronously wait for a response.
     ///
-    /// The communication channel to the actor is bounded. If the
-    /// returned `Request` object gets dropped, the message is
-    /// cancelled.
+    /// The communication channel to the actor is bounded. If the returned `RecipientRequest` object
+    /// gets dropped, the message is cancelled.
     pub fn send(&self, msg: M) -> RecipientRequest<M> {
         match self.tx.send(msg) {
             Ok(rx) => RecipientRequest::new(Some(rx), None),
-            Err(SendError::Full(msg)) => {
-                RecipientRequest::new(None, Some((self.tx.boxed(), msg)))
-            }
+            Err(SendError::Full(msg)) => RecipientRequest::new(None, Some((self.tx.boxed(), msg))),
             Err(SendError::Closed(_)) => RecipientRequest::new(None, None),
         }
     }
 
     pub fn connected(&self) -> bool {
         self.tx.connected()
+    }
+
+    /// Returns a downgraded `WeakRecipient`
+    pub fn downgrade(&self) -> WeakRecipient<M> {
+        WeakRecipient {
+            wtx: self.tx.downgrade(),
+        }
     }
 }
 
@@ -371,6 +386,28 @@ where
     }
 }
 
+impl<M> Clone for WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn clone(&self) -> Self {
+        Self {
+            wtx: self.wtx.boxed(),
+        }
+    }
+}
+
+impl<M> From<Recipient<M>> for WeakRecipient<M>
+where
+    M: Message + Send,
+    M::Result: Send,
+{
+    fn from(recipient: Recipient<M>) -> Self {
+        recipient.downgrade()
+    }
+}
+
 impl<M> WeakRecipient<M>
 where
     M: Message + Send,
@@ -410,10 +447,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
 
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::Arc;
+    use crate::prelude::*;
 
     struct ActorWithSmallMailBox(Arc<AtomicUsize>);
 
@@ -426,6 +465,7 @@ mod tests {
     }
 
     pub struct SetCounter(usize);
+
     impl Message for SetCounter {
         type Result = ();
     }

@@ -6,8 +6,10 @@ use std::{
 use futures_util::ready;
 use pin_project_lite::pin_project;
 
-use crate::actor::Actor;
-use crate::fut::{future::ActorFuture, try_future::ActorTryFuture};
+use crate::{
+    actor::Actor,
+    fut::{future::ActorFuture, try_future::ActorTryFuture},
+};
 
 pin_project! {
     /// Future for the `and_then` combinator, chaining computations
