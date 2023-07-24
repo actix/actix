@@ -966,8 +966,8 @@
         <span class="kw">let </span>inner = <span class="self">self</span>.inner.<span class="number">0</span>.borrow_mut();
         <span class="kw">if </span>!inner.buffer.is_empty() {
             <span class="comment">// Results must be ignored during drop, as the errors cannot be handled meaningfully
-            </span><span class="kw">let _ </span>= async_writer.write(<span class="kw-2">&amp;</span>inner.buffer);
-            <span class="kw">let _ </span>= async_writer.flush();
+            </span>drop(async_writer.write(<span class="kw-2">&amp;</span>inner.buffer));
+            drop(async_writer.flush());
         }
     }
 }

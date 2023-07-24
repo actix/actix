@@ -84,8 +84,6 @@
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Mocking utility actor.
 //!
 //! This actor wraps any actor, and replaces instances of that actor with
@@ -115,7 +113,6 @@
 
 </span><span class="kw">use </span>std::any::Any;
 <span class="kw">use </span>std::marker::PhantomData;
-<span class="kw">use </span>std::mem;
 
 <span class="kw">use </span><span class="kw">crate</span>::handler::MessageResponse;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::<span class="kw-2">*</span>;
@@ -163,11 +160,10 @@
     <span class="kw">type </span><span class="prelude-ty">Result </span>= M::Result;
     <span class="kw">fn </span>handle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: M, ctx: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::Context) -&gt; M::Result {
         <span class="kw">let </span><span class="kw-2">mut </span>ret = (<span class="self">self</span>.mock)(Box::new(msg), ctx);
-        <span class="kw">let </span>out = mem::replace(
-            ret.downcast_mut::&lt;<span class="prelude-ty">Option</span>&lt;M::Result&gt;&gt;()
-                .expect(<span class="string">&quot;wrong return type for message&quot;</span>),
-            <span class="prelude-val">None</span>,
-        );
+        <span class="kw">let </span>out = ret
+            .downcast_mut::&lt;<span class="prelude-ty">Option</span>&lt;M::Result&gt;&gt;()
+            .expect(<span class="string">&quot;wrong return type for message&quot;</span>)
+            .take();
         <span class="kw">match </span>out {
             <span class="prelude-val">Some</span>(a) =&gt; a,
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(),

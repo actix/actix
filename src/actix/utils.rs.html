@@ -206,6 +206,7 @@
 <a href="#206" id="206">206</a>
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::pin::Pin;
 <span class="kw">use </span>std::task::{Context, Poll};
@@ -374,6 +375,7 @@
     /// # }
     /// ```
     </span><span class="attr">#[must_use = <span class="string">&quot;future do nothing unless polled&quot;</span>]
+    #[allow(clippy::type_complexity)]
     </span><span class="kw">pub struct </span>IntervalFunc&lt;A: Actor&gt; {
         f: Box&lt;<span class="kw">dyn </span>FnMut(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context)&gt;,
         dur: Duration,

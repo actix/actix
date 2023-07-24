@@ -477,6 +477,7 @@
 <a href="#477" id="477">477</a>
 <a href="#478" id="478">478</a>
 <a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 <span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::pin::Pin;
@@ -495,13 +496,14 @@
 <span class="kw">use </span><span class="kw">crate</span>::mailbox::Mailbox;
 
 <span class="macro">bitflags! </span>{
-    <span class="doccomment">/// internal context state
+    <span class="doccomment">/// Internal context state.
+    </span><span class="attr">#[derive(Debug)]
     </span><span class="kw">struct </span>ContextFlags: u8 {
-    <span class="kw">const </span>STARTED =  <span class="number">0b0000_0001</span>;
-    <span class="kw">const </span>RUNNING =  <span class="number">0b0000_0010</span>;
-    <span class="kw">const </span>STOPPING = <span class="number">0b0000_0100</span>;
-    <span class="kw">const </span>STOPPED =  <span class="number">0b0001_0000</span>;
-    <span class="kw">const </span>MB_CAP_CHANGED = <span class="number">0b0010_0000</span>;
+        <span class="kw">const </span>STARTED =  <span class="number">0b0000_0001</span>;
+        <span class="kw">const </span>RUNNING =  <span class="number">0b0000_0010</span>;
+        <span class="kw">const </span>STOPPING = <span class="number">0b0000_0100</span>;
+        <span class="kw">const </span>STOPPED =  <span class="number">0b0001_0000</span>;
+        <span class="kw">const </span>MB_CAP_CHANGED = <span class="number">0b0010_0000</span>;
     }
 }
 
