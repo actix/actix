@@ -1,7 +1,7 @@
 /// Proc macro compile tests.
 ///
 /// Only run on MSRV to ensure stable compile errors.
-#[rustversion::stable(1.65)]
+#[rustversion::stable(1.68)]
 #[test]
 fn compile_macros() {
     let t = trybuild::TestCases::new();

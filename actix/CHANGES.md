@@ -6,7 +6,7 @@
 
 - Add `SyncArbiter::start_with_thread_builder()`.
 - Derive `PartialEq` and `Eq` for `MailboxError`.
-- Minimum supported Rust version (MSRV) is now 1.65.
+- Minimum supported Rust version (MSRV) is now 1.68.
 
 ## 0.13.0 - 2022-03-01
 
