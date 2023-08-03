@@ -41,7 +41,7 @@ jobs:
           components: clippy
 
       - name: Check with Clippy
-        uses: giraffate/clippy-action@v1.0.0
+        uses: giraffate/clippy-action@v1.0.1
         with:
           reporter: github-pr-review
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -61,7 +61,7 @@ jobs:
         with:
           toolchain: nightly-2023-06-28
 
-      - uses: taiki-e/cache-cargo-install-action@v1.2.0
+      - uses: taiki-e/cache-cargo-install-action@v1.2.1
         with:
           tool: cargo-public-api
 
