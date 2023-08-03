@@ -61,7 +61,7 @@ jobs:
         with:
           toolchain: nightly-2023-06-28
 
-      - uses: taiki-e/cache-cargo-install-action@v1.2.0
+      - uses: taiki-e/cache-cargo-install-action@v1.2.1
         with:
           tool: cargo-public-api
 
