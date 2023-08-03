@@ -62,7 +62,7 @@ Actix uses the [Tokio](https://github.com/tokio-rs/tokio) runtime. `System::new(
 
 ### Implementing an Actor
 
-In order to define an actor you need to define a struct and have it implement the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
+In order to define an actor you need to define a struct and have it implement the [`Actor`](https://docs.rs/actix/latest/actix/trait.Actor.html) trait.
 
 ```rust
 use actix::{Actor, Context, System};
@@ -89,8 +89,8 @@ fn main() {
 
 Spawning a new actor is achieved via the `start` and `create` methods of the [Actor trait]. It provides several different ways of creating actors; for details, check the docs. You can implement the `started`, `stopping` and `stopped` methods of the Actor trait. `started` gets called when the actor starts and `stopping` when the actor finishes. Check the API docs for more information on [the actor lifecycle].
 
-[Actor trait]: https://actix.github.io/actix/actix/trait.Actor.html
-[the actor lifecycle]: https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle
+[Actor trait]: https://docs.rs/actix/latest/actix/trait.Actor.html
+[the actor lifecycle]: https://actix.rs/docs/actix/actor#actor-lifecycle
 
 ### Handle Messages
 
