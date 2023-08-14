@@ -513,16 +513,26 @@ where
         let this = self.get_mut();
         let inner = &mut this.inner.borrow_mut();
 
-        // ensure sink is ready to receive next item
-        match Pin::new(&mut inner.sink).poll_ready(cx) {
-            Poll::Ready(Ok(())) => {
-                if let Some(item) = inner.buffer.pop_front() {
-                    // send front of buffer to sink
-                    let _ = Pin::new(&mut inner.sink).start_send(item);
+        // Loop to ensure we either process all items in the buffer, or trigger the inner sink to be pending
+        // and wake this task later.
+        loop {
+            // ensure sink is ready to receive next item
+            match Pin::new(&mut inner.sink).poll_ready(cx) {
+                Poll::Ready(Ok(())) => {
+                    if let Some(item) = inner.buffer.pop_front() {
+                        // send front of buffer to sink
+                        let _ = Pin::new(&mut inner.sink).start_send(item);
+                    } else {
+                        break;
+                    }
+                }
+                Poll::Ready(Err(_err)) => {
+                    break;
+                }
+                Poll::Pending => {
+                    break;
                 }
             }
-            Poll::Ready(Err(_err)) => {}
-            Poll::Pending => {}
         }
 
         if !inner.closing_flag.contains(Flags::CLOSING) {

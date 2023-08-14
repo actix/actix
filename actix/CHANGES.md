@@ -6,6 +6,7 @@
 
 - Add `SyncArbiter::start_with_thread_builder()`.
 - Derive `PartialEq` and `Eq` for `MailboxError`.
+- Fix SinkWrite not sending all messages in the buffer sometimes.
 - Minimum supported Rust version (MSRV) is now 1.68.
 
 ## 0.13.0 - 2022-03-01
