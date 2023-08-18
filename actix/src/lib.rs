@@ -9,7 +9,7 @@
 //! messages.
 //!
 //! ## Other Documentation
-//! - [User Guide](https://actix.rs/book/actix/)
+//! - [User Guide](https://actix.rs/docs/actix)
 //! - [Community Chat on Discord](https://discord.gg/NWpN5mmg3x)
 //!
 //! ## Features
