@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.13.1
+
 ### Added
 
 - Add `SyncArbiter::start_with_thread_builder()`.
@@ -10,7 +12,7 @@
 
 ### Fixed
 
-- Fix SinkWrite not sending all messages in the buffer sometimes.
+- Fix `SinkWrite` sometimes not sending all messages in its buffer.
 
 ## 0.13.0 - 2022-03-01
 
