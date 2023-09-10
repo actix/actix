@@ -1,6 +1,6 @@
 [package]
 name = "actix_derive"
-version = "0.6.0"
+version = "0.6.1"
 authors = [
     "Callym <hi@callym.com>",
     "Nikolay Kim <fafhrd91@gmail.com>",
