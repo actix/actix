@@ -278,7 +278,7 @@ where
 
     /// Restart context. Cleanup all futures, except address queue.
     #[inline]
-    pub(crate) fn restart(&mut self) -> bool
+    pub fn restart(&mut self) -> bool
     where
         A: Supervised,
     {
