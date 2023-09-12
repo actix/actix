@@ -173,7 +173,10 @@ where
         Addr::new(self.addr.sender())
     }
 
-    /// Restart context. Cleanup all futures, except address queue.
+    /// Restarts the [`AsyncContext`] of this [`ContextParts`] by:
+    /// - canceling all the [`ActorFuture`]s spawned by [`ContextParts::spawn`];
+    /// - clearing the [`ContextParts::wait`] queue;
+    /// - forcing the [`Actor`] state to [`ActorState::Running`].
     #[inline]
     pub(crate) fn restart(&mut self) {
         self.flags = ContextFlags::RUNNING;
@@ -276,7 +279,16 @@ where
         }
     }
 
-    /// Restart context. Cleanup all futures, except address queue.
+    /// Restarts the [`AsyncContext`] of this [`ContextFut`] by:
+    /// - canceling all the [`ActorFuture`]s spawned by the [`AsyncContext`];
+    /// - clearing the [`ActorFuture`] await queue of the [`AsyncContext`];
+    /// - forcing the [`Actor`] state to [`ActorState::Running`];
+    /// - calling [`Supervised::restarting`] on the [`Actor`].
+    ///
+    /// and returns whether the [`Context`] was restarted. Restart may fail
+    /// only if the [`Mailbox`] is not [`connected`].
+    ///
+    /// [`connected`]: Mailbox::connected
     #[inline]
     pub fn restart(&mut self) -> bool
     where
