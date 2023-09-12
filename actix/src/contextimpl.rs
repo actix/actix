@@ -173,10 +173,10 @@ where
         Addr::new(self.addr.sender())
     }
 
-    /// Restarts the [`AsyncContext`] of this [`ContextParts`] by:
-    /// - canceling all the [`ActorFuture`]s spawned by [`ContextParts::spawn`];
+    /// Restarts this [`ContextParts`] by:
+    /// - canceling all the [`ActorFuture`]s spawned via [`ContextParts::spawn`];
     /// - clearing the [`ContextParts::wait`] queue;
-    /// - forcing the [`Actor`] state to [`ActorState::Running`].
+    /// - changing the [`Actor`] state to [`ActorState::Running`].
     #[inline]
     pub(crate) fn restart(&mut self) {
         self.flags = ContextFlags::RUNNING;
@@ -279,14 +279,16 @@ where
         }
     }
 
-    /// Restarts the [`AsyncContext`] of this [`ContextFut`] by:
+    /// Restarts the [`AsyncContext`] of this [`ContextFut`] returning whether the [`Context`] was
+    /// restarted.
+    ///
+    /// Restarting the [`Context`] means:
     /// - canceling all the [`ActorFuture`]s spawned by the [`AsyncContext`];
     /// - clearing the [`ActorFuture`] await queue of the [`AsyncContext`];
-    /// - forcing the [`Actor`] state to [`ActorState::Running`];
+    /// - changing the [`Actor`] state to [`ActorState::Running`];
     /// - calling [`Supervised::restarting`] on the [`Actor`].
     ///
-    /// and returns whether the [`Context`] was restarted. Restart may fail
-    /// only if the [`Mailbox`] is not [`connected`].
+    /// Restart may fail only if the [`Mailbox`] is not [`connected`].
     ///
     /// [`connected`]: Mailbox::connected
     #[inline]
