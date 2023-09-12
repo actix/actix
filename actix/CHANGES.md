@@ -4,7 +4,7 @@
 
 ### Added
 
-- Minimum supported Rust version (MSRV) is now 1.68.
+- Expose `ContextFut::restart`.
 
 ## 0.13.1
 
@@ -12,7 +12,7 @@
 
 - Add `SyncArbiter::start_with_thread_builder()`.
 - Derive `PartialEq` and `Eq` for `MailboxError`.
-- Expose `ContextFut::restart`.
+- Minimum supported Rust version (MSRV) is now 1.68.
 
 ### Fixed
 
