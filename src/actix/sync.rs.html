@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/sync.rs`."><title>sync.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-c67e44d78ab2db17.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (9fad68599 2023-12-03)" data-channel="nightly" data-search-js="search-5a66c239c06b3a66.js" data-settings-js="settings-fe03fdc259827cd2.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-77dede896d6ac08e.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img src="https://actix.rs/img/logo.png" alt="actix"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/sync.rs`."><title>sync.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-4e54bb2b497cc83f.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (62d7ed4a6 2024-01-11)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0b2e2def73e61cbe.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../actix/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -432,7 +434,7 @@
 //!
 //! Sync Actors are actors that run multiple instances on a thread pool.
 //! This is useful for CPU bound, or concurrent workloads. There can only be
-//! a single Sync Actor type on a `SyncArbiter`. This means you can&#39;t have
+//! a single Sync Actor type on a `SyncArbiter`. This means you can't have
 //! Actor type A and B, sharing the same thread pool. You need to create two
 //! [`SyncArbiter`]s and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
@@ -454,7 +456,7 @@
 };
 
 <span class="doccomment">/// [`SyncArbiter`] provides the resources for a single Sync Actor to run on a dedicated
-/// thread or threads. This is generally used for CPU bound concurrent workloads. It&#39;s
+/// thread or threads. This is generally used for CPU bound concurrent workloads. It's
 /// important to note, that the [`SyncArbiter`] generates a single address for the pool
 /// of hosted Sync Actors. Any message sent to this Address, will be operated on by
 /// a single Sync Actor from the pool.
@@ -476,7 +478,7 @@
 /// struct SyncActor;
 ///
 /// impl Actor for SyncActor {
-///     // It&#39;s important to note that you use &quot;SyncContext&quot; here instead of &quot;Context&quot;.
+///     // It's important to note that you use "SyncContext" here instead of "Context".
 ///     type Context = SyncContext&lt;Self&gt;;
 /// }
 ///
@@ -538,7 +540,7 @@
     /// the next available Actor in the `SyncArbiter`.
     </span><span class="kw">pub fn </span>start&lt;F&gt;(threads: usize, factory: F) -&gt; Addr&lt;A&gt;
     <span class="kw">where
-        </span>F: Fn() -&gt; A + Send + Sync + <span class="lifetime">&#39;static</span>,
+        </span>F: Fn() -&gt; A + Send + Sync + <span class="lifetime">'static</span>,
     {
         <span class="self">Self</span>::start_with_thread_builder(threads, thread::Builder::new, factory)
     }
@@ -555,7 +557,7 @@
         factory: F,
     ) -&gt; Addr&lt;A&gt;
     <span class="kw">where
-        </span>F: Fn() -&gt; A + Send + Sync + <span class="lifetime">&#39;static</span>,
+        </span>F: Fn() -&gt; A + Send + Sync + <span class="lifetime">'static</span>,
         BF: FnMut() -&gt; thread::Builder,
     {
         <span class="kw">let </span>factory = Arc::new(factory);
@@ -573,7 +575,7 @@
                     System::set_current(sys);
                     SyncContext::new(f, actor_queue, inner_rx).run();
                 })
-                .expect(<span class="string">&quot;failed to spawn thread&quot;</span>);
+                .expect(<span class="string">"failed to spawn thread"</span>);
         }
 
         System::current().arbiter().spawn(<span class="self">Self </span>{
@@ -599,7 +601,7 @@
 {
     <span class="kw">type </span>Output = ();
 
-    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
+    <span class="kw">fn </span>poll(<span class="self">self</span>: Pin&lt;<span class="kw-2">&amp;mut </span><span class="self">Self</span>&gt;, cx: <span class="kw-2">&amp;mut </span>task::Context&lt;<span class="lifetime">'_</span>&gt;) -&gt; Poll&lt;<span class="self">Self</span>::Output&gt; {
         <span class="kw">let </span>this = <span class="self">self</span>.get_mut();
         <span class="kw">loop </span>{
             <span class="kw">match </span>Pin::new(<span class="kw-2">&amp;mut </span>this.msgs).poll_next(cx) {
@@ -627,7 +629,7 @@
 <span class="kw">impl</span>&lt;A, M&gt; ToEnvelope&lt;A, M&gt; <span class="kw">for </span>SyncContext&lt;A&gt;
 <span class="kw">where
     </span>A: Actor&lt;Context = <span class="self">Self</span>&gt; + Handler&lt;M&gt;,
-    M: Message + Send + <span class="lifetime">&#39;static</span>,
+    M: Message + Send + <span class="lifetime">'static</span>,
     M::Result: Send,
 {
     <span class="kw">fn </span>pack(msg: M, tx: <span class="prelude-ty">Option</span>&lt;SyncSender&lt;M::Result&gt;&gt;) -&gt; Envelope&lt;A&gt; {
@@ -657,7 +659,7 @@
 /// struct SyncActor;
 ///
 /// impl Actor for SyncActor {
-///     // It&#39;s important to note that you use &quot;SyncContext&quot; here instead of &quot;Context&quot;.
+///     // It's important to note that you use "SyncContext" here instead of "Context".
 ///     type Context = SyncContext&lt;Self&gt;;
 /// }
 ///
@@ -711,7 +713,7 @@
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                     <span class="self">self</span>.state = ActorState::Stopping;
                     <span class="kw">if </span>A::stopping(<span class="kw-2">&amp;mut </span>act, <span class="self">self</span>) != Running::Stop {
-                        <span class="macro">warn!</span>(<span class="string">&quot;stopping method is not supported for sync actors&quot;</span>);
+                        <span class="macro">warn!</span>(<span class="string">"stopping method is not supported for sync actors"</span>);
                     }
                     <span class="self">self</span>.state = ActorState::Stopped;
                     A::stopped(<span class="kw-2">&amp;mut </span>act, <span class="self">self</span>);
@@ -785,7 +787,7 @@
 
 <span class="kw">impl</span>&lt;A, M&gt; EnvelopeProxy&lt;A&gt; <span class="kw">for </span>SyncContextEnvelope&lt;M&gt;
 <span class="kw">where
-    </span>M: Message + Send + <span class="lifetime">&#39;static</span>,
+    </span>M: Message + Send + <span class="lifetime">'static</span>,
     M::Result: Send,
     A: Actor&lt;Context = SyncContext&lt;A&gt;&gt; + Handler&lt;M&gt;,
 {

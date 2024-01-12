@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/actor.rs`."><title>actor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-c67e44d78ab2db17.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (9fad68599 2023-12-03)" data-channel="nightly" data-search-js="search-5a66c239c06b3a66.js" data-settings-js="settings-fe03fdc259827cd2.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-77dede896d6ac08e.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img src="https://actix.rs/img/logo.png" alt="actix"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/actor.rs`."><title>actor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-4e54bb2b497cc83f.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (62d7ed4a6 2024-01-11)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0b2e2def73e61cbe.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../actix/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -518,13 +520,13 @@
 ///
 /// ## Running
 ///
-/// After an actor&#39;s `started` method got called, the actor
+/// After an actor's `started` method got called, the actor
 /// transitions to the `Running` state. An actor can stay in the
 /// `running` state for an indefinite amount of time.
 ///
 /// ## Stopping
 ///
-/// The actor&#39;s execution state changes to `stopping` in the following
+/// The actor's execution state changes to `stopping` in the following
 /// situations:
 ///
 /// * `Context::stop` gets called by actor itself
@@ -547,7 +549,7 @@
 /// state, the actor state changes to `Stopped`. This state is
 /// considered final and at this point the actor gets dropped.
 </span><span class="attr">#[allow(unused_variables)]
-</span><span class="kw">pub trait </span>Actor: Sized + Unpin + <span class="lifetime">&#39;static </span>{
+</span><span class="kw">pub trait </span>Actor: Sized + Unpin + <span class="lifetime">'static </span>{
     <span class="doccomment">/// Actor execution context type
     </span><span class="kw">type </span>Context: ActorContext;
 
@@ -613,11 +615,11 @@
         <span class="self">Self</span>::default().start()
     }
 
-    <span class="doccomment">/// Start new actor in arbiter&#39;s thread.
+    <span class="doccomment">/// Start new actor in arbiter's thread.
     </span><span class="kw">fn </span>start_in_arbiter&lt;F&gt;(wrk: <span class="kw-2">&amp;</span>ArbiterHandle, f: F) -&gt; Addr&lt;<span class="self">Self</span>&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Actor&lt;Context = Context&lt;<span class="self">Self</span>&gt;&gt;,
-        F: FnOnce(<span class="kw-2">&amp;mut </span>Context&lt;<span class="self">Self</span>&gt;) -&gt; <span class="self">Self </span>+ Send + <span class="lifetime">&#39;static</span>,
+        F: FnOnce(<span class="kw-2">&amp;mut </span>Context&lt;<span class="self">Self</span>&gt;) -&gt; <span class="self">Self </span>+ Send + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span>(tx, rx) = channel::channel(DEFAULT_CAPACITY);
 
@@ -676,7 +678,7 @@
 ///
 /// If a supervised actor fails, its supervisor creates new execution
 /// context and restarts the actor, invoking its `restarting` method.
-/// After a call to this method, the actor&#39;s execution state changes
+/// After a call to this method, the actor's execution state changes
 /// to `Started` and the regular lifecycle process starts.
 ///
 /// The `restarting` method gets called with the newly constructed
@@ -718,12 +720,12 @@
 
 <span class="doccomment">/// Actor execution context.
 ///
-/// Each actor runs within a specific execution context. The actor&#39;s
+/// Each actor runs within a specific execution context. The actor's
 /// associated type `Actor::Context` defines the context to use for
 /// the actor, and must implement the `ActorContext` trait.
 ///
 /// The execution context defines the type of execution, and the
-/// actor&#39;s communication channels (message handling).
+/// actor's communication channels (message handling).
 </span><span class="kw">pub trait </span>ActorContext: Sized {
     <span class="doccomment">/// Immediately stop processing incoming messages and switch to a
     /// `stopping` state. This only affects actors that are currently
@@ -752,11 +754,11 @@
     /// Returns a handle of the spawned future, which can be used for
     /// cancelling its execution.
     ///
-    /// All futures spawned into an actor&#39;s context are cancelled
-    /// during the actor&#39;s stopping stage.
+    /// All futures spawned into an actor's context are cancelled
+    /// during the actor's stopping stage.
     </span><span class="kw">fn </span>spawn&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: F) -&gt; SpawnHandle
     <span class="kw">where
-        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>;
+        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">'static</span>;
 
     <span class="doccomment">/// Spawns a future into the context, waiting for it to resolve.
     ///
@@ -764,7 +766,7 @@
     /// resolves.
     </span><span class="kw">fn </span>wait&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: F)
     <span class="kw">where
-        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">&#39;static</span>;
+        </span>F: ActorFuture&lt;A, Output = ()&gt; + <span class="lifetime">'static</span>;
 
     <span class="doccomment">/// Checks if the context is paused (waiting for future completion or stopping).
     </span><span class="kw">fn </span>waiting(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool;
@@ -785,7 +787,7 @@
     /// use futures_util::stream::once;
     ///
     /// #[derive(Message)]
-    /// #[rtype(result = &quot;()&quot;)]
+    /// #[rtype(result = "()")]
     /// struct Ping;
     ///
     /// struct MyActor;
@@ -793,12 +795,12 @@
     /// impl StreamHandler&lt;Ping&gt; for MyActor {
     ///
     ///     fn handle(&amp;mut self, item: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {
-    ///         println!(&quot;PING&quot;);
+    ///         println!("PING");
     ///         System::current().stop();
     ///     }
     ///
     ///     fn finished(&amp;mut self, ctx: &amp;mut Self::Context) {
-    ///         println!(&quot;finished&quot;);
+    ///         println!("finished");
     ///     }
     /// }
     ///
@@ -819,7 +821,7 @@
     /// ```
     </span><span class="kw">fn </span>add_stream&lt;S&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: S) -&gt; SpawnHandle
     <span class="kw">where
-        </span>S: Stream + <span class="lifetime">&#39;static</span>,
+        </span>S: Stream + <span class="lifetime">'static</span>,
         A: StreamHandler&lt;S::Item&gt;,
     {
         &lt;A <span class="kw">as </span>StreamHandler&lt;S::Item&gt;&gt;::add_stream(fut, <span class="self">self</span>)
@@ -835,7 +837,7 @@
     /// use futures_util::stream::once;
     ///
     /// #[derive(Message)]
-    /// #[rtype(result = &quot;()&quot;)]
+    /// #[rtype(result = "()")]
     /// struct Ping;
     ///
     /// struct MyActor;
@@ -844,7 +846,7 @@
     ///     type Result = ();
     ///
     ///     fn handle(&amp;mut self, msg: Ping, ctx: &amp;mut Context&lt;MyActor&gt;) {
-    ///         println!(&quot;PING&quot;);
+    ///         println!("PING");
     /// #       System::current().stop();
     ///     }
     /// }
@@ -864,12 +866,12 @@
     /// ```
     </span><span class="kw">fn </span>add_message_stream&lt;S&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fut: S)
     <span class="kw">where
-        </span>S: Stream + <span class="lifetime">&#39;static</span>,
+        </span>S: Stream + <span class="lifetime">'static</span>,
         S::Item: Message,
         A: Handler&lt;S::Item&gt;,
     {
         <span class="kw">if </span><span class="self">self</span>.state() == ActorState::Stopped {
-            <span class="macro">error!</span>(<span class="string">&quot;Context::add_message_stream called for stopped actor.&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">"Context::add_message_stream called for stopped actor."</span>);
         } <span class="kw">else </span>{
             <span class="self">self</span>.spawn(ActorMessageStreamItem::new(fut));
         }
@@ -881,10 +883,10 @@
     </span><span class="kw">fn </span>notify&lt;M&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: M)
     <span class="kw">where
         </span>A: Handler&lt;M&gt;,
-        M: Message + <span class="lifetime">&#39;static</span>,
+        M: Message + <span class="lifetime">'static</span>,
     {
         <span class="kw">if </span><span class="self">self</span>.state() == ActorState::Stopped {
-            <span class="macro">error!</span>(<span class="string">&quot;Context::notify called for stopped actor.&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">"Context::notify called for stopped actor."</span>);
         } <span class="kw">else </span>{
             <span class="self">self</span>.spawn(ActorMessageItem::new(msg));
         }
@@ -893,17 +895,17 @@
     <span class="doccomment">/// Sends the message `msg` to self after a specified period of time.
     ///
     /// Returns a spawn handle which can be used for cancellation. The
-    /// notification gets cancelled if the context&#39;s stop method gets
+    /// notification gets cancelled if the context's stop method gets
     /// called. This bypasses the mailbox capacity, and
     /// will always queue the message. If the actor is in the `stopped` state, an
     /// error will be raised.
     </span><span class="kw">fn </span>notify_later&lt;M&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, msg: M, after: Duration) -&gt; SpawnHandle
     <span class="kw">where
         </span>A: Handler&lt;M&gt;,
-        M: Message + <span class="lifetime">&#39;static</span>,
+        M: Message + <span class="lifetime">'static</span>,
     {
         <span class="kw">if </span><span class="self">self</span>.state() == ActorState::Stopped {
-            <span class="macro">error!</span>(<span class="string">&quot;Context::notify_later called for stopped actor.&quot;</span>);
+            <span class="macro">error!</span>(<span class="string">"Context::notify_later called for stopped actor."</span>);
             SpawnHandle::default()
         } <span class="kw">else </span>{
             <span class="self">self</span>.spawn(ActorDelayedMessageItem::new(msg, after))
@@ -913,11 +915,11 @@
     <span class="doccomment">/// Executes a closure after a specified period of time.
     ///
     /// The closure gets passed the same actor and its
-    /// context. Execution gets cancelled if the context&#39;s stop method
+    /// context. Execution gets cancelled if the context's stop method
     /// gets called.
     </span><span class="kw">fn </span>run_later&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dur: Duration, f: F) -&gt; SpawnHandle
     <span class="kw">where
-        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">&#39;static</span>,
+        </span>F: FnOnce(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">'static</span>,
     {
         <span class="self">self</span>.spawn(TimerFunc::new(dur, f))
     }
@@ -926,7 +928,7 @@
     /// specified fixed interval.
     </span><span class="kw">fn </span>run_interval&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, dur: Duration, f: F) -&gt; SpawnHandle
     <span class="kw">where
-        </span>F: FnMut(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">&#39;static</span>,
+        </span>F: FnMut(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">'static</span>,
     {
         <span class="self">self</span>.spawn(IntervalFunc::new(dur, f).finish())
     }

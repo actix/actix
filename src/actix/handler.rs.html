@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/handler.rs`."><title>handler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-c67e44d78ab2db17.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (9fad68599 2023-12-03)" data-channel="nightly" data-search-js="search-5a66c239c06b3a66.js" data-settings-js="settings-fe03fdc259827cd2.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-77dede896d6ac08e.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../actix/index.html"><img src="https://actix.rs/img/logo.png" alt="actix"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/handler.rs`."><title>handler.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-4e54bb2b497cc83f.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (62d7ed4a6 2024-01-11)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0b2e2def73e61cbe.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../actix/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -596,7 +598,7 @@
 </span><span class="kw">pub trait </span>Message {
     <span class="doccomment">/// The type of value that this message will resolved with if it is
     /// successful.
-    </span><span class="kw">type </span><span class="prelude-ty">Result</span>: <span class="lifetime">&#39;static</span>;
+    </span><span class="kw">type </span><span class="prelude-ty">Result</span>: <span class="lifetime">'static</span>;
 }
 
 <span class="doccomment">/// Allow users to use `Arc&lt;M&gt;` as a message without having to re-impl `Message`
@@ -622,7 +624,7 @@
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
-/// #[rtype(result = &quot;Response&quot;)]
+/// #[rtype(result = "Response")]
 /// struct Msg;
 ///
 /// struct Response;
@@ -645,11 +647,11 @@
 
 <span class="doccomment">/// A specialized actor future holder for atomic asynchronous message handling.
 ///
-/// Intended be used when the future returned will need exclusive access Actor&#39;s
+/// Intended be used when the future returned will need exclusive access Actor's
 /// internal state or context, e.g., it can yield at critical sessions.
 /// When the actor starts to process this future, it will not pull any other
 /// spawned futures until this one as been completed.
-/// Check [`ActorFuture`] for available methods for accessing Actor&#39;s
+/// Check [`ActorFuture`] for available methods for accessing Actor's
 /// internal state.
 ///
 /// ## Note
@@ -666,7 +668,7 @@
 /// # use std::time::Duration;
 /// #
 /// # #[derive(Message)]
-/// # #[rtype(result = &quot;usize&quot;)]
+/// # #[rtype(result = "usize")]
 /// # struct Msg;
 /// #
 /// # struct MyActor(usize);
@@ -717,14 +719,14 @@
 
 <span class="doccomment">/// A specialized actor future for asynchronous message handling.
 ///
-/// Intended be used when the future returned will, at some point, need to access Actor&#39;s internal
+/// Intended be used when the future returned will, at some point, need to access Actor's internal
 /// state or context in order to finish. Check [`ActorFuture`] for available methods for accessing
-/// Actor&#39;s internal state.
+/// Actor's internal state.
 ///
 /// # Note
-/// It&#39;s important to keep in mind that the provided [`AsyncContext`], does not enforce the poll of
+/// It's important to keep in mind that the provided [`AsyncContext`], does not enforce the poll of
 /// any [`ActorFuture`] to be exclusive. Therefore, if other instances of [`ActorFuture`] are spawned
-/// into this Context **their execution won&#39;t necessarily be atomic**. Check [`AtomicResponse`] if you
+/// into this Context **their execution won't necessarily be atomic**. Check [`AtomicResponse`] if you
 /// need exclusive access over the actor.
 ///
 /// # Examples
@@ -732,7 +734,7 @@
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
-/// #[rtype(result = &quot;Result&lt;usize, ()&gt;&quot;)]
+/// #[rtype(result = "Result&lt;usize, ()&gt;")]
 /// struct Msg;
 ///
 /// struct MyActor;
@@ -752,7 +754,7 @@
 ///             }
 ///             .into_actor(self) // converts future to ActorFuture
 ///             .map(|res, _act, _ctx| {
-///                 // Do some computation with actor&#39;s state or context
+///                 // Do some computation with actor's state or context
 ///                 Ok(res)
 ///             }),
 ///         )
@@ -763,17 +765,17 @@
 
 <span class="doccomment">/// A specialized future for asynchronous message handling.
 ///
-/// Intended be used for when the future returned doesn&#39;t
-/// need to access Actor&#39;s internal state or context to progress, either
-/// because it&#39;s completely agnostic to it, or because the required data has
-/// already been moved inside the future and it won&#39;t need Actor state to continue.
+/// Intended be used for when the future returned doesn't
+/// need to access Actor's internal state or context to progress, either
+/// because it's completely agnostic to it, or because the required data has
+/// already been moved inside the future and it won't need Actor state to continue.
 ///
 /// # Examples
 /// ```no_run
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
-/// #[rtype(result = &quot;Result&lt;(), ()&gt;&quot;)]
+/// #[rtype(result = "Result&lt;(), ()&gt;")]
 /// struct Msg;
 ///
 /// struct MyActor;
@@ -800,18 +802,18 @@
 /// We offer implementation for some common language types, if you need
 /// to respond with a new type you can use [`MessageResult`].
 ///
-/// If `Actor::Context` implements [`AsyncContext`] it&#39;s possible to handle
+/// If `Actor::Context` implements [`AsyncContext`] it's possible to handle
 /// the message asynchronously.
 /// For asynchronous message handling we offer the following possible response types:
-/// - [`ResponseFuture`] should be used for when the future returned doesn&#39;t
-///   need to access Actor&#39;s internal state or context to progress, either
-///   because it&#39;s completely agnostic to it or because the required data has
-///   already been moved to it and it won&#39;t need Actor state to continue.
+/// - [`ResponseFuture`] should be used for when the future returned doesn't
+///   need to access Actor's internal state or context to progress, either
+///   because it's completely agnostic to it or because the required data has
+///   already been moved to it and it won't need Actor state to continue.
 /// - [`ResponseActFuture`] should be used when the future returned
-///   will, at some point, need to access Actor&#39;s internal state or context
+///   will, at some point, need to access Actor's internal state or context
 ///   in order to finish.
 /// - [`AtomicResponse`] should be used when the future returned needs exclusive
-///   access to  Actor&#39;s internal state or context.
+///   access to  Actor's internal state or context.
 </span><span class="kw">pub trait </span>MessageResponse&lt;A: Actor, M: Message&gt; {
     <span class="kw">fn </span>handle(<span class="self">self</span>, ctx: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;M::Result&gt;&gt;);
 }
@@ -830,8 +832,8 @@
 <span class="kw">where
     </span>A: Actor,
     M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
-    I: <span class="lifetime">&#39;static</span>,
-    E: <span class="lifetime">&#39;static</span>,
+    I: <span class="lifetime">'static</span>,
+    E: <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
         tx.send(<span class="self">self</span>)
@@ -842,7 +844,7 @@
 <span class="kw">where
     </span>A: Actor,
     M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
-    I: <span class="lifetime">&#39;static</span>,
+    I: <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
         tx.send(<span class="self">self</span>)
@@ -853,7 +855,7 @@
 <span class="kw">where
     </span>A: Actor,
     M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
-    I: <span class="lifetime">&#39;static</span>,
+    I: <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
         tx.send(<span class="self">self</span>)
@@ -864,7 +866,7 @@
 <span class="kw">where
     </span>A: Actor,
     M: Message&lt;<span class="prelude-ty">Result </span>= <span class="self">Self</span>&gt;,
-    I: <span class="lifetime">&#39;static</span>,
+    I: <span class="lifetime">'static</span>,
 {
     <span class="kw">fn </span>handle(<span class="self">self</span>, <span class="kw">_</span>: <span class="kw-2">&amp;mut </span>A::Context, tx: <span class="prelude-ty">Option</span>&lt;OneshotSender&lt;<span class="self">Self</span>&gt;&gt;) {
         tx.send(<span class="self">self</span>)
@@ -893,7 +895,7 @@
     }
 }
 
-<span class="doccomment">/// [`MessageResponse`] trait impl to enable the use of any `I: &#39;static` with asynchronous
+<span class="doccomment">/// [`MessageResponse`] trait impl to enable the use of any `I: 'static` with asynchronous
 /// message handling
 ///
 /// # Examples
@@ -932,7 +934,7 @@
 ///     }
 /// }
 /// ```
-/// Usage with any `I: &#39;static`:
+/// Usage with any `I: 'static`:
 /// ```
 /// # pub struct MyActorAsync {}
 /// # impl Actor for MyActorAsync { type Context = actix::Context&lt;Self&gt;; }
@@ -970,11 +972,11 @@
 }
 
 <span class="kw">impl</span>&lt;I&gt; fmt::Debug <span class="kw">for </span>Response&lt;I&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="kw">let </span><span class="kw-2">mut </span>fmt = fmt.debug_struct(<span class="string">&quot;Response&quot;</span>);
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span><span class="kw-2">mut </span>fmt = fmt.debug_struct(<span class="string">"Response"</span>);
         <span class="kw">match </span><span class="self">self</span>.item {
-            ResponseTypeItem::Result(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.to_string()),
-            ResponseTypeItem::Fut(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Fut(_)&quot;</span>.to_string()),
+            ResponseTypeItem::Result(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">"item"</span>, <span class="kw-2">&amp;</span><span class="string">"Result(_)"</span>.to_string()),
+            ResponseTypeItem::Fut(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">"item"</span>, <span class="kw-2">&amp;</span><span class="string">"Fut(_)"</span>.to_string()),
         }
         .finish()
     }
@@ -984,7 +986,7 @@
     <span class="doccomment">/// Creates an asynchronous response.
     </span><span class="kw">pub fn </span>fut&lt;T&gt;(fut: T) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>T: Future&lt;Output = I&gt; + <span class="lifetime">&#39;static</span>,
+        </span>T: Future&lt;Output = I&gt; + <span class="lifetime">'static</span>,
     {
         <span class="self">Self </span>{
             item: ResponseTypeItem::Fut(Box::pin(fut)),
@@ -1025,11 +1027,11 @@
 }
 
 <span class="kw">impl</span>&lt;A, I&gt; fmt::Debug <span class="kw">for </span>ActorResponse&lt;A, I&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
-        <span class="kw">let </span><span class="kw-2">mut </span>fmt = fmt.debug_struct(<span class="string">&quot;ActorResponse&quot;</span>);
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, fmt: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span><span class="kw-2">mut </span>fmt = fmt.debug_struct(<span class="string">"ActorResponse"</span>);
         <span class="kw">match </span><span class="self">self</span>.item {
-            ActorResponseTypeItem::Result(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Result(_)&quot;</span>.to_string()),
-            ActorResponseTypeItem::Fut(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">&quot;item&quot;</span>, <span class="kw-2">&amp;</span><span class="string">&quot;Fut(_)&quot;</span>.to_string()),
+            ActorResponseTypeItem::Result(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">"item"</span>, <span class="kw-2">&amp;</span><span class="string">"Result(_)"</span>.to_string()),
+            ActorResponseTypeItem::Fut(<span class="kw">_</span>) =&gt; fmt.field(<span class="string">"item"</span>, <span class="kw-2">&amp;</span><span class="string">"Fut(_)"</span>.to_string()),
         }
         .finish()
     }
@@ -1046,7 +1048,7 @@
     <span class="doccomment">/// Creates an asynchronous response.
     </span><span class="kw">pub fn </span>r#async&lt;T&gt;(fut: T) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>T: ActorFuture&lt;A, Output = I&gt; + <span class="lifetime">&#39;static</span>,
+        </span>T: ActorFuture&lt;A, Output = I&gt; + <span class="lifetime">'static</span>,
     {
         <span class="self">Self </span>{
             item: ActorResponseTypeItem::Fut(Box::pin(fut)),

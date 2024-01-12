@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/actors/mocker.rs`."><title>mocker.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-c67e44d78ab2db17.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (9fad68599 2023-12-03)" data-channel="nightly" data-search-js="search-5a66c239c06b3a66.js" data-settings-js="settings-fe03fdc259827cd2.js" ><script src="../../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-77dede896d6ac08e.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../actix/index.html"><img src="https://actix.rs/img/logo.png" alt="actix"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/actors/mocker.rs`."><title>mocker.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-4e54bb2b497cc83f.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.77.0-nightly (62d7ed4a6 2024-01-11)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0b2e2def73e61cbe.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+            <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../actix/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -117,7 +119,7 @@
 /// wrapped actor can, passing it to a closure which can mock the response of
 /// the actor.
 </span><span class="attr">#[allow(clippy::type_complexity)]
-</span><span class="kw">pub struct </span>Mocker&lt;T: Sized + Unpin + <span class="lifetime">&#39;static</span>&gt; {
+</span><span class="kw">pub struct </span>Mocker&lt;T: Sized + Unpin + <span class="lifetime">'static</span>&gt; {
     phantom: PhantomData&lt;T&gt;,
     mock: Box&lt;<span class="kw">dyn </span>FnMut(Box&lt;<span class="kw">dyn </span>Any&gt;, <span class="kw-2">&amp;mut </span>Context&lt;Mocker&lt;T&gt;&gt;) -&gt; Box&lt;<span class="kw">dyn </span>Any&gt;&gt;,
 }
@@ -140,15 +142,15 @@
 
 <span class="kw">impl</span>&lt;T: Unpin&gt; Default <span class="kw">for </span>Mocker&lt;T&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="macro">panic!</span>(<span class="string">&quot;Mocker actor used before set&quot;</span>)
+        <span class="macro">panic!</span>(<span class="string">"Mocker actor used before set"</span>)
     }
 }
 
-<span class="kw">impl</span>&lt;T: Sized + Unpin + <span class="lifetime">&#39;static</span>&gt; Actor <span class="kw">for </span>Mocker&lt;T&gt; {
+<span class="kw">impl</span>&lt;T: Sized + Unpin + <span class="lifetime">'static</span>&gt; Actor <span class="kw">for </span>Mocker&lt;T&gt; {
     <span class="kw">type </span>Context = Context&lt;<span class="self">Self</span>&gt;;
 }
 
-<span class="kw">impl</span>&lt;M: <span class="lifetime">&#39;static</span>, T: Sized + Unpin + <span class="lifetime">&#39;static</span>&gt; Handler&lt;M&gt; <span class="kw">for </span>Mocker&lt;T&gt;
+<span class="kw">impl</span>&lt;M: <span class="lifetime">'static</span>, T: Sized + Unpin + <span class="lifetime">'static</span>&gt; Handler&lt;M&gt; <span class="kw">for </span>Mocker&lt;T&gt;
 <span class="kw">where
     </span>M: Message,
     &lt;M <span class="kw">as </span>Message&gt;::Result: MessageResponse&lt;Mocker&lt;T&gt;, M&gt;,
@@ -158,7 +160,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>ret = (<span class="self">self</span>.mock)(Box::new(msg), ctx);
         <span class="kw">let </span>out = ret
             .downcast_mut::&lt;<span class="prelude-ty">Option</span>&lt;M::Result&gt;&gt;()
-            .expect(<span class="string">&quot;wrong return type for message&quot;</span>)
+            .expect(<span class="string">"wrong return type for message"</span>)
             .take();
         <span class="kw">match </span>out {
             <span class="prelude-val">Some</span>(a) =&gt; a,
