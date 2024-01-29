@@ -86,6 +86,13 @@ fn get_attribute_type_multiple(
                         return Ok(vec![Some(ty)]);
                     }
                 }
+
+                if let syn::Expr::Path(path) = nv.value.clone() {
+                    if let Ok(ty) = syn::parse2::<syn::Type>(path.into_token_stream()) {
+                        return Ok(vec![Some(ty)]);
+                    }
+                }
+
                 Err(syn::Error::new_spanned(&nv.value, "Expect type"))
             }
             _ => Err(syn::Error::new_spanned(
