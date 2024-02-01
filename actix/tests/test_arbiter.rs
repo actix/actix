@@ -7,7 +7,7 @@ use actix::prelude::*;
 use tokio::sync::oneshot;
 
 #[derive(Debug)]
-struct Ping(usize);
+struct Ping;
 
 impl Message for Ping {
     type Result = ();
@@ -51,7 +51,7 @@ fn test_start_actor_message() {
             // original test used this line, but was buggy:
             // rx.await.unwrap().do_send(Ping(1));
 
-            rx.await.unwrap().send(Ping(1)).await.unwrap();
+            rx.await.unwrap().send(Ping).await.unwrap();
         });
     });
 

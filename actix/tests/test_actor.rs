@@ -18,7 +18,7 @@ impl Message for Num {
     type Result = ();
 }
 
-struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>, Running);
+struct MyActor(Arc<AtomicUsize>, Arc<AtomicBool>);
 
 impl Actor for MyActor {
     type Context = actix::Context<Self>;
@@ -50,7 +50,7 @@ async fn test_stream() {
 
     MyActor::create(move |ctx| {
         MyActor::add_stream(futures_util::stream::iter::<_>(items), ctx);
-        MyActor(act_count, act_err, Running::Stop)
+        MyActor(act_count, act_err)
     });
 
     sleep(Duration::new(0, 1_000_000)).await;
