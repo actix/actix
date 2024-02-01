@@ -93,19 +93,19 @@ fn get_attribute_type_multiple(
                     }
                 }
 
-                Err(syn::Error::new_spanned(&nv.value, "Expect type"))
+                Err(syn::Error::new_spanned(&nv.value, "expected type"))
             }
             _ => Err(syn::Error::new_spanned(
                 &nv.value,
-                r#"Expected `result = TYPE`"#,
+                r#"expected `result = TYPE`"#,
             )),
         },
 
         syn::Meta::Path(path) => match path.get_ident() {
             Some(ident) => syn::parse_str::<syn::Type>(&ident.to_string())
                 .map(|ty| vec![Some(ty)])
-                .map_err(|_| syn::Error::new_spanned(ident, "Expect type")),
-            None => Err(syn::Error::new_spanned(path, "Expect type")),
+                .map_err(|_| syn::Error::new_spanned(ident, "expected type")),
+            None => Err(syn::Error::new_spanned(path, "expected type")),
         },
     }
 }

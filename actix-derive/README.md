@@ -21,7 +21,7 @@ use actix_derive::{Message, MessageResponse};
 struct Added(usize);
 
 #[derive(Message)]
-#[rtype(result = "Added")]
+#[rtype(Added)]
 struct Sum(usize, usize);
 
 fn main() {}
@@ -37,7 +37,7 @@ use actix_derive::{Message, MessageResponse};
 struct Added(usize);
 
 #[derive(Message)]
-#[rtype(result = "Added")]
+#[rtype(Added)]
 struct Sum(usize, usize);
 
 #[derive(Default)]

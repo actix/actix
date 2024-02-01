@@ -55,7 +55,7 @@ impl Handler<AddSession> for SessionActor {
 }
 
 #[derive(Message)]
-#[rtype(result = "usize")]
+#[rtype(usize)]
 struct GetSessionCount;
 
 impl Handler<GetSessionCount> for SessionActor {

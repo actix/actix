@@ -102,7 +102,7 @@ use actix::prelude::*;
 // this is our Message
 // we have to define the response type (rtype)
 #[derive(Message)]
-#[rtype(result = "usize")]
+#[rtype(usize)]
 struct Sum(usize, usize);
 
 // Actor definition
@@ -185,10 +185,10 @@ impl Handler<Ping> for Game {
 fn main() {
     let system = System::new();
 
-    // To get a Recipient object, we need to use a different builder method
-    // which will allow postponing actor creation
-    let _addr = system.block_on(async {
-        Game::create(|ctx| {
+    system.block_on(async {
+        // To create a cyclic game link, we need to use a different constructor
+        // method to get access to its recipient before it starts.
+        let _game = Game::create(|ctx| {
             // now we can get an address of the first actor and create the second actor
             let addr = ctx.address();
 
@@ -211,6 +211,7 @@ fn main() {
         });
     });
 
+    // let the actors all run until they've shut themselves down
     system.run().unwrap();
 }
 ```
