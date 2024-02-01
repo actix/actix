@@ -48,7 +48,7 @@ jobs:
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2.13.5
         with:
-          tool: cargo-hack
+          tool: cargo-nextest
 
       - name: check minimal
         run: cargo hack --clean-per-run check --workspace --no-default-features
