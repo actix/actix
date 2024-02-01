@@ -139,6 +139,13 @@
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
 <a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::{quote, ToTokens};
 <span class="kw">use </span>syn::parse::Parser <span class="kw">as _</span>;
@@ -227,11 +234,18 @@
                         <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(ty)]);
                     }
                 }
+
+                <span class="kw">if let </span>syn::Expr::Path(path) = nv.value.clone() {
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(ty) = syn::parse2::&lt;syn::Type&gt;(path.into_token_stream()) {
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[<span class="prelude-val">Some</span>(ty)]);
+                    }
+                }
+
                 <span class="prelude-val">Err</span>(syn::Error::new_spanned(<span class="kw-2">&amp;</span>nv.value, <span class="string">"Expect type"</span>))
             }
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(syn::Error::new_spanned(
                 <span class="kw-2">&amp;</span>nv.value,
-                <span class="string">r#"Expect `result = "TYPE"`"#</span>,
+                <span class="string">r#"Expected `result = TYPE`"#</span>,
             )),
         },
 
