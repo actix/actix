@@ -106,7 +106,7 @@ impl Handler<TimePing> for Client {
     type Result = ();
 
     fn handle(&mut self, msg: TimePing, _ctx: &mut Self::Context) -> Self::Result {
-        println!("🐰 client received ping: {:?}", msg);
+        println!("🐰 client received ping: {:?}", msg.0);
     }
 }
 
