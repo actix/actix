@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.13.2
+
 - Expose `ContextFut::restart`.
 - Unquoted types are now allowed in the `#[rtype(result = TYPE)]` position when type is a path.
 
