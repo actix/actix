@@ -50,17 +50,16 @@ jobs:
         with:
           tool: cargo-nextest
 
-      - name: check minimal
+      - name: Check minimal
         run: cargo hack --clean-per-run check --workspace --no-default-features
 
-      - name: tests
+      - name: Tests
         run: cargo nextest run --workspace --all-features --no-fail-fast
         timeout-minutes: 10
 
   doc_test:
     name: doctest
     runs-on: ubuntu-latest
-
 
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +69,6 @@ jobs:
         with:
           toolchain: nightly
 
-      - name: doc tests
+      - name: Test documentation
         run: cargo test --workspace --doc --all-features --no-fail-fast
         timeout-minutes: 10
