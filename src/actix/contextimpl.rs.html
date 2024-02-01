@@ -480,6 +480,20 @@
 <a href="#478" id="478">478</a>
 <a href="#479" id="479">479</a>
 <a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     fmt,
     future::Future,
@@ -655,7 +669,10 @@
         Addr::new(<span class="self">self</span>.addr.sender())
     }
 
-    <span class="doccomment">/// Restart context. Cleanup all futures, except address queue.
+    <span class="doccomment">/// Restarts this [`ContextParts`] by:
+    /// - canceling all the [`ActorFuture`]s spawned via [`ContextParts::spawn`];
+    /// - clearing the [`ContextParts::wait`] queue;
+    /// - changing the [`Actor`] state to [`ActorState::Running`].
     </span><span class="attr">#[inline]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>restart(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="self">self</span>.flags = ContextFlags::RUNNING;
@@ -758,9 +775,20 @@
         }
     }
 
-    <span class="doccomment">/// Restart context. Cleanup all futures, except address queue.
+    <span class="doccomment">/// Restarts the [`AsyncContext`] of this [`ContextFut`] returning whether the [`Context`] was
+    /// restarted.
+    ///
+    /// Restarting the [`Context`] means:
+    /// - canceling all the [`ActorFuture`]s spawned by the [`AsyncContext`];
+    /// - clearing the [`ActorFuture`] await queue of the [`AsyncContext`];
+    /// - changing the [`Actor`] state to [`ActorState::Running`];
+    /// - calling [`Supervised::restarting`] on the [`Actor`].
+    ///
+    /// Restart may fail only if the [`Mailbox`] is not [`connected`].
+    ///
+    /// [`connected`]: Mailbox::connected
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>restart(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool
+    </span><span class="kw">pub fn </span>restart(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool
     <span class="kw">where
         </span>A: Supervised,
     {
