@@ -181,7 +181,6 @@
 <a href="#179" id="179">179</a>
 <a href="#180" id="180">180</a>
 <a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Actix is an actor framework.
 //!
 //! [Actors](Actor) are objects which encapsulate state and behavior, they communicate exclusively
@@ -213,15 +212,14 @@
 </span><span class="macro">doc_comment::doctest!</span>(<span class="string">"../README.md"</span>);
 
 <span class="kw">mod </span>actor;
+<span class="kw">mod </span>address;
 <span class="kw">mod </span>context;
-<span class="kw">mod </span>contextimpl;
-<span class="kw">mod </span>contextitems;
+<span class="kw">mod </span>context_impl;
+<span class="kw">mod </span>context_items;
 <span class="kw">mod </span>handler;
+<span class="kw">mod </span>mailbox;
 <span class="kw">mod </span>stream;
 <span class="kw">mod </span>supervisor;
-
-<span class="kw">mod </span>address;
-<span class="kw">mod </span>mailbox;
 
 <span class="kw">pub mod </span>actors;
 <span class="kw">pub mod </span>clock;
@@ -322,7 +320,7 @@
         <span class="kw">pub use </span><span class="kw">crate</span>::address::channel::{channel, AddressReceiver, AddressSender};
     }
     <span class="kw">pub use crate</span>::{
-        contextimpl::{AsyncContextParts, ContextFut, ContextParts},
+        context_impl::{AsyncContextParts, ContextFut, ContextParts},
         handler::{MessageResponse, OneshotSender},
         mailbox::Mailbox,
         registry::{Registry, SystemRegistry},
