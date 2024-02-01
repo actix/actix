@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Expose `ContextFut::restart`.
+
 ## 0.13.1
 
 ### Added
