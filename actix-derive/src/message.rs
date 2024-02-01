@@ -97,7 +97,7 @@ fn get_attribute_type_multiple(
             }
             _ => Err(syn::Error::new_spanned(
                 &nv.value,
-                r#"Expect `result = "TYPE"`"#,
+                r#"Expected `result = TYPE`"#,
             )),
         },
 
