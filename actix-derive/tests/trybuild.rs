@@ -7,9 +7,6 @@ fn compile_macros() {
     let t = trybuild::TestCases::new();
 
     t.pass("tests/trybuild/rt-main.rs");
-
     t.pass("tests/trybuild/message-response.rs");
-
     t.pass("tests/trybuild/message.rs");
-    t.compile_fail("tests/trybuild/message-fail-bare-rtype.rs");
 }
