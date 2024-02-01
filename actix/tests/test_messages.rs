@@ -4,13 +4,6 @@ use std::collections::HashSet;
 
 use actix::prelude::*;
 
-#[derive(Clone, Debug)]
-struct Num(usize);
-
-impl Message for Num {
-    type Result = ();
-}
-
 struct SessionActor {
     sessions: HashSet<usize>,
 }
