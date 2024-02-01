@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_and_test_nightly:
+  test_nightly:
     strategy:
       fail-fast: false
       matrix:
@@ -40,9 +40,14 @@ jobs:
         with:
           tool: cargo-hack
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2.13.5
+        with:
+          tool: cargo-hack
+
       - name: check minimal
         run: cargo hack --clean-per-run check --workspace --no-default-features
 
       - name: tests
-        run: cargo test --workspace --all-features --no-fail-fast -- --nocapture
+        run: cargo nextest run --workspace --all-features --no-fail-fast
         timeout-minutes: 10
