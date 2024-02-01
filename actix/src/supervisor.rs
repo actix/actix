@@ -11,7 +11,7 @@ use crate::{
     actor::{Actor, AsyncContext, Supervised},
     address::{channel, Addr},
     context::Context,
-    contextimpl::ContextFut,
+    context_impl::ContextFut,
     mailbox::DEFAULT_CAPACITY,
 };
 

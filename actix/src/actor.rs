@@ -7,7 +7,7 @@ use log::error;
 use crate::{
     address::{channel, Addr},
     context::Context,
-    contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem},
+    context_items::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem},
     fut::{ActorFuture, ActorStreamExt},
     handler::{Handler, Message},
     mailbox::DEFAULT_CAPACITY,

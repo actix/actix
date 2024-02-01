@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{
     actor::{Actor, ActorContext, ActorState, AsyncContext, SpawnHandle},
     address::{Addr, AddressReceiver},
-    contextimpl::{AsyncContextParts, ContextFut, ContextParts},
+    context_impl::{AsyncContextParts, ContextFut, ContextParts},
     fut::ActorFuture,
     mailbox::Mailbox,
 };

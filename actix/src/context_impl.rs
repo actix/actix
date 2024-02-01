@@ -12,7 +12,7 @@ use smallvec::SmallVec;
 use crate::{
     actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised},
     address::{Addr, AddressSenderProducer},
-    contextitems::ActorWaitItem,
+    context_items::ActorWaitItem,
     fut::ActorFuture,
     mailbox::Mailbox,
 };

@@ -29,15 +29,14 @@
 doc_comment::doctest!("../README.md");
 
 mod actor;
+mod address;
 mod context;
-mod contextimpl;
-mod contextitems;
+mod context_impl;
+mod context_items;
 mod handler;
+mod mailbox;
 mod stream;
 mod supervisor;
-
-mod address;
-mod mailbox;
 
 pub mod actors;
 pub mod clock;
@@ -138,7 +137,7 @@ pub mod dev {
         pub use crate::address::channel::{channel, AddressReceiver, AddressSender};
     }
     pub use crate::{
-        contextimpl::{AsyncContextParts, ContextFut, ContextParts},
+        context_impl::{AsyncContextParts, ContextFut, ContextParts},
         handler::{MessageResponse, OneshotSender},
         mailbox::Mailbox,
         registry::{Registry, SystemRegistry},
