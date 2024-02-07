@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/future/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (b11fbfbf3 2024-02-03)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/fut/future/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-5bc39a1768837dd0.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.78.0-nightly (256b6fb19 2024-02-06)" data-channel="nightly" data-search-js="search-dd67cee4cfa65049.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-4c98445ec4002617.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-48f368f3872407c8.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-04d5337699b92874.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title">
             <h2>Files</h2></div></nav><div class="sidebar-resizer"></div>
     <main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../actix/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
@@ -285,9 +285,6 @@
 <a href="#283" id="283">283</a>
 <a href="#284" id="284">284</a>
 <a href="#285" id="285">285</a>
-<a href="#286" id="286">286</a>
-<a href="#287" id="287">287</a>
-<a href="#288" id="288">288</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     future::Future,
     marker::PhantomData,
@@ -313,12 +310,14 @@
 <span class="doccomment">/// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.
 ///
-/// [`ActorFuture`] is very similar to a regular [`Future`], only with subsequent combinator closures accepting the actor and its context, in addition to the result.
+/// [`ActorFuture`] is very similar to a regular [`Future`], only with subsequent combinator
+/// closures accepting the actor and its context, in addition to the result.
 ///
-/// [`ActorFuture`] allows for use cases where future processing requires access to the actor or its context.
+/// [`ActorFuture`] allows for use cases where future processing requires access to the actor or
+/// its context.
 ///
-/// Here is an example of a handler on a single actor, deferring work to another actor, and
-/// then updating the initiating actor's state:
+/// Here is an example of a handler on a single actor, deferring work to another actor, and then
+/// updating the initiating actor's state:
 ///
 /// ```no_run
 /// use actix::prelude::*;
@@ -346,8 +345,7 @@
 /// # impl Handler&lt;OtherMessage&gt; for OtherActor {
 /// #    type Result = ();
 /// #
-/// #    fn handle(&amp;mut self, _msg: OtherMessage, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
-/// #    }
+/// #    fn handle(&amp;mut self, _msg: OtherMessage, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {}
 /// # }
 /// #
 /// # struct OriginalActor{
@@ -361,50 +359,46 @@
 /// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "Result&lt;(), MessageError&gt;")]
-/// # struct DeferredWork{}
+/// # struct DeferredWork {}
 /// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "()")]
-/// # struct OtherMessage{}
+/// # struct OtherMessage {}
 ///
 /// impl Handler&lt;DeferredWork&gt; for OriginalActor {
 ///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
 ///     type Result = ResponseActFuture&lt;Self, DeferredWorkResult&gt;;
 ///
 ///     fn handle(&amp;mut self, _msg: DeferredWork, _ctx: &amp;mut Context&lt;Self&gt;) -&gt; Self::Result {
-///         // this creates a `Future` representing the `.send` and subsequent `Result` from
-///         // `other_actor`
-///         let send_to_other = self.other_actor
-///             .send(OtherMessage {});
+///         // this creates a `Future` representing the `.send` and subsequent
+///         // `Result` from `other_actor`
+///         let update_self = self.other_actor
+///             .send(OtherMessage {})
+///             // Wrap that future so chained handlers can access the actor
+///             // (`self` in the synchronous code) as well as the context.
+///             .into_actor(self)
+///             // once the wrapped future resolves, update this actor's state
+///             .map(|result, actor, _ctx| {
+///                 match result {
+///                     Ok(v) =&gt; {
+///                         // update actor (self) state
+///                         actor.inner_state.update_from(v);
+///                         Ok(())
+///                     },
+///                     // Failed to send message to other_actor
+///                     Err(_e) =&gt; Err(()),
+///                 }
+///             });
 ///
-///         // Wrap that `Future` so subsequent chained handlers can access
-///         // the `actor` (`self` in the  synchronous code) as well as the context.
-///         let send_to_other = actix::fut::wrap_future::&lt;_, Self&gt;(send_to_other);
-///
-///         // once the wrapped future resolves, update this actor's state
-///         let update_self = send_to_other.map(|result, actor, _ctx| {
-///             // Actor's state updated here
-///             match result {
-///                 Ok(v) =&gt; {
-///                     actor.inner_state.update_from(v);
-///                     Ok(())
-///                 },
-///                 // Failed to send message to other_actor
-///                 Err(_e) =&gt; Err(()),
-///             }
-///         });
-///
-///         // return the wrapped future
+///         // box and return the wrapped future
 ///         Box::pin(update_self)
 ///     }
 /// }
-///
 /// ```
 ///
-/// See also [`into_actor`](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
+/// See also [`WrapFuture::into_actor()`] which provides future conversion.
 </span><span class="kw">pub trait </span>ActorFuture&lt;A: Actor&gt; {
-    <span class="doccomment">/// The type of value that this future will resolved with if it is
-    /// successful.
+    <span class="doccomment">/// The type of value produced on completion.
     </span><span class="kw">type </span>Output;
 
     <span class="kw">fn </span>poll(
