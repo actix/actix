@@ -7,7 +7,10 @@ use std::{
 
 use futures_core::ready;
 use pin_project_lite::pin_project;
-use tokio::sync::oneshot;
+use tokio::{
+    sync::oneshot,
+    time::{sleep_until, Instant},
+};
 
 use crate::{
     actor::Actor,
@@ -191,6 +194,18 @@ impl<A: Actor> IntervalFunc<A> {
             f: Box::new(f),
             dur,
             timer: sleep(dur),
+        }
+    }
+
+    /// Creates a new `IntervalFunc` with the given interval duration, and designated start time
+    pub fn new_at<F>(start: Instant, dur: Duration, f: F) -> IntervalFunc<A>
+    where
+        F: FnMut(&mut A, &mut A::Context) + 'static,
+    {
+        Self {
+            f: Box::new(f),
+            dur,
+            timer: sleep_until(start),
         }
     }
 }
