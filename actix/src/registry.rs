@@ -7,7 +7,6 @@ use std::{
     any::{Any, TypeId},
     cell::RefCell,
     collections::HashMap,
-    default::Default,
     rc::Rc,
 };
 
