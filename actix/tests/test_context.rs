@@ -13,7 +13,6 @@ use std::{
 
 use actix::prelude::*;
 use actix_rt::time::{interval_at, sleep, Instant};
-use futures_core::stream::Stream;
 use futures_util::stream::once;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 

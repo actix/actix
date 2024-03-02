@@ -7,7 +7,7 @@
 
 use std::time::{Duration, Instant};
 
-use actix::{prelude::*, Actor, Context, WeakAddr};
+use actix::{prelude::*, WeakAddr};
 
 #[derive(Message, Debug)]
 #[rtype(result = "()")]

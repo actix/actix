@@ -896,7 +896,7 @@ fn encode_state(state: &State) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use std::{thread, time};
+    use std::time;
 
     use super::*;
     use crate::{address::queue::PopResult, prelude::*};

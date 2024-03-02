@@ -1,6 +1,5 @@
 use std::{
     collections::HashSet,
-    mem::drop,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
