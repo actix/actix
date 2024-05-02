@@ -1,0 +1,1 @@
+searchState.loadedDescShard("actix_derive", 0, "Marks async main function as the <code>actix</code> system entry-point.\nMarks async test functions to use the <code>actix</code> system …")
