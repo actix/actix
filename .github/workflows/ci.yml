@@ -40,15 +40,15 @@ jobs:
         with:
           toolchain: ${{ matrix.version.version }}
 
-      - name: Install cargo-hack
+      - name: Install cargo-hack, cargo-nextest
         uses: taiki-e/install-action@v2.13.5
         with:
-          tool: cargo-hack
+          tool: cargo-hack,cargo-nextest
 
-      - name: Install cargo-nextest
-        uses: taiki-e/install-action@v2.13.5
-        with:
-          tool: cargo-nextest
+      - name: workaround MSRV issues
+        if: matrix.version.name == 'msrv'
+        run: |
+          cargo update -p=trybuild --precise=1.0.89
 
       - name: Check minimal
         run: cargo hack --clean-per-run check --workspace --no-default-features
