@@ -16,7 +16,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  msrv:
+    name: Read MSRV
+    uses: actions-rust-lang/msrv/.github/workflows/msrv.yml@v0.1.0
+
   test:
+    needs: msrv
+
     strategy:
       fail-fast: false
       matrix:
@@ -26,7 +32,7 @@ jobs:
           - { name: macOS, os: macos-latest, triple: x86_64-apple-darwin }
           - { name: Windows, os: windows-latest, triple: x86_64-pc-windows-msvc }
         version:
-          - { name: msrv, version: 1.68.0 }
+          - { name: msrv, version: "${{ needs.msrv.outputs.msrv }}" }
           - { name: stable, version: stable }
 
     name: ${{ matrix.target.name }} / ${{ matrix.version.name }}
@@ -35,26 +41,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup mold linker
+        if: matrix.target.os == 'ubuntu-latest'
+        uses: rui314/setup-mold@v1
+
       - name: Install Rust (${{ matrix.version.name }})
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
           toolchain: ${{ matrix.version.version }}
 
-      - name: Install cargo-hack, cargo-nextest
+      - name: Install just, cargo-hack, cargo-nextest
         uses: taiki-e/install-action@v2.13.5
         with:
-          tool: cargo-hack,cargo-nextest
+          tool: just,cargo-hack,cargo-nextest
 
-      - name: workaround MSRV issues
+      - name: Workaround MSRV issues
         if: matrix.version.name == 'msrv'
-        run: |
-          cargo update -p=trybuild --precise=1.0.89
-
-      - name: Check minimal
-        run: cargo hack --clean-per-run check --workspace --no-default-features
+        run: just downgrade-for-msrv
 
       - name: Tests
-        run: cargo nextest run --workspace --all-features --no-fail-fast
+        run: just test
         timeout-minutes: 10
 
   doc_test:
@@ -69,6 +75,11 @@ jobs:
         with:
           toolchain: nightly
 
+      - name: Install just
+        uses: taiki-e/install-action@v2.13.5
+        with:
+          tool: just
+
       - name: Test documentation
-        run: cargo test --workspace --doc --all-features --no-fail-fast
+        run: just test-docs
         timeout-minutes: 10
