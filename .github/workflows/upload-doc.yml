@@ -36,6 +36,6 @@ jobs:
 
       # TODO(JohnTitor): deploy via GHA directly instead.
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.6.0
+        uses: JamesIves/github-pages-deploy-action@v4.6.1
         with:
           folder: target/doc
