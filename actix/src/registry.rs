@@ -114,42 +114,67 @@ pub trait ArbiterService: Actor<Context = Context<Self>> + Supervised + Default 
 
     /// Get actor's address from arbiter registry
     fn from_registry() -> Addr<Self> {
-        AREG.with(|reg| reg.get())
+        AREG.with(|reg| reg.get_or_start_default())
     }
 }
 
 impl Registry {
-    /// Query registry for specific actor. Returns address of the actor.
-    /// If actor is not registered, starts new actor and
-    /// return address of newly created actor.
+    /// Queries registry for a type of actor (`A`), returning its address.
+    ///
+    /// If actor is not registered, a new actor is started and its address is returned.
+    #[deprecated(since = "0.13.5", note = "Renamed to `get_or_start_default()`.")]
+    #[inline]
     pub fn get<A: ArbiterService + Actor<Context = Context<A>>>(&self) -> Addr<A> {
-        let id = TypeId::of::<A>();
-        if let Some(addr) = self.registry.borrow().get(&id) {
-            if let Some(addr) = addr.downcast_ref::<Addr<A>>() {
-                return addr.clone();
-            }
-        }
-        let addr: Addr<A> = A::start_service();
+        self.get_or_start_default()
+    }
+
+    /// Queries registry for an actor, returning its address.
+    ///
+    /// If actor of type `A` is not registered, a new actor is started and its address is returned.
+    pub fn get_or_start_default<A: ArbiterService + Actor<Context = Context<A>>>(&self) -> Addr<A> {
+        let addr = self.try_get::<A>().unwrap_or_else(A::start_service);
 
         self.registry
             .borrow_mut()
-            .insert(id, Box::new(addr.clone()));
+            .insert(TypeId::of::<A>(), Box::new(addr.clone()));
+
         addr
     }
 
-    /// Check if actor is in registry, if so, return its address
-    pub fn query<A: ArbiterService + Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
+    /// Queries registry for specific actor, returning its address.
+    ///
+    /// Returns `None` if an actor of type `A` is not registered.
+    pub fn try_get<A: Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
         let id = TypeId::of::<A>();
+
         if let Some(addr) = self.registry.borrow().get(&id) {
             if let Some(addr) = addr.downcast_ref::<Addr<A>>() {
                 return Some(addr.clone());
             }
         }
+
         None
     }
 
-    /// Add new actor to the registry by address, panic if actor is already running
-    pub fn set<A: ArbiterService + Actor<Context = Context<A>>>(addr: Addr<A>) {
+    /// Returns actor's address if it is in the registry.
+    pub fn query<A: Actor<Context = Context<A>>>(&self) -> Option<Addr<A>> {
+        let id = TypeId::of::<A>();
+
+        if let Some(addr) = self.registry.borrow().get(&id) {
+            if let Some(addr) = addr.downcast_ref::<Addr<A>>() {
+                return Some(addr.clone());
+            }
+        }
+
+        None
+    }
+
+    /// Adds an unregistered actor type to the registry by address.
+    ///
+    /// # Panics
+    ///
+    /// Panics if actor is already running
+    pub fn set<A: Actor<Context = Context<A>>>(addr: Addr<A>) {
         AREG.with(|reg| {
             let id = TypeId::of::<A>();
             if let Some(addr) = reg.registry.borrow().get(&id) {
