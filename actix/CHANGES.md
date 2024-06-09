@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.13.4
+
 - Add `AsyncContext::run_interval_at()` method.
 
 ## 0.13.3
