@@ -58,7 +58,7 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
-          toolchain: nightly-2023-08-25
+          toolchain: nightly-2024-06-07
 
       - uses: taiki-e/install-action@v2.24.1
         with:

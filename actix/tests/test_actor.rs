@@ -5,6 +5,7 @@ use std::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
         mpsc, Arc,
     },
+    thread,
     time::Duration,
 };
 
@@ -237,7 +238,7 @@ fn test_run_interval() {
     const MAX_WAIT: Duration = Duration::from_millis(10_000);
 
     let (sender, receiver) = mpsc::channel();
-    std::thread::spawn(move || {
+    thread::spawn(move || {
         let sys = System::new();
         sys.block_on(async move {
             let _addr = IntervalActor::new(10, sender).start();
@@ -251,4 +252,70 @@ fn test_run_interval() {
 
     // We wait 10 intervals by ~100ms
     assert_eq!(result.elapsed().as_secs(), 1);
+}
+
+struct IntervalAtActor {
+    elapses_left: usize,
+    sender: mpsc::Sender<Instant>,
+    instant: Option<Instant>,
+}
+
+impl IntervalAtActor {
+    pub fn new(elapses_left: usize, sender: mpsc::Sender<Instant>) -> Self {
+        Self {
+            //We stop at 0, so add 1 to make number of intervals equal to elapses_left
+            elapses_left: elapses_left + 1,
+            sender,
+            instant: None,
+        }
+    }
+}
+
+impl Actor for IntervalAtActor {
+    type Context = actix::Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.instant = Some(Instant::now());
+
+        ctx.run_interval_at(
+            Instant::now() + Duration::from_secs(1),
+            Duration::from_millis(110),
+            move |act, ctx| {
+                act.elapses_left -= 1;
+
+                if act.elapses_left == 0 {
+                    act.sender
+                        .send(act.instant.take().expect("To have Instant"))
+                        .expect("To send result");
+                    ctx.stop();
+                    System::current().stop();
+                }
+            },
+        );
+    }
+}
+
+#[test]
+fn test_run_interval_at() {
+    const MAX_WAIT: Duration = Duration::from_millis(10_000);
+
+    let (sender, receiver) = mpsc::channel();
+
+    thread::spawn(move || {
+        let sys = System::new();
+        sys.block_on(async move {
+            let _addr = IntervalAtActor::new(10, sender).start();
+        });
+        sys.run().unwrap();
+    });
+
+    // no messages are sent before the initial delay
+    assert!(receiver.recv_timeout(Duration::from_millis(750)).is_err());
+
+    let result = receiver
+        .recv_timeout(MAX_WAIT)
+        .expect("To receive response in time");
+
+    // we wait the initial 1s delay and then 10 intervals of ~100ms
+    assert_eq!(result.elapsed().as_secs(), 2);
 }
