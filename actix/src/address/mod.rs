@@ -141,11 +141,11 @@ impl<A: Actor> Addr<A> {
     }
 
     /// Returns the [`Recipient`] for a specific message type.
-    pub fn recipient<M: 'static>(self) -> Recipient<M>
+    pub fn recipient<M>(self) -> Recipient<M>
     where
         A: Handler<M>,
         A::Context: ToEnvelope<A, M>,
-        M: Message + Send,
+        M: Message + Send + 'static,
         M::Result: Send,
     {
         self.into()
@@ -210,11 +210,11 @@ impl<A: Actor> WeakAddr<A> {
         }
     }
 
-    pub fn recipient<M: 'static>(self) -> WeakRecipient<M>
+    pub fn recipient<M>(self) -> WeakRecipient<M>
     where
         A: Handler<M>,
         A::Context: ToEnvelope<A, M>,
-        M: Message + Send,
+        M: Message + Send + 'static,
         M::Result: Send,
     {
         self.into()

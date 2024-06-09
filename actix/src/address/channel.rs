@@ -153,6 +153,7 @@ impl<A: Actor> PartialEq for WeakAddressSender<A> {
 
 impl<A: Actor> Eq for WeakAddressSender<A> {}
 
+#[allow(dead_code)]
 trait AssertKinds: Send + Sync + Clone {}
 
 /// The receiving end of a channel which implements the `Stream` trait.
@@ -895,7 +896,7 @@ fn encode_state(state: &State) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use std::{thread, time};
+    use std::time;
 
     use super::*;
     use crate::{address::queue::PopResult, prelude::*};
