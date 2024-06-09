@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add `Registry::try_get()` method.
+- Add `Registry::get_or_start_default()` method.
+- Deprecate `Registry::get()` method.
+- Relax `A: ArbiterService` bound on `Registry::query()`.
+- Relax `A: ArbiterService` bound on `Registry::set()`.
+
 ## 0.13.4
 
 - Add `AsyncContext::run_interval_at()` method.

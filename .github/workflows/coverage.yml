@@ -20,15 +20,15 @@ jobs:
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
-          components: llvm-tools-preview
+          components: llvm-tools
 
-      - name: Install cargo-llvm-cov
+      - name: Install just cargo-llvm-cov
         uses: taiki-e/install-action@v2.13.4
         with:
-          tool: cargo-llvm-cov
+          tool: just cargo-llvm-cov
 
       - name: Generate code coverage
-        run: cargo llvm-cov --workspace --all-features --codecov --output-path codecov.json
+        run: just test-coverage-lcov
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4.4.1

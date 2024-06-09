@@ -4,6 +4,7 @@
         "bitflags",
         "codecov",
         "doctest",
+        "msrv",
         "oneshot",
         "println",
         "rtype",
