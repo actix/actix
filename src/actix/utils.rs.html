@@ -213,6 +213,22 @@
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     future::Future,
     pin::Pin,
@@ -222,7 +238,10 @@
 
 <span class="kw">use </span>futures_core::ready;
 <span class="kw">use </span>pin_project_lite::pin_project;
-<span class="kw">use </span>tokio::sync::oneshot;
+<span class="kw">use </span>tokio::{
+    sync::oneshot,
+    time::{sleep_until, Instant},
+};
 
 <span class="kw">use crate</span>::{
     actor::Actor,
@@ -390,22 +409,35 @@
     #[allow(clippy::type_complexity)]
     </span><span class="kw">pub struct </span>IntervalFunc&lt;A: Actor&gt; {
         f: Box&lt;<span class="kw">dyn </span>FnMut(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context)&gt;,
-        dur: Duration,
+        interval: Duration,
         <span class="attr">#[pin]
         </span>timer: Sleep,
     }
 }
 
 <span class="kw">impl</span>&lt;A: Actor&gt; IntervalFunc&lt;A&gt; {
-    <span class="doccomment">/// Creates a new `IntervalFunc` with the given interval duration.
-    </span><span class="kw">pub fn </span>new&lt;F&gt;(dur: Duration, f: F) -&gt; IntervalFunc&lt;A&gt;
+    <span class="doccomment">/// Constructs an `IntervalFunc` using the given `interval` duration and `task` function.
+    </span><span class="kw">pub fn </span>new&lt;F&gt;(interval: Duration, task: F) -&gt; IntervalFunc&lt;A&gt;
     <span class="kw">where
         </span>F: FnMut(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">'static</span>,
     {
         <span class="self">Self </span>{
-            f: Box::new(f),
-            dur,
-            timer: sleep(dur),
+            f: Box::new(task),
+            interval,
+            timer: sleep(interval),
+        }
+    }
+
+    <span class="doccomment">/// Constructs an `IntervalFunc` using the given `start` time, `interval` duration, and `task`
+    /// function.
+    </span><span class="kw">pub fn </span>new_at&lt;F&gt;(start: Instant, interval: Duration, task: F) -&gt; IntervalFunc&lt;A&gt;
+    <span class="kw">where
+        </span>F: FnMut(<span class="kw-2">&amp;mut </span>A, <span class="kw-2">&amp;mut </span>A::Context) + <span class="lifetime">'static</span>,
+    {
+        <span class="self">Self </span>{
+            f: Box::new(task),
+            interval,
+            timer: sleep_until(start),
         }
     }
 }
@@ -423,7 +455,7 @@
         <span class="kw">loop </span>{
             <span class="macro">ready!</span>(this.timer.as_mut().poll(task));
             <span class="kw">let </span>now = this.timer.deadline();
-            this.timer.as_mut().reset(now + <span class="kw-2">*</span>this.dur);
+            this.timer.as_mut().reset(now + <span class="kw-2">*</span>this.interval);
             (this.f)(act, ctx);
         }
     }
