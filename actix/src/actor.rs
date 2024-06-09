@@ -456,18 +456,18 @@ where
         self.spawn(IntervalFunc::new(dur, f).finish())
     }
 
-    /// Spawns a job to execute the given closure once at the given
-    /// instant, then and periodically, at the specified fixed interval.
+    /// Spawns a periodic `task` function to begin executing at the given `start` time, and with the
+    /// given `interval` duration.
     fn run_interval_at<F>(
         &mut self,
         start: tokio::time::Instant,
-        dur: Duration,
-        f: F,
+        interval: Duration,
+        task: F,
     ) -> SpawnHandle
     where
         F: FnMut(&mut A, &mut A::Context) + 'static,
     {
-        self.spawn(IntervalFunc::new_at(start, dur, f).finish())
+        self.spawn(IntervalFunc::new_at(start, interval, task).finish())
     }
 }
 
