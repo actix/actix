@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.13.5
+
 - Add `Registry::try_get()` method.
 - Add `Registry::get_or_start_default()` method.
 - Deprecate `Registry::get()` method.

@@ -1,6 +1,6 @@
 [package]
 name = "actix"
-version = "0.13.4"
+version = "0.13.5"
 authors = [
     "Nikolay Kim <fafhrd91@gmail.com>",
 ]
