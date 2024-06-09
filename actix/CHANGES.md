@@ -25,7 +25,7 @@
 
 - Fix `SinkWrite` sometimes not sending all messages in its buffer.
 
-## 0.13.0 - 2022-03-01
+## 0.13.0
 
 ### Added
 
@@ -55,7 +55,7 @@
 [#518]: https://github.com/actix/actix/pull/518
 [#525]: https://github.com/actix/actix/pull/525
 
-## 0.12.0 - 2021-06-06
+## 0.12.0
 
 ### Added
 
@@ -75,7 +75,7 @@
 [#499]: https://github.com/actix/actix/pull/499
 [#501]: https://github.com/actix/actix/pull/501
 
-## 0.11.1 - 2021-03-23
+## 0.11.1
 
 ### Fixed
 
@@ -83,7 +83,7 @@
 
 [#484]: https://github.com/actix/actix/pull/484
 
-## 0.11.0 - 2021-03-21
+## 0.11.0
 
 ### Removed
 
@@ -98,7 +98,7 @@
 [#479]: https://github.com/actix/actix/pull/479
 [#482]: https://github.com/actix/actix/pull/482
 
-## 0.11.0-beta.3 - 2021-03-03
+## 0.11.0-beta.3
 
 ### Added
 
@@ -124,7 +124,7 @@
 [#472]: https://github.com/actix/actix/pull/472
 [#474]: https://github.com/actix/actix/pull/474
 
-## 0.11.0-beta.2 - 2021-02-06
+## 0.11.0-beta.2
 
 ### Changed
 
@@ -134,7 +134,7 @@
 
 [#421]: https://github.com/actix/actix/pull/421
 
-## 0.11.0-beta.1 - 2021-01-01
+## 0.11.0-beta.1
 
 ### Added
 
@@ -182,7 +182,7 @@
 [#453]: https://github.com/actix/actix/pull/453
 [#IC717769654]: https://github.com/actix/actix-net/issues/206#issuecomment-717769654
 
-## 0.10.0 - 2020-09-10
+## 0.10.0
 
 ### Changed
 
@@ -196,7 +196,7 @@
 [#404]: https://github.com/actix/actix/pull/404
 [#407]: https://github.com/actix/actix/pull/407
 
-## 0.10.0-alpha.3 - 2020-05-13
+## 0.10.0-alpha.3
 
 ### Changed
 
@@ -213,7 +213,7 @@
 
 [#376]: https://github.com/actix/actix/pull/376
 
-## 0.10.0-alpha.2 - 2020-03-05
+## 0.10.0-alpha.2
 
 ### Added
 
@@ -226,7 +226,7 @@
 [#355]: https://github.com/actix/actix/pull/355
 [#357]: https://github.com/actix/actix/pull/357
 
-## 0.10.0-alpha.1 - 2020-02-25
+## 0.10.0-alpha.1
 
 ### Fixed
 
@@ -256,19 +256,19 @@
 [#348]: https://github.com/actix/actix/pull/348
 [#349]: https://github.com/actix/actix/pull/349
 
-## 0.9.0 - 2019-12-20
+## 0.9.0
 
 ### Fixed
 
 - Fix `ResolveFuture` type signature.
 
-## 0.9.0-alpha.2 - 2019-12-16
+## 0.9.0-alpha.2
 
 ### Fixed
 
 - Fix `Resolve` actor's panic
 
-## 0.9.0-alpha.1 - 2019-12-15
+## 0.9.0-alpha.1
 
 ### Added
 
@@ -285,19 +285,19 @@
 
 - Added `#[must_use]` attribute to `ActorFuture` and `ActorStream`
 
-## 0.8.3 - 2019-05-29
+## 0.8.3
 
 ### Fixed
 
 - Stop actor on async context drop
 
-## 0.8.2 - 2019-05-12
+## 0.8.2
 
 ### Changed
 
 - Enable `http` feature by default
 
-## 0.8.1 - 2019-04-16
+## 0.8.1
 
 ### Added
 
@@ -307,7 +307,7 @@
 
 - Fixed concurrent system registry insert #248
 
-## 0.8.0 - 2019-04-14
+## 0.8.0
 
 ### Added
 
@@ -317,17 +317,17 @@
 
 - Use trust-dns-resolver 0.11.0
 
-## 0.8.0.alpha.3 - 2019-04-12
+## 0.8.0.alpha.3
 
 - Add `Actor::start_in_arbiter` with semantics of `Supervisor::start_in_arbiter`.
 - Add `ResponseError` for `ResolverError`
 - Add `io::SinkWrite`
 
-## 0.8.0-alpha.2 - 2019-03-29
+## 0.8.0-alpha.2
 
 - Add `actix-http` error support for MailboxError
 
-## 0.8.0-alpha.1 - 2019-03-28
+## 0.8.0-alpha.1
 
 ### Changes
 
@@ -342,29 +342,29 @@
 
 [chat example]: ./examples/chat/src/main.rs
 
-## 0.7.10 - 2019-01-16
+## 0.7.10
 
 - Introduced methods `Sender::connected()`, `AddressSender::connected()` and `Recipient::connected()` to check availability of alive actor.
 - Added `WeakAddr<A>` to weak reference an actor
 
-## 0.7.9 - 2018-12-11
+## 0.7.9
 
 - Removed `actix` module from prelude. See rationale in #161
 
-## 0.7.8 - 2018-12-05
+## 0.7.8
 
 - Update `crossbeam-channel` to 0.3 and `parking_lot` to 0.7
 
-## 0.7.7 - 2018-11-22
+## 0.7.7
 
 - Impl `Into<Recipient<M>>` for `Addr<A>`
 
-## 0.7.6 - 2018-11-08
+## 0.7.6
 
 - Use `trust-dns-resolver` 0.10.0.
 - Make `System::stop_with_code` public.
 
-## 0.7.5 - 2018-10-10
+## 0.7.5
 
 ### Added
 
@@ -383,42 +383,42 @@
 
 - fix infinite loop in ContextFut::poll() caused by late cancel_future() #147
 
-## 0.7.4 - 2018-08-27
+## 0.7.4
 
 - Introduce method `query` to determine whether there is running actor in registry.
 - Return back `mocker` module.
 
-## 0.7.3 - 2018-07-30
+## 0.7.3
 
 - Parked messages not getting processed #120
 
-## 0.7.2 - 2018-07-24
+## 0.7.2
 
 - Use actix-derive 0.3
 
-## 0.7.1 - 2018-07-20
+## 0.7.1
 
 - Arbiter now has `Arbiter::builder()` which allows opt-in of behavior to stop the actor system on uncaught panic in any arbiter thread. See #111 for examples.
 - Allow to set custom system service actor via `SystemRegistry::set()` method.
 - `AsyncContext::run_interval` does not fire callback immediately, instead it fires after specified duration.
 
-## 0.7.0 - 2018-07-05
+## 0.7.0
 
 - Context impl refactoring, fix potential UB
 - Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Addr`
 - Implemented `Eq`, `PartialEq`, and `Hash` for `actix::Recipient`
 
-## 0.6.2 - 2018-06-xx
+## 0.6.2
 
 - Breaking change: Restore `StreamHandler` from 0.5, new `StreamHandler` renamed to `StreamHandler2`
 
-## 0.6.1 - 2018-06-19
+## 0.6.1
 
 - Added `actix::run()` and `actix::spawn()` helper functions
 - Use parking_lot 0.6
 - Fixed potential memory unsafety
 
-## 0.6.0 - 2018-06-18
+## 0.6.0
 
 ### Changed
 
@@ -428,36 +428,36 @@
 - `StreamHandler` trait refactored.
 - Min rustc version - 1.26
 
-## 0.5.7 - 2018-05-17
+## 0.5.7
 
 - Stop sync actor if sender is dead.
 
-## 0.5.6 - 2018-04-17
+## 0.5.6
 
 - Fix index usage during iteration for future cancellation #67
 
-## 0.5.5 - 2018-03-19
+## 0.5.5
 
 - Fix polling of wrong wait future after completion
 
-## 0.5.4 - 2018-03-16
+## 0.5.4
 
 - Always complete actor lifecycle (i.e. Actor::started())
 
-## 0.5.3 - 2018-03-08
+## 0.5.3
 
 - Panic after cancelling stream future #58
 
-## 0.5.2 - 2018-03-06
+## 0.5.2
 
 - Allow to set timeout for Connect message #56
 
-## 0.5.1 - 2018-03-02
+## 0.5.1
 
 - Internal state is alive during `stopping` period.
 - Do not send StopArbiter message to system arbiter during system shutdown #53
 
-## 0.5.0 - 2018-02-17
+## 0.5.0
 
 - Address/Recipient is generic over actor destination
 - Make rules of actor stopping more strict
@@ -468,34 +468,34 @@
 - Add `actix::io` helper types for `AsyncWrite` related types
 - Drop FramedContext
 
-## 0.4.5 - 2018-01-23
+## 0.4.5
 
 - Refactor context implementation
 - Refactor Supervisor type
 - Allow to use `Framed` instances with normal `Context`
 
-## 0.4.4 - 2018-01-19
+## 0.4.4
 
 - Add `Clone` implementation for `Box<Subscriber<M> + Send>`
 - Stop stream polling if context is waiting for future completion
 - Upgraded address stops working after all references are dropped #38
 
-## 0.4.3 - 2018-01-09
+## 0.4.3
 
 - Cleanup `FramedActor` error and close state handling.
 - Do not exit early from framed polling
 
-## 0.4.2 - 2018-01-07
+## 0.4.2
 
 - Cleanup actor stopping process
 - Unify context implementation
 
-## 0.4.1 - 2018-01-06
+## 0.4.1
 
 - Remove StreamHandler requirements from add_message_stream()
 - Fix items length check
 
-## 0.4.0 - 2018-01-05
+## 0.4.0
 
 - Simplify `Handler` trait (E type removed).
 - Use associated type for handler response for `Handler` trait.
@@ -505,28 +505,28 @@
 - Added `SyncContext::restart()` method, which allow to restart sync actor.
 - Changed behaviour of `Address::call`, if request get drop message cancels.
 
-## 0.3.5 - 2017-12-23
+## 0.3.5
 
 - Re-export `actix_derive` package
 - Added conversion implementation `From<Result<I, E>> for Response<A, M>`
 - Expose the Framed underneath FramedContext #29
 
-## 0.3.4 - 2017-12-20
+## 0.3.4
 
 - Fix memory leak when sending messages recursively to self #28
 - Add convenience impl for boxed Subscriber objects. #27
 - Add `ActorStream::fold()` method.
 - Add helper combinator `Stream::finish()` method.
 
-## 0.3.3 - 2017-11-21
+## 0.3.3
 
 - SystemRegistry does not store created actor #21
 
-## 0.3.2 - 2017-11-06
+## 0.3.2
 
 - Disable `signal` feature by default
 
-## 0.3.1 - 2017-10-30
+## 0.3.1
 
 - Simplify `ToEnvelope` trait, do not generalize over Message type.
 - `ActorContext` requires `ToEnvelope` trait.
@@ -534,12 +534,12 @@
 - Simplify `ActorContext` trait, it does not need to know about `Actor`
 - Cancel `notify` and `run_later` futures on context stop
 
-## 0.3.0 - 2017-10-23
+## 0.3.0
 
 - Added `Either` future
 - Message has to provide `ResponseType` impl instead of Actor
 
-## 0.2.0 - 2017-10-17
+## 0.2.0
 
 - Added `ActorStream`
 
