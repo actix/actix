@@ -260,3 +260,47 @@ async fn test_send_bytes() {
     let res = receiver.recv().await.unwrap();
     assert_eq!(expected_bytes, res);
 }
+
+#[actix::test]
+async fn test_send_single_bytes() {
+    let (sender, mut receiver) = mpsc::unbounded_channel();
+    let addr = MyActor::create(move |ctxt| {
+        let sink = MySink {
+            sender,
+            queue: Vec::new(),
+        };
+        MyActor {
+            sink: SinkWrite::new(sink, ctxt),
+        }
+    });
+
+    let data = Data {
+        bytes: Bytes::from_static(b"h"),
+        last: false,
+    };
+
+    addr.do_send(data);
+
+    let data = Data {
+        bytes: Bytes::from_static(b"i"),
+        last: false,
+    };
+
+    addr.do_send(data);
+
+    let mut res = Vec::new();
+
+    res.push(receiver.recv().await.unwrap());
+    res.push(receiver.recv().await.unwrap());
+
+    let data = Data {
+        bytes: Bytes::from_static(b"!"),
+        last: true,
+    };
+
+    addr.do_send(data);
+
+    res.push(receiver.recv().await.unwrap());
+
+    assert_eq!(b"hi!", &res[..]);
+}

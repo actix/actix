@@ -7,7 +7,7 @@
 
 use std::time::{Duration, Instant};
 
-use actix::{prelude::*, Actor, Context, WeakRecipient};
+use actix::{prelude::*, WeakRecipient};
 
 #[derive(Message, Debug)]
 #[rtype(result = "()")]
@@ -106,7 +106,7 @@ impl Handler<TimePing> for ClientA {
     type Result = ();
 
     fn handle(&mut self, msg: TimePing, _ctx: &mut Self::Context) -> Self::Result {
-        println!("🐰 ClientA received ping: {:?}", msg);
+        println!("🐰 ClientA received ping: {:?}", msg.0);
     }
 }
 

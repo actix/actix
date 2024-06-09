@@ -19,10 +19,10 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1.5.0
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
           toolchain: nightly
 
@@ -36,6 +36,6 @@ jobs:
 
       # TODO(JohnTitor): deploy via GHA directly instead.
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.4.3
+        uses: JamesIves/github-pages-deploy-action@v4.6.1
         with:
           folder: target/doc

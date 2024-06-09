@@ -29,7 +29,7 @@ impl Handler<Question> for MyActor {
 struct AnsActor {}
 
 #[derive(Message)]
-#[rtype(result = "usize")]
+#[rtype(usize)]
 struct Question {}
 
 #[cfg(not(test))]

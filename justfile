@@ -1,0 +1,32 @@
+msrv := ```
+    cargo metadata --format-version=1 \
+    | jq -r 'first(.packages[] | select(.source == null and .rust_version)) | .rust_version' \
+    | sed -E 's/^1\.([0-9]{2})$/1\.\1\.0/'
+```
+msrv_rustup := "+" + msrv
+
+# Downgrade dev-dependencies necessary to run MSRV checks/tests.
+[private]
+downgrade-for-msrv:
+    @ echo "No MSRV downgrades currently required."
+    # cargo update -p=trybuild --precise=1.0.89
+
+# Test workspace using MSRV.
+test-msrv: downgrade-for-msrv (test msrv_rustup)
+
+# Test workspace code.
+test toolchain="":
+    cargo {{ toolchain }} test -p=actix_derive --lib --tests --all-features
+    cargo {{ toolchain }} nextest run --workspace --exclude=actix_derive --no-default-features
+    cargo {{ toolchain }} nextest run --workspace --exclude=actix_derive --all-features
+
+# Test workspace docs.
+test-docs toolchain="": && doc
+    cargo {{ toolchain }} test --doc --workspace --all-features --no-fail-fast -- --nocapture
+
+# Document crates in workspace.
+doc *args:
+    RUSTDOCFLAGS="--cfg=docsrs -Dwarnings" cargo +nightly doc --no-deps --workspace --all-features {{ args }}
+
+# Test workspace.
+test-all toolchain="": (test toolchain) (test-docs toolchain)

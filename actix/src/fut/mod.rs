@@ -1,4 +1,4 @@
-//! Custom `Future` and `Stream` implementation with `Actix` support
+//! Custom `Future` and `Stream` implementation with `actix` support.
 
 pub mod future;
 pub mod stream;

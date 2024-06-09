@@ -27,7 +27,7 @@ impl Handler<MessageTwo> for ActorOne {
     type Result = ();
 
     fn handle(&mut self, msg: MessageTwo, _ctx: &mut Self::Context) {
-        println!("ActorOne Received: {:?}", msg);
+        println!("ActorOne Received: {:?}", msg.0);
     }
 }
 
@@ -44,7 +44,7 @@ impl Handler<MessageOne> for ActorTwo {
     type Result = ();
 
     fn handle(&mut self, msg: MessageOne, _ctx: &mut Self::Context) {
-        println!("ActorTwo Received: {:?}", msg);
+        println!("ActorTwo Received: {:?}", msg.0);
         self.issue_async::<BrokerType, _>(MessageTwo(0));
     }
 }
@@ -62,7 +62,7 @@ impl Handler<MessageOne> for ActorThree {
     type Result = ();
 
     fn handle(&mut self, msg: MessageOne, _ctx: &mut Self::Context) {
-        println!("ActorThree Received: {:?}", msg);
+        println!("ActorThree Received: {:?}", msg.0);
         self.issue_async::<BrokerType, _>(MessageTwo(1));
     }
 }

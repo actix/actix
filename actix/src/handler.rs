@@ -60,7 +60,7 @@ where
 /// use actix::prelude::*;
 ///
 /// #[derive(Message)]
-/// #[rtype(result = "Response")]
+/// #[rtype(Response)]
 /// struct Msg;
 ///
 /// struct Response;
@@ -104,7 +104,7 @@ pub struct MessageResult<M: Message>(pub M::Result);
 /// # use std::time::Duration;
 /// #
 /// # #[derive(Message)]
-/// # #[rtype(result = "usize")]
+/// # #[rtype(usize)]
 /// # struct Msg;
 /// #
 /// # struct MyActor(usize);

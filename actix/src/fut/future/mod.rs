@@ -23,12 +23,14 @@ mod timeout;
 /// Trait for types which are a placeholder of a value that may become
 /// available at some later point in time.
 ///
-/// [`ActorFuture`] is very similar to a regular [`Future`], only with subsequent combinator closures accepting the actor and its context, in addition to the result.
+/// [`ActorFuture`] is very similar to a regular [`Future`], only with subsequent combinator
+/// closures accepting the actor and its context, in addition to the result.
 ///
-/// [`ActorFuture`] allows for use cases where future processing requires access to the actor or its context.
+/// [`ActorFuture`] allows for use cases where future processing requires access to the actor or
+/// its context.
 ///
-/// Here is an example of a handler on a single actor, deferring work to another actor, and
-/// then updating the initiating actor's state:
+/// Here is an example of a handler on a single actor, deferring work to another actor, and then
+/// updating the initiating actor's state:
 ///
 /// ```no_run
 /// use actix::prelude::*;
@@ -56,8 +58,7 @@ mod timeout;
 /// # impl Handler<OtherMessage> for OtherActor {
 /// #    type Result = ();
 /// #
-/// #    fn handle(&mut self, _msg: OtherMessage, _ctx: &mut Context<Self>) -> Self::Result {
-/// #    }
+/// #    fn handle(&mut self, _msg: OtherMessage, _ctx: &mut Context<Self>) -> Self::Result {}
 /// # }
 /// #
 /// # struct OriginalActor{
@@ -71,50 +72,46 @@ mod timeout;
 /// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "Result<(), MessageError>")]
-/// # struct DeferredWork{}
+/// # struct DeferredWork {}
 /// #
 /// # #[derive(Message)]
 /// # #[rtype(result = "()")]
-/// # struct OtherMessage{}
+/// # struct OtherMessage {}
 ///
 /// impl Handler<DeferredWork> for OriginalActor {
 ///     // Notice the `Response` is an `ActorFuture`-ized version of `Self::Message::Result`.
 ///     type Result = ResponseActFuture<Self, DeferredWorkResult>;
 ///
 ///     fn handle(&mut self, _msg: DeferredWork, _ctx: &mut Context<Self>) -> Self::Result {
-///         // this creates a `Future` representing the `.send` and subsequent `Result` from
-///         // `other_actor`
-///         let send_to_other = self.other_actor
-///             .send(OtherMessage {});
+///         // this creates a `Future` representing the `.send` and subsequent
+///         // `Result` from `other_actor`
+///         let update_self = self.other_actor
+///             .send(OtherMessage {})
+///             // Wrap that future so chained handlers can access the actor
+///             // (`self` in the synchronous code) as well as the context.
+///             .into_actor(self)
+///             // once the wrapped future resolves, update this actor's state
+///             .map(|result, actor, _ctx| {
+///                 match result {
+///                     Ok(v) => {
+///                         // update actor (self) state
+///                         actor.inner_state.update_from(v);
+///                         Ok(())
+///                     },
+///                     // Failed to send message to other_actor
+///                     Err(_e) => Err(()),
+///                 }
+///             });
 ///
-///         // Wrap that `Future` so subsequent chained handlers can access
-///         // the `actor` (`self` in the  synchronous code) as well as the context.
-///         let send_to_other = actix::fut::wrap_future::<_, Self>(send_to_other);
-///
-///         // once the wrapped future resolves, update this actor's state
-///         let update_self = send_to_other.map(|result, actor, _ctx| {
-///             // Actor's state updated here
-///             match result {
-///                 Ok(v) => {
-///                     actor.inner_state.update_from(v);
-///                     Ok(())
-///                 },
-///                 // Failed to send message to other_actor
-///                 Err(_e) => Err(()),
-///             }
-///         });
-///
-///         // return the wrapped future
+///         // box and return the wrapped future
 ///         Box::pin(update_self)
 ///     }
 /// }
-///
 /// ```
 ///
-/// See also [`into_actor`](trait.WrapFuture.html#tymethod.into_actor), which provides future conversion using trait
+/// See also [`WrapFuture::into_actor()`] which provides future conversion.
 pub trait ActorFuture<A: Actor> {
-    /// The type of value that this future will resolved with if it is
-    /// successful.
+    /// The type of value produced on completion.
     type Output;
 
     fn poll(

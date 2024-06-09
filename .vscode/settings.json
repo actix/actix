@@ -1,10 +1,14 @@
 {
     "cSpell.words": [
         "actix",
+        "bitflags",
         "codecov",
+        "doctest",
+        "oneshot",
         "println",
         "rtype",
         "rustversion",
+        "smallvec",
         "struct",
         "trybuild",
         "usize"

@@ -8,10 +8,10 @@
 <!-- prettier-ignore-start -->
 
 [![crates.io](https://img.shields.io/crates/v/actix?label=latest)](https://crates.io/crates/actix)
-[![Documentation](https://docs.rs/actix/badge.svg?version=0.13.0)](https://docs.rs/actix/0.13.0)
+[![Documentation](https://docs.rs/actix/badge.svg?version=0.13.4)](https://docs.rs/actix/0.13.4)
 ![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.68+-ab6000.svg)
 ![License](https://img.shields.io/crates/l/actix.svg)
-[![Dependency Status](https://deps.rs/crate/actix/0.13.0/status.svg)](https://deps.rs/crate/actix/0.13.0)
+[![Dependency Status](https://deps.rs/crate/actix/0.13.4/status.svg)](https://deps.rs/crate/actix/0.13.4)
 <br />
 [![CI](https://github.com/actix/actix/actions/workflows/ci.yml/badge.svg)](https://github.com/actix/actix/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix)
@@ -102,7 +102,7 @@ use actix::prelude::*;
 // this is our Message
 // we have to define the response type (rtype)
 #[derive(Message)]
-#[rtype(result = "usize")]
+#[rtype(usize)]
 struct Sum(usize, usize);
 
 // Actor definition
@@ -185,10 +185,10 @@ impl Handler<Ping> for Game {
 fn main() {
     let system = System::new();
 
-    // To get a Recipient object, we need to use a different builder method
-    // which will allow postponing actor creation
-    let _addr = system.block_on(async {
-        Game::create(|ctx| {
+    system.block_on(async {
+        // To create a cyclic game link, we need to use a different constructor
+        // method to get access to its recipient before it starts.
+        let _game = Game::create(|ctx| {
             // now we can get an address of the first actor and create the second actor
             let addr = ctx.address();
 
@@ -211,6 +211,7 @@ fn main() {
         });
     });
 
+    // let the actors all run until they've shut themselves down
     system.run().unwrap();
 }
 ```

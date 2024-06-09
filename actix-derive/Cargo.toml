@@ -1,6 +1,6 @@
 [package]
 name = "actix_derive"
-version = "0.6.0"
+version = "0.6.1"
 authors = [
     "Callym <hi@callym.com>",
     "Nikolay Kim <fafhrd91@gmail.com>",
@@ -12,6 +12,9 @@ repository = "https://github.com/actix/actix"
 license = "MIT OR Apache-2.0"
 edition.workspace = true
 rust-version.workspace = true
+
+[badges]
+maintenance.status = "passively-maintained"
 
 [lib]
 proc-macro = true

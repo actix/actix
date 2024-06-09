@@ -6,7 +6,7 @@ use actix::{clock::sleep, prelude::*};
 use futures_util::stream::StreamExt;
 
 #[derive(Clone, Copy, Message)]
-#[rtype(result = "usize")]
+#[rtype(usize)]
 struct Num(usize);
 
 struct MyActor(usize);

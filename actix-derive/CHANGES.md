@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.6.1
+
 - Update `syn` dependency to `2`.
 
 ## 0.6.0 - 2021-03-21
