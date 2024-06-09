@@ -22,13 +22,13 @@ jobs:
         with:
           components: llvm-tools
 
-      - name: Install just cargo-llvm-cov
+      - name: Install just, cargo-llvm-cov
         uses: taiki-e/install-action@v2.13.4
         with:
-          tool: just cargo-llvm-cov
+          tool: just,cargo-llvm-cov
 
       - name: Generate code coverage
-        run: just test-coverage-lcov
+        run: just test-coverage-codecov
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4.4.1
