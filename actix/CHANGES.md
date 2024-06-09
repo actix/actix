@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `actors::mocker::Mocker::mock_one()`.
+- Mocking closures now support returning `T`s instead of just `Option<T>`s.
+
 ## 0.13.4
 
 - Add `AsyncContext::run_interval_at()` method.
