@@ -1,24 +1,24 @@
 //! Actix is an actor framework.
 //!
-//! [Actors](./trait.Actor.html) are
-//! objects which encapsulate state and behavior, they communicate
-//! exclusively by exchanging messages. Actix actors are implemented
-//! on top of [Tokio](https://tokio.rs).  Multiple actors can run in
-//! same thread. Actors can run in multiple threads using the
-//! [`Arbiter`](struct.Arbiter.html) API. Actors exchange typed
-//! messages.
+//! [Actors](Actor) are objects which encapsulate state and behavior, they communicate exclusively
+//! by exchanging messages. Actix actors are implemented on top of [Tokio](https://tokio.rs).
 //!
-//! ## Other Documentation
-//! - [User Guide](https://actix.rs/book/actix/)
-//! - [Community Chat on Discord](https://discord.gg/NWpN5mmg3x)
+//! Multiple actors can run in same thread. Actors can run in multiple threads using the [`Arbiter`]
+//! API. Actors exchange typed messages.
 //!
 //! ## Features
-//! - Async/Sync actors
+//!
+//! - Async or sync actors
 //! - Actor communication in a local/thread context
 //! - Using Futures for asynchronous message handling
 //! - Actor supervision
-//! - Typed messages (No [`Any`](std::any::Any) type). Generic messages are allowed
-//! - Runs on stable Rust 1.65+
+//! - Typed messages (no [`Any`](std::any::Any) type) and generic messages are allowed
+//! - Runs on stable Rust 1.68+
+//!
+//! ## Other Documentation
+//!
+//! - [User Guide](https://actix.rs/docs/actix)
+//! - [Community Chat on Discord](https://discord.gg/NWpN5mmg3x)
 
 #![deny(rust_2018_idioms, nonstandard_style, future_incompatible)]
 #![doc(html_logo_url = "https://actix.rs/img/logo.png")]
@@ -29,15 +29,14 @@
 doc_comment::doctest!("../README.md");
 
 mod actor;
+mod address;
 mod context;
-mod contextimpl;
-mod contextitems;
+mod context_impl;
+mod context_items;
 mod handler;
+mod mailbox;
 mod stream;
 mod supervisor;
-
-mod address;
-mod mailbox;
 
 pub mod actors;
 pub mod clock;
@@ -138,7 +137,7 @@ pub mod dev {
         pub use crate::address::channel::{channel, AddressReceiver, AddressSender};
     }
     pub use crate::{
-        contextimpl::{AsyncContextParts, ContextFut, ContextParts},
+        context_impl::{AsyncContextParts, ContextFut, ContextParts},
         handler::{MessageResponse, OneshotSender},
         mailbox::Mailbox,
         registry::{Registry, SystemRegistry},

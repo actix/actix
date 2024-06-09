@@ -12,7 +12,7 @@ use smallvec::SmallVec;
 use crate::{
     actor::{Actor, ActorContext, ActorState, AsyncContext, Running, SpawnHandle, Supervised},
     address::{Addr, AddressSenderProducer},
-    contextitems::ActorWaitItem,
+    context_items::ActorWaitItem,
     fut::ActorFuture,
     mailbox::Mailbox,
 };
@@ -173,7 +173,10 @@ where
         Addr::new(self.addr.sender())
     }
 
-    /// Restart context. Cleanup all futures, except address queue.
+    /// Restarts this [`ContextParts`] by:
+    /// - canceling all the [`ActorFuture`]s spawned via [`ContextParts::spawn`];
+    /// - clearing the [`ContextParts::wait`] queue;
+    /// - changing the [`Actor`] state to [`ActorState::Running`].
     #[inline]
     pub(crate) fn restart(&mut self) {
         self.flags = ContextFlags::RUNNING;
@@ -276,9 +279,20 @@ where
         }
     }
 
-    /// Restart context. Cleanup all futures, except address queue.
+    /// Restarts the [`AsyncContext`] of this [`ContextFut`] returning whether the [`Context`] was
+    /// restarted.
+    ///
+    /// Restarting the [`Context`] means:
+    /// - canceling all the [`ActorFuture`]s spawned by the [`AsyncContext`];
+    /// - clearing the [`ActorFuture`] await queue of the [`AsyncContext`];
+    /// - changing the [`Actor`] state to [`ActorState::Running`];
+    /// - calling [`Supervised::restarting`] on the [`Actor`].
+    ///
+    /// Restart may fail only if the [`Mailbox`] is not [`connected`].
+    ///
+    /// [`connected`]: Mailbox::connected
     #[inline]
-    pub(crate) fn restart(&mut self) -> bool
+    pub fn restart(&mut self) -> bool
     where
         A: Supervised,
     {

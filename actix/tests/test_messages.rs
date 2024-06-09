@@ -4,13 +4,6 @@ use std::collections::HashSet;
 
 use actix::prelude::*;
 
-#[derive(Clone, Debug)]
-struct Num(usize);
-
-impl Message for Num {
-    type Result = ();
-}
-
 struct SessionActor {
     sessions: HashSet<usize>,
 }
@@ -55,7 +48,7 @@ impl Handler<AddSession> for SessionActor {
 }
 
 #[derive(Message)]
-#[rtype(result = "usize")]
+#[rtype(usize)]
 struct GetSessionCount;
 
 impl Handler<GetSessionCount> for SessionActor {

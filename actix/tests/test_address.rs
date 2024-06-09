@@ -1,6 +1,5 @@
 use std::{
     collections::HashSet,
-    mem::drop,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
@@ -12,7 +11,7 @@ use actix::{prelude::*, WeakRecipient};
 use actix_rt::time::sleep;
 
 #[derive(Debug)]
-struct Ping(usize);
+struct Ping;
 
 impl Message for Ping {
     type Result = ();
@@ -98,14 +97,14 @@ fn test_address() {
         let addr = MyActor(count2).start();
         let addr2 = addr.clone();
         let addr3 = addr.clone();
-        addr.do_send(Ping(1));
+        addr.do_send(Ping);
 
         arbiter.spawn_fn(move || {
-            addr3.do_send(Ping(2));
+            addr3.do_send(Ping);
 
             actix_rt::spawn(async move {
-                let _ = addr2.send(Ping(3)).await;
-                let _ = addr2.send(Ping(4)).await;
+                let _ = addr2.send(Ping).await;
+                let _ = addr2.send(Ping).await;
                 System::current().stop();
             });
         });
@@ -213,13 +212,13 @@ fn test_weak_recipient_can_be_cloned() {
         weak_recipient
             .upgrade()
             .expect("must be able to upgrade the weak recipient here")
-            .send(Ping(0))
+            .send(Ping)
             .await
             .expect("send must not fail");
         weak_recipient_clone
             .upgrade()
             .expect("must be able to upgrade the cloned weak recipient here")
-            .send(Ping(0))
+            .send(Ping)
             .await
             .expect("send must not fail");
         let pings = addr.send(CountPings {}).await.expect("send must not fail");
@@ -244,14 +243,14 @@ fn test_recipient_can_be_downgraded() {
         weak_recipient
             .upgrade()
             .expect("upgrade of weak recipient must not fail here")
-            .send(Ping(0))
+            .send(Ping)
             .await
             .unwrap();
 
         converted_weak_recipient
             .upgrade()
             .expect("upgrade of weak recipient must not fail here")
-            .send(Ping(0))
+            .send(Ping)
             .await
             .unwrap();
         let ping_count = addr.send(CountPings {}).await.unwrap();
@@ -318,11 +317,11 @@ fn test_sync_recipient_call() {
     sys.block_on(async move {
         let addr = MyActor(count2).start();
         let addr2 = addr.clone().recipient();
-        addr.do_send(Ping(0));
+        addr.do_send(Ping);
 
         actix_rt::spawn(async move {
-            let _ = addr2.send(Ping(1)).await;
-            let _ = addr2.send(Ping(2)).await;
+            let _ = addr2.send(Ping).await;
+            let _ = addr2.send(Ping).await;
             System::current().stop();
         });
     });
@@ -338,7 +337,7 @@ fn test_error_result() {
         let addr = MyActor3.start();
 
         actix_rt::spawn(async move {
-            let res = addr.send(Ping(0)).await;
+            let res = addr.send(Ping).await;
             match res {
                 Ok(_) => (),
                 _ => panic!("Should not happen"),
@@ -370,9 +369,9 @@ fn test_message_timeout() {
     sys.block_on(async move {
         let addr = TimeoutActor.start();
 
-        addr.do_send(Ping(0));
+        addr.do_send(Ping);
         actix_rt::spawn(async move {
-            let res = addr.send(Ping(0)).timeout(Duration::from_millis(1)).await;
+            let res = addr.send(Ping).timeout(Duration::from_millis(1)).await;
             match res {
                 Ok(_) => panic!("Should not happen"),
                 Err(MailboxError::Timeout) => {
@@ -395,9 +394,9 @@ impl Actor for TimeoutActor3 {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.0.do_send(Ping(0));
+        self.0.do_send(Ping);
         self.0
-            .send(Ping(0))
+            .send(Ping)
             .timeout(Duration::new(0, 1_000))
             .into_actor(self)
             .then(move |res, act, _| {

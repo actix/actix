@@ -110,6 +110,24 @@ where
     where
         F: Fn() -> A + Send + Sync + 'static,
     {
+        Self::start_with_thread_builder(threads, thread::Builder::new, factory)
+    }
+
+    /// Start a new `SyncArbiter` with specified number of worker threads.
+    /// Each worker thread is spawned from the [`std::thread::Builder`]
+    /// returned by a new call to `thread_builder_factory`.
+    /// Returns a single address of the started actor. A single address is
+    /// used to communicate to the actor(s), and messages are handled by
+    /// the next available Actor in the `SyncArbiter`.
+    pub fn start_with_thread_builder<F, BF>(
+        threads: usize,
+        mut thread_builder_factory: BF,
+        factory: F,
+    ) -> Addr<A>
+    where
+        F: Fn() -> A + Send + Sync + 'static,
+        BF: FnMut() -> thread::Builder,
+    {
         let factory = Arc::new(factory);
         let (sender, receiver) = cb_channel::unbounded();
         let (tx, rx) = channel::channel(0);
@@ -120,10 +138,12 @@ where
             let actor_queue = receiver.clone();
             let inner_rx = rx.sender_producer();
 
-            thread::spawn(move || {
-                System::set_current(sys);
-                SyncContext::new(f, actor_queue, inner_rx).run();
-            });
+            thread_builder_factory()
+                .spawn(move || {
+                    System::set_current(sys);
+                    SyncContext::new(f, actor_queue, inner_rx).run();
+                })
+                .expect("failed to spawn thread");
         }
 
         System::current().arbiter().spawn(Self {

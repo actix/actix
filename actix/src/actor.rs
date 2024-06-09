@@ -7,7 +7,7 @@ use log::error;
 use crate::{
     address::{channel, Addr},
     context::Context,
-    contextitems::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem},
+    context_items::{ActorDelayedMessageItem, ActorMessageItem, ActorMessageStreamItem},
     fut::{ActorFuture, ActorStreamExt},
     handler::{Handler, Message},
     mailbox::DEFAULT_CAPACITY,
@@ -454,6 +454,20 @@ where
         F: FnMut(&mut A, &mut A::Context) + 'static,
     {
         self.spawn(IntervalFunc::new(dur, f).finish())
+    }
+
+    /// Spawns a periodic `task` function to begin executing at the given `start` time, and with the
+    /// given `interval` duration.
+    fn run_interval_at<F>(
+        &mut self,
+        start: tokio::time::Instant,
+        interval: Duration,
+        task: F,
+    ) -> SpawnHandle
+    where
+        F: FnMut(&mut A, &mut A::Context) + 'static,
+    {
+        self.spawn(IntervalFunc::new_at(start, interval, task).finish())
     }
 }
 

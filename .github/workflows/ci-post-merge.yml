@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build_and_test_nightly:
+  test_nightly:
     strategy:
       fail-fast: false
       matrix:
@@ -28,27 +28,22 @@ jobs:
     runs-on: ${{ matrix.target.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Setup mold linker
+        if: matrix.target.os == 'ubuntu-latest'
+        uses: rui314/setup-mold@v1
 
       - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1.8.0
         with:
           toolchain: ${{ matrix.version }}
 
-      - name: Install cargo-hack
+      - name: Install just, cargo-hack, cargo-nextest
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-hack
+          tool: just,cargo-hack,cargo-nextest
 
-      - name: check minimal
-        run: cargo hack --clean-per-run check --workspace --no-default-features
-
-      - name: tests
-        run: cargo test --workspace --all-features --no-fail-fast -- --nocapture
+      - name: Tests
+        run: just test
         timeout-minutes: 10
-
-      - name: Clear the cargo caches
-        run: |
-          rustup override set stable
-          cargo install cargo-cache --version 0.8.3 --no-default-features --features ci-autoclean
-          cargo-cache

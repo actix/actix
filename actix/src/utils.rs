@@ -7,7 +7,10 @@ use std::{
 
 use futures_core::ready;
 use pin_project_lite::pin_project;
-use tokio::sync::oneshot;
+use tokio::{
+    sync::oneshot,
+    time::{sleep_until, Instant},
+};
 
 use crate::{
     actor::Actor,
@@ -175,22 +178,35 @@ pin_project! {
     #[allow(clippy::type_complexity)]
     pub struct IntervalFunc<A: Actor> {
         f: Box<dyn FnMut(&mut A, &mut A::Context)>,
-        dur: Duration,
+        interval: Duration,
         #[pin]
         timer: Sleep,
     }
 }
 
 impl<A: Actor> IntervalFunc<A> {
-    /// Creates a new `IntervalFunc` with the given interval duration.
-    pub fn new<F>(dur: Duration, f: F) -> IntervalFunc<A>
+    /// Constructs an `IntervalFunc` using the given `interval` duration and `task` function.
+    pub fn new<F>(interval: Duration, task: F) -> IntervalFunc<A>
     where
         F: FnMut(&mut A, &mut A::Context) + 'static,
     {
         Self {
-            f: Box::new(f),
-            dur,
-            timer: sleep(dur),
+            f: Box::new(task),
+            interval,
+            timer: sleep(interval),
+        }
+    }
+
+    /// Constructs an `IntervalFunc` using the given `start` time, `interval` duration, and `task`
+    /// function.
+    pub fn new_at<F>(start: Instant, interval: Duration, task: F) -> IntervalFunc<A>
+    where
+        F: FnMut(&mut A, &mut A::Context) + 'static,
+    {
+        Self {
+            f: Box::new(task),
+            interval,
+            timer: sleep_until(start),
         }
     }
 }
@@ -208,7 +224,7 @@ impl<A: Actor> ActorStream<A> for IntervalFunc<A> {
         loop {
             ready!(this.timer.as_mut().poll(task));
             let now = this.timer.deadline();
-            this.timer.as_mut().reset(now + *this.dur);
+            this.timer.as_mut().reset(now + *this.interval);
             (this.f)(act, ctx);
         }
     }

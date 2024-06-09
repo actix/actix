@@ -8,10 +8,10 @@
 <!-- prettier-ignore-start -->
 
 [![crates.io](https://img.shields.io/crates/v/actix?label=latest)](https://crates.io/crates/actix)
-[![Documentation](https://docs.rs/actix/badge.svg?version=0.13.0)](https://docs.rs/actix/0.13.0)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.65+-ab6000.svg)
+[![Documentation](https://docs.rs/actix/badge.svg?version=0.13.4)](https://docs.rs/actix/0.13.4)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.68+-ab6000.svg)
 ![License](https://img.shields.io/crates/l/actix.svg)
-[![Dependency Status](https://deps.rs/crate/actix/0.13.0/status.svg)](https://deps.rs/crate/actix/0.13.0)
+[![Dependency Status](https://deps.rs/crate/actix/0.13.4/status.svg)](https://deps.rs/crate/actix/0.13.4)
 <br />
 [![CI](https://github.com/actix/actix/actions/workflows/ci.yml/badge.svg)](https://github.com/actix/actix/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix)
@@ -35,7 +35,7 @@
 - Uses [futures](https://crates.io/crates/futures) for asynchronous message handling
 - Actor supervision
 - Typed messages (No `Any` type)
-- Runs on stable Rust 1.65+
+- Runs on stable Rust 1.68+
 
 ## Usage
 
@@ -62,7 +62,7 @@ Actix uses the [Tokio](https://github.com/tokio-rs/tokio) runtime. `System::new(
 
 ### Implementing an Actor
 
-In order to define an actor you need to define a struct and have it implement the [`Actor`](https://actix.github.io/actix/actix/trait.Actor.html) trait.
+In order to define an actor you need to define a struct and have it implement the [`Actor`](https://docs.rs/actix/latest/actix/trait.Actor.html) trait.
 
 ```rust
 use actix::{Actor, Context, System};
@@ -89,8 +89,8 @@ fn main() {
 
 Spawning a new actor is achieved via the `start` and `create` methods of the [Actor trait]. It provides several different ways of creating actors; for details, check the docs. You can implement the `started`, `stopping` and `stopped` methods of the Actor trait. `started` gets called when the actor starts and `stopping` when the actor finishes. Check the API docs for more information on [the actor lifecycle].
 
-[Actor trait]: https://actix.github.io/actix/actix/trait.Actor.html
-[the actor lifecycle]: https://actix.github.io/actix/actix/trait.Actor.html#actor-lifecycle
+[Actor trait]: https://docs.rs/actix/latest/actix/trait.Actor.html
+[the actor lifecycle]: https://actix.rs/docs/actix/actor#actor-lifecycle
 
 ### Handle Messages
 
@@ -102,7 +102,7 @@ use actix::prelude::*;
 // this is our Message
 // we have to define the response type (rtype)
 #[derive(Message)]
-#[rtype(result = "usize")]
+#[rtype(usize)]
 struct Sum(usize, usize);
 
 // Actor definition
@@ -185,10 +185,10 @@ impl Handler<Ping> for Game {
 fn main() {
     let system = System::new();
 
-    // To get a Recipient object, we need to use a different builder method
-    // which will allow postponing actor creation
-    let _addr = system.block_on(async {
-        Game::create(|ctx| {
+    system.block_on(async {
+        // To create a cyclic game link, we need to use a different constructor
+        // method to get access to its recipient before it starts.
+        let _game = Game::create(|ctx| {
             // now we can get an address of the first actor and create the second actor
             let addr = ctx.address();
 
@@ -211,6 +211,7 @@ fn main() {
         });
     });
 
+    // let the actors all run until they've shut themselves down
     system.run().unwrap();
 }
 ```
