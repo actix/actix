@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/registry.rs`."><title>registry.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.80.0-nightly (804421dff 2024-06-07)" data-channel="nightly" data-search-js="search-d52510db62a78183.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `actix/src/registry.rs`."><title>registry.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-dd39b87e5fcfba68.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="actix" data-themes="" data-resource-suffix="" data-rustdoc-version="1.81.0-nightly (f21554f7f 2024-06-08)" data-channel="nightly" data-search-js="search-9d4fa2dd5e5a7e17.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-118b08c4c78b968e.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-df360f571f6edeae.css"></noscript><link rel="icon" href="https://actix.rs/favicon.ico"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -316,6 +316,31 @@
 <a href="#316" id="316">316</a>
 <a href="#317" id="317">317</a>
 <a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Actors registry
 //!
 //! An Actor can register itself as a service. A Service can be defined as an
@@ -432,42 +457,67 @@
 
     <span class="doccomment">/// Get actor's address from arbiter registry
     </span><span class="kw">fn </span>from_registry() -&gt; Addr&lt;<span class="self">Self</span>&gt; {
-        AREG.with(|reg| reg.get())
+        AREG.with(|reg| reg.get_or_start_default())
     }
 }
 
 <span class="kw">impl </span>Registry {
-    <span class="doccomment">/// Query registry for specific actor. Returns address of the actor.
-    /// If actor is not registered, starts new actor and
-    /// return address of newly created actor.
+    <span class="doccomment">/// Queries registry for a type of actor (`A`), returning its address.
+    ///
+    /// If actor is not registered, a new actor is started and its address is returned.
+    </span><span class="attr">#[deprecated(since = <span class="string">"0.13.5"</span>, note = <span class="string">"Renamed to `get_or_start_default()`."</span>)]
+    #[inline]
     </span><span class="kw">pub fn </span>get&lt;A: ArbiterService + Actor&lt;Context = Context&lt;A&gt;&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Addr&lt;A&gt; {
-        <span class="kw">let </span>id = TypeId::of::&lt;A&gt;();
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = <span class="self">self</span>.registry.borrow().get(<span class="kw-2">&amp;</span>id) {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = addr.downcast_ref::&lt;Addr&lt;A&gt;&gt;() {
-                <span class="kw">return </span>addr.clone();
-            }
-        }
-        <span class="kw">let </span>addr: Addr&lt;A&gt; = A::start_service();
+        <span class="self">self</span>.get_or_start_default()
+    }
+
+    <span class="doccomment">/// Queries registry for an actor, returning its address.
+    ///
+    /// If actor of type `A` is not registered, a new actor is started and its address is returned.
+    </span><span class="kw">pub fn </span>get_or_start_default&lt;A: ArbiterService + Actor&lt;Context = Context&lt;A&gt;&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Addr&lt;A&gt; {
+        <span class="kw">let </span>addr = <span class="self">self</span>.try_get::&lt;A&gt;().unwrap_or_else(A::start_service);
 
         <span class="self">self</span>.registry
             .borrow_mut()
-            .insert(id, Box::new(addr.clone()));
+            .insert(TypeId::of::&lt;A&gt;(), Box::new(addr.clone()));
+
         addr
     }
 
-    <span class="doccomment">/// Check if actor is in registry, if so, return its address
-    </span><span class="kw">pub fn </span>query&lt;A: ArbiterService + Actor&lt;Context = Context&lt;A&gt;&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Addr&lt;A&gt;&gt; {
+    <span class="doccomment">/// Queries registry for specific actor, returning its address.
+    ///
+    /// Returns `None` if an actor of type `A` is not registered.
+    </span><span class="kw">pub fn </span>try_get&lt;A: Actor&lt;Context = Context&lt;A&gt;&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Addr&lt;A&gt;&gt; {
         <span class="kw">let </span>id = TypeId::of::&lt;A&gt;();
+
         <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = <span class="self">self</span>.registry.borrow().get(<span class="kw-2">&amp;</span>id) {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = addr.downcast_ref::&lt;Addr&lt;A&gt;&gt;() {
                 <span class="kw">return </span><span class="prelude-val">Some</span>(addr.clone());
             }
         }
+
         <span class="prelude-val">None
     </span>}
 
-    <span class="doccomment">/// Add new actor to the registry by address, panic if actor is already running
-    </span><span class="kw">pub fn </span>set&lt;A: ArbiterService + Actor&lt;Context = Context&lt;A&gt;&gt;&gt;(addr: Addr&lt;A&gt;) {
+    <span class="doccomment">/// Returns actor's address if it is in the registry.
+    </span><span class="kw">pub fn </span>query&lt;A: Actor&lt;Context = Context&lt;A&gt;&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Addr&lt;A&gt;&gt; {
+        <span class="kw">let </span>id = TypeId::of::&lt;A&gt;();
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = <span class="self">self</span>.registry.borrow().get(<span class="kw-2">&amp;</span>id) {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = addr.downcast_ref::&lt;Addr&lt;A&gt;&gt;() {
+                <span class="kw">return </span><span class="prelude-val">Some</span>(addr.clone());
+            }
+        }
+
+        <span class="prelude-val">None
+    </span>}
+
+    <span class="doccomment">/// Adds an unregistered actor type to the registry by address.
+    ///
+    /// # Panics
+    ///
+    /// Panics if actor is already running
+    </span><span class="kw">pub fn </span>set&lt;A: Actor&lt;Context = Context&lt;A&gt;&gt;&gt;(addr: Addr&lt;A&gt;) {
         AREG.with(|reg| {
             <span class="kw">let </span>id = TypeId::of::&lt;A&gt;();
             <span class="kw">if let </span><span class="prelude-val">Some</span>(addr) = reg.registry.borrow().get(<span class="kw-2">&amp;</span>id) {
