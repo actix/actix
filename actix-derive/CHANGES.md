@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.6.2
+
+- Fix compile failures when using quoted rtype (i.e., `#[rtype("()")]`) form.
+
 ## 0.6.1
 
 - Update `syn` dependency to `2`.

@@ -460,7 +460,9 @@ fn test_address_hash() {
         let addr0 = MyActor(count0).start();
         let addr01 = addr0.clone();
 
+        #[allow(clippy::mutable_key_type)]
         let mut addresses = HashSet::new();
+
         addresses.insert(addr0.clone());
         addresses.insert(addr01.clone());
 

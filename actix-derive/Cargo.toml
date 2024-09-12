@@ -1,6 +1,6 @@
 [package]
 name = "actix_derive"
-version = "0.6.1"
+version = "0.6.2"
 authors = [
     "Callym <hi@callym.com>",
     "Nikolay Kim <fafhrd91@gmail.com>",
@@ -8,8 +8,8 @@ authors = [
 ]
 description = "Derive macros for `actix` actors"
 keywords = ["actix", "actors", "derive", "macro"]
-repository = "https://github.com/actix/actix"
-license = "MIT OR Apache-2.0"
+license.workspace = true
+repository.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
@@ -27,4 +27,4 @@ proc-macro2 = "1"
 [dev-dependencies]
 actix = "0.13"
 trybuild = "1"
-rustversion = "1"
+rustversion-msrv = "0.100"

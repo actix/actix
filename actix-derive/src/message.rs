@@ -45,18 +45,20 @@ fn get_attribute_type_multiple(
     ast: &syn::DeriveInput,
     name: &str,
 ) -> syn::Result<Vec<Option<syn::Type>>> {
-    let attr = ast
-        .attrs
-        .iter()
-        .find_map(|attr| {
-            if attr.path().is_ident(name) {
-                attr.parse_args().ok()
-            } else {
-                None
-            }
-        })
+    let mut target_attrs = ast.attrs.iter().filter(|attr| attr.path().is_ident(name));
+
+    if let Some(Ok(typ)) = target_attrs
+        .clone()
+        .find_map(|attr| attr.parse_args::<syn::LitStr>().ok())
+        .map(|lit_str| lit_str.parse::<syn::Type>())
+    {
+        return Ok(vec![Some(typ)]);
+    }
+
+    let attr = target_attrs
+        .find_map(|attr| attr.parse_args().ok())
         .ok_or_else(|| {
-            syn::Error::new(Span::call_site(), format!("Expect an attribute `{name}`"))
+            syn::Error::new(Span::call_site(), format!("Expected an attribute `{name}`"))
         })?;
 
     match attr {

@@ -11,6 +11,10 @@ struct Sum(usize, usize);
 #[rtype(Added)]
 struct SumBareType(usize, usize);
 
+#[derive(Message)]
+#[rtype("()")]
+struct UnitReturnInString;
+
 #[derive(Default)]
 struct Adder;
 
