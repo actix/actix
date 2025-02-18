@@ -17,6 +17,7 @@ use crate::mailbox::Mailbox;
 
 bitflags! {
     /// internal context state
+    #[derive(Debug)]
     struct ContextFlags: u8 {
     const STARTED =  0b0000_0001;
     const RUNNING =  0b0000_0010;
