@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Minimum supported Rust version (MSRV) is now 1.75.
+
 ## 0.6.2
 
 - Fix compile failures when using quoted rtype (i.e., `#[rtype("()")]`) form.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Minimum supported Rust version (MSRV) is now 1.75.
+
 ## 0.13.5
 
 - Add `Registry::try_get()` method.

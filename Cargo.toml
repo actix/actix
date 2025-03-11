@@ -10,7 +10,7 @@ members = [
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/actix/actix"
 edition = "2021"
-rust-version = "1.72"
+rust-version = "1.75"
 
 [patch.crates-io]
 actix = { path = "actix" }
