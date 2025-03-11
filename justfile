@@ -17,8 +17,8 @@ clippy:
 # Downgrade dev-dependencies necessary to run MSRV checks/tests.
 [private]
 downgrade-for-msrv:
-    @ echo "No MSRV downgrades currently required."
-    # cargo update -p=trybuild --precise=1.0.89
+    cargo update -p=litemap --precise=0.7.4 # next ver: 1.81.0
+    cargo update -p=zerofrom --precise=0.1.5 # next ver: 1.81.0
 
 # Test workspace using MSRV.
 test-msrv: downgrade-for-msrv (test msrv_rustup)
