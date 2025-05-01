@@ -35,7 +35,7 @@ jobs:
         uses: rui314/setup-mold@v1
 
       - name: Install Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1.11.0
+        uses: actions-rust-lang/setup-rust-toolchain@v1.12.0
         with:
           toolchain: ${{ matrix.version }}
 
