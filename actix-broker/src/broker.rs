@@ -4,10 +4,12 @@ use std::{
     hash::BuildHasherDefault,
     marker::PhantomData,
 };
+use std::process::id;
 
-use actix::prelude::*;
 use ahash::AHasher;
 use log::trace;
+
+use actix::prelude::*;
 
 use crate::msgs::*;
 
@@ -68,6 +70,19 @@ impl<T> Broker<T> {
         Some(subs)
     }
 
+    fn get_subs<M: BrokerMsg>(&mut self) -> Option<impl Iterator<Item=(usize, (&TypeId, &Recipient<M>))>> {
+        let id = TypeId::of::<M>();
+        let msg_subs = self.sub_map.get(&id)?;
+
+        trace!("Broker: Found subscription list for {:?}.", id);
+        let iter = msg_subs.iter().enumerate()
+            .map(|(idx, (actor_id, recipient))| {
+                let typed_recipient = recipient.downcast_ref::<Recipient<M>>().unwrap();
+                (idx, (actor_id, typed_recipient))
+            });
+        Some(iter)
+    }
+
     fn add_sub<M: BrokerMsg>(&mut self, sub: Recipient<M>, id: TypeId) {
         let msg_id = TypeId::of::<M>();
         let boxed = Box::new(sub);
@@ -79,6 +94,20 @@ impl<T> Broker<T> {
 
         trace!("Broker: Creating {:?} subscription list.", msg_id);
         self.sub_map.insert(msg_id, vec![(id, boxed)]);
+    }
+
+    fn remove_subs_by_indexes<M: BrokerMsg>(&mut self, idxs: &[usize]) {
+        if idxs.is_empty() {
+            return;
+        }
+
+        let msg_id = TypeId::of::<M>();
+        if let Some(subscribers) = self.sub_map.get_mut(&msg_id) {
+            trace!("Broker: Removing {:?} subscribers", idxs);
+            idxs.iter().rev().for_each(|&idx| {
+                subscribers.swap_remove(idx);
+            });
+        }
     }
 
     fn get_previous_msg<M: BrokerMsg>(&self) -> Option<M> {
@@ -125,26 +154,35 @@ impl<T: 'static + Unpin, M: BrokerMsg> Handler<SubscribeSync<M>> for Broker<T> {
 impl<T: 'static + Unpin, M: BrokerMsg> Handler<IssueAsync<M>> for Broker<T> {
     type Result = ();
 
+    // process one message per message?
     fn handle(&mut self, msg: IssueAsync<M>, _ctx: &mut Context<Self>) {
         trace!("Broker: Received IssueAsync");
-        if let Some(mut subs) = self.take_subs::<M>() {
-            subs.drain(..).for_each(|(id, s)| {
-                if id == msg.1 {
-                    self.add_sub::<M>(s, id);
-                } else {
-                    match s.try_send(msg.0.clone()) {
-                        Ok(_) => self.add_sub::<M>(s, id),
-                        Err(SendError::Full(_)) => {
-                            // Ensure that that the message is delivered even if the mailbox is full.
-                            // We do a try first to remove receiver that have closed their mailbox.
-                            s.do_send(msg.0.clone());
-                            self.add_sub::<M>(s, id);
-                        }
-                        Err(_) => (),
+        let removal_idxs = if let Some(subscribers) = self.get_subs::<M>() {
+            subscribers.map(|(idx, (actor_id, recipient))| {
+                if msg.1.eq(actor_id) {
+                    return None;
+                }
+                match recipient.try_send(msg.0.clone()) {
+                    Err(SendError::Full(msg)) => {
+                        recipient.do_send(msg);
+                        None
+                    }
+                    Err(_) => {
+                        Some(idx)
+                    }
+                    _ => {
+                        None
                     }
                 }
-            });
-        }
+            })
+                .filter(|actor_idx| actor_idx.is_some())
+                .map(|idx| idx.unwrap())
+                .collect()
+        } else {
+            vec![]
+        };
+
+        self.remove_subs_by_indexes::<M>(removal_idxs.as_slice());
         self.set_msg::<M>(msg.0);
     }
 }
@@ -154,6 +192,7 @@ impl<T: 'static + Unpin, M: BrokerMsg> Handler<IssueSync<M>> for Broker<T> {
 
     fn handle(&mut self, msg: IssueSync<M>, ctx: &mut Context<Self>) {
         trace!("Broker: Received IssueSync");
+
         if let Some(mut subs) = self.take_subs::<M>() {
             subs.drain(..).for_each(|(id, s)| {
                 if id == msg.1 {
