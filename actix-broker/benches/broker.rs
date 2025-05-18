@@ -1,11 +1,12 @@
 //! Based on https://github.com/ibraheemdev/matchit/blob/master/benches/bench.rs
 
+use std::future::Future;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::Duration;
 
 use actix_web::rt::SystemRunner;
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, SamplingMode, Throughput};
 use log::info;
 use tokio::sync::{mpsc, oneshot};
 use tokio::sync::mpsc::Receiver;
@@ -38,14 +39,28 @@ impl Handler<TestMessage> for TestActor {
         let current = msg.count.fetch_sub(1, Ordering::SeqCst) - 1;
         if current == 0 {
             tokio::spawn(async move {
-                msg.notifier.send(()).await.unwrap();
+                msg.notifier.send(()).await.expect("");
             });
         }
     }
 }
 
+fn test_suite<F>(runner: F)
+where
+    F: Future<Output=()>,
+{
+    let system = System::new();
+    system.block_on(async {
+        runner.await;
+        System::current().stop();
+    });
+    system.run().expect("");
+}
+
+
+// Generic over what type of Actor is
 async fn init_actors(num: usize) {
-    let mut waiters: Vec<Receiver<()>> = (0..num).into_iter().map(|actor| {
+    let mut waiters: Vec<Receiver<()>> = (0..num).into_iter().map(|_| {
         let addr = TestActor::default().start();
         let (tx, rx) = mpsc::channel::<()>(1);
         addr.try_send(TestMessage {
@@ -57,47 +72,51 @@ async fn init_actors(num: usize) {
     }).collect();
 
     for waiter in waiters.iter_mut() {
-        waiter.recv().await.unwrap();
+        waiter.recv().await.expect("");
     }
+}
+fn issue_async_suite(num_actors: usize, num_messages: usize) {
+    test_suite(async move {
+        init_actors(num_actors).await;
+        let rxs: Vec<Receiver<()>> = (0..num_messages).map(|_| {
+            let (tx, rx) = mpsc::channel::<()>(1);
+            let message = TestMessage {
+                notifier: tx,
+                count: Arc::new(AtomicU16::new(num_actors as u16)),
+            };
+            Broker::<SystemBroker>::issue_async(message);
+            rx
+        }).collect();
+
+        for mut rx in rxs.into_iter() {
+            rx.recv().await.expect("");
+        }
+    });
 }
 
 
-fn compare_brokers(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Compare Brokers");
+fn broker_benches(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Brokers Suite Test");
 
-    let issue_async_fn = |num_actors: usize, num_msgs: usize| {
-        return move || {
-            let sys = System::new();
-            sys.block_on(async {
-                init_actors(num_actors).await;
-                let mut waiters = vec![];
-                (0..num_msgs).for_each(|_| {
-                    let (tx, rx) = mpsc::channel::<()>(1);
-                    waiters.push(rx);
-                    let message = TestMessage {
-                        notifier: tx,
-                        count: Arc::new(AtomicU16::new(num_actors as u16)),
-                    };
-                    Broker::<SystemBroker>::issue_async(message);
+    let num_actor_list = [10, 25, 100, 1000];
+    let num_message_list = [100, 1000, 10000];
+    for num_actors in num_actor_list {
+        for num_messages in num_message_list {
+            let input = (num_actors, num_messages);
+            let parameter = format!("Actors: {} - Messages: {}", num_actors, num_messages);
+            let total_notifications = num_actors * num_messages;
+            group
+                .sample_size(10)
+                .sampling_mode(SamplingMode::Flat)
+                .throughput(Throughput::Elements(total_notifications as u64))
+                .bench_with_input(BenchmarkId::new("issue_async", parameter), &input, |b, (i, j)| {
+                    b.iter(|| issue_async_suite(*i, *j));
                 });
-
-                for waiter in waiters.iter_mut() {
-                    waiter.recv().await.unwrap();
-                }
-
-                System::current().stop();
-            });
-            sys.run().unwrap();
-        };
-    };
-
-    group.warm_up_time(Duration::from_nanos(1))
-        .bench_function("issue_async", |b| {
-            b.iter(issue_async_fn(100, 1000));
-        });
+        }
+    }
 
     group.finish();
 }
 
-criterion_group!(benches, compare_brokers);
+criterion_group!(benches, broker_benches);
 criterion_main!(benches);
