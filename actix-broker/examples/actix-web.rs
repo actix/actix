@@ -1,7 +1,7 @@
 use std::io;
 
 use actix::prelude::*;
-use actix_broker::{Broker, BrokerIssue, BrokerSubscribe, SystemBroker};
+use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
 use actix_web::{get, App, Error, HttpRequest, HttpResponse, HttpServer};
 
 #[derive(Clone, Debug, Message)]
