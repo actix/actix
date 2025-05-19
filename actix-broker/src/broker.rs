@@ -4,7 +4,6 @@ use std::{
     hash::BuildHasherDefault,
     marker::PhantomData,
 };
-use std::process::id;
 
 use ahash::AHasher;
 use log::trace;

@@ -5,82 +5,79 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::Duration;
 
-use actix_web::rt::SystemRunner;
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, SamplingMode, Throughput};
-use log::info;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 
-use actix::{Actor, Arbiter, AtomicResponse, Context, Handler, Message, System};
-use actix::clock::sleep;
+use actix::{Actor, Context, Handler, Message, System};
 use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
-struct TestMessage {
+struct MessageTest {
     notifier: mpsc::Sender<()>,
     count: Arc<AtomicU16>,
 }
 
 #[derive(Default)]
-struct TestActor;
+struct ActorTest;
 
-impl Actor for TestActor {
+impl Actor for ActorTest {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        self.subscribe_async::<SystemBroker, TestMessage>(ctx);
+        self.subscribe_async::<SystemBroker, MessageTest>(ctx);
     }
 }
 
-impl Handler<TestMessage> for TestActor {
+impl Handler<MessageTest> for ActorTest {
     type Result = ();
-    fn handle(&mut self, msg: TestMessage, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: MessageTest, _ctx: &mut Self::Context) -> Self::Result {
         let current = msg.count.fetch_sub(1, Ordering::SeqCst) - 1;
         if current == 0 {
             tokio::spawn(async move {
-                msg.notifier.send(()).await.expect("");
+                msg.notifier.send(()).await.expect("The channel should not be closed");
             });
         }
     }
 }
 
-fn test_suite<F>(runner: F)
+fn init_system_runner<F>(fn_: F)
 where
     F: Future<Output=()>,
 {
     let system = System::new();
     system.block_on(async {
-        runner.await;
+        fn_.await;
         System::current().stop();
     });
-    system.run().expect("");
+    system.run().expect("Exit Code should be zero");
 }
 
 
-// Generic over what type of Actor is
 async fn init_actors(num: usize) {
     let mut waiters: Vec<Receiver<()>> = (0..num).into_iter().map(|_| {
-        let addr = TestActor::default().start();
+        let addr = ActorTest::default().start();
         let (tx, rx) = mpsc::channel::<()>(1);
-        addr.try_send(TestMessage {
+        let message = MessageTest {
             notifier: tx,
             count: Arc::new(AtomicU16::new(1)),
-        })
-            .expect("Unable to send base message");
+        };
+        addr.try_send(message)
+            .expect("Actor Mailbox should not bet closed or full");
         rx
     }).collect();
 
     for waiter in waiters.iter_mut() {
-        waiter.recv().await.expect("");
+        waiter.recv().await.expect("The channel should not be closed or full");
     }
 }
-fn issue_async_suite(num_actors: usize, num_messages: usize) {
-    test_suite(async move {
+fn issue_async_test(num_actors: usize, num_messages: usize) {
+    init_system_runner(async move {
         init_actors(num_actors).await;
         let rxs: Vec<Receiver<()>> = (0..num_messages).map(|_| {
             let (tx, rx) = mpsc::channel::<()>(1);
-            let message = TestMessage {
+            let message = MessageTest {
                 notifier: tx,
                 count: Arc::new(AtomicU16::new(num_actors as u16)),
             };
@@ -89,14 +86,14 @@ fn issue_async_suite(num_actors: usize, num_messages: usize) {
         }).collect();
 
         for mut rx in rxs.into_iter() {
-            rx.recv().await.expect("");
+            rx.recv().await.expect("The channel should not be closed or full");
         }
     });
 }
 
 
 fn broker_benches(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Brokers Suite Test");
+    let mut group = c.benchmark_group("broker_suite_test");
 
     let num_actor_list = [10, 25, 100, 1000];
     let num_message_list = [100, 1000, 10000];
@@ -107,10 +104,12 @@ fn broker_benches(c: &mut Criterion) {
             let total_notifications = num_actors * num_messages;
             group
                 .sample_size(10)
+                .measurement_time(Duration::from_secs(30))
+                .noise_threshold(0.05)
                 .sampling_mode(SamplingMode::Flat)
                 .throughput(Throughput::Elements(total_notifications as u64))
-                .bench_with_input(BenchmarkId::new("issue_async", parameter), &input, |b, (i, j)| {
-                    b.iter(|| issue_async_suite(*i, *j));
+                .bench_with_input(BenchmarkId::new("issue_async", parameter), &input, |b, &(num_actors, num_messages)| {
+                    b.iter(|| issue_async_test(num_actors, num_messages));
                 });
         }
     }
