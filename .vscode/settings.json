@@ -2,9 +2,11 @@
     "cSpell.words": [
         "actix",
         "bitflags",
+        "clippy",
         "codecov",
         "doctest",
         "msrv",
+        "nextest",
         "oneshot",
         "println",
         "rtype",
