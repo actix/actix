@@ -10,7 +10,7 @@ use tokio::sync::mpsc;
 use tokio::sync::mpsc::Receiver;
 
 use actix::{Actor, Context, Handler, Message, System};
-use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
+use actix_broker::{Broker,  BrokerSubscribe, SystemBroker};
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
@@ -102,15 +102,17 @@ fn broker_benches(c: &mut Criterion) {
             let input = (num_actors, num_messages);
             let parameter = format!("Actors: {} - Messages: {}", num_actors, num_messages);
             let total_notifications = num_actors * num_messages;
-            group
+
+            let group_ref = group
                 .sample_size(10)
                 .measurement_time(Duration::from_secs(30))
                 .noise_threshold(0.05)
                 .sampling_mode(SamplingMode::Flat)
-                .throughput(Throughput::Elements(total_notifications as u64))
-                .bench_with_input(BenchmarkId::new("issue_async", parameter), &input, |b, &(num_actors, num_messages)| {
-                    b.iter(|| issue_async_test(num_actors, num_messages));
-                });
+                .throughput(Throughput::Elements(total_notifications as u64));
+
+            group_ref.bench_with_input(BenchmarkId::new("issue_async", parameter.as_str()), &input, |b, &(num_actors, num_messages)| {
+                b.iter(|| issue_async_test(num_actors, num_messages));
+            });
         }
     }
 
