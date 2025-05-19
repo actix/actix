@@ -1,16 +1,20 @@
 //! Based on https://github.com/ibraheemdev/matchit/blob/master/benches/bench.rs
 
-use std::future::Future;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::time::Duration;
-
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main, SamplingMode, Throughput};
-use tokio::sync::mpsc;
-use tokio::sync::mpsc::Receiver;
+use std::{
+    future::Future,
+    sync::{
+        atomic::{AtomicU16, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 
 use actix::{Actor, Context, Handler, Message, System};
-use actix_broker::{Broker,  BrokerSubscribe, SystemBroker};
+use actix_broker::{Broker, BrokerSubscribe, SystemBroker};
+use criterion::{
+    criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode, Throughput,
+};
+use tokio::sync::{mpsc, mpsc::Receiver};
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
@@ -36,7 +40,10 @@ impl Handler<MessageTest> for ActorTest {
         let current = msg.count.fetch_sub(1, Ordering::SeqCst) - 1;
         if current == 0 {
             tokio::spawn(async move {
-                msg.notifier.send(()).await.expect("The channel should not be closed");
+                msg.notifier
+                    .send(())
+                    .await
+                    .expect("The channel should not be closed");
             });
         }
     }
@@ -44,7 +51,7 @@ impl Handler<MessageTest> for ActorTest {
 
 fn init_system_runner<F>(fn_: F)
 where
-    F: Future<Output=()>,
+    F: Future<Output = ()>,
 {
     let system = System::new();
     system.block_on(async {
@@ -54,43 +61,51 @@ where
     system.run().expect("Exit Code should be zero");
 }
 
-
 async fn init_actors(num: usize) {
-    let mut waiters: Vec<Receiver<()>> = (0..num).into_iter().map(|_| {
-        let addr = ActorTest::default().start();
-        let (tx, rx) = mpsc::channel::<()>(1);
-        let message = MessageTest {
-            notifier: tx,
-            count: Arc::new(AtomicU16::new(1)),
-        };
-        addr.try_send(message)
-            .expect("Actor Mailbox should not bet closed or full");
-        rx
-    }).collect();
+    let mut waiters: Vec<Receiver<()>> = (0..num)
+        .into_iter()
+        .map(|_| {
+            let addr = ActorTest::default().start();
+            let (tx, rx) = mpsc::channel::<()>(1);
+            let message = MessageTest {
+                notifier: tx,
+                count: Arc::new(AtomicU16::new(1)),
+            };
+            addr.try_send(message)
+                .expect("Actor Mailbox should not bet closed or full");
+            rx
+        })
+        .collect();
 
     for waiter in waiters.iter_mut() {
-        waiter.recv().await.expect("The channel should not be closed or full");
+        waiter
+            .recv()
+            .await
+            .expect("The channel should not be closed or full");
     }
 }
 fn issue_async_test(num_actors: usize, num_messages: usize) {
     init_system_runner(async move {
         init_actors(num_actors).await;
-        let rxs: Vec<Receiver<()>> = (0..num_messages).map(|_| {
-            let (tx, rx) = mpsc::channel::<()>(1);
-            let message = MessageTest {
-                notifier: tx,
-                count: Arc::new(AtomicU16::new(num_actors as u16)),
-            };
-            Broker::<SystemBroker>::issue_async(message);
-            rx
-        }).collect();
+        let rxs: Vec<Receiver<()>> = (0..num_messages)
+            .map(|_| {
+                let (tx, rx) = mpsc::channel::<()>(1);
+                let message = MessageTest {
+                    notifier: tx,
+                    count: Arc::new(AtomicU16::new(num_actors as u16)),
+                };
+                Broker::<SystemBroker>::issue_async(message);
+                rx
+            })
+            .collect();
 
         for mut rx in rxs.into_iter() {
-            rx.recv().await.expect("The channel should not be closed or full");
+            rx.recv()
+                .await
+                .expect("The channel should not be closed or full");
         }
     });
 }
-
 
 fn broker_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("broker_suite_test");
@@ -110,9 +125,13 @@ fn broker_benches(c: &mut Criterion) {
                 .sampling_mode(SamplingMode::Flat)
                 .throughput(Throughput::Elements(total_notifications as u64));
 
-            group_ref.bench_with_input(BenchmarkId::new("issue_async", parameter.as_str()), &input, |b, &(num_actors, num_messages)| {
-                b.iter(|| issue_async_test(num_actors, num_messages));
-            });
+            group_ref.bench_with_input(
+                BenchmarkId::new("issue_async", parameter.as_str()),
+                &input,
+                |b, &(num_actors, num_messages)| {
+                    b.iter(|| issue_async_test(num_actors, num_messages));
+                },
+            );
         }
     }
 

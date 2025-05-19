@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Minimum supported Rust version (MSRV) is now 1.75.
+- Improve Broker message performance - take_subs() function.
 
 ## 0.4.3 - 2022-05-24
 
