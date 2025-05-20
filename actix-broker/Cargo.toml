@@ -21,3 +21,9 @@ log = "0.4"
 
 [dev-dependencies]
 actix-web = "4"
+criterion = { version = "0.3.6", features = ["html_reports"] }
+tokio = "1.45.0"
+
+[[bench]]
+name = "broker"
+harness = false
