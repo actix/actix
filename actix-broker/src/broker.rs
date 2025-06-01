@@ -146,7 +146,7 @@ impl<T: 'static + Unpin, M: BrokerMsg> Handler<IssueAsync<M>> for Broker<T> {
         let subscriber_indexes = if let Some(subscribers) = self.get_subs::<M>() {
             subscribers
                 .filter(|&(_, (actor_id, _))| !msg.1.eq(actor_id))
-                .map(
+                .filter_map(
                     |(idx, (_, recipient))| match recipient.try_send(msg.0.clone()) {
                         Err(SendError::Full(msg)) => {
                             recipient.do_send(msg);
@@ -156,8 +156,6 @@ impl<T: 'static + Unpin, M: BrokerMsg> Handler<IssueAsync<M>> for Broker<T> {
                         _ => None,
                     },
                 )
-                .filter(|actor_idx| actor_idx.is_some())
-                .map(|idx| idx.expect("Actor index should always be present"))
                 .collect()
         } else {
             vec![]

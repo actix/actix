@@ -63,9 +63,8 @@ where
 
 async fn init_actors(num: usize) {
     let mut waiters: Vec<Receiver<()>> = (0..num)
-        .into_iter()
         .map(|_| {
-            let addr = ActorTest::default().start();
+            let addr = ActorTest.start();
             let (tx, rx) = mpsc::channel::<()>(1);
             let message = MessageTest {
                 notifier: tx,

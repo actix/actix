@@ -1,9 +1,7 @@
 [package]
 name = "actix-broker"
 version = "0.4.3"
-authors = [
-    "Chris Ricketts <chris.ricketts@steribar.com>",
-]
+authors = ["Chris Ricketts <chris.ricketts@steribar.com>"]
 description = "Message broker for the Actix actor framework"
 keywords = ["actix", "message", "broker"]
 repository = "https://github.com/actix/actix"
@@ -21,8 +19,8 @@ log = "0.4"
 
 [dev-dependencies]
 actix-web = "4"
-criterion = { version = "0.3.6", features = ["html_reports"] }
-tokio = "1.45.0"
+criterion = { version = "0.6", features = ["html_reports"] }
+tokio = "1.38.2"
 
 [[bench]]
 name = "broker"
