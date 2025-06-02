@@ -1,11 +1,11 @@
-//! Based on https://github.com/ibraheemdev/matchit/blob/master/benches/bench.rs
-
 use std::{
     future::Future,
     sync::{
-        atomic::{AtomicU16, Ordering},
+        atomic::{AtomicBool, AtomicU16, Ordering},
+        mpsc::SyncSender,
         Arc,
     },
+    thread,
     time::Duration,
 };
 
@@ -49,16 +49,90 @@ impl Handler<MessageTest> for ActorTest {
     }
 }
 
-fn init_system_runner<F>(fn_: F)
+struct TestIter<F>
 where
-    F: Future<Output = ()>,
+    F: Future<Output = ()> + Send + 'static,
 {
-    let system = System::new();
-    system.block_on(async {
-        fn_.await;
-        System::current().stop();
+    fn_: F,
+    notifier: SyncSender<()>,
+}
+
+impl<F> TestIter<F>
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    pub fn new(fn_: F) -> (Self, std::sync::mpsc::Receiver<()>) {
+        let (tx, rx) = std::sync::mpsc::sync_channel::<()>(0);
+        let self_ = Self { fn_, notifier: tx };
+        (self_, rx)
+    }
+}
+
+pub struct SystemRunnerHandle<F>
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    tx: SyncSender<TestIter<F>>,
+    stop_flag: Arc<AtomicBool>,
+}
+
+impl<F> SystemRunnerHandle<F>
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    pub fn send(&self, fn_: F) {
+        let (iter, rx) = TestIter::new(fn_);
+        self.tx
+            .send(iter)
+            .expect("The channel should not be closed");
+        rx.recv().expect("The channel should not be closed or full");
+    }
+}
+
+impl<F> Drop for SystemRunnerHandle<F>
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    fn drop(&mut self) {
+        self.stop_flag.store(true, Ordering::Release);
+    }
+}
+
+fn init_system_runner<F>(num_actors: usize) -> SystemRunnerHandle<F>
+where
+    F: Future<Output = ()> + Send + 'static,
+{
+    let (tx, rx) = std::sync::mpsc::sync_channel::<TestIter<F>>(0);
+    let stop_flag = Arc::new(AtomicBool::new(false));
+    let _ = thread::spawn({
+        let stop_flag = Arc::clone(&stop_flag);
+        move || {
+            let system = System::new();
+            system.block_on(async {
+                init_actors(num_actors).await;
+
+                loop {
+                    match rx.recv_timeout(Duration::from_millis(1)) {
+                        Ok(iter) => {
+                            iter.fn_.await;
+                            iter.notifier
+                                .send(())
+                                .expect("The channel should not be closed or full");
+                        }
+                        Err(_) => {
+                            if stop_flag.load(Ordering::Acquire) {
+                                System::current().stop();
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+            system.run().expect("Exit Code should be zero");
+        }
     });
-    system.run().expect("Exit Code should be zero");
+
+    SystemRunnerHandle { tx, stop_flag }
 }
 
 async fn init_actors(num: usize) {
@@ -83,27 +157,24 @@ async fn init_actors(num: usize) {
             .expect("The channel should not be closed or full");
     }
 }
-fn issue_async_test(num_actors: usize, num_messages: usize) {
-    init_system_runner(async move {
-        init_actors(num_actors).await;
-        let rxs: Vec<Receiver<()>> = (0..num_messages)
-            .map(|_| {
-                let (tx, rx) = mpsc::channel::<()>(1);
-                let message = MessageTest {
-                    notifier: tx,
-                    count: Arc::new(AtomicU16::new(num_actors as u16)),
-                };
-                Broker::<SystemBroker>::issue_async(message);
-                rx
-            })
-            .collect();
+async fn issue_async_test(num_actors: usize, num_messages: usize) -> () {
+    let rxs: Vec<Receiver<()>> = (0..num_messages)
+        .map(|_| {
+            let (tx, rx) = mpsc::channel::<()>(1);
+            let message = MessageTest {
+                notifier: tx,
+                count: Arc::new(AtomicU16::new(num_actors as u16)),
+            };
+            Broker::<SystemBroker>::issue_async(message);
+            rx
+        })
+        .collect();
 
-        for mut rx in rxs.into_iter() {
-            rx.recv()
-                .await
-                .expect("The channel should not be closed or full");
-        }
-    });
+    for mut rx in rxs.into_iter() {
+        rx.recv()
+            .await
+            .expect("The channel should not be closed or full");
+    }
 }
 
 fn broker_benches(c: &mut Criterion) {
@@ -128,7 +199,10 @@ fn broker_benches(c: &mut Criterion) {
                 BenchmarkId::new("issue_async", parameter.as_str()),
                 &input,
                 |b, &(num_actors, num_messages)| {
-                    b.iter(|| issue_async_test(num_actors, num_messages));
+                    let s_handle = init_system_runner(num_actors);
+                    b.iter(|| {
+                        s_handle.send(issue_async_test(num_actors, num_messages));
+                    });
                 },
             );
         }
