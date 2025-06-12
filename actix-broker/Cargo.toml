@@ -1,6 +1,6 @@
 [package]
 name = "actix-broker"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Chris Ricketts <chris.ricketts@steribar.com>"]
 description = "Message broker for the Actix actor framework"
 keywords = ["actix", "message", "broker"]
