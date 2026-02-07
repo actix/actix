@@ -6,7 +6,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/actix-derive?label=latest)](https://crates.io/crates/actix-derive)
 [![Documentation](https://docs.rs/actix-derive/badge.svg?version=0.6.2)](https://docs.rs/actix-derive/0.6.2)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.68+-ab6000.svg)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.76+-ab6000.svg)
 ![License](https://img.shields.io/crates/l/actix-derive.svg)
 [![Dependency Status](https://deps.rs/crate/actix/0.6.2/status.svg)](https://deps.rs/crate/actix/0.6.2)
 
