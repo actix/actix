@@ -13,7 +13,7 @@
 //! - Using Futures for asynchronous message handling
 //! - Actor supervision
 //! - Typed messages (no [`Any`](std::any::Any) type) and generic messages are allowed
-//! - Runs on stable Rust 1.68+
+//! - Runs on stable Rust 1.76+
 //!
 //! ## Other Documentation
 //!
