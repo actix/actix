@@ -9,8 +9,7 @@ use std::{
 };
 
 use actix::prelude::*;
-use actix_rt::task::yield_now;
-use actix_rt::time::sleep;
+use actix_rt::{task::yield_now, time::sleep};
 use tokio::sync::oneshot::{channel, Sender};
 
 struct MyActor {
