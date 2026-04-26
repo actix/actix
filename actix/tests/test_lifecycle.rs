@@ -9,6 +9,7 @@ use std::{
 };
 
 use actix::prelude::*;
+use actix_rt::task::yield_now;
 use actix_rt::time::sleep;
 use tokio::sync::oneshot::{channel, Sender};
 
@@ -132,6 +133,8 @@ fn test_stop_after_drop_address() {
         }
         .start();
 
+        yield_now().await;
+
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
             drop(addr);
@@ -163,6 +166,8 @@ fn test_stop_after_drop_sync_address() {
             restore_after_stop: false,
         }
         .start();
+
+        yield_now().await;
 
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
@@ -237,6 +242,8 @@ fn test_stop() {
         }
         .start();
 
+        yield_now().await;
+
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
             System::current().stop();
@@ -266,6 +273,8 @@ fn test_stop_restore_after_stopping() {
             restore_after_stop: true,
         }
         .start();
+
+        yield_now().await;
 
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
