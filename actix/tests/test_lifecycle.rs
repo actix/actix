@@ -285,3 +285,31 @@ fn test_stop_restore_after_stopping() {
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
     assert!(!stopped.load(Ordering::Relaxed), "Stopped");
 }
+
+#[test]
+fn test_drop_does_not_call_started() {
+    struct StartedFlagActor {
+        started: Arc<AtomicBool>,
+    }
+
+    impl Actor for StartedFlagActor {
+        type Context = Context<Self>;
+
+        fn started(&mut self, _: &mut Self::Context) {
+            self.started.store(true, Ordering::Relaxed);
+        }
+    }
+
+    let started = Arc::new(AtomicBool::new(false));
+
+    let fut = Context::new().into_future(StartedFlagActor {
+        started: Arc::clone(&started),
+    });
+
+    drop(fut);
+
+    assert!(
+        !started.load(Ordering::Relaxed),
+        "started() must not be called from Drop"
+    );
+}
