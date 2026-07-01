@@ -42,7 +42,7 @@ jobs:
           toolchain: ${{ matrix.version }}
 
       - name: Install just, cargo-hack, cargo-nextest
-        uses: taiki-e/install-action@873c7452cadb7c034694a1282227095d93fbdf92 # v2.79.14
+        uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
         with:
           tool: just,cargo-hack,cargo-nextest
 
