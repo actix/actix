@@ -526,8 +526,11 @@ where
                         break;
                     }
                 }
-                Poll::Ready(Err(_err)) => {
-                    break;
+                Poll::Ready(Err(e)) => {
+                    if act.error(e, ctxt) == Running::Stop {
+                        act.finished(ctxt);
+                        return Poll::Ready(());
+                    }
                 }
                 Poll::Pending => {
                     break;
