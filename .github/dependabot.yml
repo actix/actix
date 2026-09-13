@@ -16,4 +16,4 @@ updates:
     groups:
       all:
         patterns:
-          - "*"
+          - '*'

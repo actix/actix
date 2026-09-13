@@ -1,3 +1,6 @@
+_list:
+    @just --list
+
 toolchain := ""
 
 msrv := ```
@@ -11,6 +14,10 @@ msrv_rustup := "+" + msrv
 fmt:
     cargo +nightly fmt
     fd --type=file --hidden --extension=yml --extension=md --extension=js --exec-batch npx -y prettier --write
+
+[private]
+check-min:
+    cargo hack --workspace check --no-default-features
 
 # Run Clippy over workspace.
 clippy:
