@@ -10,5 +10,6 @@ __pycache__
 target/
 actix/examples/chat/target/
 .idea
+.DS_Store
 
 /lcov.info
