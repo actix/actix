@@ -225,6 +225,10 @@ where
     A: Actor<Context = C>,
 {
     fn drop(&mut self) {
+        if !self.ctx.parts().flags.contains(ContextFlags::STARTED) {
+            return;
+        }
+
         if self.alive() {
             self.ctx.parts().stop();
             let waker = futures_task::noop_waker();
