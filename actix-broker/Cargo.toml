@@ -3,6 +3,7 @@ name = "actix-broker"
 version = "0.4.4"
 authors = ["Chris Ricketts <chris.ricketts@steribar.com>"]
 description = "Message broker for the Actix actor framework"
+categories = ["asynchronous", "concurrency"]
 keywords = ["actix", "message", "broker"]
 repository = "https://github.com/actix/actix"
 license = "MIT OR Apache-2.0"
