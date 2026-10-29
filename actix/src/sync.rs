@@ -18,7 +18,7 @@ use std::{
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures_core::stream::Stream;
-use log::warn;
+use log::{error, warn};
 use tokio::sync::oneshot::Sender as SyncSender;
 
 use crate::{
@@ -39,6 +39,9 @@ use crate::{
 ///
 /// Sync Actors have a different lifecycle compared to Actors on the System Arbiter. For more, see
 /// [`SyncContext`].
+///
+/// If a worker thread panics, the [`System`] is stopped with exit code 1
+/// instead of leaving a partially dead pool behind.
 ///
 /// # Examples
 ///
@@ -130,8 +133,9 @@ where
     ///
     /// Because the factory is only called once, actors started this way can
     /// not be restarted: calling [`ActorContext::stop`] or
-    /// [`ActorContext::terminate`] on them will panic the worker thread.
-    /// Use [`start`](Self::start) if the actor needs to be restarted.
+    /// [`ActorContext::terminate`] on them will panic the worker thread and
+    /// stop the system. Use [`start`](Self::start) if the actor needs to be
+    /// restarted.
     pub fn start_once<F>(factory: F) -> Addr<A>
     where
         F: FnOnce() -> A + Send + 'static,
@@ -142,12 +146,13 @@ where
         let actor_queue = receiver.clone();
         let inner_rx = rx.sender_producer();
 
-        thread::Builder::new()
-            .spawn(move || {
-                System::set_current(sys);
-                SyncContext::new(Factory::once(factory), actor_queue, inner_rx).run();
-            })
-            .expect("failed to spawn thread");
+        Self::spawn_worker(
+            thread::Builder::new(),
+            sys,
+            Factory::once(factory),
+            actor_queue,
+            inner_rx,
+        );
 
         System::current().arbiter().spawn(Self {
             queue: Some(sender),
@@ -182,12 +187,13 @@ where
             let actor_queue = receiver.clone();
             let inner_rx = rx.sender_producer();
 
-            thread_builder_factory()
-                .spawn(move || {
-                    System::set_current(sys);
-                    SyncContext::new(Factory::repeat(f), actor_queue, inner_rx).run();
-                })
-                .expect("failed to spawn thread");
+            Self::spawn_worker(
+                thread_builder_factory(),
+                sys,
+                Factory::repeat(f),
+                actor_queue,
+                inner_rx,
+            );
         }
 
         System::current().arbiter().spawn(Self {
@@ -196,6 +202,29 @@ where
         });
 
         Addr::new(tx)
+    }
+
+    fn spawn_worker(
+        builder: thread::Builder,
+        sys: System,
+        factory: Factory<A>,
+        actor_queue: cb_channel::Receiver<Envelope<A>>,
+        inner_rx: AddressSenderProducer<A>,
+    ) {
+        builder
+            .spawn(move || {
+                System::set_current(sys);
+
+                let worker = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    SyncContext::new(factory, actor_queue, inner_rx).run();
+                }));
+
+                if worker.is_err() {
+                    error!("SyncArbiter worker thread panicked, stopping system");
+                    System::current().stop_with_code(1);
+                }
+            })
+            .expect("failed to spawn thread");
     }
 }
 
@@ -259,7 +288,7 @@ where
 ///
 /// Actors started with [`SyncArbiter::start_once`] can not be restarted,
 /// because their factory can only be called once. Stopping or terminating
-/// such an actor panics the worker thread.
+/// such an actor panics the worker thread, which stops the system.
 ///
 /// # Examples
 ///
@@ -295,18 +324,18 @@ where
 }
 
 enum Factory<A> {
-    Repeat(Arc<dyn Fn() -> A>),
-    Once(Mutex<Option<Box<dyn FnOnce() -> A>>>),
+    Repeat(Arc<dyn Fn() -> A + Send + Sync>),
+    Once(Mutex<Option<Box<dyn FnOnce() -> A + Send>>>),
 }
 
 impl<A> Factory<A> {
-    fn repeat(factory: Arc<dyn Fn() -> A>) -> Self {
+    fn repeat(factory: Arc<dyn Fn() -> A + Send + Sync>) -> Self {
         Self::Repeat(factory)
     }
 
     fn once<F>(factory: F) -> Self
     where
-        F: FnOnce() -> A + 'static,
+        F: FnOnce() -> A + Send + 'static,
     {
         Self::Once(Mutex::new(Some(Box::new(factory))))
     }

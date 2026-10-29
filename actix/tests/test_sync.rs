@@ -147,3 +147,33 @@ fn test_start_once() {
         "factory ran more than once"
     );
 }
+
+struct PanicActor;
+
+impl Actor for PanicActor {
+    type Context = SyncContext<Self>;
+}
+
+struct Panic;
+
+impl Message for Panic {
+    type Result = ();
+}
+
+impl Handler<Panic> for PanicActor {
+    type Result = ();
+
+    fn handle(&mut self, _: Panic, _: &mut Self::Context) -> Self::Result {
+        panic!("sync actor panic");
+    }
+}
+
+#[test]
+fn test_panic_stops_system() {
+    let sys = System::new();
+
+    let addr = sys.block_on(async { SyncArbiter::start(1, || PanicActor) });
+    addr.do_send(Panic);
+
+    assert_eq!(sys.run_with_code().unwrap(), 1);
+}
