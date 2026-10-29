@@ -6,7 +6,14 @@
 //! Actor type A and B, sharing the same thread pool. You need to create two
 //! [`SyncArbiter`]s and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
-use std::{future::Future, pin::Pin, sync::Arc, task, task::Poll, thread};
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, Mutex},
+    task,
+    task::Poll,
+    thread,
+};
 
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
@@ -114,6 +121,42 @@ where
         Self::start_with_thread_builder(threads, thread::Builder::new, factory)
     }
 
+    /// Start a new `SyncArbiter` with a single worker thread, creating the
+    /// actor with a `FnOnce` factory.
+    ///
+    /// This is useful when the value used to construct the actor is not
+    /// `Clone` or can only be consumed once, without having to wrap it in an
+    /// `Arc` or `Option` yourself.
+    ///
+    /// Because the factory is only called once, actors started this way can
+    /// not be restarted: calling [`ActorContext::stop`] or
+    /// [`ActorContext::terminate`] on them will panic the worker thread.
+    /// Use [`start`](Self::start) if the actor needs to be restarted.
+    pub fn start_once<F>(factory: F) -> Addr<A>
+    where
+        F: FnOnce() -> A + Send + 'static,
+    {
+        let (sender, receiver) = cb_channel::unbounded();
+        let (tx, rx) = channel::channel(0);
+        let sys = System::current();
+        let actor_queue = receiver.clone();
+        let inner_rx = rx.sender_producer();
+
+        thread::Builder::new()
+            .spawn(move || {
+                System::set_current(sys);
+                SyncContext::new(Factory::once(factory), actor_queue, inner_rx).run();
+            })
+            .expect("failed to spawn thread");
+
+        System::current().arbiter().spawn(Self {
+            queue: Some(sender),
+            msgs: rx,
+        });
+
+        Addr::new(tx)
+    }
+
     /// Start a new `SyncArbiter` with specified number of worker threads.
     /// Each worker thread is spawned from the [`std::thread::Builder`]
     /// returned by a new call to `thread_builder_factory`.
@@ -142,7 +185,7 @@ where
             thread_builder_factory()
                 .spawn(move || {
                     System::set_current(sys);
-                    SyncContext::new(f, actor_queue, inner_rx).run();
+                    SyncContext::new(Factory::repeat(f), actor_queue, inner_rx).run();
                 })
                 .expect("failed to spawn thread");
         }
@@ -214,6 +257,10 @@ where
 /// the Actor. Similar, returning `false` from `fn stopping` can not prevent
 /// the restart or termination of the Actor.
 ///
+/// Actors started with [`SyncArbiter::start_once`] can not be restarted,
+/// because their factory can only be called once. Stopping or terminating
+/// such an actor panics the worker thread.
+///
 /// # Examples
 ///
 /// ```
@@ -243,8 +290,43 @@ where
     queue: cb_channel::Receiver<Envelope<A>>,
     stopping: bool,
     state: ActorState,
-    factory: Arc<dyn Fn() -> A>,
+    factory: Factory<A>,
     address: AddressSenderProducer<A>,
+}
+
+enum Factory<A> {
+    Repeat(Arc<dyn Fn() -> A>),
+    Once(Mutex<Option<Box<dyn FnOnce() -> A>>>),
+}
+
+impl<A> Factory<A> {
+    fn repeat(factory: Arc<dyn Fn() -> A>) -> Self {
+        Self::Repeat(factory)
+    }
+
+    fn once<F>(factory: F) -> Self
+    where
+        F: FnOnce() -> A + 'static,
+    {
+        Self::Once(Mutex::new(Some(Box::new(factory))))
+    }
+
+    fn create(&self) -> A {
+        match self {
+            Self::Repeat(factory) => factory(),
+            Self::Once(factory) => {
+                let factory = factory
+                    .lock()
+                    .unwrap_or_else(|err| err.into_inner())
+                    .take()
+                    .expect(
+                        "SyncArbiter::start_once actor cannot be restarted: its factory was \
+                         already consumed",
+                    );
+                factory()
+            }
+        }
+    }
 }
 
 impl<A> SyncContext<A>
@@ -252,11 +334,11 @@ where
     A: Actor<Context = Self>,
 {
     fn new(
-        factory: Arc<dyn Fn() -> A>,
+        factory: Factory<A>,
         queue: cb_channel::Receiver<Envelope<A>>,
         address: AddressSenderProducer<A>,
     ) -> Self {
-        let act = factory();
+        let act = factory.create();
         Self {
             queue,
             factory,
@@ -300,7 +382,7 @@ where
 
                 // start new actor
                 self.state = ActorState::Started;
-                act = (*self.factory)();
+                act = self.factory.create();
                 A::started(&mut act, self);
                 self.state = ActorState::Running;
             }

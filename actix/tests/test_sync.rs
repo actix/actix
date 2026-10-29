@@ -100,3 +100,50 @@ fn test_sync() {
         "Wrong number of messages"
     );
 }
+
+struct ValueActor {
+    value: String,
+}
+
+impl Actor for ValueActor {
+    type Context = SyncContext<Self>;
+}
+
+struct GetValue;
+
+impl Message for GetValue {
+    type Result = String;
+}
+
+impl Handler<GetValue> for ValueActor {
+    type Result = String;
+
+    fn handle(&mut self, _: GetValue, _: &mut Self::Context) -> Self::Result {
+        self.value.clone()
+    }
+}
+
+#[test]
+fn test_start_once() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let calls_c = Arc::clone(&calls);
+    let value = String::from("consumed once");
+
+    System::new().block_on(async move {
+        let addr = SyncArbiter::start_once(move || {
+            calls_c.fetch_add(1, Ordering::Relaxed);
+            ValueActor { value }
+        });
+
+        assert_eq!(addr.send(GetValue).await.unwrap(), "consumed once");
+        assert_eq!(addr.send(GetValue).await.unwrap(), "consumed once");
+
+        System::current().stop();
+    });
+
+    assert_eq!(
+        calls.load(Ordering::Relaxed),
+        1,
+        "factory ran more than once"
+    );
+}
