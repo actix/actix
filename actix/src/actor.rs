@@ -406,10 +406,10 @@ where
     ///
     /// The message is handled as a context item, not through the mailbox, and
     /// does **not** have strict priority over messages sent through the
-    /// address: on each poll the mailbox is drained before context items are
-    /// polled. The relative order of notifications and mailbox messages also
-    /// depends on how the runtime schedules the actor future. Use
-    /// [`Addr::do_send`] if strict ordering with other messages matters.
+    /// address: the mailbox is polled before context items, in bounded batches.
+    /// The relative order of notifications and mailbox messages also depends
+    /// on how the runtime schedules the actor future. Use [`Addr::do_send`] if
+    /// strict ordering with other messages matters.
     fn notify<M>(&mut self, msg: M)
     where
         A: Handler<M>,

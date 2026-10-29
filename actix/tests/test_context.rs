@@ -656,3 +656,62 @@ mod restart {
         }));
     }
 }
+
+#[cfg(not(feature = "mailbox_assert"))]
+#[test]
+fn flooded_mailbox_does_not_starve_timers() {
+    use std::sync::{atomic::AtomicBool, mpsc};
+
+    struct FloodActor {
+        stopped: Arc<AtomicBool>,
+    }
+
+    impl Actor for FloodActor {
+        type Context = Context<Self>;
+
+        fn started(&mut self, ctx: &mut Context<Self>) {
+            let stopped = Arc::clone(&self.stopped);
+            ctx.run_later(Duration::from_millis(20), move |_, _| {
+                stopped.store(true, Ordering::SeqCst);
+                System::current().stop();
+            });
+
+            let _ = ctx.address().try_send(Flood);
+        }
+    }
+
+    struct Flood;
+
+    impl Message for Flood {
+        type Result = ();
+    }
+
+    impl Handler<Flood> for FloodActor {
+        type Result = ();
+
+        fn handle(&mut self, _: Flood, ctx: &mut Context<Self>) -> Self::Result {
+            // Keep the mailbox non-empty for as long as the actor runs.
+            let _ = ctx.address().try_send(Flood);
+        }
+    }
+
+    let (done_tx, done_rx) = mpsc::channel();
+    let stopped = Arc::new(AtomicBool::new(false));
+    let stopped_c = Arc::clone(&stopped);
+
+    std::thread::spawn(move || {
+        let sys = System::new();
+        sys.block_on(async move {
+            FloodActor { stopped: stopped_c }.start();
+            sleep(Duration::from_millis(5)).await;
+        });
+        sys.run().unwrap();
+        done_tx.send(()).unwrap();
+    });
+
+    assert!(
+        done_rx.recv_timeout(Duration::from_secs(5)).is_ok(),
+        "mailbox flood starved the actor timer"
+    );
+    assert!(stopped.load(Ordering::SeqCst));
+}
