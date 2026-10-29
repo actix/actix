@@ -73,7 +73,7 @@ where
         let this = self.project();
 
         if let Some((sender, msg)) = this.info.take() {
-            match sender.send(msg) {
+            match sender.send_with_context(msg, cx) {
                 Ok(rx) => *this.rx = Some(rx),
                 Err(SendError::Full(msg)) => {
                     *this.info = Some((sender, msg));
