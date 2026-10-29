@@ -33,6 +33,9 @@ use crate::{
 /// Sync Actors have a different lifecycle compared to Actors on the System Arbiter. For more, see
 /// [`SyncContext`].
 ///
+/// When the last address is dropped, the arbiter drains messages that are
+/// already queued before shutting the worker threads down.
+///
 /// # Examples
 ///
 /// ```
@@ -184,8 +187,11 @@ where
             }
         }
 
-        // stop condition
-        if this.msgs.connected() {
+        // Stop only once every sender is gone and every message has been
+        // handed to the worker queue. Checking the message count as well as
+        // the connection state avoids dropping messages that a sender has
+        // accepted but not yet pushed onto the queue.
+        if this.msgs.connected() || !this.msgs.is_empty() {
             Poll::Pending
         } else {
             // stop sync arbiters
