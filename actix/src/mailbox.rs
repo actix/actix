@@ -73,6 +73,15 @@ where
         self.msgs.sender_producer()
     }
 
+    /// Drains the mailbox until it is empty, the actor starts waiting, or the
+    /// channel closes.
+    ///
+    /// Every immediately available message is handled in a single poll without
+    /// yielding to the event loop. Context items, including messages queued
+    /// with `Context::notify`, are only polled after the mailbox has been
+    /// drained, so they do not preempt already queued messages. With the
+    /// `mailbox_assert` feature enabled, handling more than 256 messages in a
+    /// row panics.
     pub fn poll(&mut self, act: &mut A, ctx: &mut A::Context, task: &mut task::Context<'_>) {
         #[cfg(feature = "mailbox_assert")]
         let mut n_polls = 0u16;
