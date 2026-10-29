@@ -239,3 +239,27 @@ fn drains_queued_messages_when_last_sender_drops() {
 
     assert_eq!(handled.load(Ordering::SeqCst), TOTAL);
 }
+
+#[test]
+fn try_start_once_propagates_factory_error() {
+    let result =
+        SyncArbiter::<ValueActor>::try_start_once(|| Err::<ValueActor, _>("factory failed"));
+
+    assert_eq!(result.err(), Some("factory failed"));
+}
+
+#[test]
+fn try_start_once_starts_actor() {
+    System::new().block_on(async {
+        let addr = SyncArbiter::<ValueActor>::try_start_once(|| {
+            Ok::<_, ()>(ValueActor {
+                value: String::from("fallible"),
+            })
+        })
+        .unwrap();
+
+        assert_eq!(addr.send(GetValue).await.unwrap(), "fallible");
+
+        System::current().stop();
+    });
+}

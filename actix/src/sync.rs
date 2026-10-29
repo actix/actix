@@ -165,6 +165,24 @@ where
         Addr::new(tx)
     }
 
+    /// Start a new `SyncArbiter` with a single worker thread, using a fallible
+    /// `FnOnce` factory.
+    ///
+    /// Unlike [`start_once`](Self::start_once), the factory is invoked on the
+    /// calling thread, so initialization errors are returned to the caller
+    /// instead of being raised inside the worker thread.
+    ///
+    /// Requires `A: Send` because the constructed actor is moved to the worker
+    /// thread. As with `start_once`, the actor cannot be restarted.
+    pub fn try_start_once<F, E>(factory: F) -> Result<Addr<A>, E>
+    where
+        F: FnOnce() -> Result<A, E>,
+        A: Send + 'static,
+    {
+        let act = factory()?;
+        Ok(Self::start_once(move || act))
+    }
+
     /// Start a new `SyncArbiter` with specified number of worker threads.
     /// Each worker thread is spawned from the [`std::thread::Builder`]
     /// returned by a new call to `thread_builder_factory`.
