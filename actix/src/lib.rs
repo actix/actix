@@ -73,7 +73,7 @@ pub use crate::{
     registry::{ArbiterService, Registry, SystemRegistry, SystemService},
     stream::StreamHandler,
     supervisor::Supervisor,
-    sync::{SyncArbiter, SyncContext},
+    sync::{SyncArbiter, SyncArbiterHandle, SyncContext},
 };
 
 pub mod prelude {
@@ -113,7 +113,7 @@ pub mod prelude {
         registry::{ArbiterService, SystemService},
         stream::StreamHandler,
         supervisor::Supervisor,
-        sync::{SyncArbiter, SyncContext},
+        sync::{SyncArbiter, SyncArbiterHandle, SyncContext},
         utils::{IntervalFunc, TimerFunc},
     };
 }
