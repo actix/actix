@@ -40,6 +40,17 @@ where
 
     fn send(&self, msg: M) -> Result<OneshotReceiver<M::Result>, SendError<M>>;
 
+    /// Like [`Sender::send`], but registers the current task's waker when the
+    /// mailbox is full so that the caller is woken once capacity is available.
+    fn send_with_context(
+        &self,
+        msg: M,
+        cx: &mut task::Context<'_>,
+    ) -> Result<OneshotReceiver<M::Result>, SendError<M>> {
+        let _ = cx;
+        self.send(msg)
+    }
+
     fn boxed(&self) -> Box<dyn Sender<M> + Sync>;
 
     fn hash(&self) -> usize;
@@ -66,6 +77,14 @@ where
 
     fn send(&self, msg: M) -> Result<OneshotReceiver<<M as Message>::Result>, SendError<M>> {
         (**self).send(msg)
+    }
+
+    fn send_with_context(
+        &self,
+        msg: M,
+        cx: &mut task::Context<'_>,
+    ) -> Result<OneshotReceiver<M::Result>, SendError<M>> {
+        (**self).send_with_context(msg, cx)
     }
 
     fn boxed(&self) -> Box<dyn Sender<M> + Sync> {
@@ -218,7 +237,7 @@ const INIT_STATE: usize = OPEN_MASK;
 const MAX_CAPACITY: usize = !(OPEN_MASK);
 
 // The maximum requested buffer size must be less than the maximum capacity of
-// a channel. This is because each sender gets a guaranteed slot.
+// a channel.
 const MAX_BUFFER: usize = MAX_CAPACITY >> 1;
 
 // Sent to the consumer to wake up blocked producers
@@ -226,6 +245,16 @@ const MAX_BUFFER: usize = MAX_CAPACITY >> 1;
 struct SenderTask {
     task: Option<task::Waker>,
     is_parked: bool,
+}
+
+/// Result of attempting to reserve a slot in the channel.
+enum IncNumMessages {
+    /// The message was counted; contains the new number of queued messages.
+    Ok(usize),
+    /// The channel is at capacity.
+    Full,
+    /// The channel has been closed by the receiver.
+    Closed,
 }
 
 impl SenderTask {
@@ -255,9 +284,8 @@ impl SenderTask {
 /// can be used to send values across threads in a streaming fashion. This
 /// channel is unique in that it implements back pressure to ensure that the
 /// sender never outpaces the receiver. The channel capacity is equal to
-/// `buffer + num-senders`. In other words, each sender gets a guaranteed slot
-/// in the channel capacity, and on top of that there are `buffer` "first come,
-/// first serve" slots available to all senders.
+/// `buffer`, regardless of how many senders exist. Every sender (including
+/// clones) shares the same capacity and is parked once the buffer is full.
 ///
 /// The `Receiver` returned implements the `Stream` trait and has access to any
 /// number of the associated combinators for transforming the result.
@@ -310,36 +338,50 @@ impl<A: Actor> AddressSender<A> {
         M::Result: Send,
         M: Message + Send,
     {
-        // If the sender is currently blocked, reject the message
-        if !self.poll_unparked(false, None).is_ready() {
+        self.send_inner(msg, None)
+    }
+
+    fn send_inner<M>(
+        &self,
+        msg: M,
+        mut cx: Option<&mut task::Context<'_>>,
+    ) -> Result<OneshotReceiver<M::Result>, SendError<M>>
+    where
+        A: Handler<M>,
+        A::Context: ToEnvelope<A, M>,
+        M::Result: Send,
+        M: Message + Send,
+    {
+        // If the sender is currently blocked, register the waker (when we have
+        // one) and reject the message. The receiver will wake us once a slot
+        // frees up.
+        if !self.poll_ready(cx.as_deref_mut()) {
             return Err(SendError::Full(msg));
         }
 
-        // First, increment the number of messages contained by the channel.
-        // This operation will also atomically determine if the sender task
-        // should be parked.
-        //
-        // None is returned in the case that the channel has been closed by the
-        // receiver. This happens when `Receiver::close` is called or the
-        // receiver is dropped.
-        let park_self = match self.inc_num_messages() {
-            Some(num_messages) => {
-                // receiver is full
-                let buffer = self.inner.buffer.load(Relaxed);
-                buffer != 0 && num_messages >= buffer
+        // Enforce the mailbox capacity for every sender. Cloned senders must
+        // not get an extra guaranteed slot or the mailbox could grow without
+        // bound.
+        let buffer = self.inner.buffer.load(Relaxed);
+        match self.inc_num_messages(Some(buffer)) {
+            IncNumMessages::Ok(num_messages) => {
+                if buffer != 0 && num_messages >= buffer {
+                    self.park_with(None);
+                }
+                let (tx, rx) = oneshot_channel();
+                let env = <A::Context as ToEnvelope<A, M>>::pack(msg, Some(tx));
+                self.queue_push_and_signal(env);
+                Ok(rx)
             }
-            None => return Err(SendError::Closed(msg)),
-        };
-
-        // If the channel has reached capacity, then the sender task needs to
-        // be parked. This will send the task handle on the parked task queue.
-        if park_self {
-            self.park();
+            IncNumMessages::Full => {
+                // Only park when there is a task waiting to be woken.
+                if let Some(cx) = cx {
+                    self.park_with(Some(cx));
+                }
+                Err(SendError::Full(msg))
+            }
+            IncNumMessages::Closed => Err(SendError::Closed(msg)),
         }
-        let (tx, rx) = oneshot_channel();
-        let env = <A::Context as ToEnvelope<A, M>>::pack(msg, Some(tx));
-        self.queue_push_and_signal(env);
-        Ok(rx)
     }
 
     /// Attempts to send a message on this `Sender<A>` without blocking.
@@ -350,26 +392,24 @@ impl<A: Actor> AddressSender<A> {
         M::Result: Send,
         M: Message + Send + 'static,
     {
-        // If the sender is currently blocked, reject the message
-        if !self.poll_unparked(false, None).is_ready() {
+        // If the sender is currently blocked, reject the message.
+        if !self.poll_ready(None) {
             return Err(SendError::Full(msg));
         }
 
-        let park_self = match self.inc_num_messages() {
-            Some(num_messages) => {
-                // receiver is full
-                let buffer = self.inner.buffer.load(Relaxed);
-                buffer != 0 && num_messages >= buffer
+        let buffer = self.inner.buffer.load(Relaxed);
+        match self.inc_num_messages(Some(buffer)) {
+            IncNumMessages::Ok(num_messages) => {
+                if park && buffer != 0 && num_messages >= buffer {
+                    self.park_with(None);
+                }
+                let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
+                self.queue_push_and_signal(env);
+                Ok(())
             }
-            None => return Err(SendError::Closed(msg)),
-        };
-
-        if park_self && park {
-            self.park();
+            IncNumMessages::Full => Err(SendError::Full(msg)),
+            IncNumMessages::Closed => Err(SendError::Closed(msg)),
         }
-        let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
-        self.queue_push_and_signal(env);
-        Ok(())
     }
 
     /// Send a message on this `Sender<A>` without blocking.
@@ -382,12 +422,11 @@ impl<A: Actor> AddressSender<A> {
         M::Result: Send,
         M: Message + Send,
     {
-        if self.inc_num_messages().is_none() {
+        if matches!(self.inc_num_messages(None), IncNumMessages::Closed) {
             Err(SendError::Closed(msg))
         } else {
-            // If inc_num_messages returned Some(park_self), then the mailbox is still active.
-            // We ignore the boolean (indicating to park and wait) in the Some, and queue the
-            // message regardless.
+            // Capacity is intentionally bypassed here; `do_send` always queues
+            // the message regardless of how full the mailbox is.
             let env = <A::Context as ToEnvelope<A, M>>::pack(msg, None);
             self.queue_push_and_signal(env);
             Ok(())
@@ -411,14 +450,18 @@ impl<A: Actor> AddressSender<A> {
         self.inner.recv_task.wake();
     }
 
-    // Increment the number of queued messages. Returns if the sender should
-    // block.
-    fn inc_num_messages(&self) -> Option<usize> {
+    // Increment the number of queued messages, optionally enforcing a limit.
+    fn inc_num_messages(&self, cap: Option<usize>) -> IncNumMessages {
         let mut curr = self.inner.state.load(SeqCst);
         loop {
             let mut state = decode_state(curr);
             if !state.is_open {
-                return None;
+                return IncNumMessages::Closed;
+            }
+            if let Some(cap) = cap {
+                if cap != 0 && state.num_messages >= cap {
+                    return IncNumMessages::Full;
+                }
             }
             state.num_messages += 1;
 
@@ -428,57 +471,58 @@ impl<A: Actor> AddressSender<A> {
                 .state
                 .compare_exchange(curr, next, SeqCst, SeqCst)
             {
-                Ok(_) => {
-                    return Some(state.num_messages);
-                }
+                Ok(_) => return IncNumMessages::Ok(state.num_messages),
                 Err(actual) => curr = actual,
             }
         }
     }
 
-    // TODO: Not sure about this one, I modified code to match the futures one, might still be buggy
-    fn park(&self) {
-        {
+    /// Marks this sender as parked and, when a waker is provided, registers
+    /// the task that should be woken once the mailbox has capacity again.
+    fn park_with(&self, cx: Option<&mut task::Context<'_>>) {
+        let push = {
             let mut sender = self.sender_task.lock();
-            sender.task = None;
-            sender.is_parked = true;
+            sender.task = cx.map(|cx| cx.waker().clone());
+
+            if sender.is_parked {
+                false
+            } else {
+                sender.is_parked = true;
+                true
+            }
+        };
+
+        if push {
+            // Send handle over queue
+            self.inner.parked_queue.push(Arc::clone(&self.sender_task));
+
+            // Check to make sure we weren't closed after we sent our task on the queue
+            let state = decode_state(self.inner.state.load(SeqCst));
+            self.maybe_parked.store(state.is_open, Relaxed);
         }
-
-        // Send handle over queue
-        self.inner.parked_queue.push(Arc::clone(&self.sender_task));
-
-        // Check to make sure we weren't closed after we sent our task on the queue
-        let state = decode_state(self.inner.state.load(SeqCst));
-        self.maybe_parked.store(state.is_open, Relaxed);
     }
 
-    fn poll_unparked(&self, do_park: bool, cx: Option<&mut task::Context<'_>>) -> Poll<()> {
+    /// Returns `true` when this sender may queue another message. If the sender
+    /// is parked, the waker is registered so the receiver can wake it.
+    fn poll_ready(&self, cx: Option<&mut task::Context<'_>>) -> bool {
         // First check the `maybe_parked` variable. This avoids acquiring the
-        // lock in most cases
+        // lock in most cases.
         if self.maybe_parked.load(Relaxed) {
-            // Get a lock on the task handle
             let mut task = self.sender_task.lock();
 
             if !task.is_parked {
                 self.maybe_parked.store(false, Relaxed);
-                return Poll::Ready(());
+                return true;
             }
 
-            // At this point, an unpark request is pending, so there will be an
-            // unpark sometime in the future. We just need to make sure that
-            // the correct task will be notified.
-            //
-            // Update the task in case the `Sender` has been moved to another
-            // task
-            task.task = if do_park {
-                cx.map(|cx| cx.waker().clone())
-            } else {
-                None
-            };
+            // An unpark is pending, so make sure the correct task is notified.
+            if let Some(cx) = cx {
+                task.task = Some(cx.waker().clone());
+            }
 
-            Poll::Pending
+            false
         } else {
-            Poll::Ready(())
+            true
         }
     }
 }
@@ -498,6 +542,13 @@ where
     }
     fn send(&self, msg: M) -> Result<OneshotReceiver<M::Result>, SendError<M>> {
         self.send(msg)
+    }
+    fn send_with_context(
+        &self,
+        msg: M,
+        cx: &mut task::Context<'_>,
+    ) -> Result<OneshotReceiver<M::Result>, SendError<M>> {
+        self.send_inner(msg, Some(cx))
     }
     fn boxed(&self) -> Box<dyn Sender<M> + Sync> {
         Box::new(self.clone())
@@ -778,8 +829,14 @@ impl<A: Actor> AddressReceiver<A> {
 
     // Unpark a single task handle if there is one pending in the parked queue
     fn unpark_one(&mut self) {
-        if let Some(task) = unsafe { self.inner.parked_queue.pop_spin() } {
-            task.lock().notify();
+        // Parked senders without a registered waker only hold stale state (they
+        // were parked after queueing a message, not while waiting for capacity).
+        // Skip past them so that a sender that is actually waiting on a slot is
+        // the one that gets woken.
+        while let Some(task) = unsafe { self.inner.parked_queue.pop_spin() } {
+            if task.lock().notify() {
+                break;
+            }
         }
     }
 
@@ -896,10 +953,8 @@ fn encode_state(state: &State) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use std::time;
-
     use super::*;
-    use crate::{address::queue::PopResult, prelude::*};
+    use crate::prelude::*;
 
     struct Act;
     impl Actor for Act {
@@ -922,48 +977,35 @@ mod tests {
             let (s1, mut recv) = channel::<Act>(1);
             let s2 = recv.sender();
 
-            let arb = Arbiter::new();
-            arb.spawn_fn(move || {
-                let _ = s1.send(Ping);
-            });
-            thread::sleep(time::Duration::from_millis(100));
-            let arb2 = Arbiter::new();
-            arb2.spawn_fn(move || {
-                let _ = s2.send(Ping);
-                let _ = s2.send(Ping);
-            });
+            // Capacity is a hard limit shared by every sender.
+            assert!(s1.send(Ping).is_ok());
+            assert!(matches!(s2.send(Ping), Err(SendError::Full(_))));
+            assert_eq!(decode_state(recv.inner.state.load(SeqCst)).num_messages, 1);
 
-            thread::sleep(time::Duration::from_millis(100));
-            let state = decode_state(recv.inner.state.load(SeqCst));
-            assert_eq!(state.num_messages, 2);
+            // Draining the queue frees exactly one slot.
+            assert!(matches!(recv.next_message(), Poll::Ready(Some(_))));
+            assert_eq!(decode_state(recv.inner.state.load(SeqCst)).num_messages, 0);
+            assert!(s2.send(Ping).is_ok());
+            assert!(matches!(s1.send(Ping), Err(SendError::Full(_))));
 
-            let p = loop {
-                match unsafe { recv.inner.parked_queue.pop() } {
-                    PopResult::Data(task) => break Some(task),
-                    PopResult::Empty => break None,
-                    PopResult::Inconsistent => thread::yield_now(),
-                }
-            };
+            // Raising the capacity allows more outstanding messages.
+            recv.set_capacity(3);
+            assert!(s1.send(Ping).is_ok());
+            assert_eq!(decode_state(recv.inner.state.load(SeqCst)).num_messages, 2);
+        });
+    }
 
-            assert!(p.is_some());
-            recv.inner.parked_queue.push(p.unwrap());
+    #[test]
+    fn test_cloned_senders_respect_capacity() {
+        System::new().block_on(async {
+            let (tx, recv) = channel::<Act>(1);
 
-            recv.set_capacity(10);
+            let senders: Vec<_> = (0..64).map(|_| tx.clone()).collect();
 
-            thread::sleep(time::Duration::from_millis(100));
-            let state = decode_state(recv.inner.state.load(SeqCst));
-            assert_eq!(state.num_messages, 2);
+            let accepted = senders.iter().filter(|s| s.send(Ping).is_ok()).count();
 
-            let p = loop {
-                match unsafe { recv.inner.parked_queue.pop() } {
-                    PopResult::Data(task) => break Some(task),
-                    PopResult::Empty => break None,
-                    PopResult::Inconsistent => thread::yield_now(),
-                }
-            };
-            assert!(p.is_none());
-
-            System::current().stop();
+            assert_eq!(accepted, 1, "only one message fits in the mailbox");
+            assert_eq!(decode_state(recv.inner.state.load(SeqCst)).num_messages, 1);
         });
     }
 }

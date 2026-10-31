@@ -498,7 +498,10 @@ mod tests {
                 assert!(send.rx_is_some());
                 let addr2 = addr.clone();
                 let send2 = addr2.send(SetCounter(2));
-                assert!(send2.rx_is_some());
+                // The mailbox is full, so the second send has to wait for
+                // capacity instead of being queued anyway. Regression test for
+                // actix/actix#515.
+                assert!(!send2.rx_is_some());
                 let send3 = addr2.send(SetCounter(3));
                 assert!(!send3.rx_is_some());
 

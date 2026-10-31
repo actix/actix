@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Minimum supported Rust version (MSRV) is now 1.88.
+- Fix `Addr::send` allowing cloned senders to exceed the mailbox capacity.
 
 ## 0.13.5
 
