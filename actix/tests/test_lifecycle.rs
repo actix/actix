@@ -9,7 +9,7 @@ use std::{
 };
 
 use actix::prelude::*;
-use actix_rt::time::sleep;
+use actix_rt::{task::yield_now, time::sleep};
 use tokio::sync::oneshot::{channel, Sender};
 
 struct MyActor {
@@ -132,6 +132,8 @@ fn test_stop_after_drop_address() {
         }
         .start();
 
+        yield_now().await;
+
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
             drop(addr);
@@ -163,6 +165,8 @@ fn test_stop_after_drop_sync_address() {
             restore_after_stop: false,
         }
         .start();
+
+        yield_now().await;
 
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
@@ -237,6 +241,8 @@ fn test_stop() {
         }
         .start();
 
+        yield_now().await;
+
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
             System::current().stop();
@@ -267,6 +273,8 @@ fn test_stop_restore_after_stopping() {
         }
         .start();
 
+        yield_now().await;
+
         actix_rt::spawn(async move {
             sleep(Duration::new(0, 100)).await;
             System::current().stop();
@@ -276,4 +284,32 @@ fn test_stop_restore_after_stopping() {
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
     assert!(!stopped.load(Ordering::Relaxed), "Stopped");
+}
+
+#[test]
+fn test_drop_does_not_call_started() {
+    struct StartedFlagActor {
+        started: Arc<AtomicBool>,
+    }
+
+    impl Actor for StartedFlagActor {
+        type Context = Context<Self>;
+
+        fn started(&mut self, _: &mut Self::Context) {
+            self.started.store(true, Ordering::Relaxed);
+        }
+    }
+
+    let started = Arc::new(AtomicBool::new(false));
+
+    let fut = Context::new().into_future(StartedFlagActor {
+        started: Arc::clone(&started),
+    });
+
+    drop(fut);
+
+    assert!(
+        !started.load(Ordering::Relaxed),
+        "started() must not be called from Drop"
+    );
 }
