@@ -11,7 +11,7 @@ use std::{future::Future, pin::Pin, sync::Arc, task, task::Poll, thread};
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures_core::stream::Stream;
-use log::warn;
+use log::{error, warn};
 use tokio::sync::oneshot::Sender as SyncSender;
 
 use crate::{
@@ -32,6 +32,9 @@ use crate::{
 ///
 /// Sync Actors have a different lifecycle compared to Actors on the System Arbiter. For more, see
 /// [`SyncContext`].
+///
+/// If a worker thread panics, the [`System`] is stopped with exit code 1
+/// instead of leaving a partially dead pool behind.
 ///
 /// # Examples
 ///
@@ -142,7 +145,15 @@ where
             thread_builder_factory()
                 .spawn(move || {
                     System::set_current(sys);
-                    SyncContext::new(f, actor_queue, inner_rx).run();
+
+                    let worker = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        SyncContext::new(f, actor_queue, inner_rx).run();
+                    }));
+
+                    if worker.is_err() {
+                        error!("SyncArbiter worker thread panicked, stopping system");
+                        System::current().stop_with_code(1);
+                    }
                 })
                 .expect("failed to spawn thread");
         }
