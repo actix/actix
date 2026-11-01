@@ -100,3 +100,151 @@ fn test_sync() {
         "Wrong number of messages"
     );
 }
+
+struct ValueActor {
+    value: String,
+}
+
+impl Actor for ValueActor {
+    type Context = SyncContext<Self>;
+}
+
+struct GetValue;
+
+impl Message for GetValue {
+    type Result = String;
+}
+
+impl Handler<GetValue> for ValueActor {
+    type Result = String;
+
+    fn handle(&mut self, _: GetValue, _: &mut Self::Context) -> Self::Result {
+        self.value.clone()
+    }
+}
+
+#[test]
+fn test_start_once() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let calls_c = Arc::clone(&calls);
+    let value = String::from("consumed once");
+
+    System::new().block_on(async move {
+        let addr = SyncArbiter::start_once(move || {
+            calls_c.fetch_add(1, Ordering::Relaxed);
+            ValueActor { value }
+        });
+
+        assert_eq!(addr.send(GetValue).await.unwrap(), "consumed once");
+        assert_eq!(addr.send(GetValue).await.unwrap(), "consumed once");
+
+        System::current().stop();
+    });
+
+    assert_eq!(
+        calls.load(Ordering::Relaxed),
+        1,
+        "factory ran more than once"
+    );
+}
+
+#[test]
+fn try_start_once_propagates_factory_error() {
+    let result =
+        SyncArbiter::<ValueActor>::try_start_once(|| Err::<ValueActor, _>("factory failed"));
+
+    assert_eq!(result.err(), Some("factory failed"));
+}
+
+#[test]
+fn try_start_once_starts_actor() {
+    System::new().block_on(async {
+        let addr = SyncArbiter::<ValueActor>::try_start_once(|| {
+            Ok::<_, ()>(ValueActor {
+                value: String::from("fallible"),
+            })
+        })
+        .unwrap();
+
+        assert_eq!(addr.send(GetValue).await.unwrap(), "fallible");
+
+        System::current().stop();
+    });
+}
+
+struct CountingActor {
+    handled: Arc<AtomicUsize>,
+}
+
+impl Actor for CountingActor {
+    type Context = SyncContext<Self>;
+}
+
+struct CountingMsg;
+
+impl Message for CountingMsg {
+    type Result = ();
+}
+
+impl Handler<CountingMsg> for CountingActor {
+    type Result = ();
+
+    fn handle(&mut self, _: CountingMsg, _: &mut SyncContext<Self>) -> Self::Result {
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        self.handled.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+#[test]
+fn handle_waits_for_workers_to_drain() {
+    const TOTAL: usize = 16;
+
+    let sys = System::new();
+    sys.block_on(async {
+        let handled = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::clone(&handled);
+
+        let (addr, handle) = SyncArbiter::start_with_handle(2, move || CountingActor {
+            handled: Arc::clone(&counter),
+        });
+
+        for _ in 0..TOTAL {
+            addr.do_send(CountingMsg);
+        }
+        drop(addr);
+
+        actix_rt::time::timeout(std::time::Duration::from_secs(5), handle.wait())
+            .await
+            .expect("workers did not finish");
+
+        assert_eq!(handled.load(Ordering::SeqCst), TOTAL);
+
+        System::current().stop();
+    });
+}
+
+#[test]
+fn start_once_with_handle_waits_for_drain() {
+    let sys = System::new();
+    sys.block_on(async {
+        let handled = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::clone(&handled);
+
+        let (addr, handle) = SyncArbiter::start_once_with_handle(move || CountingActor {
+            handled: Arc::clone(&counter),
+        });
+
+        for _ in 0..4 {
+            addr.do_send(CountingMsg);
+        }
+        drop(addr);
+
+        actix_rt::time::timeout(std::time::Duration::from_secs(5), handle.wait())
+            .await
+            .expect("worker did not finish");
+
+        assert_eq!(handled.load(Ordering::SeqCst), 4);
+
+        System::current().stop();
+    });
+}

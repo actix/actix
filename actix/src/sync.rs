@@ -6,13 +6,23 @@
 //! Actor type A and B, sharing the same thread pool. You need to create two
 //! [`SyncArbiter`]s and have A and B spawn on unique `SyncArbiter`s respectively.
 //! For more information and examples, see `SyncArbiter`
-use std::{future::Future, pin::Pin, sync::Arc, task, task::Poll, thread};
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
+    task,
+    task::Poll,
+    thread,
+};
 
 use actix_rt::System;
 use crossbeam_channel as cb_channel;
 use futures_core::stream::Stream;
 use log::warn;
-use tokio::sync::oneshot::Sender as SyncSender;
+use tokio::sync::{oneshot::Sender as SyncSender, Notify};
 
 use crate::{
     actor::{Actor, ActorContext, ActorState, Running},
@@ -32,6 +42,10 @@ use crate::{
 ///
 /// Sync Actors have a different lifecycle compared to Actors on the System Arbiter. For more, see
 /// [`SyncContext`].
+///
+/// [`System::stop`] does not wait for worker threads; use
+/// [`SyncArbiter::start_with_handle`] and await [`SyncArbiterHandle::wait`]
+/// before stopping the system if queued work must complete.
 ///
 /// # Examples
 ///
@@ -99,6 +113,90 @@ where
     msgs: AddressReceiver<A>,
 }
 
+/// Handle to a running [`SyncArbiter`] whose worker threads can be awaited.
+///
+/// Obtain one from [`SyncArbiter::start_with_handle`] or
+/// [`SyncArbiter::start_once_with_handle`]. Await [`wait`](Self::wait) before
+/// stopping the [`System`] to make sure queued messages have been handled.
+#[derive(Clone)]
+pub struct SyncArbiterHandle {
+    state: Arc<WorkerState>,
+}
+
+struct WorkerState {
+    alive: AtomicUsize,
+    finished: Notify,
+}
+
+impl WorkerState {
+    fn new() -> Self {
+        Self {
+            alive: AtomicUsize::new(0),
+            finished: Notify::new(),
+        }
+    }
+
+    fn add_worker(&self) {
+        self.alive.fetch_add(1, Ordering::SeqCst);
+    }
+
+    fn finish_worker(&self) {
+        if self.alive.fetch_sub(1, Ordering::SeqCst) == 1 {
+            self.finished.notify_waiters();
+        }
+    }
+}
+
+struct WorkerGuard(Arc<WorkerState>);
+
+impl Drop for WorkerGuard {
+    fn drop(&mut self) {
+        self.0.finish_worker();
+    }
+}
+
+impl SyncArbiterHandle {
+    /// Waits until every worker thread of the arbiter has finished.
+    ///
+    /// Workers exit once all addresses to the arbiter have been dropped and
+    /// every queued message has been handled. Await this before stopping the
+    /// [`System`] to drain a sync actor, such as a logging worker:
+    ///
+    /// ```no_run
+    /// use actix::prelude::*;
+    ///
+    /// struct Worker;
+    ///
+    /// impl Actor for Worker {
+    ///     type Context = SyncContext<Self>;
+    /// }
+    ///
+    /// #[actix::main]
+    /// async fn main() {
+    ///     let (addr, handle) = SyncArbiter::start_with_handle(1, || Worker);
+    ///
+    ///     // ... send messages through addr ...
+    ///
+    ///     drop(addr);
+    ///     handle.wait().await;
+    ///     System::current().stop();
+    /// }
+    /// ```
+    pub async fn wait(&self) {
+        loop {
+            let notified = self.state.finished.notified();
+            tokio::pin!(notified);
+            notified.as_mut().enable();
+
+            if self.state.alive.load(Ordering::SeqCst) == 0 {
+                return;
+            }
+
+            notified.await;
+        }
+    }
+}
+
 impl<A> SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
@@ -114,6 +212,88 @@ where
         Self::start_with_thread_builder(threads, thread::Builder::new, factory)
     }
 
+    /// Start a new `SyncArbiter` with specified number of worker threads and a
+    /// handle that can be used to wait for all workers to finish.
+    ///
+    /// See [`SyncArbiterHandle::wait`] for draining queued messages before
+    /// stopping the system.
+    pub fn start_with_handle<F>(threads: usize, factory: F) -> (Addr<A>, SyncArbiterHandle)
+    where
+        F: Fn() -> A + Send + Sync + 'static,
+    {
+        Self::start_with_thread_builder_and_handle(threads, thread::Builder::new, factory)
+    }
+
+    /// Start a new `SyncArbiter` with a single worker thread, creating the
+    /// actor with a `FnOnce` factory.
+    ///
+    /// This is useful when the value used to construct the actor is not
+    /// `Clone` or can only be consumed once, without having to wrap it in an
+    /// `Arc` or `Option` yourself.
+    ///
+    /// Because the factory is only called once, actors started this way can
+    /// not be restarted: calling [`ActorContext::stop`] or
+    /// [`ActorContext::terminate`] on them will panic the worker thread.
+    /// Use [`start`](Self::start) if the actor needs to be restarted.
+    pub fn start_once<F>(factory: F) -> Addr<A>
+    where
+        F: FnOnce() -> A + Send + 'static,
+    {
+        Self::start_once_with_handle(factory).0
+    }
+
+    /// Start a new `SyncArbiter` with a single worker thread and a handle that
+    /// can be used to wait for the worker to finish.
+    ///
+    /// See [`SyncArbiterHandle::wait`] for draining queued messages before
+    /// stopping the system.
+    pub fn start_once_with_handle<F>(factory: F) -> (Addr<A>, SyncArbiterHandle)
+    where
+        F: FnOnce() -> A + Send + 'static,
+    {
+        let (sender, receiver) = cb_channel::unbounded();
+        let (tx, rx) = channel::channel(0);
+        let sys = System::current();
+        let actor_queue = receiver.clone();
+        let inner_rx = rx.sender_producer();
+        let state = Arc::new(WorkerState::new());
+
+        state.add_worker();
+        Self::spawn_worker(
+            thread::Builder::new(),
+            sys,
+            Factory::once(factory),
+            actor_queue,
+            inner_rx,
+            Arc::clone(&state),
+        );
+
+        System::current().arbiter().spawn(Self {
+            queue: Some(sender),
+            msgs: rx,
+        });
+
+        (Addr::new(tx), SyncArbiterHandle { state })
+    }
+
+    /// Start a new `SyncArbiter` with a single worker thread, using a fallible
+    /// `FnOnce` factory.
+    ///
+    /// Unlike [`start_once`](Self::start_once), the factory is invoked on the
+    /// calling thread, so initialization errors are returned to the caller
+    /// instead of being raised inside the worker thread.
+    ///
+    /// Requires `A: Send` because the constructed actor is moved to the worker
+    /// thread. As with `start_once`, the actor cannot be restarted.
+    pub fn try_start_once<F, E>(factory: F) -> Result<Addr<A>, E>
+    where
+        F: FnOnce() -> Result<A, E>,
+        A: Send + 'static,
+    {
+        let act = factory()?;
+        Ok(Self::start_once(move || act))
+    }
+
     /// Start a new `SyncArbiter` with specified number of worker threads.
     /// Each worker thread is spawned from the [`std::thread::Builder`]
     /// returned by a new call to `thread_builder_factory`.
@@ -122,9 +302,26 @@ where
     /// the next available Actor in the `SyncArbiter`.
     pub fn start_with_thread_builder<F, BF>(
         threads: usize,
-        mut thread_builder_factory: BF,
+        thread_builder_factory: BF,
         factory: F,
     ) -> Addr<A>
+    where
+        F: Fn() -> A + Send + Sync + 'static,
+        BF: FnMut() -> thread::Builder,
+    {
+        Self::start_with_thread_builder_and_handle(threads, thread_builder_factory, factory).0
+    }
+
+    /// Start a new `SyncArbiter` with specified number of worker threads and a
+    /// handle that can be used to wait for all workers to finish.
+    ///
+    /// See [`SyncArbiterHandle::wait`] for draining queued messages before
+    /// stopping the system.
+    pub fn start_with_thread_builder_and_handle<F, BF>(
+        threads: usize,
+        mut thread_builder_factory: BF,
+        factory: F,
+    ) -> (Addr<A>, SyncArbiterHandle)
     where
         F: Fn() -> A + Send + Sync + 'static,
         BF: FnMut() -> thread::Builder,
@@ -132,6 +329,7 @@ where
         let factory = Arc::new(factory);
         let (sender, receiver) = cb_channel::unbounded();
         let (tx, rx) = channel::channel(0);
+        let state = Arc::new(WorkerState::new());
 
         for _ in 0..threads {
             let f = Arc::clone(&factory);
@@ -139,12 +337,15 @@ where
             let actor_queue = receiver.clone();
             let inner_rx = rx.sender_producer();
 
-            thread_builder_factory()
-                .spawn(move || {
-                    System::set_current(sys);
-                    SyncContext::new(f, actor_queue, inner_rx).run();
-                })
-                .expect("failed to spawn thread");
+            state.add_worker();
+            Self::spawn_worker(
+                thread_builder_factory(),
+                sys,
+                Factory::repeat(f),
+                actor_queue,
+                inner_rx,
+                Arc::clone(&state),
+            );
         }
 
         System::current().arbiter().spawn(Self {
@@ -152,7 +353,24 @@ where
             msgs: rx,
         });
 
-        Addr::new(tx)
+        (Addr::new(tx), SyncArbiterHandle { state })
+    }
+
+    fn spawn_worker(
+        builder: thread::Builder,
+        sys: System,
+        factory: Factory<A>,
+        actor_queue: cb_channel::Receiver<Envelope<A>>,
+        inner_rx: AddressSenderProducer<A>,
+        state: Arc<WorkerState>,
+    ) {
+        builder
+            .spawn(move || {
+                let _guard = WorkerGuard(state);
+                System::set_current(sys);
+                SyncContext::new(factory, actor_queue, inner_rx).run();
+            })
+            .expect("failed to spawn thread");
     }
 }
 
@@ -214,6 +432,10 @@ where
 /// the Actor. Similar, returning `false` from `fn stopping` can not prevent
 /// the restart or termination of the Actor.
 ///
+/// Actors started with [`SyncArbiter::start_once`] can not be restarted,
+/// because their factory can only be called once. Stopping or terminating
+/// such an actor panics the worker thread.
+///
 /// # Examples
 ///
 /// ```
@@ -243,8 +465,43 @@ where
     queue: cb_channel::Receiver<Envelope<A>>,
     stopping: bool,
     state: ActorState,
-    factory: Arc<dyn Fn() -> A>,
+    factory: Factory<A>,
     address: AddressSenderProducer<A>,
+}
+
+enum Factory<A> {
+    Repeat(Arc<dyn Fn() -> A + Send + Sync>),
+    Once(Mutex<Option<Box<dyn FnOnce() -> A + Send>>>),
+}
+
+impl<A> Factory<A> {
+    fn repeat(factory: Arc<dyn Fn() -> A + Send + Sync>) -> Self {
+        Self::Repeat(factory)
+    }
+
+    fn once<F>(factory: F) -> Self
+    where
+        F: FnOnce() -> A + Send + 'static,
+    {
+        Self::Once(Mutex::new(Some(Box::new(factory))))
+    }
+
+    fn create(&self) -> A {
+        match self {
+            Self::Repeat(factory) => factory(),
+            Self::Once(factory) => {
+                let factory = factory
+                    .lock()
+                    .unwrap_or_else(|err| err.into_inner())
+                    .take()
+                    .expect(
+                        "SyncArbiter::start_once actor cannot be restarted: its factory was \
+                         already consumed",
+                    );
+                factory()
+            }
+        }
+    }
 }
 
 impl<A> SyncContext<A>
@@ -252,11 +509,11 @@ where
     A: Actor<Context = Self>,
 {
     fn new(
-        factory: Arc<dyn Fn() -> A>,
+        factory: Factory<A>,
         queue: cb_channel::Receiver<Envelope<A>>,
         address: AddressSenderProducer<A>,
     ) -> Self {
-        let act = factory();
+        let act = factory.create();
         Self {
             queue,
             factory,
@@ -300,7 +557,7 @@ where
 
                 // start new actor
                 self.state = ActorState::Started;
-                act = (*self.factory)();
+                act = self.factory.create();
                 A::started(&mut act, self);
                 self.state = ActorState::Running;
             }
