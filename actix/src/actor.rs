@@ -403,6 +403,13 @@ where
     /// Sends the message `msg` to self. This bypasses the mailbox capacity, and
     /// will always queue the message. If the actor is in the `stopped` state, an
     /// error will be raised.
+    ///
+    /// The message is handled as a context item, not through the mailbox, and
+    /// does **not** have strict priority over messages sent through the
+    /// address: on each poll the mailbox is drained before context items are
+    /// polled. The relative order of notifications and mailbox messages also
+    /// depends on how the runtime schedules the actor future. Use
+    /// [`Addr::do_send`] if strict ordering with other messages matters.
     fn notify<M>(&mut self, msg: M)
     where
         A: Handler<M>,
@@ -422,6 +429,10 @@ where
     /// called. This bypasses the mailbox capacity, and
     /// will always queue the message. If the actor is in the `stopped` state, an
     /// error will be raised.
+    ///
+    /// Like [`notify`](Self::notify), the message is handled as a context item
+    /// and does not have strict priority over mailbox messages; ordering
+    /// between the two depends on the runtime and on when the timer fires.
     fn notify_later<M>(&mut self, msg: M, after: Duration) -> SpawnHandle
     where
         A: Handler<M>,
