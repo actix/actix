@@ -2,8 +2,7 @@
 
 ## Unreleased
 
-- Minimum supported Rust version (MSRV) is now 1.88.
-- Fix `SyncArbiter` losing messages that were accepted before the last address was dropped.
+- Minimum supported Rust version (MSRV) is now 1.89.
 
 ## 0.13.5
 
