@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix `Addr::send` allowing cloned senders to exceed the mailbox capacity.
 - Fix continuously full mailboxes starving timers and other tasks by yielding after bounded message batches.
 - Fix `SyncArbiter` dropping pending messages when the last sender disconnects.
 - Add `SyncArbiter::builder()` with an optional `stop_on_panic` setting to stop the system with exit code 1 when a worker panics.
