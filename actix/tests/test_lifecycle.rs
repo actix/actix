@@ -9,7 +9,7 @@ use std::{
 };
 
 use actix::prelude::*;
-use actix_rt::time::sleep;
+use actix_rt::time::{sleep, timeout};
 use tokio::sync::oneshot::{channel, Sender};
 
 struct MyActor {
@@ -17,6 +17,7 @@ struct MyActor {
     stopping: Arc<AtomicBool>,
     stopped: Arc<AtomicBool>,
     temp: Option<Sender<()>>,
+    stopped_signal: Option<Sender<()>>,
     restore_after_stop: bool,
 }
 
@@ -47,7 +48,21 @@ impl Actor for MyActor {
 
     fn stopped(&mut self, _: &mut Self::Context) {
         self.stopped.store(true, Ordering::Relaxed);
+
+        if let Some(tx) = self.stopped_signal.take() {
+            let _ = tx.send(());
+        }
     }
+}
+
+#[derive(Message)]
+#[rtype(result = "()")]
+struct Started;
+
+impl Handler<Started> for MyActor {
+    type Result = ();
+
+    fn handle(&mut self, _: Started, _: &mut Self::Context) {}
 }
 
 struct MySyncActor {
@@ -99,6 +114,7 @@ fn test_active_address() {
                     stopping: stopping1,
                     stopped: stopped1,
                     temp: None,
+                    stopped_signal: None,
                     restore_after_stop: false,
                 }
                 .start(),
@@ -123,21 +139,26 @@ fn test_stop_after_drop_address() {
     let stopped1 = Arc::clone(&stopped);
 
     System::new().block_on(async move {
+        let (stopped_tx, stopped_rx) = channel();
+
         let addr = MyActor {
             started: started1,
             stopping: stopping1,
             stopped: stopped1,
             temp: None,
+            stopped_signal: Some(stopped_tx),
             restore_after_stop: false,
         }
         .start();
 
-        actix_rt::spawn(async move {
-            sleep(Duration::new(0, 100)).await;
-            drop(addr);
-            sleep(Duration::new(0, 10_000)).await;
-            System::current().stop();
-        });
+        addr.send(Started).await.unwrap();
+
+        drop(addr);
+
+        timeout(Duration::from_secs(5), stopped_rx)
+            .await
+            .expect("actor did not stop after its last address was dropped")
+            .unwrap();
     });
 
     assert!(started.load(Ordering::Relaxed), "Not started");
@@ -155,20 +176,26 @@ fn test_stop_after_drop_sync_address() {
     let stopped1 = Arc::clone(&stopped);
 
     System::new().block_on(async move {
+        let (stopped_tx, stopped_rx) = channel();
+
         let addr = MyActor {
             started: started1,
             stopping: stopping1,
             stopped: stopped1,
             temp: None,
+            stopped_signal: Some(stopped_tx),
             restore_after_stop: false,
         }
         .start();
 
-        actix_rt::spawn(async move {
-            sleep(Duration::new(0, 100)).await;
-            drop(addr);
-            System::current().stop();
-        });
+        addr.send(Started).await.unwrap();
+
+        std::thread::spawn(move || drop(addr)).join().unwrap();
+
+        timeout(Duration::from_secs(5), stopped_rx)
+            .await
+            .expect("actor did not stop after its last address was dropped")
+            .unwrap();
     });
 
     assert!(started.load(Ordering::Relaxed), "Not started");
@@ -227,21 +254,25 @@ fn test_stop() {
     let stopping1 = Arc::clone(&stopping);
     let stopped1 = Arc::clone(&stopped);
 
-    System::new().block_on(async move {
-        MyActor {
+    let sys = System::new();
+    let _addr = sys.block_on(async move {
+        let addr = MyActor {
             started: started1,
             stopping: stopping1,
             stopped: stopped1,
             temp: None,
+            stopped_signal: None,
             restore_after_stop: false,
         }
         .start();
 
-        actix_rt::spawn(async move {
-            sleep(Duration::new(0, 100)).await;
-            System::current().stop();
-        });
+        addr.send(Started).await.unwrap();
+        System::current().stop();
+
+        addr
     });
+
+    drop(sys);
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
@@ -257,23 +288,58 @@ fn test_stop_restore_after_stopping() {
     let stopping1 = Arc::clone(&stopping);
     let stopped1 = Arc::clone(&stopped);
 
-    System::new().block_on(async move {
-        MyActor {
+    let sys = System::new();
+    let _addr = sys.block_on(async move {
+        let addr = MyActor {
             started: started1,
             stopping: stopping1,
             stopped: stopped1,
             temp: None,
+            stopped_signal: None,
             restore_after_stop: true,
         }
         .start();
 
-        actix_rt::spawn(async move {
-            sleep(Duration::new(0, 100)).await;
-            System::current().stop();
-        });
+        addr.send(Started).await.unwrap();
+        System::current().stop();
+
+        addr
     });
+
+    drop(sys);
 
     assert!(started.load(Ordering::Relaxed), "Not started");
     assert!(stopping.load(Ordering::Relaxed), "Not stopping");
     assert!(!stopped.load(Ordering::Relaxed), "Stopped");
+}
+
+#[test]
+fn test_drop_does_not_call_started() {
+    struct StartedFlagActor {
+        started: Arc<AtomicBool>,
+    }
+
+    impl Actor for StartedFlagActor {
+        type Context = Context<Self>;
+
+        fn started(&mut self, ctx: &mut Self::Context) {
+            self.started.store(true, Ordering::Relaxed);
+
+            ctx.run_interval(Duration::from_millis(100), |_, _| {});
+        }
+    }
+
+    let started = Arc::new(AtomicBool::new(false));
+
+    let fut = Context::new().into_future(StartedFlagActor {
+        started: Arc::clone(&started),
+    });
+
+    // There is no runtime here, as can also occur during system teardown.
+    drop(fut);
+
+    assert!(
+        !started.load(Ordering::Relaxed),
+        "started() must not be called from Drop"
+    );
 }

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Avoid calling `Actor::started()` when dropping an actor future that was never polled.
+
 ## 0.13.6
 
 - Fix continuously full mailboxes starving timers and other tasks by yielding after bounded message batches.
