@@ -1,3 +1,6 @@
+_list:
+    @just --list
+
 toolchain := ""
 
 msrv := ```
@@ -12,9 +15,17 @@ fmt:
     cargo +nightly fmt
     fd --type=file --hidden --extension=yml --extension=md --extension=js --exec-batch npx -y prettier --write
 
+[private]
+check-min:
+    cargo hack --workspace check --no-default-features
+
 # Run Clippy over workspace.
 clippy:
     cargo clippy --workspace --all-targets --all-features
+
+# Check security advisories.
+check-advisories:
+    cargo deny --log-level warn --workspace --all-features check advisories
 
 # Downgrade dev-dependencies necessary to run MSRV checks/tests.
 [private]
