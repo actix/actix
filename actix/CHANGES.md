@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix `SyncArbiter` dropping pending messages when the last sender disconnects.
 - Minimum supported Rust version (MSRV) is now 1.89.
 
 ## 0.13.5

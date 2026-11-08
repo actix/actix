@@ -100,3 +100,65 @@ fn test_sync() {
         "Wrong number of messages"
     );
 }
+
+struct DrainActor {
+    handled: Arc<AtomicUsize>,
+    total: usize,
+}
+
+impl Actor for DrainActor {
+    type Context = SyncContext<Self>;
+}
+
+struct DrainMsg;
+
+impl Message for DrainMsg {
+    type Result = ();
+}
+
+impl Handler<DrainMsg> for DrainActor {
+    type Result = ();
+
+    fn handle(&mut self, _: DrainMsg, _: &mut Self::Context) -> Self::Result {
+        std::thread::sleep(std::time::Duration::from_millis(1));
+
+        if self.handled.fetch_add(1, Ordering::SeqCst) + 1 == self.total {
+            System::current().stop();
+        }
+    }
+}
+
+#[test]
+fn drains_queued_messages_when_last_sender_drops() {
+    const TOTAL: usize = 32;
+
+    let handled = Arc::new(AtomicUsize::new(0));
+    let handled_c = Arc::clone(&handled);
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let addr = SyncArbiter::start(1, move || DrainActor {
+            handled: Arc::clone(&handled_c),
+            total: TOTAL,
+        });
+
+        for _ in 0..TOTAL {
+            addr.do_send(DrainMsg);
+        }
+
+        // dropping the last sender closes the address while messages are
+        // still queued; the arbiter must forward and process all of them.
+        drop(addr);
+
+        // fallback stop so a regression fails the count assertion instead of
+        // hanging the test forever
+        actix_rt::spawn(async {
+            actix_rt::time::sleep(std::time::Duration::from_secs(5)).await;
+            System::current().stop();
+        });
+    });
+
+    sys.run().unwrap();
+
+    assert_eq!(handled.load(Ordering::SeqCst), TOTAL);
+}
