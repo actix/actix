@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Forward `SinkWrite` readiness errors to `WriteHandler::error` and finish the writer when it returns `Running::Stop`. [#604]
+
+[#604]: https://github.com/actix/actix/pull/604
+
 ## 0.13.5
 
 - Add `Registry::try_get()` method.
