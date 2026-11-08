@@ -23,6 +23,10 @@ check-min:
 clippy:
     cargo clippy --workspace --all-targets --all-features
 
+# Check security advisories.
+check-advisories:
+    cargo deny --log-level warn --workspace --all-features check advisories
+
 # Downgrade dev-dependencies necessary to run MSRV checks/tests.
 [private]
 downgrade-for-msrv:

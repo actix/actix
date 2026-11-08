@@ -737,6 +737,15 @@ impl<A: Actor> AddressReceiver<A> {
         self.inner.num_senders.load(SeqCst) != 0
     }
 
+    /// Returns whether the channel is empty.
+    ///
+    /// This counts messages that have been accepted by a sender but may not
+    /// have been pushed onto the queue yet, so it can be used to wait for the
+    /// channel to fully drain.
+    pub fn is_empty(&self) -> bool {
+        decode_state(self.inner.state.load(SeqCst)).num_messages == 0
+    }
+
     /// Returns the channel capacity.
     pub fn capacity(&self) -> usize {
         self.inner.buffer.load(Relaxed)
@@ -1006,6 +1015,21 @@ mod tests {
 
             assert_eq!(accepted, 1, "only one message fits in the mailbox");
             assert_eq!(decode_state(recv.inner.state.load(SeqCst)).num_messages, 1);
+        });
+    }
+
+    #[test]
+    fn test_receiver_is_empty() {
+        System::new().block_on(async {
+            let (tx, mut recv) = channel::<Act>(0);
+
+            assert!(recv.is_empty());
+
+            tx.do_send(Ping).unwrap();
+            assert!(!recv.is_empty());
+
+            assert!(matches!(recv.next_message(), Poll::Ready(Some(_))));
+            assert!(recv.is_empty());
         });
     }
 }
