@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "actix"
-version = "0.13.5"
+version = "0.13.6"
 dependencies = [
  "actix-macros",
  "actix-rt",
