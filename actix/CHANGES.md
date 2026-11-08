@@ -3,7 +3,9 @@
 ## Unreleased
 
 - Fix continuously full mailboxes starving timers and other tasks by yielding after bounded message batches.
-- Minimum supported Rust version (MSRV) is now 1.88.
+- Fix `SyncArbiter` dropping pending messages when the last sender disconnects.
+- Add `SyncArbiter::builder()` with an optional `stop_on_panic` setting to stop the system with exit code 1 when a worker panics.
+- Minimum supported Rust version (MSRV) is now 1.89.
 
 ## 0.13.5
 

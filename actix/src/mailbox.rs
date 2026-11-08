@@ -84,8 +84,8 @@ where
     /// runtime can poll other tasks before the remaining messages are handled.
     /// This prevents a continuously flooded mailbox from starving timers,
     /// notifications, and actor termination. Context items queued with
-    /// `Context::notify` are still polled after the mailbox, so they do not
-    /// preempt already queued messages.
+    /// `Context::notify` are polled after the mailbox batch, even if more
+    /// messages remain queued.
     ///
     /// With the `mailbox_assert` feature enabled, reaching the limit panics
     /// instead.

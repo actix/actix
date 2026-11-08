@@ -100,3 +100,133 @@ fn test_sync() {
         "Wrong number of messages"
     );
 }
+
+struct DrainActor {
+    handled: Arc<AtomicUsize>,
+    total: usize,
+}
+
+impl Actor for DrainActor {
+    type Context = SyncContext<Self>;
+}
+
+struct DrainMsg;
+
+impl Message for DrainMsg {
+    type Result = ();
+}
+
+impl Handler<DrainMsg> for DrainActor {
+    type Result = ();
+
+    fn handle(&mut self, _: DrainMsg, _: &mut Self::Context) -> Self::Result {
+        std::thread::sleep(std::time::Duration::from_millis(1));
+
+        if self.handled.fetch_add(1, Ordering::SeqCst) + 1 == self.total {
+            System::current().stop();
+        }
+    }
+}
+
+#[test]
+fn drains_queued_messages_when_last_sender_drops() {
+    const TOTAL: usize = 32;
+
+    let handled = Arc::new(AtomicUsize::new(0));
+    let handled_c = Arc::clone(&handled);
+    let sys = System::new();
+
+    sys.block_on(async move {
+        let addr = SyncArbiter::start(1, move || DrainActor {
+            handled: Arc::clone(&handled_c),
+            total: TOTAL,
+        });
+
+        for _ in 0..TOTAL {
+            addr.do_send(DrainMsg);
+        }
+
+        // dropping the last sender closes the address while messages are
+        // still queued; the arbiter must forward and process all of them.
+        drop(addr);
+
+        // fallback stop so a regression fails the count assertion instead of
+        // hanging the test forever
+        actix_rt::spawn(async {
+            actix_rt::time::sleep(std::time::Duration::from_secs(5)).await;
+            System::current().stop();
+        });
+    });
+
+    sys.run().unwrap();
+
+    assert_eq!(handled.load(Ordering::SeqCst), TOTAL);
+}
+
+struct PanicActor;
+
+impl Actor for PanicActor {
+    type Context = SyncContext<Self>;
+}
+
+struct Panic;
+
+impl Message for Panic {
+    type Result = ();
+}
+
+impl Handler<Panic> for PanicActor {
+    type Result = ();
+
+    fn handle(&mut self, _: Panic, _: &mut Self::Context) {
+        panic!("sync actor panic");
+    }
+}
+
+#[test]
+fn panic_stops_system_when_enabled() {
+    for factory_panics in [false, true] {
+        let sys = System::new();
+        sys.block_on(async move {
+            let addr = SyncArbiter::builder()
+                .stop_on_panic(true)
+                .start(1, move || {
+                    assert!(!factory_panics, "factory panic");
+                    PanicActor
+                });
+            addr.do_send(Panic);
+
+            actix::spawn(async {
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                System::current().stop_with_code(99);
+            });
+        });
+
+        assert_eq!(sys.run_with_code().unwrap(), 1);
+    }
+}
+
+#[test]
+fn panic_does_not_stop_system_by_default() {
+    for explicit_false in [false, true] {
+        let sys = System::new();
+        sys.block_on(async move {
+            let addr = if explicit_false {
+                SyncArbiter::builder()
+                    .stop_on_panic(false)
+                    .start_with_thread_builder(1, std::thread::Builder::new, || PanicActor)
+            } else {
+                SyncArbiter::start(1, || PanicActor)
+            };
+
+            actix::spawn(async move {
+                assert!(addr.send(Panic).await.is_err());
+                // Allow any stop request from the worker to reach the system.
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                System::current().stop();
+            });
+        });
+
+        assert_eq!(sys.run_with_code().unwrap(), 0);
+    }
+}
