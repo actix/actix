@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `SyncArbiter::start_once()` and `SyncArbiter::try_start_once()` for single-use actor factories.
+- Add `SyncArbiterHandle` and constructors that return a handle to wait for worker threads to exit.
 - Minimum supported Rust version (MSRV) is now 1.88.
 
 ## 0.13.5
