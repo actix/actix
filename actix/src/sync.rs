@@ -106,6 +106,14 @@ impl<A> SyncArbiter<A>
 where
     A: Actor<Context = SyncContext<A>>,
 {
+    /// Configure a new sync actor pool.
+    pub fn builder() -> SyncArbiterBuilder<A> {
+        SyncArbiterBuilder {
+            stop_on_panic: false,
+            actor: std::marker::PhantomData,
+        }
+    }
+
     /// Start a new `SyncArbiter` with specified number of worker threads.
     /// Returns a single address of the started actor. A single address is
     /// used to communicate to the actor(s), and messages are handled by
@@ -124,6 +132,51 @@ where
     /// used to communicate to the actor(s), and messages are handled by
     /// the next available Actor in the `SyncArbiter`.
     pub fn start_with_thread_builder<F, BF>(
+        threads: usize,
+        thread_builder_factory: BF,
+        factory: F,
+    ) -> Addr<A>
+    where
+        F: Fn() -> A + Send + Sync + 'static,
+        BF: FnMut() -> thread::Builder,
+    {
+        Self::builder().start_with_thread_builder(threads, thread_builder_factory, factory)
+    }
+}
+
+/// Configuration for a [`SyncArbiter`] pool.
+///
+/// Create this with [`SyncArbiter::builder`].
+pub struct SyncArbiterBuilder<A> {
+    stop_on_panic: bool,
+    actor: std::marker::PhantomData<fn() -> A>,
+}
+
+impl<A> SyncArbiterBuilder<A>
+where
+    A: Actor<Context = SyncContext<A>>,
+{
+    /// Stop the system with exit code 1 if a worker panics.
+    ///
+    /// This is disabled by default. It covers the actor factory, lifecycle hooks,
+    /// and message handlers. The worker is not restarted. This requires panic
+    /// unwinding; it has no effect with `panic = "abort"`.
+    pub fn stop_on_panic(mut self, stop_on_panic: bool) -> Self {
+        self.stop_on_panic = stop_on_panic;
+        self
+    }
+
+    /// Start the pool with the specified number of worker threads.
+    pub fn start<F>(self, threads: usize, factory: F) -> Addr<A>
+    where
+        F: Fn() -> A + Send + Sync + 'static,
+    {
+        self.start_with_thread_builder(threads, thread::Builder::new, factory)
+    }
+
+    /// Start the pool with a custom builder for each worker thread.
+    pub fn start_with_thread_builder<F, BF>(
+        self,
         threads: usize,
         mut thread_builder_factory: BF,
         factory: F,
@@ -145,12 +198,24 @@ where
             thread_builder_factory()
                 .spawn(move || {
                     System::set_current(sys);
+                    // The guard also covers panics in the factory and lifecycle hooks.
+                    struct StopOnPanic(bool);
+
+                    impl Drop for StopOnPanic {
+                        fn drop(&mut self) {
+                            if self.0 && thread::panicking() {
+                                System::current().stop_with_code(1);
+                            }
+                        }
+                    }
+
+                    let _guard = StopOnPanic(self.stop_on_panic);
                     SyncContext::new(f, actor_queue, inner_rx).run();
                 })
                 .expect("failed to spawn thread");
         }
 
-        System::current().arbiter().spawn(Self {
+        System::current().arbiter().spawn(SyncArbiter {
             queue: Some(sender),
             msgs: rx,
         });
