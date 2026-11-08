@@ -8,7 +8,75 @@ use std::{
 use actix::{io::SinkWrite, prelude::*};
 use bytes::{Buf, Bytes};
 use futures_sink::Sink;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
+
+#[actix::test]
+async fn test_sink_write_poll_ready_error() {
+    struct FailedSink;
+
+    impl Sink<()> for FailedSink {
+        type Error = &'static str;
+
+        fn poll_ready(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Err("sink failed"))
+        }
+
+        fn start_send(self: Pin<&mut Self>, _: ()) -> Result<(), Self::Error> {
+            panic!("sink must not receive items after poll_ready fails");
+        }
+
+        fn poll_flush(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            panic!("sink must not be flushed after poll_ready fails");
+        }
+
+        fn poll_close(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            panic!("sink must not be closed after poll_ready fails");
+        }
+    }
+
+    struct SinkActor {
+        events: Vec<&'static str>,
+        finished: Option<oneshot::Sender<Vec<&'static str>>>,
+    }
+
+    impl Actor for SinkActor {
+        type Context = actix::Context<Self>;
+    }
+
+    impl actix::io::WriteHandler<&'static str> for SinkActor {
+        fn error(&mut self, err: &'static str, _: &mut Self::Context) -> Running {
+            self.events.push(err);
+            Running::Stop
+        }
+
+        fn finished(&mut self, ctx: &mut Self::Context) {
+            self.events.push("finished");
+            self.finished
+                .take()
+                .unwrap()
+                .send(std::mem::take(&mut self.events))
+                .unwrap();
+            ctx.stop();
+        }
+    }
+
+    let (finished_tx, finished_rx) = oneshot::channel();
+    let _addr = SinkActor::create(|ctx| {
+        SinkWrite::new(FailedSink, ctx).write(()).unwrap();
+
+        SinkActor {
+            events: Vec::new(),
+            finished: Some(finished_tx),
+        }
+    });
+
+    let events = actix_rt::time::timeout(std::time::Duration::from_secs(2), finished_rx)
+        .await
+        .expect("writer did not finish")
+        .expect("actor stopped without finishing the writer");
+
+    assert_eq!(events, ["sink failed", "finished"]);
+}
 
 type ByteSender = mpsc::UnboundedSender<u8>;
 
