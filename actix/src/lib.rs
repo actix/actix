@@ -13,7 +13,7 @@
 //! - Using Futures for asynchronous message handling
 //! - Actor supervision
 //! - Typed messages (no [`Any`](std::any::Any) type) and generic messages are allowed
-//! - Runs on stable Rust 1.68+
+//! - Runs on stable Rust 1.76+
 //!
 //! ## Other Documentation
 //!
@@ -23,7 +23,7 @@
 #![deny(rust_2018_idioms, nonstandard_style, future_incompatible)]
 #![doc(html_logo_url = "https://actix.rs/img/logo.png")]
 #![doc(html_favicon_url = "https://actix.rs/favicon.ico")]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(doctest)]
 doc_comment::doctest!("../README.md");

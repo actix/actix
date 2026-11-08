@@ -190,8 +190,7 @@ impl Registry {
 
 /// System wide actors registry
 ///
-/// System registry serves same purpose as [Registry](struct.Registry.html),
-/// except it is shared across all arbiters.
+/// System registry serves same purpose as [Registry], except it is shared across all arbiters.
 ///
 /// # Examples
 ///

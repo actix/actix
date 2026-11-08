@@ -1,10 +1,9 @@
 [package]
 name = "actix-broker"
-version = "0.4.3"
-authors = [
-    "Chris Ricketts <chris.ricketts@steribar.com>",
-]
+version = "0.4.4"
+authors = ["Chris Ricketts <chris.ricketts@steribar.com>"]
 description = "Message broker for the Actix actor framework"
+categories = ["asynchronous", "concurrency"]
 keywords = ["actix", "message", "broker"]
 repository = "https://github.com/actix/actix"
 license = "MIT OR Apache-2.0"
@@ -21,3 +20,9 @@ log = "0.4"
 
 [dev-dependencies]
 actix-web = "4"
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio = "1.38.2"
+
+[[bench]]
+name = "broker"
+harness = false

@@ -8,13 +8,13 @@
 <!-- prettier-ignore-start -->
 
 [![crates.io](https://img.shields.io/crates/v/actix?label=latest)](https://crates.io/crates/actix)
-[![Documentation](https://docs.rs/actix/badge.svg?version=0.13.5)](https://docs.rs/actix/0.13.5)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.68+-ab6000.svg)
+[![Documentation](https://docs.rs/actix/badge.svg?version=0.13.6)](https://docs.rs/actix/0.13.6)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.89+-ab6000.svg)
 ![License](https://img.shields.io/crates/l/actix.svg)
-[![Dependency Status](https://deps.rs/crate/actix/0.13.5/status.svg)](https://deps.rs/crate/actix/0.13.5)
+[![Dependency Status](https://deps.rs/crate/actix/0.13.6/status.svg)](https://deps.rs/crate/actix/0.13.6)
 <br />
 [![CI](https://github.com/actix/actix/actions/workflows/ci.yml/badge.svg)](https://github.com/actix/actix/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/actix/actix/branch/master/graph/badge.svg)](https://codecov.io/gh/actix/actix)
+[![codecov](https://codecov.io/gh/actix/actix/branch/main/graph/badge.svg)](https://codecov.io/gh/actix/actix)
 ![Downloads](https://img.shields.io/crates/d/actix.svg)
 [![Chat on Discord](https://img.shields.io/discord/771444961383153695?label=chat&logo=discord)](https://discord.gg/GMuKN5b8aR)
 
@@ -35,7 +35,7 @@
 - Uses [futures](https://crates.io/crates/futures) for asynchronous message handling
 - Actor supervision
 - Typed messages (No `Any` type)
-- Runs on stable Rust 1.68+
+- Runs on stable Rust 1.89+
 
 ## Usage
 
