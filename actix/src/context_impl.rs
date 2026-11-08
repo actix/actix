@@ -225,6 +225,8 @@ where
     A: Actor<Context = C>,
 {
     fn drop(&mut self) {
+        // Do not start an unpolled actor during teardown, when the runtime may
+        // no longer be available. Preserve cleanup for actors already started.
         if !self.ctx.parts().flags.contains(ContextFlags::STARTED) {
             return;
         }

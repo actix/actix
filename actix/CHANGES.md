@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Avoid calling `Actor::started()` when dropping an actor future that was never polled.
 - Minimum supported Rust version (MSRV) is now 1.76.
 
 ## 0.13.5
