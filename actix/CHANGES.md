@@ -5,6 +5,7 @@
 - Forward `SinkWrite` readiness errors to `WriteHandler::error` and finish the writer when it returns `Running::Stop`. [#604]
 
 [#604]: https://github.com/actix/actix/pull/604
+- Minimum supported Rust version (MSRV) is now 1.95.
 
 ## 0.13.6
 
