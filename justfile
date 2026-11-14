@@ -30,12 +30,7 @@ check-advisories:
 # Downgrade dev-dependencies necessary to run MSRV checks/tests.
 [private]
 downgrade-for-msrv:
-    cargo {{ toolchain }} update -p=actix-web --precise=4.12.1 # next ver: 1.88
-    cargo {{ toolchain }} update -p=actix-http --precise=3.11.2 # next ver: 1.88
-    cargo {{ toolchain }} update -p=half --precise=2.4.1 # next ver: 1.81.0
-    cargo {{ toolchain }} update -p=idna_adapter --precise=1.2.0 # next ver: 1.82.0
-    cargo {{ toolchain }} update -p=litemap --precise=0.7.4 # next ver: 1.81.0
-    cargo {{ toolchain }} update -p=zerofrom --precise=0.1.5 # next ver: 1.81.0
+    # No MSRV downgrades currently necessary.
 
 # Test workspace using MSRV.
 test-msrv:
