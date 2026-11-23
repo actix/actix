@@ -2,7 +2,12 @@
 
 use std::{
     pin::Pin,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
     task::{Context, Poll},
+    time::Duration,
 };
 
 use actix::{io::SinkWrite, prelude::*};
@@ -371,4 +376,113 @@ async fn test_send_single_bytes() {
     res.push(receiver.recv().await.unwrap());
 
     assert_eq!(b"hi!", &res[..]);
+}
+
+struct Byte(u8);
+
+impl Message for Byte {
+    type Result = ();
+}
+
+/// Sink that fails on the first `start_send` and records any later use.
+struct FailingStartSendSink {
+    calls_after_error: Arc<AtomicUsize>,
+    failed: bool,
+}
+
+impl Sink<u8> for FailingStartSendSink {
+    type Error = &'static str;
+
+    fn poll_ready(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        if self.failed {
+            self.get_mut()
+                .calls_after_error
+                .fetch_add(1, Ordering::SeqCst);
+        }
+        Poll::Ready(Ok(()))
+    }
+
+    fn start_send(mut self: Pin<&mut Self>, _: u8) -> Result<(), Self::Error> {
+        self.failed = true;
+        Err("start_send failed")
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        if self.failed {
+            self.get_mut()
+                .calls_after_error
+                .fetch_add(1, Ordering::SeqCst);
+        }
+        Poll::Ready(Ok(()))
+    }
+
+    fn poll_close(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+}
+
+struct StartSendErrActor {
+    sink: SinkWrite<u8, FailingStartSendSink>,
+    events: Vec<&'static str>,
+    finished: Option<oneshot::Sender<Vec<&'static str>>>,
+}
+
+impl Actor for StartSendErrActor {
+    type Context = actix::Context<Self>;
+}
+
+impl actix::io::WriteHandler<&'static str> for StartSendErrActor {
+    fn error(&mut self, err: &'static str, _: &mut Self::Context) -> Running {
+        self.events.push(err);
+        Running::Stop
+    }
+
+    fn finished(&mut self, ctx: &mut Self::Context) {
+        self.events.push("finished");
+        if let Some(finished) = self.finished.take() {
+            let _ = finished.send(std::mem::take(&mut self.events));
+        }
+        ctx.stop();
+    }
+}
+
+impl Handler<Byte> for StartSendErrActor {
+    type Result = ();
+
+    fn handle(&mut self, byte: Byte, _: &mut Self::Context) {
+        let _ = self.sink.write(byte.0);
+    }
+}
+
+#[actix::test]
+async fn test_sink_start_send_error() {
+    let calls_after_error = Arc::new(AtomicUsize::new(0));
+    let calls = Arc::clone(&calls_after_error);
+    let (finished_tx, finished_rx) = oneshot::channel();
+
+    let addr = StartSendErrActor::create(move |ctxt| StartSendErrActor {
+        sink: SinkWrite::new(
+            FailingStartSendSink {
+                calls_after_error: calls,
+                failed: false,
+            },
+            ctxt,
+        ),
+        events: Vec::new(),
+        finished: Some(finished_tx),
+    });
+
+    addr.do_send(Byte(1));
+
+    let events = actix_rt::time::timeout(Duration::from_secs(2), finished_rx)
+        .await
+        .expect("writer did not finish after `start_send` failed")
+        .expect("actor stopped without finishing the writer");
+
+    assert_eq!(events, ["start_send failed", "finished"]);
+    assert_eq!(
+        calls_after_error.load(Ordering::SeqCst),
+        0,
+        "sink was polled again after it returned an error"
+    );
 }
