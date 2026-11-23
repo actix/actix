@@ -521,7 +521,12 @@ where
                 Poll::Ready(Ok(())) => {
                     if let Some(item) = inner.buffer.pop_front() {
                         // send front of buffer to sink
-                        let _ = Pin::new(&mut inner.sink).start_send(item);
+                        if let Err(e) = Pin::new(&mut inner.sink).start_send(item) {
+                            if act.error(e, ctxt) == Running::Stop {
+                                act.finished(ctxt);
+                                return Poll::Ready(());
+                            }
+                        }
                     } else {
                         break;
                     }
