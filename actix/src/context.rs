@@ -165,7 +165,9 @@ where
     /// Sets the mailbox capacity.
     ///
     /// The default mailbox capacity is 16 messages.
-    /// #Examples
+    ///
+    /// # Examples
+    ///
     /// ```
     /// # use actix::prelude::*;
     /// struct MyActor;
